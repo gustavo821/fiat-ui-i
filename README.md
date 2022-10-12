@@ -2,9 +2,16 @@ This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next
 
 ## Getting Started
 
-First, run the development server:
+Install dependencies with [pnpm](https://pnpm.io/installation#using-homebrew):
+```bash
+pnpm install
+```
+
+Run the development server:
 
 ```bash
+pnpm dev
+#or
 npm run dev
 # or
 yarn dev
