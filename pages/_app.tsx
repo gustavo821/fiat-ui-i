@@ -5,6 +5,8 @@ import {
   RainbowKitProvider,
   getDefaultWallets,
   connectorsForWallets,
+  lightTheme,
+  darkTheme
 } from '@rainbow-me/rainbowkit';
 import {
   argentWallet,
@@ -14,6 +16,8 @@ import {
 import { chain, configureChains, createClient, WagmiConfig } from 'wagmi';
 import { alchemyProvider } from 'wagmi/providers/alchemy';
 import { publicProvider } from 'wagmi/providers/public';
+import { NextUIProvider, createTheme } from '@nextui-org/react';
+import { ThemeProvider as NextThemesProvider } from 'next-themes';
 
 const { chains, provider, webSocketProvider } = configureChains(
   [
@@ -62,8 +66,16 @@ const wagmiClient = createClient({
 function MyApp({ Component, pageProps }: AppProps) {
   return (
     <WagmiConfig client={wagmiClient}>
-      <RainbowKitProvider appInfo={demoAppInfo} chains={chains}>
-        <Component {...pageProps} />
+      <RainbowKitProvider appInfo={demoAppInfo} chains={chains} theme={{lightMode: lightTheme(), darkMode: darkTheme(),}}>
+       <NextThemesProvider 
+          defaultTheme='system'
+          attribute='class'
+          value={{ light: createTheme({ type: 'light' }).className, dark: createTheme({ type: 'dark' }).className }}
+        >
+          <NextUIProvider>
+            <Component {...pageProps} />
+          </NextUIProvider>
+        </NextThemesProvider>
       </RainbowKitProvider>
     </WagmiConfig>
   );
