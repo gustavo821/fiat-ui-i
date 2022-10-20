@@ -3,7 +3,7 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import type { NextPage } from 'next';
 import { useAccount } from 'wagmi';
 import { ethers } from 'ethers';
-import { Container, Text, Table, Spacer, Button, Modal, Input, Loading,Card } from '@nextui-org/react';
+import { Container, Text, Table, Spacer, Modal, Input, Loading, Card, Button } from '@nextui-org/react';
 import { Slider } from 'antd';
 import 'antd/dist/antd.css';
 
@@ -61,7 +61,8 @@ const Home: NextPage = () => {
     underlier: 0,
     healthFactor: 1.2,
     collateral: 0,
-    debt: 0
+    debt: 0,
+    slippagePct: ethers.utils.parseUnits('0.001', '18')
   });
 
 
@@ -174,7 +175,9 @@ const Home: NextPage = () => {
             poolId,
             ethers.BigNumber.from(modifyPositionFormData.underlier).mul(underlierScale)
           );
-          const collateral = fiat.scaleToWad(pTokenAmount, tokenScale);
+          const collateral = fiat.scaleToWad(pTokenAmount, tokenScale)
+            .mul(ethers.utils.parseUnits('1', '18').sub(modifyPositionFormData.slippagePct))
+            .div(ethers.utils.parseUnits('1', '18'));
           const { codex: { virtualRate }, collybus: { liquidationPrice }} = vault.state;
           const maxNormalDebt = fiat.computeMaxNormalDebt(
             collateral, fiat.decToWad(modifyPositionFormData.healthFactor.toString()), virtualRate, liquidationPrice
@@ -334,6 +337,7 @@ const Home: NextPage = () => {
       </Container>
 
       <Modal
+        preventClose
         closeButton
         blur
         aria-labelledby="modal-title"
@@ -364,6 +368,7 @@ const Home: NextPage = () => {
           </Text>
         </Modal.Header>
         <Modal.Body>
+          <Text b size={'m'}>Input</Text>
           <Input
             value={modifyPositionFormData.underlier}
             onChange={(event) => setModifyPositionFormData(
@@ -375,60 +380,59 @@ const Home: NextPage = () => {
             labelRight={(Object.keys(modifyPositionData).length != 0) && modifyPositionData.vault.properties.underlierSymbol}
             bordered
           />
-          <Text size={'0.875rem'} style={{ paddingLeft: '0.25rem'}}>Health Factor</Text>
-          <Slider
-            value={modifyPositionFormData.healthFactor}
-            onChange={(value) => setModifyPositionFormData(
-              { ...modifyPositionFormData, healthFactor: value, outdated: true })
-            }
-            min={1.001}
-            max={10.0}
-            step={0.001}
-            reverse
-            getTooltipPopupContainer={(t) => t}
-            marks={{
-              10.00: { style: { color: 'white'}, label: '10' },
-              9.00: { style: { color: 'white'}, label: '9' },
-              8.00: { style: { color: 'white'}, label: '8' },
-              7.00: { style: { color: 'white'}, label: '7' },
-              6.00: { style: { color: 'white'}, label: '6' },
-              5.00: { style: { color: 'white'}, label: '5' },
-              4.00: { style: { color: 'white'}, label: '4' },
-              3.00: { style: { color: 'white'}, label: '3' },
-              2.00: { style: { color: 'white'}, label: '2' },
-              1.001: { style: { color: 'white'}, label: '1.001' },
-            }}
-            style={{ padding: 0, height: 16 }}
+          <Text size={'0.875rem'} style={{ paddingLeft: '0.25rem', marginBottom: '0.375rem' }}>Preferred Health Factor</Text>
+          <Card variant="bordered" borderWeight="normal">
+            <Card.Body style={{ paddingLeft: '2.25rem', paddingRight: '2.25rem' }}>
+              <Slider
+                value={modifyPositionFormData.healthFactor}
+                onChange={(value) => setModifyPositionFormData(
+                  { ...modifyPositionFormData, healthFactor: value, outdated: true })
+                }
+                min={1.001}
+                max={5.0}
+                step={0.001}
+                reverse
+                getTooltipPopupContainer={(t) => t}
+                marks={{
+                  5.00: { style: { color: 'grey'}, label: 'Safe' },
+                  4.0: { style: { color: 'grey'}, label: '4.0' },
+                  3.00: { style: { color: 'grey'}, label: '3.0' },
+                  2.00: { style: { color: 'grey'}, label: '2.0' },
+                  1.001: { style: { color: 'grey'}, label: 'Unsafe' },
+                }}
+              />
+            </Card.Body>
+          </Card>
+          <Spacer y={0.5} />
+          Slippage: {Number(ethers.utils.formatUnits(modifyPositionFormData.slippagePct, '18')) * 100}%
+        </Modal.Body>
+        <Spacer y={0.5} />
+        <Card.Divider/>
+        <Modal.Body>
+          <Spacer y={0.5} />
+          <Text b size={'m'}>Preview</Text>
+          <Input
+            readOnly
+            value={(modifyPositionFormData.outdated) ? (' ') : (ethers.utils.formatUnits(modifyPositionFormData.collateral, '18'))}
+            placeholder="0"
+            type="string"
+            label="Collateral (Slippage Adjusted)"
+            labelRight={(Object.keys(modifyPositionData).length != 0) && modifyPositionData.vault.metadata.symbol}
+            contentLeft={(modifyPositionFormData.outdated) ? (<Loading size='xs'/>) : (null)}
+            bordered
           />
-          <br/>
-          <Card.Divider/>
-          <br/>
-          {(modifyPositionFormData.outdated) ? (<Loading size='xs'/>) : (
-            <>
-              <Text size={14}>Position Preview</Text>
-              <Input
-                readOnly
-                value={ethers.utils.formatUnits(modifyPositionFormData.collateral, '18')}
-                placeholder="0"
-                type="number"
-                label="Collateral"
-                labelRight={(Object.keys(modifyPositionData).length != 0) && modifyPositionData.vault.properties.tokenSymbol}
-                bordered
-              />
-              <Input
-                readOnly
-                value={ethers.utils.formatUnits(modifyPositionFormData.debt, '18')}
-                placeholder="0"
-                type="number"
-                label="Debt"
-                labelRight={'FIAT'}
-                bordered
-              />
-            </>
-          )}
+          <Input
+            readOnly
+            value={(modifyPositionFormData.outdated) ? (' ') : (ethers.utils.formatUnits(modifyPositionFormData.debt, '18'))}
+            placeholder="0"
+            type="string"
+            label="Debt"
+            labelRight={'FIAT'}
+            contentLeft={(modifyPositionFormData.outdated) ? (<Loading size='xs'/>) : (null)}
+            bordered
+          />
         </Modal.Body>
         <Modal.Footer>
-          Modal
         </Modal.Footer>
       </Modal>
     </div>
