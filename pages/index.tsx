@@ -3,7 +3,7 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import type { NextPage } from 'next';
 import { useAccount } from 'wagmi';
 import { ethers } from 'ethers';
-import { Container, Text, Table, Spacer, Button, Modal, Input } from '@nextui-org/react';
+import { Container, Text, Table, Spacer, Button, Modal, Input, Loading,Card } from '@nextui-org/react';
 import { Slider } from 'antd';
 import 'antd/dist/antd.css';
 
@@ -51,94 +51,146 @@ const Home: NextPage = () => {
   const { isConnected, connector } = useAccount();
 
   const [mounted, setMounted] = React.useState(false);
+  const [positionsData, setPositionsData] = React.useState([]);
+  const [selPositionId, setSelPositionId] = React.useState(null);
+  const [collateralTypesData, setCollateralTypesData] = React.useState([]);
+  const [selCollateralTypeId, setSelCollateralTypeId] = React.useState(null);
+  const [modifyPositionData, setModifyPositionData] = React.useState({});
+  const [modifyPositionFormData, setModifyPositionFormData] = React.useState({
+    outdated: false,
+    underlier: 0,
+    healthFactor: 1.2,
+    collateral: 0,
+    debt: 0
+  });
 
-  const [positions, setPositions] = React.useState([]);
-  const [selPosition, setSelPosition] = React.useState(null);
-  const [position, setPosition] = React.useState({});
-  const [vaults, setVaults] = React.useState([]);
-  const [selVault, setSelVault] = React.useState(null);
-  const [vault, setVault] = React.useState({});
-  const [underlier, setUnderlier] = React.useState(null);
+
+  const encodeCollateralTypeId = (vault: string, tokenId: string) => (`${vault}-${tokenId.toString()}`);
+  const decodeCollateralTypeId = (vaultId: string) => {
+    const [vault, tokenId] = vaultId.split('-');
+    return { vault, tokenId };
+  }
+  const encodePositionId = (vault: string, tokenId: string, owner: string) => (
+    `${vault}-${tokenId.toString()}-${owner}`
+  );
+  const decodePositionId = (positionId: string) => {
+    const [vault, tokenId, owner] = positionId.split('-');
+    return { vault, tokenId, owner };
+  }
+  const getCollateralTypeData = (collateralTypes: any, vault: string, tokenId: string): {} | undefined => {
+    return collateralTypes.find(
+      // @ts-ignore
+      ({properties: { vault: vault_, tokenId: tokenId_ }}) => (
+        vault === vault_ && tokenId.toString() === tokenId_.toString()
+      )
+    );
+  }
+  const getPositionData = (positions: any, vault: string, tokenId: string, owner: string): {} | undefined => {
+    return positions.find(
+      // @ts-ignore
+      ({ vault: vault_, tokenId: tokenId_, owner: owner_ }) => (
+        vault === vault_ && tokenId.toString() === tokenId_.toString() && owner === owner_
+      )
+    );
+  }
+
+  const formatUnixTimestamp = (unixTimestamp: string): string => {
+    const date = new Date(Number(unixTimestamp.toString()) * 1000);
+    return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+  }
 
   // Reset state if network or account changes
   React.useEffect(() => {
     if (!connector || mounted) return;
     connector.on('change', () => {
-      setVaults([]);
-      setVault({});
-      setSelVault(null);
-      setPositions([]);
-      setPosition({});
-      setSelPosition(null);
-      setUnderlier(null);
+      setCollateralTypesData([]);
+      setSelCollateralTypeId(null);
+      setPositionsData([]);
+      setSelPositionId(null);
+      setModifyPositionData({});
     });
     setMounted(true);
   }, [mounted, connector]);
 
-  // Fetch Vaults
+  // Fetch CollateralType and Vault data
   React.useEffect(() => {
-    if (!connector || vaults.length !== 0) return;
-    (async function fetchVaults() {
+    if (!connector || collateralTypesData.length !== 0 || positionsData.length !== 0) return;
+    (async function () {
       const signer = (await connector.getSigner());
       if (!signer || !signer.provider) return;
       const fiat = await FIAT.fromSigner(signer);
-      const collateralTypes = await fiat.fetchCollateralTypes();
-      setVaults(collateralTypes);
+      const collateralTypesData = await fiat.fetchCollateralTypesAndPrices();
+      const positionsData = await fiat.fetchPositions(await signer.getAddress())
+      setCollateralTypesData(collateralTypesData);
+      setPositionsData(positionsData);
     })();
-  }, [connector, vaults]);
+  }, [connector, collateralTypesData, positionsData]);
 
-  // Fetch Positions (corresponding to a user's proxy account)
+  // Populate ModifyPosition data
   React.useEffect(() => {
-    if (!connector || positions.length !== 0) return;
-    (async function fetchPositions() {
-      const signer = (await connector.getSigner());
-      if (!signer || !signer.provider) return;
-      const fiat = await FIAT.fromSigner(signer);
-      const positions = await fiat.fetchPositions(await signer.getAddress())
-      setPositions(positions);
-    })();
-  }, [connector, positions]);
+    if (
+      !connector
+      || (selCollateralTypeId == undefined && selPositionId == undefined)
+      || Object.keys(modifyPositionData).length != 0
+    ) return;
 
-  // Fetch Vault data corresponding to a selected Position or selected Vault
-  // React.useEffect(() => {
-  //   if (!connector || Object.keys(vault).length !== 0) return;
-  //   let vault_;
-  //   if (selPosition != null && positions.length != 0) {
-  //     const position_ = positions.find(({ id }) => id === selPosition);
-  //     // @ts-ignore
-  //     if (!position_ || !position_.vault || !position_.vault.address) return;
-  //     // @ts-ignore
-  //     vault_ = position_.vault.address;
-  //   } else if (selVault != null && vaults.length !== 0) {
-  //     vault_ = selVault;
-  //   } else {
-  //     return;
-  //   }
-  //   (async function fetchVault() {
-  //     const signer = (await connector.getSigner());
-  //     if (!signer || !signer.provider) return;
-  //     const fiat = await FIAT.fromSigner(signer);
-  //     try {
-  //       // @ts-ignore
-  //       setVault(await fiat.fetchVaultData(vault_.toLowerCase()));
-  //     } catch (error) {
-  //       setVault({ error });
-  //     }
-  //   })();
-  // }, [connector, vaults, vault, selVault, positions, selPosition]);
+    // @ts-ignore
+    const { vault, tokenId } = decodeCollateralTypeId(selCollateralTypeId || selPositionId);
+    let data: { vault: {} | undefined, position: {} | undefined} = {
+      vault: getCollateralTypeData(collateralTypesData, vault, tokenId), position: undefined
+    };
+    if (selPositionId) {
+      const { owner } = decodePositionId(selPositionId);
+      data = { ...data, position: getPositionData(positionsData, vault, tokenId, owner) };
+    }
+    console.log(data);
+    setModifyPositionData(data);
+  }, [connector, selCollateralTypeId, selPositionId, modifyPositionData, collateralTypesData, positionsData]);
 
-  // Update 'Modify Position' state
+  // Update ModifyPosition form data
   React.useEffect(() => {
-    if (!connector || (selVault == undefined && selPosition == undefined)) return;
-    (async function fetchVault() {
-      const signer = (await connector.getSigner());
-      if (!signer || !signer.provider) return;
-      const fiat = await FIAT.fromSigner(signer);
-      // const { vaultEPTActions } = fiat.getContracts();
-      // const collateral = await fiat.call(vaultEPTActions, 'underlierToPToken')
-      // fiat.computeHealthFactor()
+    if (
+      !connector
+      || (selCollateralTypeId == undefined && selPositionId == undefined)
+      || Object.keys(modifyPositionData).length == 0
+      || modifyPositionFormData.outdated === false
+    ) return;
+
+    const timeOutId = setTimeout(() => {
+      (async function () {
+        const signer = (await connector.getSigner());
+        if (!signer || !signer.provider) return;
+        const fiat = await FIAT.fromSigner(signer);
+        const { vault } = modifyPositionData as any;
+        if (vault?.properties?.protocol === 'ELEMENT') {
+          if (vault?.properties?.eptData == undefined) return;
+          if (modifyPositionFormData.underlier === 0) return;
+          const { vault: address, tokenScale, underlierScale, eptData: { balancerVault, poolId }} = vault.properties;
+          const pTokenAmount = await fiat.call(
+            fiat.getContracts().vaultEPTActions,
+            'underlierToPToken',
+            address,
+            balancerVault,
+            poolId,
+            ethers.BigNumber.from(modifyPositionFormData.underlier).mul(underlierScale)
+          );
+          const collateral = fiat.scaleToWad(pTokenAmount, tokenScale);
+          const { codex: { virtualRate }, collybus: { liquidationPrice }} = vault.state;
+          const maxNormalDebt = fiat.computeMaxNormalDebt(
+            collateral, fiat.decToWad(modifyPositionFormData.healthFactor.toString()), virtualRate, liquidationPrice
+          );
+          const debt = fiat.normalDebtToDebt(maxNormalDebt, virtualRate);
+          console.log(collateral.toString(), debt.toString());
+          setModifyPositionFormData({
+            ...modifyPositionFormData, collateral, debt, outdated: false
+          });
+        } else if (vault?.properties?.protocol === 'NOTIONAL') {
+        } else if (vault?.properties?.protocol === 'YIELD') {}
     })();
-  }, [connector, selVault, selPosition, underlier]);
+    }, 2000);
+    // restart timer via useEffect cleanup callback
+    return () => clearTimeout(timeOutId);
+  }, [connector, modifyPositionFormData, modifyPositionData, selCollateralTypeId, selPositionId]);
 
   return (
     <div>
@@ -156,10 +208,10 @@ const Home: NextPage = () => {
       <Spacer y={1} />
 
       <Container>
-        <Text h1>Vaults</Text>
-        {mounted && isConnected && vaults.length != 0 && (
+        <Text h1>Collateral Types</Text>
+        {mounted && isConnected && collateralTypesData.length != 0 && (
           <Table
-            aria-label='Vaults'
+            aria-label='CollateralTypes'
             css={{
               height: 'auto',
               minWidth: '100%',
@@ -167,10 +219,8 @@ const Home: NextPage = () => {
             selectionMode='single'
             selectedKeys={'1'}
             onSelectionChange={(selected) => {
-              setSelPosition(null);
-              setSelVault(Object.values(selected)[0].split('-')[0]);
-              setPosition({});
-              setVault({});
+              setSelPositionId(null);
+              setSelCollateralTypeId(Object.values(selected)[0]);
             }}
           >
             <Table.Header>
@@ -182,10 +232,10 @@ const Home: NextPage = () => {
             </Table.Header>
             <Table.Body>
               {
-                vaults.map((vault) => {
+                collateralTypesData.map((vault) => {
                   const {
+                    vault: address,
                     tokenId,
-                    name,
                     tokenSymbol,
                     underlierSymbol,
                     maturity
@@ -198,13 +248,13 @@ const Home: NextPage = () => {
                   } = vault.metadata;
                   const maturityFormatted = new Date(Number(maturity.toString()) * 1000);
                   return (
-                    <Table.Row key={name + tokenId.toString()}>
+                    <Table.Row key={encodeCollateralTypeId(address, tokenId)}>
                       <Table.Cell>{protocol}</Table.Cell>
                       <Table.Cell>{`${asset} (${tokenSymbol})`}</Table.Cell>
                       <Table.Cell>{underlierSymbol}</Table.Cell>
                       <Table.Cell>
                         <StyledBadge type={(new Date() < maturityFormatted) ? 'green' : 'red'}>
-                          { maturityFormatted.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) }
+                          {formatUnixTimestamp(maturity)}
                         </StyledBadge>
                       </Table.Cell>
                       <Table.Cell>0</Table.Cell>
@@ -221,7 +271,7 @@ const Home: NextPage = () => {
       
       <Container>
         <Text h1>Positions</Text>
-        {mounted && isConnected && positions.length != 0 && (
+        {mounted && isConnected && positionsData.length != 0 && (
           <Table
             aria-label='Positions'
             css={{
@@ -231,10 +281,8 @@ const Home: NextPage = () => {
             selectionMode='single'
             selectedKeys={'1'}
             onSelectionChange={(selected) => {
-              setSelPosition(Object.values(selected)[0]);
-              setSelVault(null);
-              setPosition({});
-              setVault({});
+              setSelPositionId(Object.values(selected)[0]);
+              setSelCollateralTypeId(null);
             }}
           >
             <Table.Header>
@@ -247,7 +295,7 @@ const Home: NextPage = () => {
             </Table.Header>
             <Table.Body>
               {
-                positions.map((position) => {
+                positionsData.map((position) => {
                   const {
                     owner,
                     vault,
@@ -257,20 +305,22 @@ const Home: NextPage = () => {
                     // @ts-ignore
                   } = position;
                   const {
-                    name,
-                    tokenSymbol
                     // @ts-ignore
-                  } = vaults.find((vault_) => vault_.properties.vault.toLowerCase() === vault.toLowerCase()).properties;
-                  const {
-                    protocol,
-                    asset
+                    properties: {
+                      name,
+                      tokenSymbol
+                    },
                     // @ts-ignore
-                  } = vaults.find((vault_) => vault_.properties.vault.toLowerCase() === vault.toLowerCase()).metadata;
+                    metadata: {
+                      protocol,
+                      asset
+                    }
+                  } = getCollateralTypeData(collateralTypesData, vault, tokenId);
                   return (
-                    <Table.Row key={vault + tokenId.toString()}>
+                    <Table.Row key={encodePositionId(vault, tokenId, owner)}>
                       <Table.Cell>{protocol}</Table.Cell>
                       <Table.Cell>{`${asset} (${tokenSymbol})`}</Table.Cell>
-                      <Table.Cell>{tokenId.toString()}</Table.Cell>
+                      <Table.Cell>{(tokenId as Number).toString()}</Table.Cell>
                       <Table.Cell>{owner}</Table.Cell>
                       <Table.Cell>{ethers.utils.formatEther(collateral)}</Table.Cell>
                       <Table.Cell>{ethers.utils.formatEther(normalDebt)}</Table.Cell>
@@ -287,27 +337,95 @@ const Home: NextPage = () => {
         closeButton
         blur
         aria-labelledby="modal-title"
-        open={!!(selVault || selPosition)}
+        open={(Object.keys(modifyPositionData).length != 0)}
         onClose={() => {
-          setSelVault(null);
-          setVault({});
-          setSelPosition(null);
-          setPosition({});
+          setSelCollateralTypeId(null);
+          setSelPositionId(null);
+          setModifyPositionData({});
         }}
       >
         <Modal.Header>
           <Text id="modal-title" size={18}>
             <Text b size={18}>
-              Modify Position
+              {(selCollateralTypeId) ? 'Create Position' : 'Modify Position'}
             </Text>
+            <br/>
+            {(Object.keys(modifyPositionData).length != 0) && (() => {
+              if (Object.keys(modifyPositionData).length == 0) return null;
+              const { vault: { metadata : { protocol, asset }, properties: { maturity } } } = modifyPositionData as any;
+              return (
+                <>
+                  <Text b size={16}>{`${protocol} - ${asset}`}</Text>
+                  <br/>
+                  <Text b size={14}>{`${formatUnixTimestamp(maturity)}`}</Text>
+                </>
+              );
+            })()}
           </Text>
         </Modal.Header>
         <Modal.Body>
-          <Input label="Underlier" type="text" onChange={(event) => setUnderlier(event.target.value)}/>
-          <Text size={14}>Health Factor</Text>
-          <Slider defaultValue={10} />
-          <Text>Collateral: </Text>
-          <Text>Debt: </Text>
+          <Input
+            value={modifyPositionFormData.underlier}
+            onChange={(event) => setModifyPositionFormData(
+              { ...modifyPositionFormData, underlier: Number(event.target.value), outdated: true })
+            }
+            placeholder="0"
+            type="number"
+            label="Underlier to deposit"
+            labelRight={(Object.keys(modifyPositionData).length != 0) && modifyPositionData.vault.properties.underlierSymbol}
+            bordered
+          />
+          <Text size={'0.875rem'} style={{ paddingLeft: '0.25rem'}}>Health Factor</Text>
+          <Slider
+            value={modifyPositionFormData.healthFactor}
+            onChange={(value) => setModifyPositionFormData(
+              { ...modifyPositionFormData, healthFactor: value, outdated: true })
+            }
+            min={1.001}
+            max={10.0}
+            step={0.001}
+            reverse
+            getTooltipPopupContainer={(t) => t}
+            marks={{
+              10.00: { style: { color: 'white'}, label: '10' },
+              9.00: { style: { color: 'white'}, label: '9' },
+              8.00: { style: { color: 'white'}, label: '8' },
+              7.00: { style: { color: 'white'}, label: '7' },
+              6.00: { style: { color: 'white'}, label: '6' },
+              5.00: { style: { color: 'white'}, label: '5' },
+              4.00: { style: { color: 'white'}, label: '4' },
+              3.00: { style: { color: 'white'}, label: '3' },
+              2.00: { style: { color: 'white'}, label: '2' },
+              1.001: { style: { color: 'white'}, label: '1.001' },
+            }}
+            style={{ padding: 0, height: 16 }}
+          />
+          <br/>
+          <Card.Divider/>
+          <br/>
+          {(modifyPositionFormData.outdated) ? (<Loading size='xs'/>) : (
+            <>
+              <Text size={14}>Position Preview</Text>
+              <Input
+                readOnly
+                value={ethers.utils.formatUnits(modifyPositionFormData.collateral, '18')}
+                placeholder="0"
+                type="number"
+                label="Collateral"
+                labelRight={(Object.keys(modifyPositionData).length != 0) && modifyPositionData.vault.properties.tokenSymbol}
+                bordered
+              />
+              <Input
+                readOnly
+                value={ethers.utils.formatUnits(modifyPositionFormData.debt, '18')}
+                placeholder="0"
+                type="number"
+                label="Debt"
+                labelRight={'FIAT'}
+                bordered
+              />
+            </>
+          )}
         </Modal.Body>
         <Modal.Footer>
           Modal
