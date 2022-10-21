@@ -3,12 +3,14 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import type { NextPage } from 'next';
 import { useAccount } from 'wagmi';
 import { ethers } from 'ethers';
-import { Container, Text, Table, Spacer, Modal, Input, Loading, Card, Button } from '@nextui-org/react';
+import { Container, Text, Table, Spacer, Modal, Input, Loading, Card, Button, Switch } from '@nextui-org/react';
 import { Slider } from 'antd';
 import 'antd/dist/antd.css';
 
 // @ts-ignore
 import { FIAT } from '@fiatdao/sdk/lib/index';
+// @ts-ignore
+import { queryUserProxies } from '@fiatdao/sdk/lib/queries';
 
 import { styled } from '@nextui-org/react';
 
@@ -51,6 +53,7 @@ const Home: NextPage = () => {
   const { isConnected, connector } = useAccount();
 
   const [mounted, setMounted] = React.useState(false);
+  const [userData, setUserData] = React.useState({});
   const [positionsData, setPositionsData] = React.useState([]);
   const [selPositionId, setSelPositionId] = React.useState(null);
   const [collateralTypesData, setCollateralTypesData] = React.useState([]);
@@ -64,7 +67,6 @@ const Home: NextPage = () => {
     debt: 0,
     slippagePct: ethers.utils.parseUnits('0.001', '18')
   });
-
 
   const encodeCollateralTypeId = (vault: string, tokenId: string) => (`${vault}-${tokenId.toString()}`);
   const decodeCollateralTypeId = (vaultId: string) => {
@@ -94,7 +96,6 @@ const Home: NextPage = () => {
       )
     );
   }
-
   const formatUnixTimestamp = (unixTimestamp: string): string => {
     const date = new Date(Number(unixTimestamp.toString()) * 1000);
     return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
@@ -115,17 +116,27 @@ const Home: NextPage = () => {
 
   // Fetch CollateralType and Vault data
   React.useEffect(() => {
-    if (!connector || collateralTypesData.length !== 0 || positionsData.length !== 0) return;
+    if (
+      !connector
+      || collateralTypesData.length !== 0
+      || positionsData.length !== 0
+      || Object.keys(userData).length !== 0
+    ) return;
     (async function () {
       const signer = (await connector.getSigner());
       if (!signer || !signer.provider) return;
+      const user = await signer.getAddress();
       const fiat = await FIAT.fromSigner(signer);
-      const collateralTypesData = await fiat.fetchCollateralTypesAndPrices();
-      const positionsData = await fiat.fetchPositions(await signer.getAddress())
-      setCollateralTypesData(collateralTypesData);
-      setPositionsData(positionsData);
+      const [collateralTypesData_, positionsData_, userProxyData] = await Promise.all([
+        fiat.fetchCollateralTypesAndPrices(),
+        fiat.fetchPositions(user),
+        fiat.query(queryUserProxies, { where: { owner: user.toLowerCase() }})
+      ])
+      setCollateralTypesData(collateralTypesData_);
+      setPositionsData(positionsData_);
+      setUserData({ user, proxies: userProxyData.userProxies.map((userProxy: { proxy: any; }) => userProxy.proxy)});
     })();
-  }, [connector, collateralTypesData, positionsData]);
+  }, [connector, collateralTypesData, positionsData, userData]);
 
   // Populate ModifyPosition data
   React.useEffect(() => {
@@ -134,19 +145,32 @@ const Home: NextPage = () => {
       || (selCollateralTypeId == undefined && selPositionId == undefined)
       || Object.keys(modifyPositionData).length != 0
     ) return;
-
     // @ts-ignore
     const { vault, tokenId } = decodeCollateralTypeId(selCollateralTypeId || selPositionId);
-    let data: { vault: {} | undefined, position: {} | undefined} = {
+    let data: { vault: any | undefined, position: any | undefined } = {
       vault: getCollateralTypeData(collateralTypesData, vault, tokenId), position: undefined
     };
     if (selPositionId) {
       const { owner } = decodePositionId(selPositionId);
       data = { ...data, position: getPositionData(positionsData, vault, tokenId, owner) };
     }
-    console.log(data);
     setModifyPositionData(data);
-  }, [connector, selCollateralTypeId, selPositionId, modifyPositionData, collateralTypesData, positionsData]);
+    if (Object.keys(userData).length === 0 || !('proxies' in userData)) return;
+    const { proxies: [proxy] } = userData as any;
+    if (data.position && data.position.owner.toLowerCase() !== proxy.toLowerCase()) return;
+    (async function () {
+      const signer = (await connector.getSigner());
+      if (!signer || !signer.provider) return;
+      const fiat = await FIAT.fromSigner(signer);
+      const { codex, moneta, vaultEPTActions } = fiat.getContracts();
+      const underlier = fiat.getERC20Contract(data.vault.properties.underlierToken);
+      const [underlierAllowance, monetaDelegate] = await fiat.multicall([
+        { contract: underlier, method: 'allowance', args: [proxy, vaultEPTActions.address] },
+        { contract: codex, method: 'delegates', args: [proxy, moneta.address] }
+      ]);
+      setModifyPositionData({ ...modifyPositionData, ...data, underlierAllowance, monetaDelegate });
+    })();
+  }, [connector, selCollateralTypeId, selPositionId, modifyPositionData, collateralTypesData, positionsData, userData]);
 
   // Update ModifyPosition form data
   React.useEffect(() => {
@@ -340,7 +364,7 @@ const Home: NextPage = () => {
         preventClose
         closeButton
         blur
-        aria-labelledby="modal-title"
+        aria-labelledby='modal-title'
         open={(Object.keys(modifyPositionData).length != 0)}
         onClose={() => {
           setSelCollateralTypeId(null);
@@ -349,7 +373,7 @@ const Home: NextPage = () => {
         }}
       >
         <Modal.Header>
-          <Text id="modal-title" size={18}>
+          <Text id='modal-title' size={18}>
             <Text b size={18}>
               {(selCollateralTypeId) ? 'Create Position' : 'Modify Position'}
             </Text>
@@ -374,14 +398,14 @@ const Home: NextPage = () => {
             onChange={(event) => setModifyPositionFormData(
               { ...modifyPositionFormData, underlier: Number(event.target.value), outdated: true })
             }
-            placeholder="0"
-            type="number"
-            label="Underlier to deposit"
+            placeholder='0'
+            type='number'
+            label='Underlier to deposit'
             labelRight={(Object.keys(modifyPositionData).length != 0) && modifyPositionData.vault.properties.underlierSymbol}
             bordered
           />
           <Text size={'0.875rem'} style={{ paddingLeft: '0.25rem', marginBottom: '0.375rem' }}>Preferred Health Factor</Text>
-          <Card variant="bordered" borderWeight="normal">
+          <Card variant='bordered' borderWeight='normal'>
             <Card.Body style={{ paddingLeft: '2.25rem', paddingRight: '2.25rem' }}>
               <Slider
                 value={modifyPositionFormData.healthFactor}
@@ -414,9 +438,9 @@ const Home: NextPage = () => {
           <Input
             readOnly
             value={(modifyPositionFormData.outdated) ? (' ') : (ethers.utils.formatUnits(modifyPositionFormData.collateral, '18'))}
-            placeholder="0"
-            type="string"
-            label="Collateral (Slippage Adjusted)"
+            placeholder='0'
+            type='string'
+            label='Collateral (Slippage Adjusted)'
             labelRight={(Object.keys(modifyPositionData).length != 0) && modifyPositionData.vault.metadata.symbol}
             contentLeft={(modifyPositionFormData.outdated) ? (<Loading size='xs'/>) : (null)}
             bordered
@@ -424,15 +448,35 @@ const Home: NextPage = () => {
           <Input
             readOnly
             value={(modifyPositionFormData.outdated) ? (' ') : (ethers.utils.formatUnits(modifyPositionFormData.debt, '18'))}
-            placeholder="0"
-            type="string"
-            label="Debt"
+            placeholder='0'
+            type='string'
+            label='Debt'
             labelRight={'FIAT'}
             contentLeft={(modifyPositionFormData.outdated) ? (<Loading size='xs'/>) : (null)}
             bordered
           />
+          <Spacer y={0.5} />
         </Modal.Body>
+        <Card.Divider/>
         <Modal.Footer>
+          <Text>
+            Approve {(Object.keys(modifyPositionData).length != 0) && modifyPositionData.vault.properties.underlierSymbol}
+          </Text>
+          <Switch
+            checked={
+              (Object.keys(modifyPositionData).length !=0)
+              && ethers.BigNumber.from(0).lt(modifyPositionFormData.underlier)
+              && modifyPositionData.underlierAllowance.gte(modifyPositionFormData.underlier)}
+            color='primary'
+          />
+          <Spacer y={0.5} />
+          <Text>Enable FIAT</Text>
+          <Switch
+            checked={(Object.keys(modifyPositionData).length !=0) && modifyPositionData.monetaDelegate}
+            color='primary'
+          />
+          <Spacer y={3} />
+          <Button disabled>Deposit</Button>
         </Modal.Footer>
       </Modal>
     </div>
