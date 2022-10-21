@@ -49,38 +49,67 @@ const StyledBadge = styled('span', {
   }
 });
 
+
+
 const Home: NextPage = () => {
   const { isConnected, connector } = useAccount();
 
-  const [mounted, setMounted] = React.useState(false);
-  const [userData, setUserData] = React.useState({});
-  const [positionsData, setPositionsData] = React.useState([]);
-  const [selPositionId, setSelPositionId] = React.useState(null);
-  const [collateralTypesData, setCollateralTypesData] = React.useState([]);
-  const [selCollateralTypeId, setSelCollateralTypeId] = React.useState(null);
-  const [modifyPositionData, setModifyPositionData] = React.useState({});
-  const [modifyPositionFormData, setModifyPositionFormData] = React.useState({
-    outdated: false,
-    underlier: 0,
-    healthFactor: 1.2,
-    collateral: 0,
-    debt: 0,
-    slippagePct: ethers.utils.parseUnits('0.001', '18')
-  });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const initialState = {
+    userData: {
+      fiat: null as null | FIAT,
+      user: null as null | string,
+      proxies: [] as Array<string>
+    },
+    positionsData: [] as Array<any>,
+    selPositionId: null as null | string,
+    collateralTypesData: [] as Array<any>,
+    selCollateralTypeId: null as null | string,
+    modifyPositionData: {
+      vault: null as undefined | null | any,
+      position: null as undefined | null | any,
+      underlierAllowance: null as null | ethers.BigNumberish,
+      monetaDelegate: null as null | boolean
+    },
+    modifyPositionFormData: {
+      outdated: false,
+      underlier: 0 as ethers.BigNumberish,
+      healthFactor: 1.2 as ethers.BigNumberish,
+      collateral: 0 as ethers.BigNumberish,
+      debt: 0 as ethers.BigNumberish,
+      slippagePct: ethers.utils.parseUnits('0.001', '18') as ethers.BigNumberish,
+    },
+    transactionData: {
+      action: null as null | string,
+      status: null as null | string, // error, sent, confirming, confirmed
+    }
+  } 
 
-  const encodeCollateralTypeId = (vault: string, tokenId: string) => (`${vault}-${tokenId.toString()}`);
+  const [mounted, setMounted] = React.useState(false);
+  const [userData, setUserData] = React.useState(initialState.userData);
+  const [positionsData, setPositionsData] = React.useState(initialState.positionsData);
+  const [selPositionId, setSelPositionId] = React.useState(initialState.selPositionId);
+  const [collateralTypesData, setCollateralTypesData] = React.useState(initialState.collateralTypesData);
+  const [selCollateralTypeId, setSelCollateralTypeId] = React.useState(initialState.selCollateralTypeId);
+  const [modifyPositionData, setModifyPositionData] = React.useState(initialState.modifyPositionData);
+  const [modifyPositionFormData, setModifyPositionFormData] = React.useState(initialState.modifyPositionFormData);
+  const [transactionData, setTransactionData] = React.useState(initialState.transactionData);
+
+  const encodeCollateralTypeId = (vault: string, tokenId: ethers.BigNumberish) => (`${vault}-${tokenId.toString()}`);
   const decodeCollateralTypeId = (vaultId: string) => {
     const [vault, tokenId] = vaultId.split('-');
     return { vault, tokenId };
   }
-  const encodePositionId = (vault: string, tokenId: string, owner: string) => (
+  const encodePositionId = (vault: string, tokenId: ethers.BigNumberish, owner: string) => (
     `${vault}-${tokenId.toString()}-${owner}`
   );
   const decodePositionId = (positionId: string) => {
     const [vault, tokenId, owner] = positionId.split('-');
     return { vault, tokenId, owner };
   }
-  const getCollateralTypeData = (collateralTypes: any, vault: string, tokenId: string): {} | undefined => {
+  const getCollateralTypeData = (
+    collateralTypes: Array<any>, vault: string, tokenId: ethers.BigNumberish
+  ): undefined | any => {
     return collateralTypes.find(
       // @ts-ignore
       ({properties: { vault: vault_, tokenId: tokenId_ }}) => (
@@ -88,7 +117,9 @@ const Home: NextPage = () => {
       )
     );
   }
-  const getPositionData = (positions: any, vault: string, tokenId: string, owner: string): {} | undefined => {
+  const getPositionData = (
+    positions: Array<any>, vault: string, tokenId: ethers.BigNumberish, owner: string
+  ): undefined | any => {
     return positions.find(
       // @ts-ignore
       ({ vault: vault_, tokenId: tokenId_, owner: owner_ }) => (
@@ -96,7 +127,7 @@ const Home: NextPage = () => {
       )
     );
   }
-  const formatUnixTimestamp = (unixTimestamp: string): string => {
+  const formatUnixTimestamp = (unixTimestamp: ethers.BigNumberish): string => {
     const date = new Date(Number(unixTimestamp.toString()) * 1000);
     return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
   }
@@ -105,23 +136,22 @@ const Home: NextPage = () => {
   React.useEffect(() => {
     if (!connector || mounted) return;
     connector.on('change', () => {
-      setCollateralTypesData([]);
-      setSelCollateralTypeId(null);
-      setPositionsData([]);
-      setSelPositionId(null);
-      setModifyPositionData({});
+      setUserData(initialState.userData);
+      setPositionsData(initialState.positionsData);
+      setSelPositionId(initialState.selPositionId);
+      setCollateralTypesData(initialState.collateralTypesData);
+      setSelCollateralTypeId(initialState.selCollateralTypeId);
+      setModifyPositionData(initialState.modifyPositionData);
+      setModifyPositionFormData(initialState.modifyPositionFormData);
+      setTransactionData(initialState.transactionData);
     });
     setMounted(true);
-  }, [mounted, connector]);
+  }, [mounted, connector, initialState]);
 
-  // Fetch CollateralType and Vault data
+  // Fetch User, CollateralType and Vault data
   React.useEffect(() => {
-    if (
-      !connector
-      || collateralTypesData.length !== 0
-      || positionsData.length !== 0
-      || Object.keys(userData).length !== 0
-    ) return;
+    if (!connector || collateralTypesData.length > 0 || positionsData.length > 0 || userData.fiat != null) return;
+
     (async function () {
       const signer = (await connector.getSigner());
       if (!signer || !signer.provider) return;
@@ -134,37 +164,35 @@ const Home: NextPage = () => {
       ])
       setCollateralTypesData(collateralTypesData_);
       setPositionsData(positionsData_);
-      setUserData({ user, proxies: userProxyData.userProxies.map((userProxy: { proxy: any; }) => userProxy.proxy)});
+      setUserData({
+        fiat, user, proxies: userProxyData.userProxies.map((userProxy: { proxy: any; }) => userProxy.proxy)
+      });
     })();
   }, [connector, collateralTypesData, positionsData, userData]);
 
   // Populate ModifyPosition data
   React.useEffect(() => {
     if (
-      !connector
-      || (selCollateralTypeId == undefined && selPositionId == undefined)
-      || Object.keys(modifyPositionData).length != 0
+      !connector || (selCollateralTypeId == null && selPositionId == null) || modifyPositionData.vault !== null
     ) return;
-    // @ts-ignore
-    const { vault, tokenId } = decodeCollateralTypeId(selCollateralTypeId || selPositionId);
-    let data: { vault: any | undefined, position: any | undefined } = {
-      vault: getCollateralTypeData(collateralTypesData, vault, tokenId), position: undefined
-    };
+
+    const { vault, tokenId } = decodeCollateralTypeId((selCollateralTypeId || selPositionId as string));
+    let data = { ...modifyPositionData, vault: getCollateralTypeData(collateralTypesData, vault, tokenId) };
     if (selPositionId) {
       const { owner } = decodePositionId(selPositionId);
       data = { ...data, position: getPositionData(positionsData, vault, tokenId, owner) };
     }
     setModifyPositionData(data);
-    if (Object.keys(userData).length === 0 || !('proxies' in userData)) return;
-    const { proxies: [proxy] } = userData as any;
+
+    if (userData.proxies.length === 0) return;
+    const { proxies: [proxy] } = userData;
     if (data.position && data.position.owner.toLowerCase() !== proxy.toLowerCase()) return;
+
     (async function () {
-      const signer = (await connector.getSigner());
-      if (!signer || !signer.provider) return;
-      const fiat = await FIAT.fromSigner(signer);
-      const { codex, moneta, vaultEPTActions } = fiat.getContracts();
-      const underlier = fiat.getERC20Contract(data.vault.properties.underlierToken);
-      const [underlierAllowance, monetaDelegate] = await fiat.multicall([
+      if (data.vault == null) return;
+      const { codex, moneta, vaultEPTActions } = userData.fiat.getContracts();
+      const underlier = userData.fiat.getERC20Contract(data.vault.properties.underlierToken);
+      const [underlierAllowance, monetaDelegate] = await userData.fiat.multicall([
         { contract: underlier, method: 'allowance', args: [proxy, vaultEPTActions.address] },
         { contract: codex, method: 'delegates', args: [proxy, moneta.address] }
       ]);
@@ -176,48 +204,64 @@ const Home: NextPage = () => {
   React.useEffect(() => {
     if (
       !connector
-      || (selCollateralTypeId == undefined && selPositionId == undefined)
-      || Object.keys(modifyPositionData).length == 0
+      || (selCollateralTypeId == null && selPositionId == null)
+      || modifyPositionData.vault == null
       || modifyPositionFormData.outdated === false
     ) return;
 
     const timeOutId = setTimeout(() => {
       (async function () {
-        const signer = (await connector.getSigner());
-        if (!signer || !signer.provider) return;
-        const fiat = await FIAT.fromSigner(signer);
         const { vault } = modifyPositionData as any;
-        if (vault?.properties?.protocol === 'ELEMENT') {
-          if (vault?.properties?.eptData == undefined) return;
+        const { vault: address, tokenScale, underlierScale, protocol } = vault.properties;
+
+        if (protocol === 'ELEMENT') {
+          if (vault.properties.eptData == undefined) return;
+          const { eptData: { balancerVault, poolId }} = vault.properties;
           if (modifyPositionFormData.underlier === 0) return;
-          const { vault: address, tokenScale, underlierScale, eptData: { balancerVault, poolId }} = vault.properties;
-          const pTokenAmount = await fiat.call(
-            fiat.getContracts().vaultEPTActions,
+          const pTokenAmount = await userData.fiat.call(
+            userData.fiat.getContracts().vaultEPTActions,
             'underlierToPToken',
             address,
             balancerVault,
             poolId,
             ethers.BigNumber.from(modifyPositionFormData.underlier).mul(underlierScale)
           );
-          const collateral = fiat.scaleToWad(pTokenAmount, tokenScale)
+          const collateral = userData.fiat.scaleToWad(pTokenAmount, tokenScale)
             .mul(ethers.utils.parseUnits('1', '18').sub(modifyPositionFormData.slippagePct))
             .div(ethers.utils.parseUnits('1', '18'));
           const { codex: { virtualRate }, collybus: { liquidationPrice }} = vault.state;
-          const maxNormalDebt = fiat.computeMaxNormalDebt(
-            collateral, fiat.decToWad(modifyPositionFormData.healthFactor.toString()), virtualRate, liquidationPrice
+          const maxNormalDebt = userData.fiat.computeMaxNormalDebt(
+            collateral, userData.fiat.decToWad(modifyPositionFormData.healthFactor.toString()), virtualRate, liquidationPrice
           );
-          const debt = fiat.normalDebtToDebt(maxNormalDebt, virtualRate);
-          console.log(collateral.toString(), debt.toString());
+          const debt = userData.fiat.normalDebtToDebt(maxNormalDebt, virtualRate);
           setModifyPositionFormData({
             ...modifyPositionFormData, collateral, debt, outdated: false
           });
-        } else if (vault?.properties?.protocol === 'NOTIONAL') {
-        } else if (vault?.properties?.protocol === 'YIELD') {}
+        } else if (protocol === 'NOTIONAL') {
+        } else if (protocol === 'YIELD') {}
     })();
     }, 2000);
     // restart timer via useEffect cleanup callback
     return () => clearTimeout(timeOutId);
-  }, [connector, modifyPositionFormData, modifyPositionData, selCollateralTypeId, selPositionId]);
+  }, [connector, userData, selCollateralTypeId, selPositionId, modifyPositionData, modifyPositionFormData]);
+
+  React.useEffect(() => {
+    if (!connector || userData.fiat == null || transactionData.action == null) return;
+
+    const action = transactionData.action;
+    setTransactionData({ ...transactionData, action: null });
+
+    (async function () {
+      if (action == 'setUnderlierAllowance') {
+        console.log(await userData.fiat.dryrun(
+          userData.fiat.getERC20Contract(modifyPositionData.vault.properties.underlierToken),
+          'approve',
+          userData.proxies[0],
+          userData.fiat.getContracts().vaultEPTActions.address
+        ));
+      }
+    })();
+  }, [connector, userData, modifyPositionData, transactionData]);
 
   return (
     <div>
@@ -236,7 +280,7 @@ const Home: NextPage = () => {
 
       <Container>
         <Text h1>Collateral Types</Text>
-        {mounted && isConnected && collateralTypesData.length != 0 && (
+        {(collateralTypesData.length != 0) && (
           <Table
             aria-label='CollateralTypes'
             css={{
@@ -246,7 +290,7 @@ const Home: NextPage = () => {
             selectionMode='single'
             selectedKeys={'1'}
             onSelectionChange={(selected) => {
-              setSelPositionId(null);
+              setSelPositionId(initialState.selPositionId);
               setSelCollateralTypeId(Object.values(selected)[0]);
             }}
           >
@@ -298,7 +342,7 @@ const Home: NextPage = () => {
       
       <Container>
         <Text h1>Positions</Text>
-        {mounted && isConnected && positionsData.length != 0 && (
+        {(positionsData.length != 0) && (
           <Table
             aria-label='Positions'
             css={{
@@ -309,7 +353,7 @@ const Home: NextPage = () => {
             selectedKeys={'1'}
             onSelectionChange={(selected) => {
               setSelPositionId(Object.values(selected)[0]);
-              setSelCollateralTypeId(null);
+              setSelCollateralTypeId(initialState.selCollateralTypeId);
             }}
           >
             <Table.Header>
@@ -365,11 +409,11 @@ const Home: NextPage = () => {
         closeButton
         blur
         aria-labelledby='modal-title'
-        open={(Object.keys(modifyPositionData).length != 0)}
+        open={(modifyPositionData.vault != null)}
         onClose={() => {
-          setSelCollateralTypeId(null);
-          setSelPositionId(null);
-          setModifyPositionData({});
+          setSelCollateralTypeId(initialState.selCollateralTypeId);
+          setSelPositionId(initialState.selPositionId);
+          setModifyPositionData(initialState.modifyPositionData);
         }}
       >
         <Modal.Header>
@@ -378,9 +422,8 @@ const Home: NextPage = () => {
               {(selCollateralTypeId) ? 'Create Position' : 'Modify Position'}
             </Text>
             <br/>
-            {(Object.keys(modifyPositionData).length != 0) && (() => {
-              if (Object.keys(modifyPositionData).length == 0) return null;
-              const { vault: { metadata : { protocol, asset }, properties: { maturity } } } = modifyPositionData as any;
+            {(modifyPositionData.vault != null) && (() => {
+              const { vault: { metadata : { protocol, asset }, properties: { maturity } } } = modifyPositionData;
               return (
                 <>
                   <Text b size={16}>{`${protocol} - ${asset}`}</Text>
@@ -394,21 +437,23 @@ const Home: NextPage = () => {
         <Modal.Body>
           <Text b size={'m'}>Input</Text>
           <Input
-            value={modifyPositionFormData.underlier}
+            value={Number(modifyPositionFormData.underlier.toString())}
             onChange={(event) => setModifyPositionFormData(
               { ...modifyPositionFormData, underlier: Number(event.target.value), outdated: true })
             }
             placeholder='0'
             type='number'
             label='Underlier to deposit'
-            labelRight={(Object.keys(modifyPositionData).length != 0) && modifyPositionData.vault.properties.underlierSymbol}
+            labelRight={(modifyPositionData.vault != null) && modifyPositionData.vault.properties.underlierSymbol}
             bordered
           />
-          <Text size={'0.875rem'} style={{ paddingLeft: '0.25rem', marginBottom: '0.375rem' }}>Preferred Health Factor</Text>
+          <Text size={'0.875rem'} style={{ paddingLeft: '0.25rem', marginBottom: '0.375rem' }}>
+            Preferred Health Factor
+          </Text>
           <Card variant='bordered' borderWeight='normal'>
             <Card.Body style={{ paddingLeft: '2.25rem', paddingRight: '2.25rem' }}>
               <Slider
-                value={modifyPositionFormData.healthFactor}
+                value={Number(modifyPositionFormData.healthFactor.toString())}
                 onChange={(value) => setModifyPositionFormData(
                   { ...modifyPositionFormData, healthFactor: value, outdated: true })
                 }
@@ -437,17 +482,25 @@ const Home: NextPage = () => {
           <Text b size={'m'}>Preview</Text>
           <Input
             readOnly
-            value={(modifyPositionFormData.outdated) ? (' ') : (ethers.utils.formatUnits(modifyPositionFormData.collateral, '18'))}
+            value={
+              (modifyPositionFormData.outdated)
+                ? (' ')
+                : (ethers.utils.formatUnits(modifyPositionFormData.collateral, '18'))
+            }
             placeholder='0'
             type='string'
             label='Collateral (Slippage Adjusted)'
-            labelRight={(Object.keys(modifyPositionData).length != 0) && modifyPositionData.vault.metadata.symbol}
+            labelRight={(modifyPositionData.vault != null) && modifyPositionData.vault.metadata.symbol}
             contentLeft={(modifyPositionFormData.outdated) ? (<Loading size='xs'/>) : (null)}
             bordered
           />
           <Input
             readOnly
-            value={(modifyPositionFormData.outdated) ? (' ') : (ethers.utils.formatUnits(modifyPositionFormData.debt, '18'))}
+            value={
+              (modifyPositionFormData.outdated)
+                ? (' ')
+                : (ethers.utils.formatUnits(modifyPositionFormData.debt, '18'))
+            }
             placeholder='0'
             type='string'
             label='Debt'
@@ -460,23 +513,34 @@ const Home: NextPage = () => {
         <Card.Divider/>
         <Modal.Footer>
           <Text>
-            Approve {(Object.keys(modifyPositionData).length != 0) && modifyPositionData.vault.properties.underlierSymbol}
+            Approve {(modifyPositionData.vault != null) && modifyPositionData.vault.properties.underlierSymbol}
           </Text>
           <Switch
+            disabled={(userData.proxies.length == 0)}
+            onChange={() => setTransactionData({...transactionData, action: 'setUnderlierAllowance' })}
             checked={
-              (Object.keys(modifyPositionData).length !=0)
+              (modifyPositionData.vault != null)
               && ethers.BigNumber.from(0).lt(modifyPositionFormData.underlier)
-              && modifyPositionData.underlierAllowance.gte(modifyPositionFormData.underlier)}
+              && ethers.BigNumber.from(modifyPositionData.underlierAllowance).gte(modifyPositionFormData.underlier)}
             color='primary'
           />
           <Spacer y={0.5} />
           <Text>Enable FIAT</Text>
           <Switch
-            checked={(Object.keys(modifyPositionData).length !=0) && modifyPositionData.monetaDelegate}
+            disabled={(userData.proxies.length == 0)}
+            checked={(modifyPositionData.vault != null) && (!!modifyPositionData.monetaDelegate)}
             color='primary'
           />
           <Spacer y={3} />
-          <Button disabled>Deposit</Button>
+          <Button
+            disabled={(
+              userData.proxies.length == 0
+              || ethers.BigNumber.from(modifyPositionFormData.underlier).isZero()
+              || ethers.BigNumber.from(modifyPositionData.underlierAllowance).lt(modifyPositionFormData.underlier)
+            )}
+          >
+            Deposit
+          </Button>
         </Modal.Footer>
       </Modal>
     </div>

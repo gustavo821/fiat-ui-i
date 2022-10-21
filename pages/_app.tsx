@@ -30,7 +30,7 @@ const { chains, provider, webSocketProvider } = configureChains(
       : []),
   ],
   [
-    alchemyProvider({ apiKey: '_gg7wSSi0KMBsdKnGVfHDueq6xMB9EkC' }),
+    alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY }),
     publicProvider(),
   ]
 );
