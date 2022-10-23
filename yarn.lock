@@ -516,10 +516,10 @@
     "@ethersproject/properties" "^5.7.0"
     "@ethersproject/strings" "^5.7.0"
 
-"@fiatdao/sdk@^0.0.3":
-  version "0.0.3"
-  resolved "https://registry.yarnpkg.com/@fiatdao/sdk/-/sdk-0.0.3.tgz#e4076bada98ae1dfbf3ab0a6b7e8f43be4729104"
-  integrity sha512-jfiNNVMgPjaaOve/c6iV8C7V7ni+pfAECio97vmvXzJZ4feawpdsAEZ/JAosX2bKiGmy6QsWpY3+k7me5V0RTA==
+"@fiatdao/sdk@^0.0.7":
+  version "0.0.7"
+  resolved "https://registry.yarnpkg.com/@fiatdao/sdk/-/sdk-0.0.7.tgz#ca32be19211dad5fda357c4cff14ea9c135affdb"
+  integrity sha512-s76vhcDGQLzd8rGTfwyzitNzdsRZF8/JVxvxFTifSPjWmjtsZxkGdR5ML+dpYLnSmG1WhxrfIyIqOPF5KoaIxA==
   dependencies:
     changelog "https://github.com/fiatdao/changelog"
     ethers "^5.7.1"

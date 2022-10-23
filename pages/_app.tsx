@@ -21,13 +21,7 @@ import { ThemeProvider as NextThemesProvider } from 'next-themes';
 
 const { chains, provider, webSocketProvider } = configureChains(
   [
-    chain.mainnet,
-    chain.polygon,
-    chain.optimism,
-    chain.arbitrum,
-    ...(process.env.NEXT_PUBLIC_ENABLE_TESTNETS === 'true'
-      ? [chain.goerli, chain.kovan, chain.rinkeby, chain.ropsten]
-      : []),
+    chain.mainnet, ...(process.env.NEXT_PUBLIC_ENABLE_TESTNETS === 'true' ? [chain.goerli] : [])
   ],
   [
     alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY }),
@@ -36,12 +30,12 @@ const { chains, provider, webSocketProvider } = configureChains(
 );
 
 const { wallets } = getDefaultWallets({
-  appName: 'RainbowKit demo',
+  appName: 'Lever UI',
   chains,
 });
 
 const demoAppInfo = {
-  appName: 'Rainbowkit Demo',
+  appName: 'Lever UI',
 };
 
 const connectors = connectorsForWallets([
