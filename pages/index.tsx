@@ -565,22 +565,23 @@ const Home: NextPage = () => {
             disabled={transactionData.status === 'sent'}
             value={
               (modifyPositionData.vault === null) ? (0) :
-              Number(scaleToDec(modifyPositionFormData.underlier, modifyPositionData.vault.properties.underlierScale))
+              Math.floor(
+                Number(
+                  scaleToDec(modifyPositionFormData.underlier, modifyPositionData.vault.properties.underlierScale)
+                ) * 100
+              ) / 100
             }
             onChange={(event) => {
-              if (
-                event.target.value === null
-                || event.target.value === undefined
-                || event.target.value === ''
-                || Number(event.target.value) < 0
-              ) {
+              if (event.target.value === null || event.target.value === undefined || event.target.value === '') {
                 setModifyPositionFormData({
                   ...modifyPositionFormData, collateral: ZERO, debt: ZERO, outdated: false
                 });  
               } else {
+                const num = (Number(event.target.value) < 0) ? 0 : Number(event.target.value);
+                const rounded = Math.floor(num * 10000) / 10000
                 setModifyPositionFormData({
                   ...modifyPositionFormData,
-                  underlier: decToScale(String(event.target.value), modifyPositionData.vault.properties.underlierScale),
+                  underlier: decToScale(rounded, modifyPositionData.vault.properties.underlierScale),
                   outdated: true
                 });
               }
@@ -619,26 +620,25 @@ const Home: NextPage = () => {
           </Card>
           <Input
             disabled={transactionData.status === 'sent'}
-            value={Number(wadToDec(modifyPositionFormData.slippagePct)) * 100}
+            value={Math.floor(Number(wadToDec(modifyPositionFormData.slippagePct)) * 100 * 100) / 100}
             onChange={(event) => {
-              if (
-                event.target.value === null
-                || event.target.value === undefined
-                || event.target.value === ''
-                || Number(event.target.value) < 0
-                || Number(event.target.value) > 50
-              ) {
+              if (event.target.value === null || event.target.value === undefined || event.target.value === '') {
                 setModifyPositionFormData({
                   ...modifyPositionFormData, collateral: ZERO, debt: ZERO, outdated: false
                 });  
               } else {
+                const num = (Number(event.target.value) < 0)
+                  ? 0 : (Number(event.target.value) > 50) ? 50 : Number(event.target.value);
+                const raw = num / 100;
+                const rounded = Math.floor(raw * 10000) / 10000
                 setModifyPositionFormData({
                   ...modifyPositionFormData,
-                  slippagePct: decToWad(Number(event.target.value || 0) / 100),
+                  slippagePct: decToWad(rounded),
                   outdated: true
                 });
               }
             }}
+            step="0.01"
             placeholder='0'
             type='number'
             label='Accepted slippage'
