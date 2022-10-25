@@ -3,12 +3,14 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import type { NextPage } from 'next';
 import { useAccount, useNetwork } from 'wagmi';
 import { ethers } from 'ethers';
-import { Container, Text, Table, Spacer, Modal, Input, Loading, Card, Button, Switch, Link } from '@nextui-org/react';
+import {
+  Container, Text, Table, Spacer, Modal, Input, Loading, Card, Button, Switch, Link, Navbar, Grid
+} from '@nextui-org/react';
 import { Slider } from 'antd';
 import 'antd/dist/antd.css';
 
 // @ts-ignore
-import { FIAT, ZERO, WAD, decToScale, decToWad, scaleToWad, scaleToDec, wadToDec } from '@fiatdao/sdk';
+import { FIAT, ZERO, WAD, decToScale, decToWad, scaleToWad, scaleToDec, wadToDec, wadToScale } from '@fiatdao/sdk';
 
 import { styled } from '@nextui-org/react';
 
@@ -47,6 +49,19 @@ const StyledBadge = styled('span', {
   }
 });
 
+function floor2(dec: any) {
+  return Math.floor(Number(String(dec)) * 100) / 100;
+}
+
+function floor4(dec: any) {
+  return Math.floor(Number(String(dec)) * 10000) / 10000;
+}
+
+const formatUnixTimestamp = (unixTimestamp: ethers.BigNumberish): string => {
+  const date = new Date(Number(unixTimestamp.toString()) * 1000);
+  return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
 const Home: NextPage = () => {
   const { connector } = useAccount();
   const { chain } = useNetwork();
@@ -60,22 +75,28 @@ const Home: NextPage = () => {
       proxies: [] as Array<string>
     },
     positionsData: [] as Array<any>,
-    selPositionId: null as null | string,
     collateralTypesData: [] as Array<any>,
-    selCollateralTypeId: null as null | string,
+    selectedPositionId: null as null | string,
+    selectedCollateralTypeId: null as null | string,
     modifyPositionData: {
+      outdated: false,
       vault: null as undefined | null | any,
       position: null as undefined | null | any,
-      underlierAllowance: null as null | ethers.BigNumber,
+      underlierAllowance: null as null | ethers.BigNumber, // [underlierScale]
       monetaDelegate: null as null | boolean
     },
     modifyPositionFormData: {
-      outdated: false,
-      underlier: ZERO as ethers.BigNumber,
-      healthFactor: decToWad('1.2') as ethers.BigNumber,
-      collateral: ZERO as ethers.BigNumber,
-      debt: ZERO as ethers.BigNumber,
-      slippagePct: decToWad('0.001') as ethers.BigNumber,
+      outdated: true,
+      mode: 'deposit', // [deposit, withdraw]
+      slippagePct: decToWad('0.001') as ethers.BigNumber, // [wad]
+      underlier: ZERO as ethers.BigNumber, // [underlierScale]
+      deltaCollateral: ZERO as ethers.BigNumber, // [wad]
+      deltaDebt: ZERO as ethers.BigNumber, // [wad]
+      targetedHealthFactor: decToWad('1.2') as ethers.BigNumber, // [wad]
+      collateral: ZERO as ethers.BigNumber, // [wad]
+      debt: ZERO as ethers.BigNumber, // [wad]
+      healthFactor: ZERO as ethers.BigNumber, // [wad]
+      error: null as null | string
     },
     transactionData: {
       action: null as null | string,
@@ -86,9 +107,9 @@ const Home: NextPage = () => {
   const [mounted, setMounted] = React.useState(false);
   const [userData, setUserData] = React.useState(initialState.userData);
   const [positionsData, setPositionsData] = React.useState(initialState.positionsData);
-  const [selPositionId, setSelPositionId] = React.useState(initialState.selPositionId);
+  const [selectedPositionId, setSelPositionId] = React.useState(initialState.selectedPositionId);
   const [collateralTypesData, setCollateralTypesData] = React.useState(initialState.collateralTypesData);
-  const [selCollateralTypeId, setSelCollateralTypeId] = React.useState(initialState.selCollateralTypeId);
+  const [selectedCollateralTypeId, setSelCollateralTypeId] = React.useState(initialState.selectedCollateralTypeId);
   const [modifyPositionData, setModifyPositionData] = React.useState(initialState.modifyPositionData);
   const [modifyPositionFormData, setModifyPositionFormData] = React.useState(initialState.modifyPositionFormData);
   const [transactionData, setTransactionData] = React.useState(initialState.transactionData);
@@ -125,10 +146,6 @@ const Home: NextPage = () => {
       )
     );
   }
-  const formatUnixTimestamp = (unixTimestamp: ethers.BigNumberish): string => {
-    const date = new Date(Number(unixTimestamp.toString()) * 1000);
-    return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
-  }
 
   // Reset state if network or account changes
   React.useEffect(() => {
@@ -136,9 +153,9 @@ const Home: NextPage = () => {
     connector.on('change', () => {
       setUserData(initialState.userData);
       setPositionsData(initialState.positionsData);
-      setSelPositionId(initialState.selPositionId);
+      setSelPositionId(initialState.selectedPositionId);
       setCollateralTypesData(initialState.collateralTypesData);
-      setSelCollateralTypeId(initialState.selCollateralTypeId);
+      setSelCollateralTypeId(initialState.selectedCollateralTypeId);
       setModifyPositionData(initialState.modifyPositionData);
       setModifyPositionFormData(initialState.modifyPositionFormData);
       setTransactionData(initialState.transactionData);
@@ -167,11 +184,14 @@ const Home: NextPage = () => {
         ]
       ), []);
 
-      setCollateralTypesData(collateralTypesData_.sort((a: any, b: any) => {
-        if (Number(a.properties.maturity) > Number(b.properties.maturity)) return -1;
-        if (Number(a.properties.maturity) < Number(b.properties.maturity)) return 1;
-        return 0;
-      }));
+      setCollateralTypesData(collateralTypesData_
+        .filter((collateralType: any) => (collateralType.metadata != undefined))
+        .sort((a: any, b: any) => {
+          if (Number(a.properties.maturity) > Number(b.properties.maturity)) return -1;
+          if (Number(a.properties.maturity) < Number(b.properties.maturity)) return 1;
+          return 0;
+        })
+      );
       setPositionsData(positionsData_);
       setUserData({
         fiat,
@@ -185,13 +205,15 @@ const Home: NextPage = () => {
   // Populate ModifyPosition data
   React.useEffect(() => {
     if (
-      !connector || (selCollateralTypeId == null && selPositionId == null) || modifyPositionData.vault !== null
+      !connector
+      || modifyPositionData.vault !== null
+      || (selectedCollateralTypeId == null && selectedPositionId == null)
     ) return;
 
-    const { vault, tokenId } = decodeCollateralTypeId((selCollateralTypeId || selPositionId as string));
+    const { vault, tokenId } = decodeCollateralTypeId((selectedCollateralTypeId || selectedPositionId as string));
     let data = { ...modifyPositionData, vault: getCollateralTypeData(collateralTypesData, vault, tokenId) };
-    if (selPositionId) {
-      const { owner } = decodePositionId(selPositionId);
+    if (selectedPositionId) {
+      const { owner } = decodePositionId(selectedPositionId);
       data = { ...data, position: getPositionData(positionsData, vault, tokenId, owner) };
     }
     setModifyPositionData(data);
@@ -210,74 +232,135 @@ const Home: NextPage = () => {
       ]);
       setModifyPositionData({ ...modifyPositionData, ...data, underlierAllowance, monetaDelegate });
     })();
-  }, [connector, selCollateralTypeId, selPositionId, modifyPositionData, collateralTypesData, positionsData, userData]);
+  }, [
+    connector,
+    userData,
+    collateralTypesData,
+    positionsData,
+    selectedCollateralTypeId,
+    selectedPositionId,
+    modifyPositionData,
+    modifyPositionFormData
+  ]);
 
   // Update ModifyPosition form data
   React.useEffect(() => {
     if (
       !connector
-      || (selCollateralTypeId == null && selPositionId == null)
       || modifyPositionData.vault == null
+      || (selectedCollateralTypeId == null && selectedPositionId == null)
       || modifyPositionFormData.outdated === false
     ) return;
 
     const timeOutId = setTimeout(() => {
       (async function () {
-        const { vault } = modifyPositionData as any;
-        const { vault: address, tokenScale, protocol } = vault.properties;
+        const { vault, position } = modifyPositionData as any;
+        const {
+          vault: address,
+          underlierToken,
+          tokenId,
+          tokenScale,
+          vaultType
+        } = vault.properties;
+        const { codex: { virtualRate: rate }, collybus: { liquidationPrice } } = vault.state;
+        const { fiat } = userData;
+        const { vaultEPTActions, vaultFCActions, vaultFYActions } = fiat.getContracts();
         try {
-          if (modifyPositionFormData.underlier.isZero()) throw null;
-          let tokenAmount = ethers.constants.Zero;
-          if (protocol === 'ELEMENT') {
-            if (vault.properties.eptData == undefined) throw null;
-            const { eptData: { balancerVault, poolId }} = vault.properties;
-            tokenAmount = await userData.fiat.call(
-              userData.fiat.getContracts().vaultEPTActions,
-              'underlierToPToken',
-              address,
-              balancerVault,
-              poolId,
-              modifyPositionFormData.underlier
-            );
-          } else if (protocol === 'NOTIONAL') {
-            if (vault.properties.fcData == undefined) throw null;
-            tokenAmount = await userData.fiat.call(
-              userData.fiat.getContracts().vaultFCActions,
-              'underlierToFCash',
-              modifyPositionData.vault.properties.tokenId,
-              modifyPositionFormData.underlier
-            );
-          } else if (protocol === 'YIELD') {
-            if (vault.properties.fyData == undefined) throw null;
-            const { fyData: { yieldSpacePool }} = vault.properties;
-            tokenAmount = await userData.fiat.call(
-              userData.fiat.getContracts().vaultFYActions,
-              'underlierToFYToken',
-              modifyPositionFormData.underlier,
-              yieldSpacePool
-            );
-          } else { throw null; }
-          const collateral = scaleToWad(tokenAmount, tokenScale)
-            .mul(WAD.sub(modifyPositionFormData.slippagePct)).div(WAD);
-          const { codex: { virtualRate }, collybus: { liquidationPrice }} = vault.state;
-          const maxNormalDebt = userData.fiat.computeMaxNormalDebt(
-            collateral, modifyPositionFormData.healthFactor, virtualRate, liquidationPrice
-          );
-          const debt = userData.fiat.normalDebtToDebt(maxNormalDebt, virtualRate);
-          setModifyPositionFormData({
-            ...modifyPositionFormData, collateral, debt, outdated: false
-          });
+          if (modifyPositionFormData.mode === 'deposit') {
+            const { underlier } = modifyPositionFormData;
+            let tokensOut = ethers.constants.Zero;
+            if (vaultType === 'ERC20:EPT' && underlier.gt(ZERO)) {
+              if (vault.properties.eptData == undefined) throw new Error('Missing data');
+              const { eptData: { balancerVault: balancer, poolId: pool }} = vault.properties;
+              tokensOut = await fiat.call(vaultEPTActions, 'underlierToPToken', address, balancer, pool, underlier);
+            } else if (vaultType === 'ERC1155:FC' && underlier.gt(ZERO)) {
+              if (vault.properties.fcData == undefined) throw new Error('Missing data');
+              tokensOut = await fiat.call(vaultFCActions, 'underlierToFCash', tokenId, underlier);
+            } else if (vaultType === 'ERC20:FY' && underlier.gt(ZERO)) {
+              if (vault.properties.fyData == undefined) throw new Error('Missing data');
+              const { fyData: { yieldSpacePool }} = vault.properties;
+              tokensOut = await fiat.call(vaultFYActions, 'underlierToFYToken', underlier, yieldSpacePool);
+            } else if (underlier.gt(ZERO)) { throw new Error('Unsupported collateral type'); }
+            const { slippagePct } = modifyPositionFormData;
+            const deltaCollateral = scaleToWad(tokensOut, tokenScale).mul(WAD.sub(slippagePct)).div(WAD);
+            if (selectedCollateralTypeId !== null) {
+              const { targetedHealthFactor } = modifyPositionFormData;
+              const deltaNormalDebt = fiat.computeMaxNormalDebt(deltaCollateral, targetedHealthFactor, rate, liquidationPrice);
+              const deltaDebt = fiat.normalDebtToDebt(deltaNormalDebt, rate);
+              const collateral = deltaCollateral;
+              const debt = deltaDebt;
+              const healthFactor = fiat.computeHealthFactor(collateral, deltaNormalDebt, rate, liquidationPrice);
+              if (healthFactor.lte(WAD)) throw new Error('Health factor has to be greater than 1.0');
+              setModifyPositionFormData({ 
+                ...modifyPositionFormData, healthFactor, collateral, debt, deltaCollateral, outdated: false
+              });
+            } else {
+              const { deltaDebt } = modifyPositionFormData;
+              const normalDebt = fiat.debtToNormalDebt(deltaDebt, rate);
+              const collateral = position.collateral.add(deltaCollateral);
+              const debt = fiat.normalDebtToDebt(position.normalDebt, rate).add(deltaDebt);
+              const healthFactor = fiat.computeHealthFactor(collateral, normalDebt, rate, liquidationPrice);
+              if (healthFactor.lte(WAD)) throw new Error('Health factor has to be greater than 1.0');
+              setModifyPositionFormData({ 
+                ...modifyPositionFormData, healthFactor, collateral, debt, deltaCollateral, outdated: false
+              });
+            }
+          } else if (modifyPositionFormData.mode === 'withdraw') {
+            const { deltaCollateral, deltaDebt, slippagePct } = modifyPositionFormData;
+            const tokenIn = wadToScale(deltaCollateral, tokenScale);
+            let underlierAmount = ethers.constants.Zero;
+            if (vaultType === 'ERC20:EPT' && tokenIn.gt(ZERO)) {
+              if (vault.properties.eptData == undefined) throw new Error('Missing data');
+              const { eptData: { balancerVault: balancer, poolId: pool }} = vault.properties;
+              underlierAmount = await fiat.call(vaultEPTActions, 'pTokenToUnderlier', address, balancer, pool, tokenIn);
+            } else if (vaultType === 'ERC1155:FC' && tokenIn.gt(ZERO)) {
+              if (vault.properties.fcData == undefined) throw new Error('Missing data');
+              underlierAmount = await fiat.call(vaultFCActions, 'fCashToUnderlier', tokenId, tokenIn);
+            } else if (vaultType === 'ERC20:FY' && tokenIn.gt(ZERO)) {
+              if (vault.properties.fyData == undefined) throw new Error('Missing data');
+              const { fyData: { yieldSpacePool }} = vault.properties;
+              underlierAmount = await fiat.call(vaultFYActions, 'fyTokenToUnderlier', tokenIn, yieldSpacePool);
+            } else if (tokenIn.gt(ZERO)) { throw new Error('Unsupported collateral type'); }
+            const underlier = underlierAmount.mul(WAD.sub(slippagePct)).div(WAD);
+            const deltaNormalDebt = fiat.debtToNormalDebt(deltaDebt, rate);
+            if (position.collateral.lt(deltaCollateral)) throw new Error('Insufficient collateral');
+            if (position.normalDebt.lt(deltaNormalDebt)) throw new Error('Insufficient debt');
+            const collateral = position.collateral.sub(deltaCollateral);
+            const normalDebt = position.normalDebt.sub(deltaNormalDebt);
+            const debt = fiat.normalDebtToDebt(normalDebt, rate);
+            const healthFactor = fiat.computeHealthFactor(collateral, normalDebt, rate, liquidationPrice);
+            if (healthFactor.lte(WAD)) throw new Error('Health factor has to be greater than 1.0');
+            setModifyPositionFormData({
+              ...modifyPositionFormData, healthFactor, underlier, collateral, debt, outdated: false
+            });
+          } else { throw new Error('Invalid mode'); }
         } catch (error) {
           console.log(error);
           setModifyPositionFormData({
-            ...modifyPositionFormData, collateral: ethers.constants.Zero, debt: ethers.constants.Zero, outdated: false
+            ...modifyPositionFormData,
+            underlier: (modifyPositionFormData.mode === 'deposit') ? modifyPositionFormData.underlier : ZERO,
+            deltaCollateral: (modifyPositionFormData.mode === 'withdraw') ? modifyPositionFormData.underlier : ZERO,
+            deltaDebt: (modifyPositionFormData.mode === 'withdraw') ? modifyPositionFormData.deltaDebt : ZERO,
+            collateral: ZERO,
+            debt: ZERO,
+            healthFactor: ZERO,
+            outdated: false,
+            error: JSON.stringify(error)
           });
         }
       })();
     }, 2000);
     // prevent timeout callback from executing if useEffect was interrupted by a rerender
     return () => clearTimeout(timeOutId)
-  }, [connector, userData, selCollateralTypeId, selPositionId, modifyPositionData, modifyPositionFormData]);
+  }, [
+    connector,
+    initialState,
+    userData,
+    selectedCollateralTypeId,
+    selectedPositionId,
+    modifyPositionData,
+    modifyPositionFormData
+  ]);
 
   // Transaction methods
   React.useEffect(() => {
@@ -333,27 +416,155 @@ const Home: NextPage = () => {
         if (action == 'buyCollateralAndModifyDebt') {
           if (
             !modifyPositionData.vault
-            || !modifyPositionData.vault.properties.eptData
-            || !modifyPositionFormData.underlier
-            || !modifyPositionFormData.collateral
+            // || !modifyPositionFormData.underlier
+            // || !modifyPositionFormData.deltaCollateral
           ) throw null;
-          console.log(await userData.fiat.dryrun(
-            userData.fiat.getContracts().vaultEPTActions,
-            'buyCollateralAndModifyDebt',
-            modifyPositionData.vault.properties.vault,
-            userData.proxies[0],
-            userData.user,
-            modifyPositionFormData.underlier,
-            [
-              modifyPositionData.vault.properties.eptData.balancerVault,
-              modifyPositionData.vault.properties.eptData.poolId,
-              modifyPositionData.vault.properties.underlierToken,
-              modifyPositionData.vault.properties.token,
-              modifyPositionFormData.collateral,
-              Math.round(+new Date() / 1000) + 3600,
+          const { properties } = modifyPositionData.vault;
+          const [collateralTypeData] = await userData.fiat.fetchCollateralTypesAndPrices(
+            [{ vault: properties.vault, tokenId: properties.tokenId }]
+          );
+          const normalDebt = userData.fiat.debtToNormalDebt(
+            modifyPositionFormData.deltaDebt, collateralTypeData.state.codex.virtualRate
+          ).mul(WAD.sub(decToWad(0.001))).div(WAD);
+          const tokenAmount = wadToScale(modifyPositionFormData.deltaCollateral, properties.tokenScale);
+          const deadline = Math.round(+new Date() / 1000) + 3600;
+          if (properties.vaultType === 'ERC20:EPT' && properties.eptData) {
+            console.log(await userData.fiat.dryrun(
+              userData.fiat.getContracts().vaultEPTActions,
+              'buyCollateralAndModifyDebt',
+              properties.vault,
+              userData.proxies[0],
+              userData.user,
+              userData.user,
+              modifyPositionFormData.underlier,
+              normalDebt,
+              [
+                properties.eptData.balancerVault,
+                properties.eptData.poolId,
+                properties.underlierToken,
+                properties.token,
+                tokenAmount,
+                deadline,
+                modifyPositionFormData.underlier
+              ]
+            ));
+          } else if (properties.vaultType === 'ERC1155:FC' && properties.fcData) {
+            // 1 - (underlier / deltaCollateral)
+            const minLendRate = wadToScale(
+              WAD.sub(
+                scaleToWad(modifyPositionFormData.underlier, properties.underlierScale).mul(WAD)
+                .div(modifyPositionFormData.deltaCollateral)
+              ),
+              properties.tokenScale
+            );
+            console.log(await userData.fiat.dryrun(
+              userData.fiat.getContracts().vaultFCActions,
+              'buyCollateralAndModifyDebt',
+              properties.vault,
+              properties.token,
+              properties.tokenId,
+              userData.proxies[0],
+              userData.user,
+              userData.user,
+              tokenAmount,
+              normalDebt,
+              minLendRate,
               modifyPositionFormData.underlier
-            ]
-          ));
+            ));
+          } else if (properties.vaultType === 'ERC20:FY' && properties.fyData) {
+            console.log(await userData.fiat.dryrun(
+              userData.fiat.getContracts().vaultFYActions,
+              'buyCollateralAndModifyDebt',
+              properties.vault,
+              userData.proxies[0],
+              userData.user,
+              userData.user,
+              modifyPositionFormData.underlier,
+              normalDebt,
+              [
+                tokenAmount,
+                properties.fyData.yieldSpacePool,
+                properties.underlierToken,
+                properties.token
+              ]
+            ));
+          }
+        }
+        if (action == 'sellCollateralAndModifyDebt') {
+          if (
+            !modifyPositionData.vault
+            // || !modifyPositionFormData.underlier
+            // || !modifyPositionFormData.deltaCollateral
+          ) throw null;
+          const { properties } = modifyPositionData.vault;
+          const [collateralTypeData] = await userData.fiat.fetchCollateralTypesAndPrices(
+            [{ vault: properties.vault, tokenId: properties.tokenId }]
+          );
+          const normalDebt = userData.fiat.debtToNormalDebt(
+            modifyPositionFormData.deltaDebt, collateralTypeData.state.codex.virtualRate
+          ).mul(WAD.sub(decToWad(0.001))).div(WAD);
+          const tokenAmount = wadToScale(modifyPositionFormData.deltaCollateral, properties.tokenScale);
+          const deadline = Math.round(+new Date() / 1000) + 3600;
+          if (properties.vaultType === 'ERC20:EPT' && properties.eptData) {
+            console.log(await userData.fiat.dryrun(
+              userData.fiat.getContracts().vaultEPTActions,
+              'sellCollateralAndModifyDebt',
+              properties.vault,
+              userData.proxies[0],
+              userData.user,
+              userData.user,
+              tokenAmount,
+              normalDebt,
+              [
+                properties.eptData.balancerVault,
+                properties.eptData.poolId,
+                properties.token,
+                properties.underlierToken,
+                modifyPositionFormData.underlier,
+                deadline,
+                tokenAmount
+              ]
+            ));
+          } else if (properties.vaultType === 'ERC1155:FC' && properties.fcData) {
+            // 1 - (deltaCollateral / underlier)
+            const maxBorrowRate = wadToScale(
+              WAD.sub(
+                modifyPositionFormData.deltaCollateral.mul(WAD)
+                .div(scaleToWad(modifyPositionFormData.underlier, properties.underlierScale))
+              ),
+              properties.tokenScale
+            );
+            console.log(await userData.fiat.dryrun(
+              userData.fiat.getContracts().vaultFCActions,
+              'sellCollateralAndModifyDebt',
+              properties.vault,
+              properties.token,
+              properties.tokenId,
+              userData.proxies[0],
+              userData.user,
+              userData.user,
+              tokenAmount,
+              normalDebt,
+              maxBorrowRate
+            ));
+          } else if (properties.vaultType === 'ERC20:FY' && properties.fyData) {
+            console.log(await userData.fiat.dryrun(
+              userData.fiat.getContracts().vaultFYActions,
+              'sellCollateralAndModifyDebt',
+              properties.vault,
+              userData.proxies[0],
+              userData.user,
+              userData.user,
+              tokenAmount,
+              normalDebt,
+              [
+                modifyPositionFormData.underlier,
+                properties.fyData.yieldSpacePool,
+                properties.token,
+                properties.underlierToken
+              ]
+            ));
+          } else { throw null; }
         }
         await new Promise(resolve => setTimeout(resolve, 2000));
       } catch (error) { console.error(error); }
@@ -377,13 +588,13 @@ const Home: NextPage = () => {
       <Spacer y={2} />
 
       <Container>
-        <Card css={{ mw: "400px" }}>
+        <Card css={{ mw: '400px' }}>
           <Card.Body>
             <Text b size={18}>Proxy</Text>
             {(userData.proxies.length > 0)
               ? (
                 <Link
-                  target="_blank"
+                  target='_blank'
                   href={`${userData.explorerUrl}/address/${userData.proxies[0]}`}
                   isExternal={true}
                 >
@@ -416,7 +627,7 @@ const Home: NextPage = () => {
             selectionMode='single'
             selectedKeys={'1'}
             onSelectionChange={(selected) => {
-              setSelPositionId(initialState.selPositionId);
+              setSelPositionId(initialState.selectedPositionId);
               setSelCollateralTypeId(Object.values(selected)[0]);
             }}
           >
@@ -479,7 +690,7 @@ const Home: NextPage = () => {
             selectedKeys={'1'}
             onSelectionChange={(selected) => {
               setSelPositionId(Object.values(selected)[0]);
-              setSelCollateralTypeId(initialState.selCollateralTypeId);
+              setSelCollateralTypeId(initialState.selectedCollateralTypeId);
             }}
           >
             <Table.Header>
@@ -503,7 +714,6 @@ const Home: NextPage = () => {
                   const {
                     // @ts-ignore
                     properties: {
-                      name,
                       tokenSymbol
                     },
                     // @ts-ignore
@@ -530,13 +740,13 @@ const Home: NextPage = () => {
 
       <Modal
         preventClose
-        closeButton
+        closeButton={transactionData.status !== 'sent'}
         blur
         aria-labelledby='modal-title'
         open={(modifyPositionData.vault != null)}
         onClose={() => {
-          setSelCollateralTypeId(initialState.selCollateralTypeId);
-          setSelPositionId(initialState.selPositionId);
+          setSelCollateralTypeId(initialState.selectedCollateralTypeId);
+          setSelPositionId(initialState.selectedPositionId);
           setModifyPositionData(initialState.modifyPositionData);
           setModifyPositionFormData(initialState.modifyPositionFormData);
         }}
@@ -544,7 +754,7 @@ const Home: NextPage = () => {
         <Modal.Header>
           <Text id='modal-title' size={18}>
             <Text b size={18}>
-              {(selCollateralTypeId) ? 'Create Position' : 'Modify Position'}
+              {(selectedCollateralTypeId) ? 'Create Position' : 'Modify Position'}
             </Text>
             <br/>
             {(modifyPositionData.vault != null) && (() => {
@@ -560,123 +770,299 @@ const Home: NextPage = () => {
           </Text>
         </Modal.Header>
         <Modal.Body>
-          <Text b size={'m'}>Input</Text>
-          <Input
-            disabled={transactionData.status === 'sent'}
-            value={
-              (modifyPositionData.vault === null) ? (0) :
-              Math.floor(
-                Number(
-                  scaleToDec(modifyPositionFormData.underlier, modifyPositionData.vault.properties.underlierScale)
-                ) * 100
-              ) / 100
-            }
-            onChange={(event) => {
-              if (event.target.value === null || event.target.value === undefined || event.target.value === '') {
-                setModifyPositionFormData({
-                  ...modifyPositionFormData, collateral: ZERO, debt: ZERO, outdated: false
-                });  
-              } else {
-                const num = (Number(event.target.value) < 0) ? 0 : Number(event.target.value);
-                const rounded = Math.floor(num * 10000) / 10000
-                setModifyPositionFormData({
-                  ...modifyPositionFormData,
-                  underlier: decToScale(rounded, modifyPositionData.vault.properties.underlierScale),
-                  outdated: true
-                });
-              }
-            }}
-            placeholder='0'
-            type='number'
-            label='Underlier to deposit'
-            labelRight={(modifyPositionData.vault != null) && modifyPositionData.vault.properties.underlierSymbol}
-            bordered
-          />
-          <Text size={'0.875rem'} style={{ paddingLeft: '0.25rem', marginBottom: '0.375rem' }}>
-            Targeted health factor
-          </Text>
-          <Card variant='bordered' borderWeight='normal'>
-            <Card.Body style={{ paddingLeft: '2.25rem', paddingRight: '2.25rem' }}>
-              <Slider
+          <Navbar
+            variant='static'
+            isCompact
+            disableShadow
+            disableBlur
+            containerCss={{justifyContent: 'center', background: 'transparent'}}
+          >
+            <Navbar.Content enableCursorHighlight variant='highlight-rounded'>
+              {(selectedCollateralTypeId) ? (
+                <Navbar.Link isActive={modifyPositionFormData.mode === 'deposit'}>Deposit</Navbar.Link>
+              ) : (
+                <>
+                  <Navbar.Link
+                    isActive={modifyPositionFormData.mode === 'deposit'}
+                    onClick={() => setModifyPositionFormData({
+                      ...initialState.modifyPositionFormData, mode: 'deposit'
+                    })}
+                  >Increase</Navbar.Link>
+                  <Navbar.Link
+                    isActive={modifyPositionFormData.mode === 'withdraw'}
+                    onClick={() => setModifyPositionFormData({
+                      ...initialState.modifyPositionFormData, mode: 'withdraw'
+                    })}
+                  >Decrease</Navbar.Link>
+                </>
+              )}
+            </Navbar.Content>
+          </Navbar>
+          
+          <Text b size={'m'}>Inputs</Text>
+          <Grid.Container gap={0} justify='space-between' css={{ marginBottom: '1rem' }}>
+            <Grid>
+              {(modifyPositionFormData.mode === 'deposit') ? (
+                <Input
+                  disabled={transactionData.status === 'sent'}
+                  value={
+                    (modifyPositionData.vault === null) ? (0) :
+                    floor2(scaleToDec(modifyPositionFormData.underlier, modifyPositionData.vault.properties.underlierScale))
+                  }
+                  onChange={(event) => {
+                    if (event.target.value === null || event.target.value === undefined || event.target.value === '') {
+                      setModifyPositionFormData({
+                        ...modifyPositionFormData, deltaCollateral: ZERO, deltaDebt: ZERO, outdated: false
+                      });  
+                    } else {
+                      const num = (Number(event.target.value) < 0) ? 0 : Number(event.target.value);
+                      const rounded = floor4(num);
+                      setModifyPositionFormData({
+                        ...modifyPositionFormData,
+                        underlier: decToScale(rounded, modifyPositionData.vault.properties.underlierScale),
+                        outdated: true
+                      });
+                    }
+                  }}
+                  placeholder='0'
+                  type='number'
+                  label='Underlier to swap'
+                  labelRight={(modifyPositionData.vault != null) && modifyPositionData.vault.properties.underlierSymbol}
+                  bordered
+                  size='sm'
+                  borderWeight='light'
+                />
+              ) : (
+                <Input
+                  disabled={transactionData.status === 'sent'}
+                  value={
+                    (modifyPositionData.vault === null) ? (0) :
+                    floor2(wadToDec(modifyPositionFormData.deltaCollateral))
+                  }
+                  onChange={(event) => {
+                    if (event.target.value === null || event.target.value === undefined || event.target.value === '') {
+                      setModifyPositionFormData({
+                        ...modifyPositionFormData, underlier: ZERO, healthFactor: ZERO, outdated: false
+                      });  
+                    } else {
+                      const num = (Number(event.target.value) < 0) ? 0 : Number(event.target.value);
+                      const rounded = floor4(num);
+                      setModifyPositionFormData({
+                        ...modifyPositionFormData,
+                        deltaCollateral: decToWad(rounded),
+                        outdated: true
+                      });
+                    }
+                  }}
+                  placeholder='0'
+                  type='number'
+                  label='Collateral to withdraw and swap'
+                  labelRight={(modifyPositionData.vault != null) && modifyPositionData.vault.metadata.symbol}
+                  bordered
+                  size='sm'
+                  borderWeight='light'
+                  width='13.35rem'
+                />
+              )}
+            </Grid>
+            <Grid>
+              <Input
                 disabled={transactionData.status === 'sent'}
-                value={Number(wadToDec(modifyPositionFormData.healthFactor))}
-                onChange={(value) => setModifyPositionFormData(
-                  { ...modifyPositionFormData, healthFactor: decToWad(String(value)), outdated: true })
-                }
-                min={1.001}
-                max={5.0}
-                step={0.001}
-                reverse
-                getTooltipPopupContainer={(t) => t}
-                marks={{
-                  5.00: { style: { color: 'grey'}, label: 'Safe' },
-                  4.0: { style: { color: 'grey'}, label: '4.0' },
-                  3.00: { style: { color: 'grey'}, label: '3.0' },
-                  2.00: { style: { color: 'grey'}, label: '2.0' },
-                  1.001: { style: { color: 'grey'}, label: 'Unsafe' },
+                value={floor2(Number(wadToDec(modifyPositionFormData.slippagePct)) * 100)}
+                onChange={(event) => {
+                  if (event.target.value === null || event.target.value === undefined || event.target.value === '') {
+                    setModifyPositionFormData({
+                      ...modifyPositionFormData,
+                      healthFactor: ZERO,
+                      deltaCollateral: (modifyPositionFormData.mode === 'deposit')
+                        ? ZERO : modifyPositionFormData.deltaCollateral,
+                      collateral: ZERO,
+                      debt: ZERO,
+                      outdated: false
+                    });  
+                  } else {
+                    const num = (Number(event.target.value) < 0)
+                      ? 0 : (Number(event.target.value) > 50) ? 50 : Number(event.target.value);
+                    const raw = num / 100;
+                    const rounded = floor4(raw);
+                    setModifyPositionFormData({
+                      ...modifyPositionFormData,
+                      slippagePct: decToWad(rounded),
+                      outdated: true
+                    });
+                  }
                 }}
+                step='0.01'
+                placeholder='0'
+                type='number'
+                label='Slippage'
+                labelRight={'%'}
+                bordered
+                size='sm'
+                borderWeight='light'
+                width='7.5rem'
               />
-            </Card.Body>
-          </Card>
-          <Input
-            disabled={transactionData.status === 'sent'}
-            value={Math.floor(Number(wadToDec(modifyPositionFormData.slippagePct)) * 100 * 100) / 100}
-            onChange={(event) => {
-              if (event.target.value === null || event.target.value === undefined || event.target.value === '') {
-                setModifyPositionFormData({
-                  ...modifyPositionFormData, collateral: ZERO, debt: ZERO, outdated: false
-                });  
-              } else {
-                const num = (Number(event.target.value) < 0)
-                  ? 0 : (Number(event.target.value) > 50) ? 50 : Number(event.target.value);
-                const raw = num / 100;
-                const rounded = Math.floor(raw * 10000) / 10000
-                setModifyPositionFormData({
-                  ...modifyPositionFormData,
-                  slippagePct: decToWad(rounded),
-                  outdated: true
-                });
-              }
-            }}
-            step="0.01"
-            placeholder='0'
-            type='number'
-            label='Accepted slippage'
-            labelRight={'%'}
-            bordered
-          />
-          <Spacer y={0.5} />
+            </Grid>
+          </Grid.Container>
+
+          {(selectedCollateralTypeId)
+            ? (
+              <>
+                <Text size={'0.75rem'} style={{ paddingLeft: '0.25rem', marginBottom: '0.375rem' }}>
+                  Targeted health factor ({Number(wadToDec(modifyPositionFormData.targetedHealthFactor))})
+                </Text>
+                <Card variant='bordered' borderWeight='light'>
+                  <Card.Body style={{ paddingLeft: '2.25rem', paddingRight: '2.25rem' }}>
+                    <Slider
+                      handleStyle={{ borderColor: '#0072F5' }}
+                      included={false}
+                      disabled={transactionData.status === 'sent'}
+                      value={Number(wadToDec(modifyPositionFormData.targetedHealthFactor))}
+                      onChange={(value) => setModifyPositionFormData(
+                        { ...modifyPositionFormData, targetedHealthFactor: decToWad(String(value)), outdated: true })
+                      }
+                      min={1.001}
+                      max={5.0}
+                      step={0.001}
+                      reverse
+                      tooltip={{ getPopupContainer: (t) => t }}
+                      marks={{
+                        5.00: { style: { color: 'grey', fontSize: '0.75rem' }, label: 'Safe' },
+                        4.0: { style: { color: 'grey', fontSize: '0.75rem' }, label: '4.0' },
+                        3.00: { style: { color: 'grey', fontSize: '0.75rem' }, label: '3.0' },
+                        2.00: { style: { color: 'grey', fontSize: '0.75rem' }, label: '2.0' },
+                        1.001: { style: { color: 'grey', fontSize: '0.75rem', borderColor: 'white' }, label: 'Unsafe' },
+                      }}
+                    />
+                  </Card.Body>
+                </Card>
+              </>
+            )
+            : (
+              <Input
+                disabled={transactionData.status === 'sent'}
+                value={(modifyPositionData.vault === null) ? (0) : floor2(wadToDec(modifyPositionFormData.deltaDebt))}
+                onChange={(event) => {
+                  if (event.target.value === null || event.target.value === undefined || event.target.value === '') {
+                    setModifyPositionFormData({
+                      ...modifyPositionFormData,
+                      healthFactor: ZERO,
+                      collateral: ZERO,
+                      debt: ZERO,
+                      deltaCollateral: (modifyPositionFormData.mode === 'deposit')
+                        ? ZERO : modifyPositionFormData.deltaCollateral,
+                      outdated: false
+                    });  
+                  } else {
+                    const num = (Number(event.target.value) < 0) ? 0 : Number(event.target.value);
+                    const rounded = floor4(num);
+                    setModifyPositionFormData({
+                      ...modifyPositionFormData,
+                      deltaDebt: decToWad(rounded),
+                      outdated: true
+                    });
+                  }
+                }}
+                placeholder='0'
+                type='number'
+                label={(modifyPositionFormData.mode === 'deposit') ? 'FIAT to borrow' : 'FIAT to pay back'}
+                labelRight={'FIAT'}
+                bordered
+                size='sm'
+                borderWeight='light'
+              />
+            )
+          }
+         
         </Modal.Body>
-        <Spacer y={0.5} />
+        <Spacer y={0.75} />
+        {(['deposit', 'withdraw'].includes(modifyPositionFormData.mode)) ? (
+          <>
+            <Card.Divider/>
+            <Modal.Body>
+              <Spacer y={0} />
+              <Text b size={'m'}>Swap Preview</Text>
+              <Input
+                readOnly
+                value={
+                  (modifyPositionFormData.outdated) ? (' ') : (modifyPositionFormData.mode === 'deposit')
+                    ? (floor4(wadToDec(modifyPositionFormData.deltaCollateral)))
+                    : (floor4(scaleToDec(
+                      modifyPositionFormData.underlier, modifyPositionData.vault.properties.underlierScale
+                    )))
+                }
+                placeholder='0'
+                type='string'
+                label={(modifyPositionFormData.mode === 'deposit')
+                  ? 'Collateral to deposit (incl. slippage)'
+                  : 'Underliers to withdraw (incl. slippage)'
+                }
+                labelRight={
+                  (modifyPositionData.vault != null) && (modifyPositionFormData.mode === 'deposit')
+                    ? modifyPositionData.vault?.metadata?.symbol : modifyPositionData.vault?.properties?.underlierSymbol
+                }
+                contentLeft={(modifyPositionFormData.outdated) ? (<Loading size='xs'/>) : (null)}
+                size='sm'
+                status='primary'
+              />
+            </Modal.Body>
+            <Spacer y={0.75} />
+          </>
+        ) : (null)}
         <Card.Divider/>
         <Modal.Body>
-          <Spacer y={0.5} />
-          <Text b size={'m'}>Preview</Text>
+          <Spacer y={0} />
+          <Text b size={'m'}>Position Preview</Text>
           <Input
             readOnly
-            value={(modifyPositionFormData.outdated) ? (' ') : (wadToDec(modifyPositionFormData.collateral))}
+            value={(modifyPositionFormData.outdated) ? (' ') : (floor4(wadToDec(modifyPositionFormData.collateral)))}
             placeholder='0'
             type='string'
-            label='Collateral (Slippage Adjusted)'
+            label={'Collateral'}
             labelRight={(modifyPositionData.vault != null) && modifyPositionData.vault.metadata.symbol}
             contentLeft={(modifyPositionFormData.outdated) ? (<Loading size='xs'/>) : (null)}
-            bordered
+            size='sm'
+            status='primary'
           />
           <Input
             readOnly
-            value={(modifyPositionFormData.outdated) ? (' ') : (wadToDec(modifyPositionFormData.debt))}
+            value={(modifyPositionFormData.outdated) ? (' ') : (floor4(wadToDec(modifyPositionFormData.debt)))}
             placeholder='0'
             type='string'
             label='Debt'
             labelRight={'FIAT'}
             contentLeft={(modifyPositionFormData.outdated) ? (<Loading size='xs'/>) : (null)}
-            bordered
+            size='sm'
+            status='primary'
           />
-          <Spacer y={0.5} />
+          <Input
+            readOnly
+            value={(modifyPositionFormData.outdated)
+              ? (' ') : (modifyPositionFormData.healthFactor.eq(ethers.constants.MaxUint256))
+                ? ('∞')
+                : (floor4(wadToDec(modifyPositionFormData.healthFactor)))
+            }
+            placeholder='0'
+            type='string'
+            label='Health Factor'
+            labelRight={'🚦'}
+            contentLeft={(modifyPositionFormData.outdated) ? (<Loading size='xs'/>) : (null)}
+            size='sm'
+            status='primary'
+          />
+          {/* <Spacer y={0} />
+          <Text b size={'m'}>Summary</Text>
+          <Text size="0.75rem">{(modifyPositionFormData.deltaCollateral.isZero()) ? null : 
+          <>
+            Swap <b>{floor2(scaleToDec(modifyPositionFormData.underlier, modifyPositionData.vault.properties.underlierScale))} {modifyPositionData.vault.properties.underlierSymbol} </b>
+            for <b>~{floor2(wadToDec(modifyPositionFormData.deltaCollateral))} {modifyPositionData.vault.metadata.symbol}</b>.
+            Deposit <b>~{floor2(wadToDec(modifyPositionFormData.deltaCollateral))} {modifyPositionData.vault.metadata.symbol}</b> as deltaCollateral.
+            Borrow <b>~{floor2(wadToDec(modifyPositionFormData.deltaDebt))} FIAT</b> against the deltaCollateral.
+          </>
+          }</Text> */}
         </Modal.Body>
-        <Card.Divider/>
-        <Modal.Footer>
-          <Text>
+        <Modal.Footer justify='space-evenly'>
+          <Text size={'0.875rem'}>
             Approve {(modifyPositionData.vault != null) && modifyPositionData.vault.properties.underlierSymbol}
           </Text>
           <Switch
@@ -702,7 +1088,7 @@ const Home: NextPage = () => {
             }
           />
           <Spacer y={0.5} />
-          <Text>Enable FIAT</Text>
+          <Text size={'0.875rem'}>Enable FIAT</Text>
           <Switch
             disabled={
               userData.proxies.length == 0
@@ -722,10 +1108,11 @@ const Home: NextPage = () => {
           />
           <Spacer y={3} />
           <Button
+            css={{minWidth: '100%'}}
             disabled={(
               userData.proxies.length == 0
               || modifyPositionFormData.underlier.isZero()
-              || modifyPositionFormData.collateral.isZero()
+              || modifyPositionFormData.deltaCollateral.isZero()
               || modifyPositionData.underlierAllowance === null
               || modifyPositionData.underlierAllowance.lt(modifyPositionFormData.underlier)
               || transactionData.status === 'sent'
