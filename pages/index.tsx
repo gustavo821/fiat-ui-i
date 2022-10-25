@@ -273,7 +273,9 @@ const Home: NextPage = () => {
             const deltaCollateral = scaleToWad(tokensOut, tokenScale).mul(WAD.sub(slippagePct)).div(WAD);
             if (selectedCollateralTypeId !== null) {
               const { targetedHealthFactor } = modifyPositionFormData;
-              const deltaNormalDebt = fiat.computeMaxNormalDebt(deltaCollateral, targetedHealthFactor, rate, liquidationPrice);
+              const deltaNormalDebt = fiat.computeMaxNormalDebt(
+                deltaCollateral, targetedHealthFactor, rate, liquidationPrice
+              );
               const deltaDebt = fiat.normalDebtToDebt(deltaNormalDebt, rate);
               const collateral = deltaCollateral;
               const debt = deltaDebt;
@@ -651,10 +653,7 @@ const Home: NextPage = () => {
         {(positionsData.length != 0) && (
           <Table
             aria-label='Positions'
-            css={{
-              height: 'auto',
-              minWidth: '100%',
-            }}
+            css={{ height: 'auto', minWidth: '100%' }}
             selectionMode='single'
             selectedKeys={'1'}
             onSelectionChange={(selected) => {
@@ -672,24 +671,9 @@ const Home: NextPage = () => {
             <Table.Body>
               {
                 positionsData.map((position) => {
+                  const { owner, vault, tokenId, collateral, normalDebt } = position;
                   const {
-                    owner,
-                    vault,
-                    tokenId,
-                    collateral,
-                    normalDebt
-                    // @ts-ignore
-                  } = position;
-                  const {
-                    // @ts-ignore
-                    properties: {
-                      tokenSymbol
-                    },
-                    // @ts-ignore
-                    metadata: {
-                      protocol,
-                      asset
-                    }
+                    properties: { tokenSymbol }, metadata: { protocol, asset }
                   } = getCollateralTypeData(collateralTypesData, vault, tokenId);
                   return (
                     <Table.Row key={encodePositionId(vault, tokenId, owner)}>
@@ -727,7 +711,9 @@ const Home: NextPage = () => {
             </Text>
             <br/>
             {(modifyPositionData.collateralType != null) && (() => {
-              const { collateralType: { metadata : { protocol, asset }, properties: { maturity } } } = modifyPositionData;
+              const {
+                collateralType: { metadata : { protocol, asset }, properties: { maturity } }
+              } = modifyPositionData;
               return (
                 <>
                   <Text b size={16}>{`${protocol} - ${asset}`}</Text>
@@ -775,8 +761,11 @@ const Home: NextPage = () => {
                 <Input
                   disabled={transactionData.status === 'sent'}
                   value={
-                    (modifyPositionData.collateralType === null) ? (0) :
-                    floor2(scaleToDec(modifyPositionFormData.underlier, modifyPositionData.collateralType.properties.underlierScale))
+                    (modifyPositionData.collateralType === null)
+                      ? (0)
+                      : floor2(scaleToDec(
+                        modifyPositionFormData.underlier, modifyPositionData.collateralType.properties.underlierScale
+                      ))
                   }
                   onChange={(event) => {
                     if (event.target.value === null || event.target.value === undefined || event.target.value === '') {
@@ -796,7 +785,10 @@ const Home: NextPage = () => {
                   placeholder='0'
                   type='number'
                   label='Underlier to swap'
-                  labelRight={(modifyPositionData.collateralType != null) && modifyPositionData.collateralType.properties.underlierSymbol}
+                  labelRight={
+                    (modifyPositionData.collateralType != null)
+                    && modifyPositionData.collateralType.properties.underlierSymbol
+                  }
                   bordered
                   size='sm'
                   borderWeight='light'
@@ -826,7 +818,10 @@ const Home: NextPage = () => {
                   placeholder='0'
                   type='number'
                   label='Collateral to withdraw and swap'
-                  labelRight={(modifyPositionData.collateralType != null) && modifyPositionData.collateralType.metadata.symbol}
+                  labelRight={
+                    (modifyPositionData.collateralType != null)
+                    && modifyPositionData.collateralType.metadata.symbol
+                  }
                   bordered
                   size='sm'
                   borderWeight='light'
@@ -910,7 +905,10 @@ const Home: NextPage = () => {
             : (
               <Input
                 disabled={transactionData.status === 'sent'}
-                value={(modifyPositionData.collateralType === null) ? (0) : floor2(wadToDec(modifyPositionFormData.deltaDebt))}
+                value={(modifyPositionData.collateralType === null)
+                  ? (0)
+                  : floor2(wadToDec(modifyPositionFormData.deltaDebt))
+                }
                 onChange={(event) => {
                   if (event.target.value === null || event.target.value === undefined || event.target.value === '') {
                     setModifyPositionFormData({
@@ -968,7 +966,8 @@ const Home: NextPage = () => {
                 }
                 labelRight={
                   (modifyPositionData.collateralType != null) && (modifyPositionFormData.mode === 'deposit')
-                    ? modifyPositionData.collateralType?.metadata?.symbol : modifyPositionData.collateralType?.properties?.underlierSymbol
+                    ? modifyPositionData.collateralType?.metadata?.symbol
+                    : modifyPositionData.collateralType?.properties?.underlierSymbol
                 }
                 contentLeft={(modifyPositionFormData.outdated) ? (<Loading size='xs'/>) : (null)}
                 size='sm'
@@ -988,7 +987,9 @@ const Home: NextPage = () => {
             placeholder='0'
             type='string'
             label={'Collateral'}
-            labelRight={(modifyPositionData.collateralType != null) && modifyPositionData.collateralType.metadata.symbol}
+            labelRight={
+              (modifyPositionData.collateralType != null) && modifyPositionData.collateralType.metadata.symbol
+            }
             contentLeft={(modifyPositionFormData.outdated) ? (<Loading size='xs'/>) : (null)}
             size='sm'
             status='primary'
@@ -1032,7 +1033,9 @@ const Home: NextPage = () => {
         </Modal.Body>
         <Modal.Footer justify='space-evenly'>
           <Text size={'0.875rem'}>
-            Approve {(modifyPositionData.collateralType != null) && modifyPositionData.collateralType.properties.underlierSymbol}
+            Approve {
+            (modifyPositionData.collateralType != null) && modifyPositionData.collateralType.properties.underlierSymbol
+            }
           </Text>
           <Switch
             disabled={
