@@ -1,8 +1,6 @@
 import React from 'react';
 import { Text, Spacer, Card, Button, Modal, Navbar, Grid, Input, Loading, Switch } from '@nextui-org/react';
 import { ethers } from 'ethers';
-import { Slider } from 'antd';
-import 'antd/dist/antd.css';
 // @ts-ignore
 import { decToScale, decToWad, scaleToDec, wadToDec } from '@fiatdao/sdk';
 
@@ -17,7 +15,6 @@ interface ModifyPositionModalProps {
   onUpdateDeltaDebt: (deltaDebt: null | ethers.BigNumber) => void,
   onUpdateUnderlier: (underlier: null | ethers.BigNumber) => void,
   onUpdateSlippage: (slippagePct: null | ethers.BigNumber) => void,
-  onUpdateTargetedHealthFactor: (targetedHealthFactor: null | ethers.BigNumber) => void,
   onUpdateMode: (mode: string) => void,
   onSendTransaction: (action: string) => void,
   open: boolean,
@@ -34,11 +31,12 @@ export const ModifyPositionModal = (props: ModifyPositionModalProps) => {
   const { proxies } = props.contextData;
   const {
     collateralType: {
-      metadata: { symbol: tokenSymbol, protocol, asset },
+      metadata: { symbol: symbol, protocol, asset },
       properties: { underlierScale, underlierSymbol, maturity }
     },
     underlierAllowance,
-    monetaDelegate
+    monetaDelegate,
+    fiatAllowance
   } = props.modifyPositionData;
   const {
     mode, outdated, underlier, slippagePct, deltaCollateral, deltaDebt, collateral, debt, healthFactor
@@ -49,7 +47,7 @@ export const ModifyPositionModal = (props: ModifyPositionModalProps) => {
   const disableActions = (props.transactionData.status === 'sent');
   
   return (
-    <Modal preventClose closeButton={!disableActions} blur open={props.open} onClose={props.onClose}>
+    <Modal preventClose closeButton={!disableActions} blur open={props.open} onClose={() => props.onClose()}>
        <Modal.Header>
         <Text id='modal-title' size={18}>
           <Text b size={18}>Modify Position</Text>
@@ -116,7 +114,7 @@ export const ModifyPositionModal = (props: ModifyPositionModalProps) => {
                 placeholder='0'
                 type='number'
                 label='Collateral to withdraw and swap'
-                labelRight={tokenSymbol}
+                labelRight={symbol}
                 bordered
                 size='sm'
                 borderWeight='light'
@@ -189,7 +187,7 @@ export const ModifyPositionModal = (props: ModifyPositionModalProps) => {
             ? 'Collateral to deposit (incl. slippage)'
             : 'Underliers to withdraw (incl. slippage)'
           }
-          labelRight={(mode === 'deposit') ? tokenSymbol : underlierSymbol}
+          labelRight={(mode === 'deposit') ? symbol : underlierSymbol}
           contentLeft={(outdated) ? (<Loading size='xs'/>) : (null)}
           size='sm'
           status='primary'
@@ -206,7 +204,7 @@ export const ModifyPositionModal = (props: ModifyPositionModalProps) => {
           placeholder='0'
           type='string'
           label={'Collateral'}
-          labelRight={tokenSymbol}
+          labelRight={symbol}
           contentLeft={(outdated) ? (<Loading size='xs'/>) : (null)}
           size='sm'
           status='primary'

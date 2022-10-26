@@ -46,7 +46,7 @@ export const CreatePositionModal = (props: CreatePositionModalProps) => {
   const disableActions = (props.transactionData.status === 'sent');
   
   return (
-    <Modal preventClose closeButton={!disableActions} blur open={props.open} onClose={props.onClose}>
+    <Modal preventClose closeButton={!disableActions} blur open={props.open} onClose={() => props.onClose()}>
       <Modal.Header>
         <Text id='modal-title' size={18}>
           <Text b size={18}>Create Position</Text>

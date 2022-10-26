@@ -1,34 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import type { NextPage } from 'next';
 import { useAccount, useNetwork } from 'wagmi';
 import { ethers } from 'ethers';
-import {
-  Container, Text, Table, Spacer, Modal, Input, Loading, Card, Button, Switch, Navbar, Grid
-} from '@nextui-org/react';
-import { Slider } from 'antd';
-import 'antd/dist/antd.css';
+import { Container, Spacer } from '@nextui-org/react';
 
 // @ts-ignore
-import { FIAT, ZERO, WAD, decToScale, decToWad, scaleToWad, scaleToDec, wadToDec, wadToScale } from '@fiatdao/sdk';
+import { FIAT, ZERO, WAD, decToWad, scaleToWad, wadToScale } from '@fiatdao/sdk';
 
 import { ProxyCard } from './ProxyCard';
 import { CollateralTypesTable } from './CollateralTypesTable';
 import { PositionsTable } from './PositionsTable';
 import { CreatePositionModal } from './CreatePositionModal';
-
-function floor2(dec: any) {
-  return Math.floor(Number(String(dec)) * 100) / 100;
-}
-
-function floor4(dec: any) {
-  return Math.floor(Number(String(dec)) * 10000) / 10000;
-}
-
-const formatUnixTimestamp = (unixTimestamp: ethers.BigNumberish): string => {
-  const date = new Date(Number(unixTimestamp.toString()) * 1000);
-  return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
-}
+import { ModifyPositionModal } from './ModifyPositionModal';
 
 const Home: NextPage = () => {
   const { connector } = useAccount();
@@ -51,7 +35,8 @@ const Home: NextPage = () => {
       collateralType: null as undefined | null | any,
       position: null as undefined | null | any,
       underlierAllowance: null as null | ethers.BigNumber, // [underlierScale]
-      monetaDelegate: null as null | boolean
+      monetaDelegate: null as null | boolean,
+      fiatAllowance: null as null | ethers.BigNumber // [wad]
     },
     modifyPositionFormData: {
       outdated: true,
@@ -186,13 +171,14 @@ const Home: NextPage = () => {
 
     (async function () {
       if (data.collateralType == null) return;
-      const { codex, moneta, vaultEPTActions } = contextData.fiat.getContracts();
+      const { codex, moneta, fiat, vaultEPTActions } = contextData.fiat.getContracts();
       const underlier = contextData.fiat.getERC20Contract(data.collateralType.properties.underlierToken);
-      const [underlierAllowance, monetaDelegate] = await contextData.fiat.multicall([
+      const [underlierAllowance, monetaDelegate, fiatAllowance] = await contextData.fiat.multicall([
         { contract: underlier, method: 'allowance', args: [proxy, vaultEPTActions.address] },
-        { contract: codex, method: 'delegates', args: [proxy, moneta.address] }
+        { contract: codex, method: 'delegates', args: [proxy, moneta.address] },
+        { contract: fiat, method: 'allowance', args: [proxy, vaultEPTActions.address] }
       ]);
-      setModifyPositionData({ ...modifyPositionData, ...data, underlierAllowance, monetaDelegate });
+      setModifyPositionData({ ...modifyPositionData, ...data, underlierAllowance, monetaDelegate, fiatAllowance });
     })();
   }, [
     connector,
@@ -586,403 +572,69 @@ const Home: NextPage = () => {
         }}
       />
 
-      {/* <Modal
-        preventClose
-        closeButton={transactionData.status !== 'sent'}
-        blur
-        aria-labelledby='modal-title'
-        open={(modifyPositionData.collateralType != null)}
+      <ModifyPositionModal
+        contextData={contextData}
+        modifyPositionData={modifyPositionData}
+        modifyPositionFormData={modifyPositionFormData}
+        transactionData={transactionData}
+        onUpdateDeltaCollateral={(deltaCollateral) => {
+          if (deltaCollateral === null) {
+            const { deltaCollateral, deltaDebt, slippagePct } = modifyPositionFormData;
+            setModifyPositionFormData({ 
+              ...initialState.modifyPositionFormData, deltaCollateral, deltaDebt, slippagePct, outdated: false
+            });  
+          } else {
+            setModifyPositionFormData({ ...modifyPositionFormData, deltaCollateral, outdated: true });
+          }
+        }}
+        onUpdateDeltaDebt={(deltaDebt) => {
+          if (deltaDebt === null) {
+            const { deltaCollateral, deltaDebt, slippagePct } = modifyPositionFormData;
+            setModifyPositionFormData({ 
+              ...initialState.modifyPositionFormData, deltaCollateral, deltaDebt, slippagePct, outdated: false
+            });  
+          } else {
+            setModifyPositionFormData({ ...modifyPositionFormData, deltaDebt, outdated: true });
+          }
+        }}
+        onUpdateUnderlier={(underlier) => {
+          if (underlier === null) {
+            const { underlier, deltaDebt, slippagePct } = modifyPositionFormData;
+            setModifyPositionFormData({ 
+              ...initialState.modifyPositionFormData, underlier, deltaDebt, slippagePct, outdated: false
+            });  
+          } else {
+            setModifyPositionFormData({ ...modifyPositionFormData, underlier, outdated: true });
+          }
+        }}
+        onUpdateSlippage={(slippagePct) => {
+          if (slippagePct === null) {
+            const { slippagePct, underlier, deltaCollateral, deltaDebt } = modifyPositionFormData;
+            if (modifyPositionFormData.mode === 'deposit') {
+              setModifyPositionFormData({ 
+                ...initialState.modifyPositionFormData, slippagePct, deltaDebt, underlier, outdated: false,
+              }); 
+            } else {
+              setModifyPositionFormData({ 
+                ...initialState.modifyPositionFormData, slippagePct, deltaDebt, deltaCollateral, outdated: false,
+              }); 
+            }
+          } else {
+            setModifyPositionFormData({ ...modifyPositionFormData, slippagePct, outdated: true });
+          }
+        }}
+        onUpdateMode={(mode) => {
+          setModifyPositionFormData({  ...initialState.modifyPositionFormData, mode, outdated: false }); 
+        }}
+        onSendTransaction={(action) => setTransactionData({ ...transactionData, action })}
+        open={(!!selectedPositionId)}
         onClose={() => {
-          setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
-          setSelectedPositionId(initialState.selectedPositionId);
+          setSelectedPositionId(initialState.selectedCollateralTypeId);
           setModifyPositionData(initialState.modifyPositionData);
           setModifyPositionFormData(initialState.modifyPositionFormData);
         }}
-      >
-        <Modal.Header>
-          <Text id='modal-title' size={18}>
-            <Text b size={18}>
-              {(selectedCollateralTypeId) ? 'Create Position' : 'Modify Position'}
-            </Text>
-            <br/>
-            {(modifyPositionData.collateralType != null) && (() => {
-              const {
-                collateralType: { metadata : { protocol, asset }, properties: { maturity } }
-              } = modifyPositionData;
-              return (
-                <>
-                  <Text b size={16}>{`${protocol} - ${asset}`}</Text>
-                  <br/>
-                  <Text b size={14}>{`${formatUnixTimestamp(maturity)}`}</Text>
-                </>
-              );
-            })()}
-          </Text>
-        </Modal.Header>
-        <Modal.Body>
-          <Navbar
-            variant='static'
-            isCompact
-            disableShadow
-            disableBlur
-            containerCss={{justifyContent: 'center', background: 'transparent'}}
-          >
-            <Navbar.Content enableCursorHighlight variant='highlight-rounded'>
-              {(selectedCollateralTypeId) ? (
-                <Navbar.Link isActive={modifyPositionFormData.mode === 'deposit'}>Deposit</Navbar.Link>
-              ) : (
-                <>
-                  <Navbar.Link
-                    isActive={modifyPositionFormData.mode === 'deposit'}
-                    onClick={() => setModifyPositionFormData({
-                      ...initialState.modifyPositionFormData, mode: 'deposit'
-                    })}
-                  >Increase</Navbar.Link>
-                  <Navbar.Link
-                    isActive={modifyPositionFormData.mode === 'withdraw'}
-                    onClick={() => setModifyPositionFormData({
-                      ...initialState.modifyPositionFormData, mode: 'withdraw'
-                    })}
-                  >Decrease</Navbar.Link>
-                </>
-              )}
-            </Navbar.Content>
-          </Navbar>
-          
-          <Text b size={'m'}>Inputs</Text>
-          <Grid.Container gap={0} justify='space-between' css={{ marginBottom: '1rem' }}>
-            <Grid>
-              {(modifyPositionFormData.mode === 'deposit') ? (
-                <Input
-                  disabled={transactionData.status === 'sent'}
-                  value={
-                    (modifyPositionData.collateralType === null)
-                      ? (0)
-                      : floor2(scaleToDec(
-                        modifyPositionFormData.underlier, modifyPositionData.collateralType.properties.underlierScale
-                      ))
-                  }
-                  onChange={(event) => {
-                    if (event.target.value === null || event.target.value === undefined || event.target.value === '') {
-                      setModifyPositionFormData({
-                        ...modifyPositionFormData, deltaCollateral: ZERO, deltaDebt: ZERO, outdated: false
-                      });  
-                    } else {
-                      const rounded = floor4((Number(event.target.value) < 0) ? 0 : Number(event.target.value));
-                      setModifyPositionFormData({
-                        ...modifyPositionFormData,
-                        underlier: decToScale(rounded, modifyPositionData.collateralType.properties.underlierScale),
-                        outdated: true
-                      });
-                    }
-                  }}
-                  placeholder='0'
-                  type='number'
-                  label='Underlier to swap'
-                  labelRight={
-                    (modifyPositionData.collateralType != null)
-                    && modifyPositionData.collateralType.properties.underlierSymbol
-                  }
-                  bordered
-                  size='sm'
-                  borderWeight='light'
-                />
-              ) : (
-                <Input
-                  disabled={transactionData.status === 'sent'}
-                  value={
-                    (modifyPositionData.collateralType === null) ? (0) :
-                    floor2(wadToDec(modifyPositionFormData.deltaCollateral))
-                  }
-                  onChange={(event) => {
-                    if (event.target.value === null || event.target.value === undefined || event.target.value === '') {
-                      setModifyPositionFormData({
-                        ...modifyPositionFormData, underlier: ZERO, healthFactor: ZERO, outdated: false
-                      });  
-                    } else {
-                      const num = (Number(event.target.value) < 0) ? 0 : Number(event.target.value);
-                      const rounded = floor4(num);
-                      setModifyPositionFormData({
-                        ...modifyPositionFormData,
-                        deltaCollateral: decToWad(rounded),
-                        outdated: true
-                      });
-                    }
-                  }}
-                  placeholder='0'
-                  type='number'
-                  label='Collateral to withdraw and swap'
-                  labelRight={
-                    (modifyPositionData.collateralType != null)
-                    && modifyPositionData.collateralType.metadata.symbol
-                  }
-                  bordered
-                  size='sm'
-                  borderWeight='light'
-                  width='13.35rem'
-                />
-              )}
-            </Grid>
-            <Grid>
-              <Input
-                disabled={transactionData.status === 'sent'}
-                value={floor2(Number(wadToDec(modifyPositionFormData.slippagePct)) * 100)}
-                onChange={(event) => {
-                  if (event.target.value === null || event.target.value === undefined || event.target.value === '') {
-                    setModifyPositionFormData({
-                      ...modifyPositionFormData,
-                      healthFactor: ZERO,
-                      deltaCollateral: (modifyPositionFormData.mode === 'deposit')
-                        ? ZERO : modifyPositionFormData.deltaCollateral,
-                      collateral: ZERO,
-                      debt: ZERO,
-                      outdated: false
-                    });  
-                  } else {
-                    const num = (Number(event.target.value) < 0)
-                      ? 0 : (Number(event.target.value) > 50) ? 50 : Number(event.target.value);
-                    const raw = num / 100;
-                    const rounded = floor4(raw);
-                    setModifyPositionFormData({
-                      ...modifyPositionFormData,
-                      slippagePct: decToWad(rounded),
-                      outdated: true
-                    });
-                  }
-                }}
-                step='0.01'
-                placeholder='0'
-                type='number'
-                label='Slippage'
-                labelRight={'%'}
-                bordered
-                size='sm'
-                borderWeight='light'
-                width='7.5rem'
-              />
-            </Grid>
-          </Grid.Container>
-
-          {(selectedCollateralTypeId)
-            ? (
-              <>
-                <Text size={'0.75rem'} style={{ paddingLeft: '0.25rem', marginBottom: '0.375rem' }}>
-                  Targeted health factor ({Number(wadToDec(modifyPositionFormData.targetedHealthFactor))})
-                </Text>
-                <Card variant='bordered' borderWeight='light'>
-                  <Card.Body style={{ paddingLeft: '2.25rem', paddingRight: '2.25rem' }}>
-                    <Slider
-                      handleStyle={{ borderColor: '#0072F5' }}
-                      included={false}
-                      disabled={transactionData.status === 'sent'}
-                      value={Number(wadToDec(modifyPositionFormData.targetedHealthFactor))}
-                      onChange={(value) => setModifyPositionFormData(
-                        { ...modifyPositionFormData, targetedHealthFactor: decToWad(String(value)), outdated: true })
-                      }
-                      min={1.001}
-                      max={5.0}
-                      step={0.001}
-                      reverse
-                      tooltip={{ getPopupContainer: (t) => t }}
-                      marks={{
-                        5.00: { style: { color: 'grey', fontSize: '0.75rem' }, label: 'Safe' },
-                        4.0: { style: { color: 'grey', fontSize: '0.75rem' }, label: '4.0' },
-                        3.00: { style: { color: 'grey', fontSize: '0.75rem' }, label: '3.0' },
-                        2.00: { style: { color: 'grey', fontSize: '0.75rem' }, label: '2.0' },
-                        1.001: { style: { color: 'grey', fontSize: '0.75rem', borderColor: 'white' }, label: 'Unsafe' },
-                      }}
-                    />
-                  </Card.Body>
-                </Card>
-              </>
-            )
-            : (
-              <Input
-                disabled={transactionData.status === 'sent'}
-                value={(modifyPositionData.collateralType === null)
-                  ? (0)
-                  : floor2(wadToDec(modifyPositionFormData.deltaDebt))
-                }
-                onChange={(event) => {
-                  if (event.target.value === null || event.target.value === undefined || event.target.value === '') {
-                    setModifyPositionFormData({
-                      ...modifyPositionFormData,
-                      healthFactor: ZERO,
-                      collateral: ZERO,
-                      debt: ZERO,
-                      deltaCollateral: (modifyPositionFormData.mode === 'deposit')
-                        ? ZERO : modifyPositionFormData.deltaCollateral,
-                      outdated: false
-                    });  
-                  } else {
-                    const num = (Number(event.target.value) < 0) ? 0 : Number(event.target.value);
-                    const rounded = floor4(num);
-                    setModifyPositionFormData({
-                      ...modifyPositionFormData,
-                      deltaDebt: decToWad(rounded),
-                      outdated: true
-                    });
-                  }
-                }}
-                placeholder='0'
-                type='number'
-                label={(modifyPositionFormData.mode === 'deposit') ? 'FIAT to borrow' : 'FIAT to pay back'}
-                labelRight={'FIAT'}
-                bordered
-                size='sm'
-                borderWeight='light'
-              />
-            )
-          }
-         
-        </Modal.Body>
-        <Spacer y={0.75} />
-        {(['deposit', 'withdraw'].includes(modifyPositionFormData.mode)) ? (
-          <>
-            <Card.Divider/>
-            <Modal.Body>
-              <Spacer y={0} />
-              <Text b size={'m'}>Swap Preview</Text>
-              <Input
-                readOnly
-                value={
-                  (modifyPositionFormData.outdated) ? (' ') : (modifyPositionFormData.mode === 'deposit')
-                    ? (floor4(wadToDec(modifyPositionFormData.deltaCollateral)))
-                    : (floor4(scaleToDec(
-                      modifyPositionFormData.underlier, modifyPositionData.collateralType.properties.underlierScale
-                    )))
-                }
-                placeholder='0'
-                type='string'
-                label={(modifyPositionFormData.mode === 'deposit')
-                  ? 'Collateral to deposit (incl. slippage)'
-                  : 'Underliers to withdraw (incl. slippage)'
-                }
-                labelRight={
-                  (modifyPositionData.collateralType != null) && (modifyPositionFormData.mode === 'deposit')
-                    ? modifyPositionData.collateralType?.metadata?.symbol
-                    : modifyPositionData.collateralType?.properties?.underlierSymbol
-                }
-                contentLeft={(modifyPositionFormData.outdated) ? (<Loading size='xs'/>) : (null)}
-                size='sm'
-                status='primary'
-              />
-            </Modal.Body>
-            <Spacer y={0.75} />
-          </>
-        ) : (null)}
-        <Card.Divider/>
-        <Modal.Body>
-          <Spacer y={0} />
-          <Text b size={'m'}>Position Preview</Text>
-          <Input
-            readOnly
-            value={(modifyPositionFormData.outdated) ? (' ') : (floor4(wadToDec(modifyPositionFormData.collateral)))}
-            placeholder='0'
-            type='string'
-            label={'Collateral'}
-            labelRight={
-              (modifyPositionData.collateralType != null) && modifyPositionData.collateralType.metadata.symbol
-            }
-            contentLeft={(modifyPositionFormData.outdated) ? (<Loading size='xs'/>) : (null)}
-            size='sm'
-            status='primary'
-          />
-          <Input
-            readOnly
-            value={(modifyPositionFormData.outdated) ? (' ') : (floor4(wadToDec(modifyPositionFormData.debt)))}
-            placeholder='0'
-            type='string'
-            label='Debt'
-            labelRight={'FIAT'}
-            contentLeft={(modifyPositionFormData.outdated) ? (<Loading size='xs'/>) : (null)}
-            size='sm'
-            status='primary'
-          />
-          <Input
-            readOnly
-            value={(modifyPositionFormData.outdated)
-              ? (' ') : (modifyPositionFormData.healthFactor.eq(ethers.constants.MaxUint256))
-                ? ('∞')
-                : (floor4(wadToDec(modifyPositionFormData.healthFactor)))
-            }
-            placeholder='0'
-            type='string'
-            label='Health Factor'
-            labelRight={'🚦'}
-            contentLeft={(modifyPositionFormData.outdated) ? (<Loading size='xs'/>) : (null)}
-            size='sm'
-            status='primary'
-          />
-        </Modal.Body>
-        <Modal.Footer justify='space-evenly'>
-          <Text size={'0.875rem'}>
-            Approve {
-            (modifyPositionData.collateralType != null) && modifyPositionData.collateralType.properties.underlierSymbol
-            }
-          </Text>
-          <Switch
-            disabled={
-              contextData.proxies.length == 0
-              || transactionData.status === 'sent'
-              || modifyPositionData.underlierAllowance === null
-            }
-            // @ts-ignore
-            checked={() => (
-              modifyPositionData.collateralType != null
-              && !modifyPositionFormData.underlier.isZero()
-              && modifyPositionData.underlierAllowance
-              && modifyPositionData.underlierAllowance.gte(modifyPositionFormData.underlier)
-            )}
-            onChange={() => setTransactionData({ ...transactionData, action: 'setUnderlierAllowance' })}
-            color='primary'
-            icon={
-              (['setUnderlierAllowance', 'unsetUnderlierAllowance'].includes(transactionData.action || '')
-              && transactionData.status === 'sent')
-                ? (<Loading size='xs' />)
-                : (null)
-            }
-          />
-          <Spacer y={0.5} />
-          <Text size={'0.875rem'}>Enable FIAT</Text>
-          <Switch
-            disabled={
-              contextData.proxies.length == 0
-              || transactionData.status === 'sent'
-              || modifyPositionData.monetaDelegate === null
-            }
-            // @ts-ignore
-            checked={() => (modifyPositionData.collateralType != null) && (!!modifyPositionData.monetaDelegate)}
-            onChange={() => setTransactionData({ ...transactionData, action: 'setMonetaDelegate' })}
-            color='primary'
-            icon={
-              (['setMonetaDelegate', 'unsetMonetaDelegate'].includes(transactionData.action || '')
-              && transactionData.status === 'sent')
-                ? (<Loading size='xs' />)
-                : (null)
-            }
-          />
-          <Spacer y={3} />
-          <Button
-            css={{minWidth: '100%'}}
-            disabled={(
-              contextData.proxies.length == 0
-              || modifyPositionFormData.underlier.isZero()
-              || modifyPositionFormData.deltaCollateral.isZero()
-              || modifyPositionData.underlierAllowance === null
-              || modifyPositionData.underlierAllowance.lt(modifyPositionFormData.underlier)
-              || transactionData.status === 'sent'
-            )}
-            icon={(transactionData.action === 'buyCollateralAndModifyDebt' && transactionData.status === 'sent')
-              ? (<Loading size='xs' />)
-              : (null)
-            }
-            onPress={() => setTransactionData({ ...transactionData, action: 'buyCollateralAndModifyDebt' })}
-          >
-            Deposit
-          </Button>
-        </Modal.Footer>
-      </Modal> */}
+      />
+      <Spacer />
     </div>
   );
 };
