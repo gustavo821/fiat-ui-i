@@ -54,10 +54,6 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
           selectionMode='single'
           selectedKeys={'1'}
           onSelectionChange={(selected) => props.onSelectCollateralType(Object.values(selected)[0])}
-          // onSelectionChange={(selected) => {
-          //   setSelectedPositionId(initialState.selectedPositionId);
-          //   setSelectedCollateralTypeId(Object.values(selected)[0]);
-          // }}
         >
           <Table.Header>
             <Table.Column>Protocol</Table.Column>
