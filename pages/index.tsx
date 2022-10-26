@@ -4,7 +4,7 @@ import type { NextPage } from 'next';
 import { useAccount, useNetwork } from 'wagmi';
 import { ethers } from 'ethers';
 import {
-  Container, Text, Table, Spacer, Modal, Input, Loading, Card, Button, Switch, Link, Navbar, Grid
+  Container, Text, Table, Spacer, Modal, Input, Loading, Card, Button, Switch, Navbar, Grid
 } from '@nextui-org/react';
 import { Slider } from 'antd';
 import 'antd/dist/antd.css';
@@ -12,42 +12,10 @@ import 'antd/dist/antd.css';
 // @ts-ignore
 import { FIAT, ZERO, WAD, decToScale, decToWad, scaleToWad, scaleToDec, wadToDec, wadToScale } from '@fiatdao/sdk';
 
-import { styled } from '@nextui-org/react';
-
-const StyledBadge = styled('span', {
-  display: 'inline-block',
-  textTransform: 'uppercase',
-  padding: '$2 $3',
-  margin: '0 2px',
-  fontSize: '10px',
-  fontWeight: '$bold',
-  borderRadius: '14px',
-  letterSpacing: '0.6px',
-  lineHeight: 1,
-  boxShadow: '1px 2px 5px 0px rgb(0 0 0 / 5%)',
-  alignItems: 'center',
-  alignSelf: 'center',
-  color: '$white',
-  variants: {
-    type: {
-      green: {
-        bg: '$successLight',
-        color: '$successLightContrast'
-      },
-      red: {
-        bg: '$errorLight',
-        color: '$errorLightContrast'
-      },
-      orange: {
-        bg: '$warningLight',
-        color: '$warningLightContrast'
-      }
-    }
-  },
-  defaultVariants: {
-    type: 'active'
-  }
-});
+import { ProxyCard } from './ProxyCard';
+import { CollateralTypesTable } from './CollateralTypesTable';
+import { PositionsTable } from './PositionsTable';
+import { CreatePositionModal } from './CreatePositionModal';
 
 function floor2(dec: any) {
   return Math.floor(Number(String(dec)) * 100) / 100;
@@ -366,42 +334,27 @@ const Home: NextPage = () => {
 
     (async function () {
       try {
+        const {
+          proxyRegistry, codex, moneta, vaultEPTActions, vaultFCActions, vaultFYActions
+        } = contextData.fiat.getContracts();
         if (action == 'setupProxy') {
-          console.log(await contextData.fiat.dryrun(
-            contextData.fiat.getContracts().proxyRegistry,
-            'deployFor',
-            contextData.user
-          ));
+          console.log(await contextData.fiat.dryrun(proxyRegistry, 'deployFor', contextData.user));
         }
         if (action == 'setUnderlierAllowance') {
+          const token = contextData.fiat.getERC20Contract(modifyPositionData.collateralType.properties.underlierToken);
           console.log(await contextData.fiat.dryrun(
-            contextData.fiat.getERC20Contract(modifyPositionData.collateralType.properties.underlierToken),
-            'approve',
-            contextData.proxies[0],
-            modifyPositionFormData.underlier
+            token, 'approve', contextData.proxies[0], modifyPositionFormData.underlier
           ));
         }
         if (action == 'unsetUnderlierAllowance') {
-          console.log(await contextData.fiat.dryrun(
-            contextData.fiat.getERC20Contract(modifyPositionData.collateralType.properties.underlierToken),
-            'approve',
-            contextData.proxies[0],
-            0
-          ));
+          const token = contextData.fiat.getERC20Contract(modifyPositionData.collateralType.properties.underlierToken);
+          console.log(await contextData.fiat.dryrun(token, 'approve', contextData.proxies[0], 0));
         }
         if (action == 'setMonetaDelegate') {
-          console.log(await contextData.fiat.dryrun(
-            contextData.fiat.getContracts().codex,
-            'grantDelegate',
-            contextData.fiat.getContracts().moneta.address
-          ));
+          console.log(await contextData.fiat.dryrun(codex, 'grantDelegate', moneta.address));
         }
         if (action == 'unsetMonetaDelegate') {
-          console.log(await contextData.fiat.dryrun(
-            contextData.fiat.getContracts().codex,
-            'revokeDelegate',
-            contextData.fiat.getContracts().moneta.address
-          ));
+          console.log(await contextData.fiat.dryrun(codex, 'revokeDelegate', moneta.address));
         }
         if (action == 'buyCollateralAndModifyDebt') {
           if (!modifyPositionData.collateralType) throw null;
@@ -416,7 +369,7 @@ const Home: NextPage = () => {
           const deadline = Math.round(+new Date() / 1000) + 3600;
           if (properties.vaultType === 'ERC20:EPT' && properties.eptData) {
             console.log(await contextData.fiat.dryrun(
-              contextData.fiat.getContracts().vaultEPTActions,
+              vaultEPTActions,
               'buyCollateralAndModifyDebt',
               properties.vault,
               contextData.proxies[0],
@@ -444,7 +397,7 @@ const Home: NextPage = () => {
               properties.tokenScale
             );
             console.log(await contextData.fiat.dryrun(
-              contextData.fiat.getContracts().vaultFCActions,
+              vaultFCActions,
               'buyCollateralAndModifyDebt',
               properties.vault,
               properties.token,
@@ -459,7 +412,7 @@ const Home: NextPage = () => {
             ));
           } else if (properties.vaultType === 'ERC20:FY' && properties.fyData) {
             console.log(await contextData.fiat.dryrun(
-              contextData.fiat.getContracts().vaultFYActions,
+              vaultFYActions,
               'buyCollateralAndModifyDebt',
               properties.vault,
               contextData.proxies[0],
@@ -489,7 +442,7 @@ const Home: NextPage = () => {
           const deadline = Math.round(+new Date() / 1000) + 3600;
           if (properties.vaultType === 'ERC20:EPT' && properties.eptData) {
             console.log(await contextData.fiat.dryrun(
-              contextData.fiat.getContracts().vaultEPTActions,
+              vaultEPTActions,
               'sellCollateralAndModifyDebt',
               properties.vault,
               contextData.proxies[0],
@@ -517,7 +470,7 @@ const Home: NextPage = () => {
               properties.tokenScale
             );
             console.log(await contextData.fiat.dryrun(
-              contextData.fiat.getContracts().vaultFCActions,
+              vaultFCActions,
               'sellCollateralAndModifyDebt',
               properties.vault,
               properties.token,
@@ -531,7 +484,7 @@ const Home: NextPage = () => {
             ));
           } else if (properties.vaultType === 'ERC20:FY' && properties.fyData) {
             console.log(await contextData.fiat.dryrun(
-              contextData.fiat.getContracts().vaultFYActions,
+              vaultFYActions,
               'sellCollateralAndModifyDebt',
               properties.vault,
               contextData.proxies[0],
@@ -556,142 +509,84 @@ const Home: NextPage = () => {
 
   return (
     <div>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          padding: 12,
-        }}
-      >
+      <div style={{ display: 'flex', justifyContent: 'space-between', padding: 12 }}>
         <h4 style={{ justifyContent: 'flex',  }}>Lever App</h4>
         <ConnectButton />
       </div>
-
       <Spacer y={2} />
-
       <Container>
-        <Card css={{ mw: '400px' }}>
-          <Card.Body>
-            <Text b size={18}>Proxy</Text>
-            {(contextData.proxies.length > 0)
-              ? (
-                <Link
-                  target='_blank'
-                  href={`${contextData.explorerUrl}/address/${contextData.proxies[0]}`}
-                  isExternal={true}
-                >
-                  {contextData.proxies[0]}
-                </Link>)
-              : (contextData.user === null) ? (null) : (
-                <>
-                  <Spacer y={1} />
-                  <Button onPress={() => setTransactionData({ ...transactionData, action: 'setupProxy' })}>
-                    Setup a new Proxy account
-                  </Button>
-                </>
-              )
-            }
-          </Card.Body>
-        </Card>
+        <ProxyCard
+          {...contextData}
+          onSendTransaction={(action) => setTransactionData({ ...transactionData, action })}
+        />
+      </Container>
+      <Spacer y={2} />
+      <Container>
+        <CollateralTypesTable
+          collateralTypesData={collateralTypesData}
+          onSelectCollateralType={(collateralTypeId) => {
+            setSelectedPositionId(initialState.selectedPositionId);
+            setSelectedCollateralTypeId(collateralTypeId);
+          }}
+        />
+      </Container>
+      <Spacer y={2} />
+      <Container>
+        <PositionsTable
+          collateralTypesData={collateralTypesData}
+          positionsData={positionsData}
+          onSelectPosition={(positionId) => {
+            setSelectedPositionId(positionId);
+            setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
+          }}
+        />
       </Container>
 
-      <Spacer y={2} />
+      <CreatePositionModal
+        contextData={contextData}
+        modifyPositionData={modifyPositionData}
+        modifyPositionFormData={modifyPositionFormData}
+        transactionData={transactionData}
+        onUpdateUnderlier={(underlier) => {
+          if (underlier === null) {
+            const { underlier, targetedHealthFactor, slippagePct } = modifyPositionFormData;
+            setModifyPositionFormData({ 
+              ...initialState.modifyPositionFormData, underlier, targetedHealthFactor, slippagePct, outdated: false
+            });  
+          } else {
+            setModifyPositionFormData({ ...modifyPositionFormData, underlier, outdated: true });
+          }
+        }}
+        onUpdateSlippage={(slippagePct) => {
+          if (slippagePct === null) {
+            const { slippagePct, targetedHealthFactor, underlier } = modifyPositionFormData;
+            setModifyPositionFormData({ 
+              ...initialState.modifyPositionFormData, slippagePct, targetedHealthFactor, underlier, outdated: false
+            }); 
+          } else {
+            setModifyPositionFormData({ ...modifyPositionFormData, slippagePct, outdated: true });
+          }
+        }}
+        onUpdateTargetedHealthFactor={(targetedHealthFactor) => {
+          if (targetedHealthFactor === null) {
+            const { underlier, slippagePct, targetedHealthFactor } = modifyPositionFormData;
+            setModifyPositionFormData({ 
+              ...initialState.modifyPositionFormData, underlier, slippagePct, targetedHealthFactor, outdated: false
+            }); 
+          } else {
+            setModifyPositionFormData({ ...modifyPositionFormData, targetedHealthFactor, outdated: true });
+          }
+        }}
+        onSendTransaction={(action) => setTransactionData({ ...transactionData, action })}
+        open={(!!selectedCollateralTypeId)}
+        onClose={() => {
+          setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
+          setModifyPositionData(initialState.modifyPositionData);
+          setModifyPositionFormData(initialState.modifyPositionFormData);
+        }}
+      />
 
-      <Container>
-        <Text h1>Collateral Types</Text>
-        {(collateralTypesData.length != 0) && (
-          <Table
-            aria-label='CollateralTypes'
-            css={{
-              height: 'auto',
-              minWidth: '100%',
-            }}
-            selectionMode='single'
-            selectedKeys={'1'}
-            onSelectionChange={(selected) => {
-              setSelectedPositionId(initialState.selectedPositionId);
-              setSelectedCollateralTypeId(Object.values(selected)[0]);
-            }}
-          >
-            <Table.Header>
-              <Table.Column>Protocol</Table.Column>
-              <Table.Column>Token</Table.Column>
-              <Table.Column>Underlier</Table.Column>
-              <Table.Column>Maturity</Table.Column>
-              <Table.Column>TVL</Table.Column>
-            </Table.Header>
-            <Table.Body>
-              {
-                collateralTypesData.map((collateralType) => {
-                  const { vault, tokenId, tokenSymbol, underlierSymbol, maturity } = collateralType.properties;
-                  const { protocol, asset } = collateralType.metadata;
-                  const maturityFormatted = new Date(Number(maturity.toString()) * 1000);
-                  return (
-                    <Table.Row key={encodeCollateralTypeId(vault, tokenId)}>
-                      <Table.Cell>{protocol}</Table.Cell>
-                      <Table.Cell>{`${asset} (${tokenSymbol})`}</Table.Cell>
-                      <Table.Cell>{underlierSymbol}</Table.Cell>
-                      <Table.Cell>
-                        <StyledBadge type={(new Date() < maturityFormatted) ? 'green' : 'red'}>
-                          {formatUnixTimestamp(maturity)}
-                        </StyledBadge>
-                      </Table.Cell>
-                      <Table.Cell>0</Table.Cell>
-                    </Table.Row>
-                  );
-                })
-              }
-            </Table.Body>
-          </Table>
-        )}
-      </Container>
-      
-      <Spacer y={2} />
-      
-      <Container>
-        <Text h1>Positions</Text>
-        {(positionsData.length != 0) && (
-          <Table
-            aria-label='Positions'
-            css={{ height: 'auto', minWidth: '100%' }}
-            selectionMode='single'
-            selectedKeys={'1'}
-            onSelectionChange={(selected) => {
-              setSelectedPositionId(Object.values(selected)[0]);
-              setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
-            }}
-          >
-            <Table.Header>
-              <Table.Column>Protocol</Table.Column>
-              <Table.Column>Token</Table.Column>
-              <Table.Column>TokenId</Table.Column>
-              <Table.Column>Collateral</Table.Column>
-              <Table.Column>Normal Debt</Table.Column>
-            </Table.Header>
-            <Table.Body>
-              {
-                positionsData.map((position) => {
-                  const { owner, vault, tokenId, collateral, normalDebt } = position;
-                  const {
-                    properties: { tokenSymbol }, metadata: { protocol, asset }
-                  } = getCollateralTypeData(collateralTypesData, vault, tokenId);
-                  return (
-                    <Table.Row key={encodePositionId(vault, tokenId, owner)}>
-                      <Table.Cell>{protocol}</Table.Cell>
-                      <Table.Cell>{`${asset} (${tokenSymbol})`}</Table.Cell>
-                      <Table.Cell>{(tokenId as Number).toString()}</Table.Cell>
-                      <Table.Cell>{wadToDec(collateral)}</Table.Cell>
-                      <Table.Cell>{wadToDec(normalDebt)}</Table.Cell>
-                    </Table.Row>
-                  );
-                })
-              }
-            </Table.Body>
-          </Table>
-        )}
-      </Container>
-
-      <Modal
+      {/* <Modal
         preventClose
         closeButton={transactionData.status !== 'sent'}
         blur
@@ -773,8 +668,7 @@ const Home: NextPage = () => {
                         ...modifyPositionFormData, deltaCollateral: ZERO, deltaDebt: ZERO, outdated: false
                       });  
                     } else {
-                      const num = (Number(event.target.value) < 0) ? 0 : Number(event.target.value);
-                      const rounded = floor4(num);
+                      const rounded = floor4((Number(event.target.value) < 0) ? 0 : Number(event.target.value));
                       setModifyPositionFormData({
                         ...modifyPositionFormData,
                         underlier: decToScale(rounded, modifyPositionData.collateralType.properties.underlierScale),
@@ -1020,16 +914,6 @@ const Home: NextPage = () => {
             size='sm'
             status='primary'
           />
-          {/* <Spacer y={0} />
-          <Text b size={'m'}>Summary</Text>
-          <Text size="0.75rem">{(modifyPositionFormData.deltaCollateral.isZero()) ? null : 
-          <>
-            Swap <b>{floor2(scaleToDec(modifyPositionFormData.underlier, modifyPositionData.collateralType.properties.underlierScale))} {modifyPositionData.collateralType.properties.underlierSymbol} </b>
-            for <b>~{floor2(wadToDec(modifyPositionFormData.deltaCollateral))} {modifyPositionData.collateralType.metadata.symbol}</b>.
-            Deposit <b>~{floor2(wadToDec(modifyPositionFormData.deltaCollateral))} {modifyPositionData.collateralType.metadata.symbol}</b> as deltaCollateral.
-            Borrow <b>~{floor2(wadToDec(modifyPositionFormData.deltaDebt))} FIAT</b> against the deltaCollateral.
-          </>
-          }</Text> */}
         </Modal.Body>
         <Modal.Footer justify='space-evenly'>
           <Text size={'0.875rem'}>
@@ -1098,7 +982,7 @@ const Home: NextPage = () => {
             Deposit
           </Button>
         </Modal.Footer>
-      </Modal>
+      </Modal> */}
     </div>
   );
 };
