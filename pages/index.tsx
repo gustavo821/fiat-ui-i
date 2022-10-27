@@ -390,7 +390,8 @@ const Home: NextPage = () => {
           const tokenAmount = wadToScale(modifyPositionFormData.deltaCollateral, properties.tokenScale);
           const deadline = Math.round(+new Date() / 1000) + 3600;
           if (properties.vaultType === 'ERC20:EPT' && properties.eptData) {
-            console.log(await contextData.fiat.dryrun(
+            console.log(await contextData.fiat.dryrunViaProxy(
+              contextData.proxies[0],
               vaultEPTActions,
               'buyCollateralAndModifyDebt',
               properties.vault,
@@ -418,7 +419,8 @@ const Home: NextPage = () => {
               ),
               properties.tokenScale
             );
-            console.log(await contextData.fiat.dryrun(
+            console.log(await contextData.fiat.dryrunViaProxy(
+              contextData.proxies[0],
               vaultFCActions,
               'buyCollateralAndModifyDebt',
               properties.vault,
@@ -433,7 +435,8 @@ const Home: NextPage = () => {
               modifyPositionFormData.underlier
             ));
           } else if (properties.vaultType === 'ERC20:FY' && properties.fyData) {
-            console.log(await contextData.fiat.dryrun(
+            console.log(await contextData.fiat.dryrunViaProxy(
+              contextData.proxies[0],
               vaultFYActions,
               'buyCollateralAndModifyDebt',
               properties.vault,
@@ -463,7 +466,8 @@ const Home: NextPage = () => {
           const tokenAmount = wadToScale(modifyPositionFormData.deltaCollateral, properties.tokenScale);
           const deadline = Math.round(+new Date() / 1000) + 3600;
           if (properties.vaultType === 'ERC20:EPT' && properties.eptData) {
-            console.log(await contextData.fiat.dryrun(
+            console.log(await contextData.fiat.dryrunViaProxy(
+              contextData.proxies[0],
               vaultEPTActions,
               'sellCollateralAndModifyDebt',
               properties.vault,
@@ -491,7 +495,8 @@ const Home: NextPage = () => {
               ),
               properties.tokenScale
             );
-            console.log(await contextData.fiat.dryrun(
+            console.log(await contextData.fiat.dryrunViaProxy(
+              contextData.proxies[0],
               vaultFCActions,
               'sellCollateralAndModifyDebt',
               properties.vault,
@@ -505,7 +510,8 @@ const Home: NextPage = () => {
               maxBorrowRate
             ));
           } else if (properties.vaultType === 'ERC20:FY' && properties.fyData) {
-            console.log(await contextData.fiat.dryrun(
+            console.log(await contextData.fiat.dryrunViaProxy(
+              contextData.proxies[0],
               vaultFYActions,
               'sellCollateralAndModifyDebt',
               properties.vault,
@@ -534,7 +540,8 @@ const Home: NextPage = () => {
           ).mul(WAD.sub(decToWad(0.001))).div(WAD);
           const tokenAmount = wadToScale(modifyPositionFormData.deltaCollateral, properties.tokenScale);
           if (properties.vaultType === 'ERC20:EPT' && properties.eptData) {
-            console.log(await contextData.fiat.dryrun(
+            console.log(await contextData.fiat.dryrunViaProxy(
+              contextData.proxies[0],
               vaultEPTActions,
               'redeemCollateralAndModifyDebt',
               properties.vault,
@@ -546,7 +553,8 @@ const Home: NextPage = () => {
              
             ));
           } else if (properties.vaultType === 'ERC1155:FC' && properties.fcData) {
-            console.log(await contextData.fiat.dryrun(
+            console.log(await contextData.fiat.dryrunViaProxy(
+              contextData.proxies[0],
               vaultFCActions,
               'redeemCollateralAndModifyDebt',
               properties.vault,
@@ -559,7 +567,8 @@ const Home: NextPage = () => {
               normalDebt
             ));
           } else if (properties.vaultType === 'ERC20:FY' && properties.fyData) {
-            console.log(await contextData.fiat.dryrun(
+            console.log(await contextData.fiat.dryrunViaProxy(
+              contextData.proxies[0],
               vaultFYActions,
               'redeemCollateralAndModifyDebt',
               properties.vault,
