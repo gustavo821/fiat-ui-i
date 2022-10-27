@@ -9,6 +9,8 @@ interface ProxyCardProps {
 }
 
 export const ProxyCard = (props: ProxyCardProps) => {
+  if (props.user === null) return null;
+
   return (
     <Card css={{ mw: '450px' }}>
       <Card.Body>
@@ -22,7 +24,7 @@ export const ProxyCard = (props: ProxyCardProps) => {
             >
               {props.proxies[0]}
             </Link>)
-          : (props.user === null) ? (null) : (
+          : (
             <>
               <Spacer y={1} />
               <Button onPress={() => props.onSendTransaction('setupProxy')}>

@@ -44,48 +44,48 @@ interface CollateralTypesTableProps {
 }
 
 export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
+  if (props.collateralTypesData.length === 0) return null;
+
   return (
     <>
       <Text h1>Collateral Types</Text>
-      {(props.collateralTypesData.length != 0) && (
-        <Table
-          aria-label='CollateralTypes'
-          css={{ height: 'auto', minWidth: '100%' }}
-          selectionMode='single'
-          selectedKeys={'1'}
-          onSelectionChange={(selected) => props.onSelectCollateralType(Object.values(selected)[0])}
-        >
-          <Table.Header>
-            <Table.Column>Protocol</Table.Column>
-            <Table.Column>Token</Table.Column>
-            <Table.Column>Underlier</Table.Column>
-            <Table.Column>Maturity</Table.Column>
-            <Table.Column>TVL</Table.Column>
-          </Table.Header>
-          <Table.Body>
-            {
-              props.collateralTypesData.map((collateralType: any) => {
-                const { vault, tokenId, tokenSymbol, underlierSymbol, maturity } = collateralType.properties;
-                const { protocol, asset } = collateralType.metadata;
-                const maturityFormatted = new Date(Number(maturity.toString()) * 1000);
-                return (
-                  <Table.Row key={encodeCollateralTypeId(vault, tokenId)}>
-                    <Table.Cell>{protocol}</Table.Cell>
-                    <Table.Cell>{`${asset} (${tokenSymbol})`}</Table.Cell>
-                    <Table.Cell>{underlierSymbol}</Table.Cell>
-                    <Table.Cell>
-                      <StyledBadge type={(new Date() < maturityFormatted) ? 'green' : 'red'}>
-                        {formatUnixTimestamp(maturity)}
-                      </StyledBadge>
-                    </Table.Cell>
-                    <Table.Cell>0</Table.Cell>
-                  </Table.Row>
-                );
-              })
-            }
-          </Table.Body>
-        </Table>
-      )}
+      <Table
+        aria-label='Collateral Types'
+        css={{ height: 'auto', minWidth: '100%' }}
+        selectionMode='single'
+        selectedKeys={'1'}
+        onSelectionChange={(selected) => props.onSelectCollateralType(Object.values(selected)[0])}
+      >
+        <Table.Header>
+          <Table.Column>Protocol</Table.Column>
+          <Table.Column>Token</Table.Column>
+          <Table.Column>Underlier</Table.Column>
+          <Table.Column>Maturity</Table.Column>
+          <Table.Column>TVL</Table.Column>
+        </Table.Header>
+        <Table.Body>
+          {
+            props.collateralTypesData.map((collateralType: any) => {
+              const { vault, tokenId, tokenSymbol, underlierSymbol, maturity } = collateralType.properties;
+              const { protocol, asset } = collateralType.metadata;
+              const maturityFormatted = new Date(Number(maturity.toString()) * 1000);
+              return (
+                <Table.Row key={encodeCollateralTypeId(vault, tokenId)}>
+                  <Table.Cell>{protocol}</Table.Cell>
+                  <Table.Cell>{`${asset} (${tokenSymbol})`}</Table.Cell>
+                  <Table.Cell>{underlierSymbol}</Table.Cell>
+                  <Table.Cell>
+                    <StyledBadge type={(new Date() < maturityFormatted) ? 'green' : 'red'}>
+                      {formatUnixTimestamp(maturity)}
+                    </StyledBadge>
+                  </Table.Cell>
+                  <Table.Cell>0</Table.Cell>
+                </Table.Row>
+              );
+            })
+          }
+        </Table.Body>
+      </Table>
     </>
   );
 };

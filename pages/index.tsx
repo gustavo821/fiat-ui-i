@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import type { NextPage } from 'next';
-import { useAccount, useNetwork } from 'wagmi';
+import { useProvider, useAccount, useNetwork } from 'wagmi';
 import { ethers } from 'ethers';
 import { Container, Spacer } from '@nextui-org/react';
 
@@ -17,11 +17,14 @@ import { ModifyPositionModal } from './ModifyPositionModal';
 import { decodeCollateralTypeId, getCollateralTypeData, decodePositionId, getPositionData } from './utils';
 
 const Home: NextPage = () => {
-  const { connector } = useAccount();
+  const provider = useProvider();
+  const { connector } = useAccount({ onConnect: () => resetState(), onDisconnect: () => resetState() });
   const { chain } = useNetwork();
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const initialState = {
+    setupListeners: false,
+    fetchedData: false,
     contextData: {
       fiat: null as null | FIAT,
       explorerUrl: null as null | string,
@@ -59,7 +62,8 @@ const Home: NextPage = () => {
     }
   } 
 
-  const [mounted, setMounted] = React.useState(false);
+  const [setupListeners, setSetupListeners] = React.useState(false);
+  const [fetchedData, setFetchedData] = React.useState(false);
   const [contextData, setContextData] = React.useState(initialState.contextData);
   const [collateralTypesData, setCollateralTypesData] = React.useState(initialState.collateralTypesData);
   const [positionsData, setPositionsData] = React.useState(initialState.positionsData);
@@ -69,25 +73,52 @@ const Home: NextPage = () => {
   const [selectedPositionId, setSelectedPositionId] = React.useState(initialState.selectedPositionId);
   const [selectedCollateralTypeId, setSelectedCollateralTypeId] = React.useState(initialState.selectedCollateralTypeId);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  function resetState() {
+    setSetupListeners(initialState.setupListeners);
+    setFetchedData(initialState.fetchedData);
+    setContextData(initialState.contextData);
+    setCollateralTypesData(initialState.collateralTypesData);
+    setPositionsData(initialState.positionsData);
+    setModifyPositionData(initialState.modifyPositionData);
+    setModifyPositionFormData(initialState.modifyPositionFormData);
+    setTransactionData(initialState.transactionData);
+    setSelectedPositionId(initialState.selectedPositionId);
+    setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
+  }
+
   // Reset state if network or account changes
   React.useEffect(() => {
-    if (!connector || mounted) return;
-    connector.on('change', () => {
-      setContextData(initialState.contextData);
-      setCollateralTypesData(initialState.collateralTypesData);
-      setPositionsData(initialState.positionsData);
-      setModifyPositionData(initialState.modifyPositionData);
-      setModifyPositionFormData(initialState.modifyPositionFormData);
-      setTransactionData(initialState.transactionData);
-      setSelectedPositionId(initialState.selectedPositionId);
-      setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
-    });
-    setMounted(true);
-  }, [mounted, connector, initialState]);
+    if (!connector || setupListeners) return;
+    connector.on('change', () => resetState());
+    setSetupListeners(true);
+  }, [setupListeners, connector, resetState]);
+
+  React.useEffect(() => {
+    if (connector || collateralTypesData.length !== 0) return;
+
+    (async function () {
+      const fiat = await FIAT.fromProvider(provider);
+      const collateralTypesData_ = await fiat.fetchCollateralTypesAndPrices();
+      setCollateralTypesData(collateralTypesData_
+        .filter((collateralType: any) => (collateralType.metadata != undefined))
+        .sort((a: any, b: any) => {
+          if (Number(a.properties.maturity) > Number(b.properties.maturity)) return -1;
+          if (Number(a.properties.maturity) < Number(b.properties.maturity)) return 1;
+          return 0;
+        })
+      );
+      setContextData({
+        ...contextData,
+        explorerUrl: chain?.blockExplorers?.etherscan?.url || ''
+      });
+    })();
+  });
 
   // Fetch User, CollateralType and Vault data
   React.useEffect(() => {
-    if (!connector || collateralTypesData.length > 0 || positionsData.length > 0 || contextData.fiat != null) return;
+    if (!connector || fetchedData || contextData.fiat != null) return;
+    setFetchedData(true);
     
     (async function () {
       const signer = (await connector.getSigner());
@@ -122,7 +153,7 @@ const Home: NextPage = () => {
         proxies: contextData_.filter((user: any) => (user.isProxy === true)).map((user: any) => user.user)
       });
     })();
-  }, [connector, chain, collateralTypesData, positionsData, contextData]);
+  }, [connector, fetchedData, chain, collateralTypesData, positionsData, contextData]);
 
   // Populate ModifyPosition data
   React.useEffect(() => {
@@ -554,10 +585,7 @@ const Home: NextPage = () => {
       </div>
       <Spacer y={2} />
       <Container>
-        <ProxyCard
-          {...contextData}
-          onSendTransaction={(action) => setTransactionData({ ...transactionData, action })}
-        />
+        <ProxyCard {...contextData} onSendTransaction={(action) => setTransactionData({ ...transactionData, action })}/>
       </Container>
       <Spacer y={2} />
       <Container>

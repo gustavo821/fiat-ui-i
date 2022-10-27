@@ -23,7 +23,7 @@ interface CreatePositionModalProps {
 
 export const CreatePositionModal = (props: CreatePositionModalProps) => {
 
-  if (props.contextData.fiat == null) return null;
+  if (props.contextData.user == null) return null;
   if (props.modifyPositionData.collateralType == null) return null;
   if (props.modifyPositionData.underlierAllowance == null) return null;
   if (props.modifyPositionData.monetaDelegate == null) return null;
