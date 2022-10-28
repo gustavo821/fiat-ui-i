@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text, Spacer, Card, Button, Modal, Navbar, Grid, Input, Loading, Switch } from '@nextui-org/react';
-import { ethers } from 'ethers';
+import { BigNumber, ethers } from 'ethers';
 import { Slider } from 'antd';
 import 'antd/dist/antd.css';
 // @ts-ignore
@@ -24,6 +24,18 @@ interface CreatePositionModalProps {
 export const CreatePositionModal = (props: CreatePositionModalProps) => {
 
   const disableActions = (props.transactionData.status === 'sent');
+
+  // TODO: remove this from here, use in the sdk
+  const convertToHumanReadableValue = (
+    value: BigNumber,
+    scale: number
+  ): string => {
+    const parts = ethers?.utils
+      .commify(scaleToDec(value, scale))
+      .toString()
+      .split(".");
+    return parts[0] + "." + parts[1].slice(0, 2);
+  };
   
   return (
     <Modal preventClose closeButton={!disableActions} blur open={props.open} onClose={() => props.onClose()}>
@@ -35,6 +47,7 @@ export const CreatePositionModal = (props: CreatePositionModalProps) => {
             properties: { underlierScale, underlierSymbol, maturity }
           },
           underlierAllowance,
+          underlierBalance,
           monetaDelegate
         } = props.modifyPositionData;
         const {
@@ -65,6 +78,12 @@ export const CreatePositionModal = (props: CreatePositionModalProps) => {
                 </Navbar.Content>
               </Navbar>
               <Text b size={'m'}>Inputs</Text>
+              {
+                underlierBalance &&
+                <Text size={"$sm"}>
+                  Balance: ${convertToHumanReadableValue(underlierBalance, underlierScale)}
+              </Text>
+              }
               <Grid.Container gap={0} justify='space-between' css={{ marginBottom: '1rem' }}>
                 <Grid>
                   <Input

@@ -40,6 +40,7 @@ const Home: NextPage = () => {
       collateralType: null as undefined | null | any,
       position: null as undefined | null | any,
       underlierAllowance: null as null | ethers.BigNumber, // [underlierScale]
+      underlierBalance: null as null | ethers.BigNumber,
       monetaDelegate: null as null | boolean,
       fiatAllowance: null as null | ethers.BigNumber // [wad]
     },
@@ -181,12 +182,17 @@ const Home: NextPage = () => {
       if (data.collateralType == null) return;
       const { codex, moneta, fiat, vaultEPTActions } = contextData.fiat.getContracts();
       const underlier = contextData.fiat.getERC20Contract(data.collateralType.properties.underlierToken);
-      const [underlierAllowance, monetaDelegate, fiatAllowance] = await contextData.fiat.multicall([
+
+      const signer = (await connector.getSigner());
+      if (!signer || !signer.provider) return;
+      const user = await signer.getAddress();
+      const [underlierAllowance, underlierBalance, monetaDelegate, fiatAllowance] = await contextData.fiat.multicall([
         { contract: underlier, method: 'allowance', args: [proxy, vaultEPTActions.address] },
+        { contract: underlier, method: 'balanceOf', args: [user] },
         { contract: codex, method: 'delegates', args: [proxy, moneta.address] },
         { contract: fiat, method: 'allowance', args: [proxy, vaultEPTActions.address] }
       ]);
-      setModifyPositionData({ ...modifyPositionData, ...data, underlierAllowance, monetaDelegate, fiatAllowance });
+      setModifyPositionData({ ...modifyPositionData, ...data, underlierAllowance, underlierBalance, monetaDelegate, fiatAllowance });
     })();
   }, [
     connector,
