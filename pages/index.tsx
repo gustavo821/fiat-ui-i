@@ -8,13 +8,13 @@ import { Container, Spacer } from '@nextui-org/react';
 // @ts-ignore
 import { FIAT, ZERO, WAD, decToWad, scaleToWad, wadToScale } from '@fiatdao/sdk';
 
-import { ProxyCard } from './ProxyCard';
-import { CollateralTypesTable } from './CollateralTypesTable';
-import { PositionsTable } from './PositionsTable';
-import { CreatePositionModal } from './CreatePositionModal';
-import { ModifyPositionModal } from './ModifyPositionModal';
+import { ProxyCard } from '../src/ProxyCard';
+import { CollateralTypesTable } from '../src/CollateralTypesTable';
+import { PositionsTable } from '../src/PositionsTable';
+import { CreatePositionModal } from '../src/CreatePositionModal';
+import { ModifyPositionModal } from '../src/ModifyPositionModal';
 
-import { decodeCollateralTypeId, getCollateralTypeData, decodePositionId, getPositionData } from './utils';
+import { decodeCollateralTypeId, getCollateralTypeData, decodePositionId, getPositionData } from '../src/utils';
 
 const Home: NextPage = () => {
   const provider = useProvider();
