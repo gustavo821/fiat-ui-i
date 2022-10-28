@@ -271,9 +271,9 @@ export const CreatePositionModal = (props: CreatePositionModalProps) => {
                 disabled={(
                   disableActions
                   || !hasProxy
-                  || underlier.isZero()
-                  || deltaCollateral.isZero()
-                  || underlierAllowance.lt(underlier)
+                  || underlier?.isZero()
+                  || deltaCollateral?.isZero()
+                  || underlierAllowance?.lt(underlier)
                   || monetaDelegate === false
                 )}
                 icon={(disableActions && currentTxAction === 'buyCollateralAndModifyDebt') ? (<Loading size='xs' />) : (null)}
