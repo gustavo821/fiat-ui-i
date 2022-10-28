@@ -236,8 +236,8 @@ export const CreatePositionModal = (props: CreatePositionModalProps) => {
               <Switch
                 disabled={disableActions || !hasProxy}
                 // @ts-ignore
-                checked={() => (!underlier.isZero() && underlierAllowance.gte(underlier))}
-                onChange={() => (!underlier.isZero() && underlierAllowance.gte(underlier))
+                checked={() => (!underlier.isZero() && underlierAllowance?.gte(underlier))}
+                onChange={() => (!underlier.isZero() && underlierAllowance?.gte(underlier))
                   ? props.onSendTransaction('unsetUnderlierAllowance')
                   : props.onSendTransaction('setUnderlierAllowance')
                 }
