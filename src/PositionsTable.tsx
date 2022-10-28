@@ -1,7 +1,6 @@
 import React from 'react';
 import { Text, Table } from '@nextui-org/react';
 
-// @ts-ignore
 import { wadToDec } from '@fiatdao/sdk';
 
 import { encodePositionId, getCollateralTypeData } from './utils';

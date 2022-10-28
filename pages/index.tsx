@@ -5,7 +5,6 @@ import { useProvider, useAccount, useNetwork } from 'wagmi';
 import { ethers } from 'ethers';
 import { Container, Spacer } from '@nextui-org/react';
 
-// @ts-ignore
 import { FIAT, ZERO, WAD, decToWad, scaleToWad, wadToScale } from '@fiatdao/sdk';
 
 import { ProxyCard } from '../src/ProxyCard';

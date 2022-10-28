@@ -3,7 +3,6 @@ import { Text, Spacer, Card, Button, Modal, Navbar, Grid, Input, Loading, Switch
 import { BigNumber, ethers } from 'ethers';
 import { Slider } from 'antd';
 import 'antd/dist/antd.css';
-// @ts-ignore
 import { decToScale, decToWad, scaleToDec, wadToDec } from '@fiatdao/sdk';
 
 import { formatUnixTimestamp, floor2, floor4 } from './utils';
@@ -235,8 +234,7 @@ export const CreatePositionModal = (props: CreatePositionModalProps) => {
               </Text>
               <Switch
                 disabled={disableActions || !hasProxy}
-                // @ts-ignore
-                checked={() => (!underlier.isZero() && underlierAllowance?.gte(underlier))}
+                checked={!underlier.isZero() && underlierAllowance?.gte(underlier)}
                 onChange={() => (!underlier.isZero() && underlierAllowance?.gte(underlier))
                   ? props.onSendTransaction('unsetUnderlierAllowance')
                   : props.onSendTransaction('setUnderlierAllowance')
@@ -252,8 +250,7 @@ export const CreatePositionModal = (props: CreatePositionModalProps) => {
               <Text size={'0.875rem'}>Enable FIAT</Text>
               <Switch
                 disabled={disableActions || !hasProxy}
-                // @ts-ignore
-                checked={() => (!!monetaDelegate)}
+                checked={monetaDelegate ?? false} 
                 onChange={() => (!!monetaDelegate)
                   ? props.onSendTransaction('unsetMonetaDelegate')
                   : props.onSendTransaction('setMonetaDelegate')
