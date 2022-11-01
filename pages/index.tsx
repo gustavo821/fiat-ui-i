@@ -94,6 +94,7 @@ const Home: NextPage = () => {
     setSetupListeners(true);
   }, [setupListeners, connector, resetState]);
 
+  // Initial fetch of collateral types data
   React.useEffect(() => {
     if (connector || collateralTypesData.length !== 0) return;
 
@@ -125,17 +126,12 @@ const Home: NextPage = () => {
       if (!signer || !signer.provider) return;
       const user = await signer.getAddress();
       const fiat = await FIAT.fromSigner(signer, undefined);
-      const [collateralTypesData_, contextData_] = await Promise.all([
+      const [collateralTypesData_, userData] = await Promise.all([
         fiat.fetchCollateralTypesAndPrices([]),
         fiat.fetchUserData(user.toLowerCase())
       ]);
 
-      const positionsData_ = contextData_.reduce((positions_: any, user: any) => (
-        [
-          ...positions_,
-          ...user.positions.reduce((positions__: any, position: any) => ([...positions__, position]), [])
-        ]
-      ), []);
+      const positionsData_ = userData[0].positions
 
       setCollateralTypesData(collateralTypesData_
         .filter((collateralType: any) => (collateralType.metadata != undefined))
@@ -150,7 +146,7 @@ const Home: NextPage = () => {
         fiat,
         explorerUrl: chain?.blockExplorers?.etherscan?.url || '',
         user,
-        proxies: contextData_.filter((user: any) => (user.isProxy === true)).map((user: any) => user.user)
+        proxies: userData.filter((user: any) => (user.isProxy === true)).map((user: any) => user.user)
       });
     })();
   }, [connector, fetchedData, chain, collateralTypesData, positionsData, contextData.fiat]);
