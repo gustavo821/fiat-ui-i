@@ -3,7 +3,7 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import type { NextPage } from 'next';
 import { useProvider, useAccount, useNetwork } from 'wagmi';
 import { ethers } from 'ethers';
-import { Container, Spacer } from '@nextui-org/react';
+import { Container, Loading, Spacer } from '@nextui-org/react';
 
 import { FIAT, ZERO, WAD, decToWad, scaleToWad, wadToScale } from '@fiatdao/sdk';
 
@@ -94,9 +94,9 @@ const Home: NextPage = () => {
     setSetupListeners(true);
   }, [setupListeners, connector, resetState]);
 
-  // Initial fetch of collateral types data
+  // Fetch CollateralTypes data
   React.useEffect(() => {
-    if (connector || collateralTypesData.length !== 0) return;
+    if (collateralTypesData.length !== 0) return;
 
     (async function () {
       const fiat = await FIAT.fromProvider(provider, null);
@@ -116,7 +116,7 @@ const Home: NextPage = () => {
     })();
   }, [chain?.blockExplorers?.etherscan?.url, collateralTypesData.length, connector, contextData, provider]);
 
-  // Fetch User, CollateralType and Vault data
+  // Fetch User, and Vault data
   React.useEffect(() => {
     if (!connector || fetchedData || contextData.fiat != null) return;
     setFetchedData(true);
@@ -126,22 +126,13 @@ const Home: NextPage = () => {
       if (!signer || !signer.provider) return;
       const user = await signer.getAddress();
       const fiat = await FIAT.fromSigner(signer, undefined);
-      const [collateralTypesData_, userData] = await Promise.all([
-        fiat.fetchCollateralTypesAndPrices([]),
+      const [userData] = await Promise.all([
         fiat.fetchUserData(user.toLowerCase())
       ]);
 
       const positionsData_ = userData[0].positions
-
-      setCollateralTypesData(collateralTypesData_
-        .filter((collateralType: any) => (collateralType.metadata != undefined))
-        .sort((a: any, b: any) => {
-          if (Number(a.properties.maturity) > Number(b.properties.maturity)) return -1;
-          if (Number(a.properties.maturity) < Number(b.properties.maturity)) return 1;
-          return 0;
-        })
-      );
       setPositionsData(positionsData_);
+
       setContextData({
         fiat,
         explorerUrl: chain?.blockExplorers?.etherscan?.url || '',
@@ -592,6 +583,12 @@ const Home: NextPage = () => {
       setTransactionData({ ...transactionData, action: null, status: null });
     })();
   }, [connector, contextData.fiat, contextData.proxies, contextData.user, modifyPositionData, modifyPositionFormData, transactionData]);
+
+  if (collateralTypesData.length === 0) {
+    return (
+        <Loading />
+    )
+  }
 
   return (
     <div>
