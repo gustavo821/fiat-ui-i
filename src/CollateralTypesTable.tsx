@@ -44,8 +44,6 @@ interface CollateralTypesTableProps {
 }
 
 export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
-  if (props.collateralTypesData.length === 0) return null;
-
   return (
     <>
       <Text h1>Collateral Types</Text>

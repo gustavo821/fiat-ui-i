@@ -12,8 +12,6 @@ interface PositionsTableProps {
 }
 
 export const PositionsTable = (props: PositionsTableProps) => {
-  if (props.positionsData === null || props.positionsData.length === 0) return null;
-
   return (
     <>
       <Text h1>Positions</Text>

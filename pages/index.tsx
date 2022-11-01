@@ -149,6 +149,7 @@ const Home: NextPage = () => {
 
     const { vault, tokenId } = decodeCollateralTypeId((selectedCollateralTypeId || selectedPositionId as string));
     let data = { ...modifyPositionData, collateralType: getCollateralTypeData(collateralTypesData, vault, tokenId) };
+
     if (selectedPositionId) {
       const { owner } = decodePositionId(selectedPositionId);
       const matured = !(new Date() < (new Date(Number(data.collateralType.properties.maturity.toString()) * 1000)));
@@ -609,14 +610,20 @@ const Home: NextPage = () => {
       </Container>
       <Spacer y={2} />
       <Container>
-        <PositionsTable
-          collateralTypesData={collateralTypesData}
-          positionsData={positionsData}
-          onSelectPosition={(positionId) => {
-            setSelectedPositionId(positionId);
-            setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
-          }}
-        />
+        {
+          positionsData === null || positionsData.length === 0
+            ? null
+            : (
+              <PositionsTable
+                collateralTypesData={collateralTypesData}
+                positionsData={positionsData}
+                onSelectPosition={(positionId) => {
+                  setSelectedPositionId(positionId);
+                  setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
+                }}
+              />
+            )
+        }
       </Container>
 
       <CreatePositionModal
