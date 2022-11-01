@@ -255,8 +255,7 @@ export const ModifyPositionModal = (props: ModifyPositionModalProps) => {
                   </Text>
                   <Switch
                     disabled={disableActions || !hasProxy}
-                    // @ts-ignore
-                    checked={() => (!underlier.isZero() && underlierAllowance.gte(underlier))}
+                    checked={!underlier.isZero() && underlierAllowance.gte(underlier)}
                     onChange={() => (!underlier.isZero() && underlierAllowance.gte(underlier))
                       ? props.onSendTransaction('unsetUnderlierAllowance')
                       : props.onSendTransaction('setUnderlierAllowance')
@@ -272,8 +271,7 @@ export const ModifyPositionModal = (props: ModifyPositionModalProps) => {
                   <Text size={'0.875rem'}>Enable FIAT</Text>
                   <Switch
                     disabled={disableActions || !hasProxy}
-                    // @ts-ignore
-                    checked={() => (!!monetaDelegate)}
+                    checked={!!monetaDelegate}
                     onChange={() => (!!monetaDelegate)
                       ? props.onSendTransaction('unsetMonetaDelegate')
                       : props.onSendTransaction('setMonetaDelegate')
@@ -294,8 +292,7 @@ export const ModifyPositionModal = (props: ModifyPositionModalProps) => {
                   </Text>
                   <Switch
                     disabled={disableActions || !hasProxy}
-                    // @ts-ignore
-                    checked={() => (!deltaDebt.isZero() && fiatAllowance.gte(deltaDebt))}
+                    checked={!deltaDebt.isZero() && fiatAllowance.gte(deltaDebt)}
                     onChange={() => (!deltaDebt.isZero() && fiatAllowance.gte(deltaDebt))
                       ? props.onSendTransaction('unsetFIATAllowance')
                       : props.onSendTransaction('setFIATAllowance')

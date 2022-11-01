@@ -42,7 +42,7 @@ export const PositionsTable = (props: PositionsTableProps) => {
                 <Table.Row key={encodePositionId(vault, tokenId, owner)}>
                   <Table.Cell>{protocol}</Table.Cell>
                   <Table.Cell>{`${asset} (${tokenSymbol})`}</Table.Cell>
-                  <Table.Cell>{(tokenId as Number).toString()}</Table.Cell>
+                  <Table.Cell>{(tokenId as number).toString()}</Table.Cell>
                   <Table.Cell>{wadToDec(collateral)}</Table.Cell>
                   <Table.Cell>{wadToDec(normalDebt)}</Table.Cell>
                 </Table.Row>

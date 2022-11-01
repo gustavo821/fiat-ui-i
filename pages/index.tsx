@@ -95,11 +95,11 @@ const Home: NextPage = () => {
   }, [setupListeners, connector, resetState]);
 
   React.useEffect(() => {
-    if (!connector || collateralTypesData.length !== 0) return;
+    if (connector || collateralTypesData.length !== 0) return;
 
     (async function () {
-      const fiat = await FIAT.fromProvider(provider);
-      const collateralTypesData_ = await fiat.fetchCollateralTypesAndPrices();
+      const fiat = await FIAT.fromProvider(provider, null);
+      const collateralTypesData_ = await fiat.fetchCollateralTypesAndPrices([]);
       setCollateralTypesData(collateralTypesData_
         .filter((collateralType: any) => (collateralType.metadata != undefined))
         .sort((a: any, b: any) => {
@@ -113,7 +113,7 @@ const Home: NextPage = () => {
         explorerUrl: chain?.blockExplorers?.etherscan?.url || ''
       });
     })();
-  });
+  }, [chain?.blockExplorers?.etherscan?.url, collateralTypesData.length, connector, contextData, provider]);
 
   // Fetch User, CollateralType and Vault data
   React.useEffect(() => {
@@ -124,9 +124,9 @@ const Home: NextPage = () => {
       const signer = (await connector.getSigner());
       if (!signer || !signer.provider) return;
       const user = await signer.getAddress();
-      const fiat = await FIAT.fromSigner(signer);
+      const fiat = await FIAT.fromSigner(signer, undefined);
       const [collateralTypesData_, contextData_] = await Promise.all([
-        fiat.fetchCollateralTypesAndPrices(),
+        fiat.fetchCollateralTypesAndPrices([]),
         fiat.fetchUserData(user.toLowerCase())
       ]);
 
@@ -153,7 +153,7 @@ const Home: NextPage = () => {
         proxies: contextData_.filter((user: any) => (user.isProxy === true)).map((user: any) => user.user)
       });
     })();
-  }, [connector, fetchedData, chain, collateralTypesData, positionsData, contextData]);
+  }, [connector, fetchedData, chain, collateralTypesData, positionsData, contextData.fiat]);
 
   // Populate ModifyPosition data
   React.useEffect(() => {
@@ -178,7 +178,8 @@ const Home: NextPage = () => {
     if (data.position && data.position.owner.toLowerCase() !== proxy.toLowerCase()) return;
 
     (async function () {
-      if (data.collateralType == null) return;
+      if (data.collateralType == null || !contextData.fiat) return;
+
       const { codex, moneta, fiat, vaultEPTActions } = contextData.fiat.getContracts();
       const underlier = contextData.fiat.getERC20Contract(data.collateralType.properties.underlierToken);
 
@@ -211,12 +212,12 @@ const Home: NextPage = () => {
       || modifyPositionData.collateralType == null
       || (selectedCollateralTypeId == null && selectedPositionId == null)
       || modifyPositionFormData.outdated === false
-      || !contextData.fiat
     ) return;
 
 
     const timeOutId = setTimeout(() => {
       (async function () {
+        if (!contextData.fiat) return
         const { collateralType, position } = modifyPositionData;
         const { mode } = modifyPositionFormData;
         const { vault, tokenId, tokenScale, vaultType } = collateralType.properties;
@@ -363,6 +364,8 @@ const Home: NextPage = () => {
     const { action } = transactionData;
 
     (async function () {
+      if (!contextData.fiat) return;
+
       try {
         const {
           proxyRegistry, codex, moneta, vaultEPTActions, vaultFCActions, vaultFYActions
@@ -592,7 +595,7 @@ const Home: NextPage = () => {
       } catch (error) { console.error(error); }
       setTransactionData({ ...transactionData, action: null, status: null });
     })();
-  }, [connector, contextData, modifyPositionData, modifyPositionFormData, transactionData]);
+  }, [connector, contextData.fiat, contextData.proxies, contextData.user, modifyPositionData, modifyPositionFormData, transactionData]);
 
   return (
     <div>
