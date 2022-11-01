@@ -40,6 +40,7 @@ const StyledBadge = styled('span', {
 
 interface CollateralTypesTableProps {
   collateralTypesData: any,
+  positionsData: any,
   onSelectCollateralType: (collateralTypeId: string) => void
 }
 

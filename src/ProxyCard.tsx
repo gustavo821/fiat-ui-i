@@ -9,8 +9,6 @@ interface ProxyCardProps {
 }
 
 export const ProxyCard = (props: ProxyCardProps) => {
-  if (props.user === null) return null;
-
   return (
     <Card css={{ mw: '450px' }}>
       <Card.Body>

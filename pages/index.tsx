@@ -94,12 +94,13 @@ const Home: NextPage = () => {
     setSetupListeners(true);
   }, [setupListeners, connector, resetState]);
 
-  // Fetch CollateralTypes data
+  // Fetch CollateralTypes and block explorer data
   React.useEffect(() => {
     if (collateralTypesData.length !== 0) return;
 
     (async function () {
       const fiat = await FIAT.fromProvider(provider, null);
+      // TODO: this returns different data depending on if there is a signer or not. we should fix that
       const collateralTypesData_ = await fiat.fetchCollateralTypesAndPrices([]);
       setCollateralTypesData(collateralTypesData_
         .filter((collateralType: any) => (collateralType.metadata != undefined))
@@ -192,6 +193,8 @@ const Home: NextPage = () => {
 
   // Update ModifyPosition form data
   React.useEffect(() => {
+    // TODO: might have to swap for userReducer NOW.
+    // or implement a debounce/use zustand if it's calling a certain rpc method
     if (
       !connector
       || modifyPositionData.collateralType == null
@@ -596,12 +599,18 @@ const Home: NextPage = () => {
       </div>
       <Spacer y={2} />
       <Container>
-        <ProxyCard {...contextData} onSendTransaction={(action) => setTransactionData({ ...transactionData, action })}/>
+        {
+          contextData.user === null
+          ? null
+          : <ProxyCard {...contextData} onSendTransaction={(action) => setTransactionData({ ...transactionData, action })}
+          />
+        }
       </Container>
       <Spacer y={2} />
       <Container>
         <CollateralTypesTable
           collateralTypesData={collateralTypesData}
+          positionsData={positionsData}
           onSelectCollateralType={(collateralTypeId) => {
             setSelectedPositionId(initialState.selectedPositionId);
             setSelectedCollateralTypeId(collateralTypeId);
