@@ -20,10 +20,8 @@ const Home: NextPage = () => {
   const { connector } = useAccount({ onConnect: () => resetState(), onDisconnect: () => resetState() });
   const { chain } = useNetwork();
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const initialState = {
+  const initialState = React.useMemo(() => ({
     setupListeners: false,
-    fetchedData: false,
     contextData: {
       fiat: null as null | FIAT,
       explorerUrl: null as null | string,
@@ -60,10 +58,9 @@ const Home: NextPage = () => {
       action: null as null | string,
       status: null as null | string, // error, sent, confirming, confirmed
     }
-  } 
+  }), []) 
 
   const [setupListeners, setSetupListeners] = React.useState(false);
-  const [fetchedData, setFetchedData] = React.useState(false);
   const [contextData, setContextData] = React.useState(initialState.contextData);
   const [collateralTypesData, setCollateralTypesData] = React.useState(initialState.collateralTypesData);
   const [positionsData, setPositionsData] = React.useState(initialState.positionsData);
@@ -76,7 +73,6 @@ const Home: NextPage = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   function resetState() {
     setSetupListeners(initialState.setupListeners);
-    setFetchedData(initialState.fetchedData);
     setContextData(initialState.contextData);
     setCollateralTypesData(initialState.collateralTypesData);
     setPositionsData(initialState.positionsData);
@@ -119,8 +115,7 @@ const Home: NextPage = () => {
 
   // Fetch User and Vault data
   React.useEffect(() => {
-    if (!connector || fetchedData || contextData.fiat != null) return;
-    setFetchedData(true);
+    if (!connector || (contextData.user !== null && contextData.fiat != null)) return;
     
     (async function () {
       const signer = (await connector.getSigner());
@@ -130,15 +125,15 @@ const Home: NextPage = () => {
       const userData = await fiat.fetchUserData(user.toLowerCase());
       const positionsData = userData.flatMap((user) => user.positions);
       setPositionsData(positionsData);
-
+      const proxies = userData.filter((user: any) => (user.isProxy === true)).map((user: any) => user.user);
       setContextData({
         ...contextData,
         fiat,
         user,
-        proxies: userData.filter((user: any) => (user.isProxy === true)).map((user: any) => user.user)
+        proxies,
       });
     })();
-  }, [connector, fetchedData, contextData]);
+  }, [connector, contextData]);
 
   // Populate ModifyPosition data
   React.useEffect(() => {
@@ -149,16 +144,19 @@ const Home: NextPage = () => {
     ) return;
 
     const { vault, tokenId } = decodeCollateralTypeId((selectedCollateralTypeId || selectedPositionId as string));
-    let data = { ...modifyPositionData, collateralType: getCollateralTypeData(collateralTypesData, vault, tokenId) };
+    const collateralType = getCollateralTypeData(collateralTypesData, vault, tokenId)
 
+    let position;
     if (selectedPositionId) {
       const { owner } = decodePositionId(selectedPositionId);
-      const matured = !(new Date() < (new Date(Number(data.collateralType.properties.maturity.toString()) * 1000)));
+      const matured = !(new Date() < (new Date(Number(collateralType.properties.maturity.toString()) * 1000)));
       setModifyPositionFormData({ ...modifyPositionFormData, mode: (matured) ? 'redeem' : 'deposit' });
-      data = { ...data, position: getPositionData(positionsData, vault, tokenId, owner) };
+      position = getPositionData(positionsData, vault, tokenId, owner);
     }
+    const data = { ...modifyPositionData, collateralType, position };
     setModifyPositionData(data);
 
+    // For positions with proxies, fetch underlier balance, allowance, as well as fiat allowance and moneta delegation
     if (contextData.proxies.length === 0) return;
     const { proxies: [proxy] } = contextData;
     if (data.position && data.position.owner.toLowerCase() !== proxy.toLowerCase()) return;
