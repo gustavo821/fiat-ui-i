@@ -156,13 +156,18 @@ const Home: NextPage = () => {
     const data = { ...modifyPositionData, collateralType, position };
     setModifyPositionData(data);
 
-    // For positions with proxies, fetch underlier balance, allowance, as well as fiat allowance and moneta delegation
-    if (contextData.proxies.length === 0) return;
-    const { proxies: [proxy] } = contextData;
-    if (data.position && data.position.owner.toLowerCase() !== proxy.toLowerCase()) return;
-
     (async function () {
-      if (data.collateralType == null || !contextData.fiat) return;
+      // For positions with proxies, fetch underlier balance, allowance, fiat allowance, and moneta delegation enablement
+      if (contextData.proxies.length === 0) return;
+      const { proxies: [proxy] } = contextData;
+      if (
+        !contextData.fiat ||
+        data.collateralType == null ||
+        (data.position &&
+          data.position.owner.toLowerCase() !== proxy.toLowerCase())
+      ) {
+        return;
+      }
 
       const { codex, moneta, fiat, vaultEPTActions } = contextData.fiat.getContracts();
       const underlier = contextData.fiat.getERC20Contract(data.collateralType.properties.underlierToken);
