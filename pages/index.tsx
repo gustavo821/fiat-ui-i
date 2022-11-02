@@ -96,7 +96,6 @@ const Home: NextPage = () => {
 
     (async function () {
       const fiat = await FIAT.fromProvider(provider, null);
-      // TODO: this returns different data depending on if there is a signer or not. we should fix that
       const collateralTypesData_ = await fiat.fetchCollateralTypesAndPrices([]);
       setCollateralTypesData(collateralTypesData_
         .filter((collateralType: any) => (collateralType.metadata != undefined))
@@ -617,25 +616,20 @@ const Home: NextPage = () => {
             // Attempt to find existing position for a given collateral
             // If it exists, open the ModifyPositionModal modal instead of CreatePositionModal
             // by setting selectedPositionId rather than selectedCollateralTypeId
-            if (positionsData && positionsData.length !== 0) {
-              const { vault, tokenId } = decodeCollateralTypeId(collateralTypeId);
-              const foundPosition = positionsData.find(
-                (position) =>
-                  position.vault === vault &&
-                  position.tokenId.toString() === tokenId
+            const { vault, tokenId } = decodeCollateralTypeId(collateralTypeId);
+            const foundPosition = getPositionData(positionsData, vault, tokenId, contextData.proxies[0]);
+            if (foundPosition !== undefined) {
+              const positionId = encodePositionId(
+                vault,
+                tokenId,
+                foundPosition.owner
               );
-              if (foundPosition !== undefined) {
-                const positionId = encodePositionId(
-                  vault,
-                  tokenId,
-                  foundPosition.owner
-                );
-                setSelectedPositionId(positionId);
-                setSelectedCollateralTypeId(
-                  initialState.selectedCollateralTypeId
-                );
-              }
+              setSelectedPositionId(positionId);
+              setSelectedCollateralTypeId(
+                initialState.selectedCollateralTypeId
+              );
             } else {
+              // If no position for this collateralType was found, open CreatePositionModal like normal
               setSelectedPositionId(initialState.selectedPositionId);
               setSelectedCollateralTypeId(collateralTypeId);
             }
