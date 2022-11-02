@@ -242,7 +242,7 @@ export const ModifyPositionModal = (props: ModifyPositionModalProps) => {
                 type='string'
                 label='Health Factor'
                 labelRight={'🚦'}
-                contentLeft={(outdated) ? (<Loading size='xs'/>) : (null)}
+                contentLeft={(outdated) ? (<Loading size='xs' />) : (null)}
                 size='sm'
                 status='primary'
               />
@@ -255,7 +255,7 @@ export const ModifyPositionModal = (props: ModifyPositionModalProps) => {
                   </Text>
                   <Switch
                     disabled={disableActions || !hasProxy}
-                    checked={!underlier.isZero() && underlierAllowance.gte(underlier)}
+                    checked={!underlier.isZero() && underlierAllowance?.gte(underlier)}
                     onChange={() => (!underlier.isZero() && underlierAllowance.gte(underlier))
                       ? props.onSendTransaction('unsetUnderlierAllowance')
                       : props.onSendTransaction('setUnderlierAllowance')

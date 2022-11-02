@@ -13,7 +13,7 @@ import { PositionsTable } from '../src/PositionsTable';
 import { CreatePositionModal } from '../src/CreatePositionModal';
 import { ModifyPositionModal } from '../src/ModifyPositionModal';
 
-import { decodeCollateralTypeId, getCollateralTypeData, decodePositionId, getPositionData } from '../src/utils';
+import { decodeCollateralTypeId, getCollateralTypeData, decodePositionId, getPositionData, encodePositionId } from '../src/utils';
 
 const Home: NextPage = () => {
   const provider = useProvider();
@@ -613,10 +613,32 @@ const Home: NextPage = () => {
       <Container>
         <CollateralTypesTable
           collateralTypesData={collateralTypesData}
-          positionsData={positionsData}
           onSelectCollateralType={(collateralTypeId) => {
-            setSelectedPositionId(initialState.selectedPositionId);
-            setSelectedCollateralTypeId(collateralTypeId);
+            // Attempt to find existing position for a given collateral
+            // If it exists, open the ModifyPositionModal modal instead of CreatePositionModal
+            // by setting selectedPositionId rather than selectedCollateralTypeId
+            if (positionsData && positionsData.length !== 0) {
+              const { vault, tokenId } = decodeCollateralTypeId(collateralTypeId);
+              const foundPosition = positionsData.find(
+                (position) =>
+                  position.vault === vault &&
+                  position.tokenId.toString() === tokenId
+              );
+              if (foundPosition !== undefined) {
+                const positionId = encodePositionId(
+                  vault,
+                  tokenId,
+                  foundPosition.owner
+                );
+                setSelectedPositionId(positionId);
+                setSelectedCollateralTypeId(
+                  initialState.selectedCollateralTypeId
+                );
+              }
+            } else {
+              setSelectedPositionId(initialState.selectedPositionId);
+              setSelectedCollateralTypeId(collateralTypeId);
+            }
           }}
         />
       </Container>
