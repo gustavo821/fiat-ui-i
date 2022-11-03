@@ -392,86 +392,88 @@ const Home: NextPage = () => {
         if (action == 'unsetMonetaDelegate') {
           console.log(await contextData.fiat.dryrun(codex, 'revokeDelegate', moneta.address));
         }
-        if (action == 'buyCollateralAndModifyDebt') {
-          if (!modifyPositionData.collateralType) throw null;
 
-          const { properties } = modifyPositionData.collateralType;
-          const [collateralTypeData] = await contextData.fiat.fetchCollateralTypesAndPrices(
-            [{ vault: properties.vault, tokenId: properties.tokenId }]
-          );
-          const normalDebt = contextData.fiat.debtToNormalDebt(
-            modifyPositionFormData.deltaDebt, collateralTypeData.state.codex.virtualRate
-          ).mul(WAD.sub(decToWad(0.001))).div(WAD);
-          const tokenAmount = wadToScale(modifyPositionFormData.deltaCollateral, properties.tokenScale);
-          const deadline = Math.round(+new Date() / 1000) + 3600;
-          console.log('')
-          if (properties.vaultType === 'ERC20:EPT' && properties.eptData) {
-            console.log(await contextData.fiat.dryrunViaProxy(
-              contextData.proxies[0],
-              vaultEPTActions,
-              'buyCollateralAndModifyDebt',
-              properties.vault,
-              contextData.proxies[0],
-              contextData.user,
-              contextData.user,
-              modifyPositionFormData.underlier,
-              normalDebt,
-              [
-                properties.eptData.balancerVault,
-                properties.eptData.poolId,
-                properties.underlierToken,
-                properties.token,
-                tokenAmount,
-                deadline,
-                modifyPositionFormData.underlier
-              ]
-            ));
-          } 
-          if (properties.vaultType === 'ERC1155:FC' && properties.fcData) {
-            // 1 - (underlier / deltaCollateral)
-            const minLendRate = wadToScale(
-              WAD.sub(
-                scaleToWad(modifyPositionFormData.underlier, properties.underlierScale).mul(WAD)
-                .div(modifyPositionFormData.deltaCollateral)
-              ),
-              properties.tokenScale
-            );
+        // if (action == 'buyCollateralAndModifyDebt') {
+        //   if (!modifyPositionData.collateralType) throw null;
 
-            console.log(await contextData.fiat.dryrunViaProxy(
-              contextData.proxies[0],
-              vaultFCActions,
-              'buyCollateralAndModifyDebt',
-              properties.vault,
-              properties.token,
-              properties.tokenId,
-              contextData.proxies[0],
-              contextData.user,
-              contextData.user,
-              tokenAmount,
-              normalDebt,
-              minLendRate,
-              modifyPositionFormData.underlier
-            ));
-          } else if (properties.vaultType === 'ERC20:FY' && properties.fyData) {
-            console.log(await contextData.fiat.dryrunViaProxy(
-              contextData.proxies[0],
-              vaultFYActions,
-              'buyCollateralAndModifyDebt',
-              properties.vault,
-              contextData.proxies[0],
-              contextData.user,
-              contextData.user,
-              modifyPositionFormData.underlier,
-              normalDebt,
-              [
-                tokenAmount,
-                properties.fyData.yieldSpacePool,
-                properties.underlierToken,
-                properties.token
-              ]
-            ));
-          }
-        }
+        //   const { properties } = modifyPositionData.collateralType;
+        //   const [collateralTypeData] = await contextData.fiat.fetchCollateralTypesAndPrices(
+        //     [{ vault: properties.vault, tokenId: properties.tokenId }]
+        //   );
+        //   const normalDebt = contextData.fiat.debtToNormalDebt(
+        //     modifyPositionFormData.deltaDebt, collateralTypeData.state.codex.virtualRate
+        //   ).mul(WAD.sub(decToWad(0.001))).div(WAD);
+        //   const tokenAmount = wadToScale(modifyPositionFormData.deltaCollateral, properties.tokenScale);
+        //   const deadline = Math.round(+new Date() / 1000) + 3600;
+        //   console.log('')
+        //   if (properties.vaultType === 'ERC20:EPT' && properties.eptData) {
+        //     console.log(await contextData.fiat.dryrunViaProxy(
+        //       contextData.proxies[0],
+        //       vaultEPTActions,
+        //       'buyCollateralAndModifyDebt',
+        //       properties.vault,
+        //       contextData.proxies[0],
+        //       contextData.user,
+        //       contextData.user,
+        //       modifyPositionFormData.underlier,
+        //       normalDebt,
+        //       [
+        //         properties.eptData.balancerVault,
+        //         properties.eptData.poolId,
+        //         properties.underlierToken,
+        //         properties.token,
+        //         tokenAmount,
+        //         deadline,
+        //         modifyPositionFormData.underlier
+        //       ]
+        //     ));
+        //   } 
+        //   if (properties.vaultType === 'ERC1155:FC' && properties.fcData) {
+        //     // 1 - (underlier / deltaCollateral)
+        //     const minLendRate = wadToScale(
+        //       WAD.sub(
+        //         scaleToWad(modifyPositionFormData.underlier, properties.underlierScale).mul(WAD)
+        //         .div(modifyPositionFormData.deltaCollateral)
+        //       ),
+        //       properties.tokenScale
+        //     );
+
+        //     console.log(await contextData.fiat.dryrunViaProxy(
+        //       contextData.proxies[0],
+        //       vaultFCActions,
+        //       'buyCollateralAndModifyDebt',
+        //       properties.vault,
+        //       properties.token,
+        //       properties.tokenId,
+        //       contextData.proxies[0],
+        //       contextData.user,
+        //       contextData.user,
+        //       tokenAmount,
+        //       normalDebt,
+        //       minLendRate,
+        //       modifyPositionFormData.underlier
+        //     ));
+        //   } else if (properties.vaultType === 'ERC20:FY' && properties.fyData) {
+        //     console.log(await contextData.fiat.dryrunViaProxy(
+        //       contextData.proxies[0],
+        //       vaultFYActions,
+        //       'buyCollateralAndModifyDebt',
+        //       properties.vault,
+        //       contextData.proxies[0],
+        //       contextData.user,
+        //       contextData.user,
+        //       modifyPositionFormData.underlier,
+        //       normalDebt,
+        //       [
+        //         tokenAmount,
+        //         properties.fyData.yieldSpacePool,
+        //         properties.underlierToken,
+        //         properties.token
+        //       ]
+        //     ));
+        //   }
+        // }
+
         if (action == 'sellCollateralAndModifyDebt') {
           if (!modifyPositionData.collateralType) throw null;
           const { properties } = modifyPositionData.collateralType;

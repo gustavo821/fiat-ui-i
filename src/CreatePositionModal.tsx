@@ -6,6 +6,7 @@ import 'antd/dist/antd.css';
 import { decToScale, decToWad, scaleToDec, wadToDec } from '@fiatdao/sdk';
 
 import { formatUnixTimestamp, floor2, floor4 } from './utils';
+import {buyCollateralAndModifyDebt} from './userActions';
 
 interface CreatePositionModalProps {
   contextData: any,
@@ -272,7 +273,14 @@ export const CreatePositionModal = (props: CreatePositionModalProps) => {
                   || monetaDelegate === false
                 )}
                 icon={(props.disableActions && currentTxAction === 'buyCollateralAndModifyDebt') ? (<Loading size='xs' />) : (null)}
-                onPress={() => props.onSendTransaction('buyCollateralAndModifyDebt')}
+                onPress={async () => {
+                  // props.onSendTransaction('buyCollateralAndModifyDebt')}
+                  await buyCollateralAndModifyDebt(
+                    props.contextData,
+                    props.modifyPositionData.collateralType.properties,
+                    props.modifyPositionFormData,
+                  );
+                }}
               >
                 Deposit
               </Button>

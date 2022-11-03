@@ -4,7 +4,7 @@ import { ethers } from 'ethers';
 import { decToScale, decToWad, scaleToDec, wadToDec } from '@fiatdao/sdk';
 
 import { formatUnixTimestamp, floor2, floor4 } from './utils';
-// import { buyCollateralAndModifyDebt } from './userActions';
+import { buyCollateralAndModifyDebt } from './userActions';
 
 interface ModifyPositionModalProps {
   contextData: any,
@@ -327,12 +327,12 @@ export const ModifyPositionModal = (props: ModifyPositionModalProps) => {
                 }
                 onPress={async () => {
                   if (mode === 'deposit') {
-                    props.onSendTransaction('buyCollateralAndModifyDebt')
-                    // await buyCollateralAndModifyDebt(
-                    //   props.contextData,
-                    //   props.modifyPositionData.collateralType.properties,
-                    //   props.modifyPositionFormData,
-                    // );
+                    // props.onSendTransaction('buyCollateralAndModifyDebt')
+                    await buyCollateralAndModifyDebt(
+                      props.contextData,
+                      props.modifyPositionData.collateralType.properties,
+                      props.modifyPositionFormData,
+                    );
                   } else if (mode === 'withdraw') {
                     props.onSendTransaction('sellCollateralAndModifyDebt')
                   } else if (mode === 'redeem') {
