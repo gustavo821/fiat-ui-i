@@ -9,6 +9,7 @@ import { formatUnixTimestamp, floor2, floor4 } from './utils';
 
 interface CreatePositionModalProps {
   contextData: any,
+  disableActions: boolean,
   modifyPositionData: any,
   modifyPositionFormData: any,
   transactionData: any,
@@ -21,9 +22,6 @@ interface CreatePositionModalProps {
 }
 
 export const CreatePositionModal = (props: CreatePositionModalProps) => {
-
-  const disableActions = (props.transactionData.status === 'sent');
-
   // TODO: remove this from here, use in the sdk
   const convertToHumanReadableValue = (
     value: BigNumber,
@@ -37,7 +35,7 @@ export const CreatePositionModal = (props: CreatePositionModalProps) => {
   };
   
   return (
-    <Modal preventClose closeButton={!disableActions} blur open={props.open} onClose={() => props.onClose()}>
+    <Modal preventClose closeButton={!props.disableActions} blur open={props.open} onClose={() => props.onClose()}>
       {(props.contextData.user && props.modifyPositionData.collateralType) && ((() => {
         const { proxies } = props.contextData;
         const {
@@ -86,7 +84,7 @@ export const CreatePositionModal = (props: CreatePositionModalProps) => {
               <Grid.Container gap={0} justify='space-between' css={{ marginBottom: '1rem' }}>
                 <Grid>
                   <Input
-                    disabled={disableActions}
+                    disabled={props.disableActions}
                     value={floor2(scaleToDec(underlier, underlierScale))}
                     onChange={(event) => {
                       if (event.target.value === null || event.target.value === undefined || event.target.value === '') {
@@ -109,7 +107,7 @@ export const CreatePositionModal = (props: CreatePositionModalProps) => {
                 </Grid>
                 <Grid>
                   <Input
-                    disabled={disableActions}
+                    disabled={props.disableActions}
                     value={floor2(Number(wadToDec(slippagePct)) * 100)}
                     onChange={(event) => {
                       if (event.target.value === null || event.target.value === undefined || event.target.value === '') {
@@ -141,7 +139,7 @@ export const CreatePositionModal = (props: CreatePositionModalProps) => {
                   <Slider
                     handleStyle={{ borderColor: '#0072F5' }}
                     included={false}
-                    disabled={disableActions}
+                    disabled={props.disableActions}
                     value={Number(wadToDec(targetedHealthFactor))}
                     onChange={(value) => props.onUpdateTargetedHealthFactor(decToWad(String(value)))}
                     min={1.001}
@@ -233,7 +231,7 @@ export const CreatePositionModal = (props: CreatePositionModalProps) => {
                 Approve {underlierSymbol}
               </Text>
               <Switch
-                disabled={disableActions || !hasProxy}
+                disabled={props.disableActions || !hasProxy}
                 checked={!underlier.isZero() && underlierAllowance?.gte(underlier)}
                 onChange={() => (!underlier.isZero() && underlierAllowance?.gte(underlier))
                   ? props.onSendTransaction('unsetUnderlierAllowance')
@@ -241,7 +239,7 @@ export const CreatePositionModal = (props: CreatePositionModalProps) => {
                 }
                 color='primary'
                 icon={
-                  (['setUnderlierAllowance', 'unsetUnderlierAllowance'].includes(currentTxAction || '') && disableActions)
+                  (['setUnderlierAllowance', 'unsetUnderlierAllowance'].includes(currentTxAction || '') && props.disableActions)
                     ? (<Loading size='xs' />)
                     : (null)
                 }
@@ -249,7 +247,7 @@ export const CreatePositionModal = (props: CreatePositionModalProps) => {
               <Spacer y={0.5} />
               <Text size={'0.875rem'}>Enable FIAT</Text>
               <Switch
-                disabled={disableActions || !hasProxy}
+                disabled={props.disableActions || !hasProxy}
                 checked={monetaDelegate ?? false} 
                 onChange={() => (!!monetaDelegate)
                   ? props.onSendTransaction('unsetMonetaDelegate')
@@ -257,7 +255,7 @@ export const CreatePositionModal = (props: CreatePositionModalProps) => {
                 }
                 color='primary'
                 icon={
-                  (['setMonetaDelegate', 'unsetMonetaDelegate'].includes(currentTxAction || '') && disableActions)
+                  (['setMonetaDelegate', 'unsetMonetaDelegate'].includes(currentTxAction || '') && props.disableActions)
                     ? (<Loading size='xs' />)
                     : (null)
                 }
@@ -266,14 +264,14 @@ export const CreatePositionModal = (props: CreatePositionModalProps) => {
               <Button
                 css={{minWidth: '100%'}}
                 disabled={(
-                  disableActions
+                  props.disableActions
                   || !hasProxy
                   || underlier?.isZero()
                   || deltaCollateral?.isZero()
                   || underlierAllowance?.lt(underlier)
                   || monetaDelegate === false
                 )}
-                icon={(disableActions && currentTxAction === 'buyCollateralAndModifyDebt') ? (<Loading size='xs' />) : (null)}
+                icon={(props.disableActions && currentTxAction === 'buyCollateralAndModifyDebt') ? (<Loading size='xs' />) : (null)}
                 onPress={() => props.onSendTransaction('buyCollateralAndModifyDebt')}
               >
                 Deposit

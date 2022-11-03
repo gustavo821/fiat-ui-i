@@ -73,6 +73,8 @@ const Home: NextPage = () => {
   const [selectedPositionId, setSelectedPositionId] = React.useState(initialState.selectedPositionId);
   const [selectedCollateralTypeId, setSelectedCollateralTypeId] = React.useState(initialState.selectedCollateralTypeId);
 
+  const disableActions = React.useMemo(() => transactionData.status === 'sent', [transactionData.status])
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
   function resetState() {
     setSetupListeners(initialState.setupListeners);
@@ -363,28 +365,36 @@ const Home: NextPage = () => {
         const {
           proxyRegistry, codex, moneta, vaultEPTActions, vaultFCActions, vaultFYActions
         } = contextData.fiat.getContracts();
+
+        if (contextData.proxies.length === 0 || contextData.user === null) return;
+
         // if (action == 'setupProxy') {
         //   const resp = await contextData.fiat.dryrun(proxyRegistry, 'deployFor', contextData.user);
         //   console.log('resp', resp)
         // }
+
         if (action == 'setUnderlierAllowance') {
           const token = contextData.fiat.getERC20Contract(modifyPositionData.collateralType.properties.underlierToken);
           console.log(await contextData.fiat.dryrun(
             token, 'approve', contextData.proxies[0], modifyPositionFormData.underlier
           ));
         }
+
         if (action == 'unsetUnderlierAllowance') {
           const token = contextData.fiat.getERC20Contract(modifyPositionData.collateralType.properties.underlierToken);
           console.log(await contextData.fiat.dryrun(token, 'approve', contextData.proxies[0], 0));
         }
+
         if (action == 'setMonetaDelegate') {
           console.log(await contextData.fiat.dryrun(codex, 'grantDelegate', moneta.address));
         }
+
         if (action == 'unsetMonetaDelegate') {
           console.log(await contextData.fiat.dryrun(codex, 'revokeDelegate', moneta.address));
         }
         if (action == 'buyCollateralAndModifyDebt') {
           if (!modifyPositionData.collateralType) throw null;
+
           const { properties } = modifyPositionData.collateralType;
           const [collateralTypeData] = await contextData.fiat.fetchCollateralTypesAndPrices(
             [{ vault: properties.vault, tokenId: properties.tokenId }]
@@ -394,6 +404,7 @@ const Home: NextPage = () => {
           ).mul(WAD.sub(decToWad(0.001))).div(WAD);
           const tokenAmount = wadToScale(modifyPositionFormData.deltaCollateral, properties.tokenScale);
           const deadline = Math.round(+new Date() / 1000) + 3600;
+          console.log('')
           if (properties.vaultType === 'ERC20:EPT' && properties.eptData) {
             console.log(await contextData.fiat.dryrunViaProxy(
               contextData.proxies[0],
@@ -415,7 +426,8 @@ const Home: NextPage = () => {
                 modifyPositionFormData.underlier
               ]
             ));
-          } else if (properties.vaultType === 'ERC1155:FC' && properties.fcData) {
+          } 
+          if (properties.vaultType === 'ERC1155:FC' && properties.fcData) {
             // 1 - (underlier / deltaCollateral)
             const minLendRate = wadToScale(
               WAD.sub(
@@ -424,6 +436,7 @@ const Home: NextPage = () => {
               ),
               properties.tokenScale
             );
+
             console.log(await contextData.fiat.dryrunViaProxy(
               contextData.proxies[0],
               vaultFCActions,
@@ -662,6 +675,7 @@ const Home: NextPage = () => {
 
       <CreatePositionModal
         contextData={contextData}
+        disableActions={disableActions}
         modifyPositionData={modifyPositionData}
         modifyPositionFormData={modifyPositionFormData}
         transactionData={transactionData}
@@ -706,6 +720,7 @@ const Home: NextPage = () => {
 
       <ModifyPositionModal
         contextData={contextData}
+        disableActions={disableActions}
         modifyPositionData={modifyPositionData}
         modifyPositionFormData={modifyPositionFormData}
         transactionData={transactionData}

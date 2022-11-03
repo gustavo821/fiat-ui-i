@@ -4,9 +4,11 @@ import { ethers } from 'ethers';
 import { decToScale, decToWad, scaleToDec, wadToDec } from '@fiatdao/sdk';
 
 import { formatUnixTimestamp, floor2, floor4 } from './utils';
+// import { buyCollateralAndModifyDebt } from './userActions';
 
 interface ModifyPositionModalProps {
   contextData: any,
+  disableActions: boolean,
   modifyPositionData: any,
   modifyPositionFormData: any,
   transactionData: any,
@@ -21,12 +23,11 @@ interface ModifyPositionModalProps {
 }
 
 export const ModifyPositionModal = (props: ModifyPositionModalProps) => {
-
-  const disableActions = (props.transactionData.status === 'sent');
-
   return (
-    <Modal preventClose closeButton={!disableActions} blur open={props.open} onClose={() => props.onClose()}>
+    <Modal preventClose closeButton={!props.disableActions} blur open={props.open} onClose={() => props.onClose()}>
       {(props.contextData.user && props.modifyPositionData.collateralType) && ((() => {
+        // TODO: move all this out of the render method
+
         const { proxies } = props.contextData;
         const {
           collateralType: {
@@ -85,7 +86,7 @@ export const ModifyPositionModal = (props: ModifyPositionModalProps) => {
                 <Grid>
                   {(mode === 'deposit') && (
                     <Input
-                      disabled={disableActions}
+                      disabled={props.disableActions}
                       value={floor2(scaleToDec(underlier, underlierScale))}
                       onChange={(event) => {
                         if (event.target.value === null || event.target.value === undefined || event.target.value === '') {
@@ -108,7 +109,7 @@ export const ModifyPositionModal = (props: ModifyPositionModalProps) => {
                   )}
                   {(mode === 'withdraw' || mode === 'redeem') && (
                     <Input
-                      disabled={disableActions}
+                      disabled={props.disableActions}
                       value={floor2(wadToDec(deltaCollateral))}
                       onChange={(event) => {
                         if (event.target.value === null || event.target.value === undefined || event.target.value === '') {
@@ -134,7 +135,7 @@ export const ModifyPositionModal = (props: ModifyPositionModalProps) => {
                 <Grid>
                   {(mode === 'deposit' || mode === 'withdraw') && (
                     <Input
-                      disabled={disableActions}
+                      disabled={props.disableActions}
                       value={floor2(Number(wadToDec(slippagePct)) * 100)}
                       onChange={(event) => {
                         if (event.target.value === null || event.target.value === undefined || event.target.value === '') {
@@ -160,7 +161,7 @@ export const ModifyPositionModal = (props: ModifyPositionModalProps) => {
                 </Grid>
               </Grid.Container>
               <Input
-                disabled={disableActions}
+                disabled={props.disableActions}
                 value={floor2(wadToDec(deltaDebt))}
                 onChange={(event) => {
                   if (event.target.value === null || event.target.value === undefined || event.target.value === '') {
@@ -254,7 +255,7 @@ export const ModifyPositionModal = (props: ModifyPositionModalProps) => {
                     Approve {underlierSymbol}
                   </Text>
                   <Switch
-                    disabled={disableActions || !hasProxy}
+                    disabled={props.disableActions || !hasProxy}
                     checked={!underlier.isZero() && underlierAllowance?.gte(underlier)}
                     onChange={() => (!underlier.isZero() && underlierAllowance.gte(underlier))
                       ? props.onSendTransaction('unsetUnderlierAllowance')
@@ -262,7 +263,7 @@ export const ModifyPositionModal = (props: ModifyPositionModalProps) => {
                     }
                     color='primary'
                     icon={
-                      (['setUnderlierAllowance', 'unsetUnderlierAllowance'].includes(currentTxAction || '') && disableActions)
+                      (['setUnderlierAllowance', 'unsetUnderlierAllowance'].includes(currentTxAction || '') && props.disableActions)
                         ? (<Loading size='xs' />)
                         : (null)
                     }
@@ -270,7 +271,7 @@ export const ModifyPositionModal = (props: ModifyPositionModalProps) => {
                   <Spacer y={0.5} />
                   <Text size={'0.875rem'}>Enable FIAT</Text>
                   <Switch
-                    disabled={disableActions || !hasProxy}
+                    disabled={props.disableActions || !hasProxy}
                     checked={!!monetaDelegate}
                     onChange={() => (!!monetaDelegate)
                       ? props.onSendTransaction('unsetMonetaDelegate')
@@ -278,7 +279,7 @@ export const ModifyPositionModal = (props: ModifyPositionModalProps) => {
                     }
                     color='primary'
                     icon={
-                      (['setMonetaDelegate', 'unsetMonetaDelegate'].includes(currentTxAction || '') && disableActions)
+                      (['setMonetaDelegate', 'unsetMonetaDelegate'].includes(currentTxAction || '') && props.disableActions)
                         ? (<Loading size='xs' />)
                         : (null)
                     }
@@ -291,7 +292,7 @@ export const ModifyPositionModal = (props: ModifyPositionModalProps) => {
                     Approve FIAT
                   </Text>
                   <Switch
-                    disabled={disableActions || !hasProxy}
+                    disabled={props.disableActions || !hasProxy}
                     checked={!deltaDebt.isZero() && fiatAllowance.gte(deltaDebt)}
                     onChange={() => (!deltaDebt.isZero() && fiatAllowance.gte(deltaDebt))
                       ? props.onSendTransaction('unsetFIATAllowance')
@@ -299,7 +300,7 @@ export const ModifyPositionModal = (props: ModifyPositionModalProps) => {
                     }
                     color='primary'
                     icon={
-                      (['setFIATAllowance', 'unsetFIATAllowance'].includes(currentTxAction || '') && disableActions)
+                      (['setFIATAllowance', 'unsetFIATAllowance'].includes(currentTxAction || '') && props.disableActions)
                         ? (<Loading size='xs' />)
                         : (null)
                     }
@@ -310,7 +311,7 @@ export const ModifyPositionModal = (props: ModifyPositionModalProps) => {
               <Button
                 css={{minWidth: '100%'}}
                 disabled={(
-                  disableActions
+                  props.disableActions
                   || !hasProxy
                   || (mode === 'deposit') ? underlier.isZero() : deltaCollateral.isZero()
                   || (mode === 'deposit') ? monetaDelegate === false : true
@@ -319,14 +320,19 @@ export const ModifyPositionModal = (props: ModifyPositionModalProps) => {
                 icon={
                   (
                     ['buyCollateralAndModifyDebt', 'sellCollateralAndModifyDebt', 'redeemCollateralAndModifyDebt']
-                    .includes(currentTxAction || '') && disableActions
+                    .includes(currentTxAction || '') && props.disableActions
                   )
                   ? (<Loading size='xs' />)
                   : (null)
                 }
-                onPress={() => {
+                onPress={async () => {
                   if (mode === 'deposit') {
                     props.onSendTransaction('buyCollateralAndModifyDebt')
+                    // await buyCollateralAndModifyDebt(
+                    //   props.contextData,
+                    //   props.modifyPositionData.collateralType.properties,
+                    //   props.modifyPositionFormData,
+                    // );
                   } else if (mode === 'withdraw') {
                     props.onSendTransaction('sellCollateralAndModifyDebt')
                   } else if (mode === 'redeem') {
