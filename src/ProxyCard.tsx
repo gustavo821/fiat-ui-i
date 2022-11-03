@@ -1,14 +1,29 @@
 import React from 'react';
 import { Text, Spacer, Card, Button, Link } from '@nextui-org/react';
+import { TransactionStatus } from '../pages';
 
 interface ProxyCardProps {
   proxies: Array<string>,
   explorerUrl: null | string,
-  user: null | string
-  onSendTransaction: (action: string) => void,
+  fiat: any,
+  user: null | string,
+  setTransactionStatus: (status: TransactionStatus) => void,
 }
 
 export const ProxyCard = (props: ProxyCardProps) => {
+  const createProxy = async () => {
+    const { proxyRegistry } = props.fiat.getContracts();
+    try {
+      props.setTransactionStatus('sent')
+      const resp = await props.fiat.dryrun(proxyRegistry, 'deployFor', props.user);
+      console.log('resp: ', resp);
+      props.setTransactionStatus('confirmed')
+    } catch (e) {
+      console.error('Error creating proxy');
+      props.setTransactionStatus('error');
+    }
+  }
+
   return (
     <Card css={{ mw: '450px' }}>
       <Card.Body>
@@ -25,7 +40,7 @@ export const ProxyCard = (props: ProxyCardProps) => {
           : (
             <>
               <Spacer y={1} />
-              <Button onPress={() => props.onSendTransaction('setupProxy')}>
+              <Button onPress={createProxy}>
                 Setup a new Proxy account
               </Button>
             </>

@@ -15,10 +15,13 @@ import { ModifyPositionModal } from '../src/ModifyPositionModal';
 
 import { decodeCollateralTypeId, getCollateralTypeData, decodePositionId, getPositionData, encodePositionId } from '../src/utils';
 
+export type TransactionStatus = null | 'error' | 'sent' | 'confirming' | 'confirmed';
+
 const Home: NextPage = () => {
   const provider = useProvider();
   const { connector } = useAccount({ onConnect: () => resetState(), onDisconnect: () => resetState() });
   const { chain } = useNetwork();
+
 
   const initialState = React.useMemo(() => ({
     setupListeners: false,
@@ -56,7 +59,7 @@ const Home: NextPage = () => {
     },
     transactionData: {
       action: null as null | string,
-      status: null as null | string, // error, sent, confirming, confirmed
+      status: null as TransactionStatus, // error, sent, confirming, confirmed
     }
   }), []) 
 
@@ -360,9 +363,10 @@ const Home: NextPage = () => {
         const {
           proxyRegistry, codex, moneta, vaultEPTActions, vaultFCActions, vaultFYActions
         } = contextData.fiat.getContracts();
-        if (action == 'setupProxy') {
-          console.log(await contextData.fiat.dryrun(proxyRegistry, 'deployFor', contextData.user));
-        }
+        // if (action == 'setupProxy') {
+        //   const resp = await contextData.fiat.dryrun(proxyRegistry, 'deployFor', contextData.user);
+        //   console.log('resp', resp)
+        // }
         if (action == 'setUnderlierAllowance') {
           const token = contextData.fiat.getERC20Contract(modifyPositionData.collateralType.properties.underlierToken);
           console.log(await contextData.fiat.dryrun(
@@ -601,12 +605,14 @@ const Home: NextPage = () => {
       </div>
       <Spacer y={2} />
       <Container>
-        {
-          contextData.user === null
-          ? null
-          : <ProxyCard {...contextData} onSendTransaction={(action) => setTransactionData({ ...transactionData, action })}
+        {contextData.user === null || contextData.fiat === null ? null : (
+          <ProxyCard
+            {...contextData}
+            setTransactionStatus={(status) =>
+              setTransactionData({ ...transactionData, status })
+            }
           />
-        }
+        )}
       </Container>
       <Spacer y={2} />
       <Container>
