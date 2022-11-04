@@ -1,16 +1,16 @@
 import React from 'react';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import type { NextPage } from 'next';
-import { useProvider, useAccount, useNetwork } from 'wagmi';
+import { useAccount, useNetwork, useProvider } from 'wagmi';
 import { ethers } from 'ethers';
 import { Container, Spacer } from '@nextui-org/react';
-import { FIAT, ZERO, WAD, decToWad, scaleToWad, wadToScale } from '@fiatdao/sdk';
+import { decToWad, FIAT, scaleToWad, WAD, wadToScale, ZERO } from '@fiatdao/sdk';
 import { ProxyCard } from '../src/components/ProxyCard';
 import { CollateralTypesTable } from '../src/components/CollateralTypesTable';
 import { PositionsTable } from '../src/components/PositionsTable';
 import { CreatePositionModal } from '../src/components/CreatePositionModal';
 import { ModifyPositionModal } from '../src/components/ModifyPositionModal';
-import { decodeCollateralTypeId, getCollateralTypeData, decodePositionId, getPositionData, encodePositionId } from '../src/utils';
+import { decodeCollateralTypeId, decodePositionId, encodePositionId, getCollateralTypeData, getPositionData } from '../src/utils';
 import * as userActions from '../src/userActions';
 
 export type TransactionStatus = null | 'error' | 'sent' | 'confirming' | 'confirmed';

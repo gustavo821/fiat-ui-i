@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, Spacer, Card, Button, Link, Loading } from '@nextui-org/react';
+import { Button, Card, Link, Loading, Spacer, Text } from '@nextui-org/react';
 import { TransactionStatus } from '../../pages';
 
 interface ProxyCardProps {

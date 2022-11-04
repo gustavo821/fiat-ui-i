@@ -1,22 +1,22 @@
 import React from 'react';
 import {
-  Text,
-  Spacer,
-  Card,
   Button,
-  Modal,
-  Navbar,
+  Card,
   Grid,
   Input,
   Loading,
+  Modal,
+  Navbar,
+  Spacer,
   Switch,
+  Text,
 } from '@nextui-org/react';
 import { BigNumber, ethers } from 'ethers';
 import { Slider } from 'antd';
 import 'antd/dist/antd.css';
 import { decToScale, decToWad, scaleToDec, wadToDec } from '@fiatdao/sdk';
 
-import { formatUnixTimestamp, floor2, floor4 } from '../utils';
+import { floor2, floor4, formatUnixTimestamp } from '../utils';
 import { TransactionStatus } from '../../pages';
 
 interface CreatePositionModalProps {

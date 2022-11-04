@@ -2,21 +2,21 @@ import '../styles/global.css';
 import '@rainbow-me/rainbowkit/styles.css';
 import type { AppProps } from 'next/app';
 import {
-  RainbowKitProvider,
-  getDefaultWallets,
   connectorsForWallets,
+  darkTheme,
+  getDefaultWallets,
   lightTheme,
-  darkTheme
+  RainbowKitProvider
 } from '@rainbow-me/rainbowkit';
 import {
   argentWallet,
-  trustWallet,
   ledgerWallet,
+  trustWallet,
 } from '@rainbow-me/rainbowkit/wallets';
 import { chain, configureChains, createClient, WagmiConfig } from 'wagmi';
 import { alchemyProvider } from 'wagmi/providers/alchemy';
 import { publicProvider } from 'wagmi/providers/public';
-import { NextUIProvider, createTheme } from '@nextui-org/react';
+import { createTheme, NextUIProvider } from '@nextui-org/react';
 import { ThemeProvider as NextThemesProvider } from 'next-themes';
 
 const { chains, provider, webSocketProvider } = configureChains(

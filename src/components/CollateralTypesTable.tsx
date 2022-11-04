@@ -1,7 +1,7 @@
 import React from 'react';
-import { Text, Table, styled, Loading } from '@nextui-org/react';
+import { Loading, styled, Table, Text } from '@nextui-org/react';
 
-import { formatUnixTimestamp, encodeCollateralTypeId } from '../utils';
+import { encodeCollateralTypeId, formatUnixTimestamp } from '../utils';
 
 const StyledBadge = styled('span', {
   display: 'inline-block',
