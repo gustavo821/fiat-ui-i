@@ -31,12 +31,12 @@ const { chains, provider, webSocketProvider } = configureChains(
 );
 
 const { wallets } = getDefaultWallets({
-  appName: 'Lever UI',
+  appName: 'Experimental FIAT UI',
   chains,
 });
 
 const demoAppInfo = {
-  appName: 'Lever UI',
+  appName: 'Experimental FIAT UI',
 };
 
 const connectors = connectorsForWallets([

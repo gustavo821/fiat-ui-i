@@ -410,8 +410,8 @@ const Home: NextPage = () => {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', padding: 12 }}>
-        <h4 style={{ justifyContent: 'flex',  }}>Lever App</h4>
-        <ConnectButton />
+        <h4 style={{ justifyContent: 'flex',  }}>Experimental FIAT UI</h4>
+        <ConnectButton showBalance={false} />
       </div>
       <Spacer y={2} />
       <Container>
