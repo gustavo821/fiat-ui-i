@@ -16,7 +16,7 @@ import { Slider } from 'antd';
 import 'antd/dist/antd.css';
 import { decToScale, decToWad, scaleToDec, wadToDec } from '@fiatdao/sdk';
 
-import { floor2, floor4, formatUnixTimestamp } from '../utils';
+import { commifyToDecimalPlaces, floor2, floor4, formatUnixTimestamp } from '../utils';
 import { TransactionStatus } from '../../pages';
 
 interface CreatePositionModalProps {
@@ -56,19 +56,6 @@ export const CreatePositionModal = (props: CreatePositionModalProps) => {
 };
 
 const CreatePositionModalBody = (props: CreatePositionModalProps) => {
-  // TODO: remove this from here, use in the sdk
-  const commifyToDecimalPlaces = (
-    value: BigNumber,
-    scale: number,
-    decimalPlaces: number
-  ): string => {
-    const parts = ethers?.utils
-      .commify(scaleToDec(value, scale))
-      .toString()
-      .split('.');
-    return parts[0] + '.' + parts[1].slice(0, decimalPlaces);
-  };
-
   const { proxies } = props.contextData;
   const {
     collateralType: {

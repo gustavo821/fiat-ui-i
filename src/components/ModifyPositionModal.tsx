@@ -11,10 +11,10 @@ import {
   Switch,
   Text,
 } from '@nextui-org/react';
-import { ethers } from 'ethers';
+import { BigNumber, ethers } from 'ethers';
 import { decToScale, decToWad, scaleToDec, wadToDec } from '@fiatdao/sdk';
 
-import { floor2, floor4, formatUnixTimestamp } from '../utils';
+import { commifyToDecimalPlaces, floor2, floor4, formatUnixTimestamp } from '../utils';
 import { TransactionStatus } from '../../pages';
 
 interface ModifyPositionModalProps {
@@ -56,12 +56,6 @@ export const ModifyPositionModal = (props: ModifyPositionModalProps) => {
 };
 
 const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
-  if (!props.contextData.user || !props.modifyPositionData.collateralType || !props.modifyPositionData.collateralType.metadata ) {
-    // TODO
-    // return <Loading />;
-    return null;
-  }
-
   const { proxies } = props.contextData;
   const {
     collateralType: {
@@ -69,6 +63,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
       properties: { underlierScale, underlierSymbol, maturity },
     },
     underlierAllowance,
+    underlierBalance,
     monetaDelegate,
     fiatAllowance,
   } = props.modifyPositionData;
@@ -88,6 +83,12 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
 
   const hasProxy = proxies.length > 0;
   const matured = !(new Date() < new Date(Number(maturity.toString()) * 1000));
+
+  if (!props.contextData.user || !props.modifyPositionData.collateralType || !props.modifyPositionData.collateralType.metadata ) {
+    // TODO
+    // return <Loading />;
+    return null;
+  }
 
   return (
     <>
@@ -141,6 +142,11 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
         <Text b size={'m'}>
           Inputs
         </Text>
+        {underlierBalance && (
+          <Text size={'$sm'}>
+            Wallet: {commifyToDecimalPlaces(underlierBalance, underlierScale, 2)} {underlierSymbol}
+          </Text>
+        )}
         <Grid.Container
           gap={0}
           justify='space-between'

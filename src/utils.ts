@@ -1,4 +1,5 @@
-import { ethers } from 'ethers';
+import {scaleToDec} from '@fiatdao/sdk';
+import { BigNumber, ethers } from 'ethers';
 
 export const formatUnixTimestamp = (unixTimestamp: ethers.BigNumberish): string => {
   const date = new Date(Number(unixTimestamp.toString()) * 1000);
@@ -12,6 +13,17 @@ export function floor2(dec: any) {
 export function floor4(dec: any) {
   return Math.floor(Number(String(dec)) * 10000) / 10000;
 }
+
+export const commifyToDecimalPlaces = (
+  value: BigNumber,
+  scale: number,
+  decimalPlaces: number
+): string => {
+  const parts = ethers.utils
+  .commify(scaleToDec(value, scale))
+  .split('.');
+  return parts[0] + '.' + parts[1].slice(0, decimalPlaces);
+};
 
 export const encodeCollateralTypeId = (vault: string, tokenId: ethers.BigNumberish) => {
   return `${vault}-${tokenId.toString()}`;
