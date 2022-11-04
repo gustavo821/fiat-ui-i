@@ -122,8 +122,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
         </Text>
         {underlierBalance && (
           <Text size={"$sm"}>
-            Balance: $
-            {convertToHumanReadableValue(underlierBalance, underlierScale)}
+            Wallet: {convertToHumanReadableValue(underlierBalance, underlierScale)} {underlierSymbol}
           </Text>
         )}
         <Grid.Container
