@@ -7,12 +7,14 @@ import { decToScale, decToWad, scaleToDec, wadToDec } from '@fiatdao/sdk';
 
 import { formatUnixTimestamp, floor2, floor4 } from './utils';
 import {buyCollateralAndModifyDebt} from './userActions';
+import { TransactionStatus } from '../pages';
 
 interface CreatePositionModalProps {
   contextData: any,
   disableActions: boolean,
   modifyPositionData: any,
   modifyPositionFormData: any,
+  setTransactionStatus: (status: TransactionStatus) => void,
   transactionData: any,
   onUpdateUnderlier: (underlier: null | ethers.BigNumber) => void,
   onUpdateSlippage: (slippagePct: null | ethers.BigNumber) => void,
@@ -275,11 +277,18 @@ export const CreatePositionModal = (props: CreatePositionModalProps) => {
                 icon={(props.disableActions && currentTxAction === 'buyCollateralAndModifyDebt') ? (<Loading size='xs' />) : (null)}
                 onPress={async () => {
                   // props.onSendTransaction('buyCollateralAndModifyDebt')}
-                  await buyCollateralAndModifyDebt(
-                    props.contextData,
-                    props.modifyPositionData.collateralType.properties,
-                    props.modifyPositionFormData,
-                  );
+                  props.setTransactionStatus('sent')
+                  try {
+                    await buyCollateralAndModifyDebt(
+                      props.contextData,
+                      props.modifyPositionData.collateralType,
+                      props.modifyPositionFormData,
+                    );
+                    props.setTransactionStatus('confirmed')
+                  } catch (e) {
+                    console.error('Error buying collateral: ', e)
+                    props.setTransactionStatus('error');
+                  }
                 }}
               >
                 Deposit

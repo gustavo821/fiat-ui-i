@@ -6,8 +6,8 @@ interface ProxyCardProps {
   proxies: Array<string>,
   explorerUrl: null | string,
   fiat: any,
-  user: null | string,
   setTransactionStatus: (status: TransactionStatus) => void,
+  user: null | string,
 }
 
 export const ProxyCard = (props: ProxyCardProps) => {
