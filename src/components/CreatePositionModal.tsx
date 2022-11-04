@@ -56,22 +56,17 @@ export const CreatePositionModal = (props: CreatePositionModalProps) => {
 };
 
 const CreatePositionModalBody = (props: CreatePositionModalProps) => {
-  if (!props.contextData.user || !props.modifyPositionData.collateralType || !props.modifyPositionData.collateralType.metadata) {
-    // TODO
-    // return <Loading />;
-    return null;
-  }
-
   // TODO: remove this from here, use in the sdk
-  const convertToHumanReadableValue = (
+  const commifyToDecimalPlaces = (
     value: BigNumber,
-    scale: number
+    scale: number,
+    decimalPlaces: number
   ): string => {
     const parts = ethers?.utils
       .commify(scaleToDec(value, scale))
       .toString()
       .split('.');
-    return parts[0] + '.' + parts[1].slice(0, 2);
+    return parts[0] + '.' + parts[1].slice(0, decimalPlaces);
   };
 
   const { proxies } = props.contextData;
@@ -97,6 +92,12 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
   const { action: currentTxAction } = props.transactionData;
 
   const hasProxy = proxies.length > 0;
+
+  if (!props.contextData.user || !props.modifyPositionData.collateralType || !props.modifyPositionData.collateralType.metadata) {
+    // TODO
+    // return <Loading />;
+    return null;
+  }
 
   return (
     <>
@@ -128,7 +129,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
         </Text>
         {underlierBalance && (
           <Text size={'$sm'}>
-            Wallet: {convertToHumanReadableValue(underlierBalance, underlierScale)} {underlierSymbol}
+            Wallet: {commifyToDecimalPlaces(underlierBalance, underlierScale, 2)} {underlierSymbol}
           </Text>
         )}
         <Grid.Container
