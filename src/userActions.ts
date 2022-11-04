@@ -53,6 +53,7 @@ export const buyCollateralAndModifyDebt = async (
           ]
         )
       );
+      break;
     }
 
     case "ERC1155:FC": {
@@ -91,6 +92,7 @@ export const buyCollateralAndModifyDebt = async (
           modifyPositionFormData.underlier
         )
       );
+      break;
     }
 
     case "ERC20:FY": {
@@ -118,6 +120,7 @@ export const buyCollateralAndModifyDebt = async (
           ]
         )
       );
+      break;
     }
 
     default: {
@@ -178,6 +181,7 @@ export const sellCollateralAndModifyDebt = async (
           ]
         )
       );
+      break;
     }
 
     case "ERC1155:FC": {
@@ -216,6 +220,7 @@ export const sellCollateralAndModifyDebt = async (
           maxBorrowRate
         )
       );
+      break;
     }
 
     case "ERC20:FY": {
@@ -243,6 +248,7 @@ export const sellCollateralAndModifyDebt = async (
           ]
         )
       );
+      break;
     }
 
     default: {
@@ -272,6 +278,7 @@ export const redeemCollateralAndModifyDebt = async (
     properties.tokenScale
   );
 
+  console.log('properties.vaultType: ', properties.vaultType);
   switch (properties.vaultType) {
     case "ERC20:EPT": {
       if (!properties.eptData) {
@@ -293,6 +300,7 @@ export const redeemCollateralAndModifyDebt = async (
           normalDebt
         )
       );
+      break;
     }
 
     case "ERC1155:FC": {
@@ -316,6 +324,7 @@ export const redeemCollateralAndModifyDebt = async (
           normalDebt
         )
       );
+      break;
     }
 
     case "ERC20:FY": {
@@ -338,6 +347,7 @@ export const redeemCollateralAndModifyDebt = async (
           normalDebt
         )
       );
+      break;
     }
 
     default: {
@@ -374,6 +384,7 @@ export const modifyCollateralAndDebt = async (
         console.error("Missing EPT data");
         return;
       }
+      break;
     }
 
     case "ERC1155:FC": {
@@ -381,6 +392,7 @@ export const modifyCollateralAndDebt = async (
         console.error("Missing FC data");
         return;
       }
+      break;
     }
 
     case "ERC20:FY": {
@@ -388,6 +400,7 @@ export const modifyCollateralAndDebt = async (
         console.error("Missing FY data");
         return;
       }
+      break;
     }
 
     default: {
