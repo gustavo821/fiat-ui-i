@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 import {
   Text,
   Spacer,
@@ -10,15 +10,15 @@ import {
   Input,
   Loading,
   Switch,
-} from "@nextui-org/react";
-import { BigNumber, ethers } from "ethers";
-import { Slider } from "antd";
-import "antd/dist/antd.css";
-import { decToScale, decToWad, scaleToDec, wadToDec } from "@fiatdao/sdk";
+} from '@nextui-org/react';
+import { BigNumber, ethers } from 'ethers';
+import { Slider } from 'antd';
+import 'antd/dist/antd.css';
+import { decToScale, decToWad, scaleToDec, wadToDec } from '@fiatdao/sdk';
 
-import { formatUnixTimestamp, floor2, floor4 } from "./utils";
-import { buyCollateralAndModifyDebt } from "./userActions";
-import { TransactionStatus } from "../pages";
+import { formatUnixTimestamp, floor2, floor4 } from './utils';
+import { buyCollateralAndModifyDebt } from './userActions';
+import { TransactionStatus } from '../pages';
 
 interface CreatePositionModalProps {
   contextData: any;
@@ -64,8 +64,8 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
     const parts = ethers?.utils
       .commify(scaleToDec(value, scale))
       .toString()
-      .split(".");
-    return parts[0] + "." + parts[1].slice(0, 2);
+      .split('.');
+    return parts[0] + '.' + parts[1].slice(0, 2);
   };
 
   const { proxies } = props.contextData;
@@ -95,7 +95,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
   return (
     <>
       <Modal.Header>
-        <Text id="modal-title" size={18}>
+        <Text id='modal-title' size={18}>
           <Text b size={18}>
             Create Position
           </Text>
@@ -107,29 +107,29 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
       </Modal.Header>
       <Modal.Body>
         <Navbar
-          variant="static"
+          variant='static'
           isCompact
           disableShadow
           disableBlur
-          containerCss={{ justifyContent: "center", background: "transparent" }}
+          containerCss={{ justifyContent: 'center', background: 'transparent' }}
         >
-          <Navbar.Content enableCursorHighlight variant="highlight-rounded">
+          <Navbar.Content enableCursorHighlight variant='highlight-rounded'>
             <Navbar.Link isActive>Deposit</Navbar.Link>
           </Navbar.Content>
         </Navbar>
-        <Text b size={"m"}>
+        <Text b size={'m'}>
           Inputs
         </Text>
         {underlierBalance && (
-          <Text size={"$sm"}>
+          <Text size={'$sm'}>
             Balance: $
             {convertToHumanReadableValue(underlierBalance, underlierScale)}
           </Text>
         )}
         <Grid.Container
           gap={0}
-          justify="space-between"
-          css={{ marginBottom: "1rem" }}
+          justify='space-between'
+          css={{ marginBottom: '1rem' }}
         >
           <Grid>
             <Input
@@ -139,7 +139,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
                 if (
                   event.target.value === null ||
                   event.target.value === undefined ||
-                  event.target.value === ""
+                  event.target.value === ''
                 ) {
                   props.onUpdateUnderlier(null);
                 } else {
@@ -155,13 +155,13 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
                   );
                 }
               }}
-              placeholder="0"
-              type="number"
-              label="Underlier to swap"
+              placeholder='0'
+              type='number'
+              label='Underlier to swap'
               labelRight={underlierSymbol}
               bordered
-              size="sm"
-              borderWeight="light"
+              size='sm'
+              borderWeight='light'
             />
           </Grid>
           <Grid>
@@ -172,7 +172,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
                 if (
                   event.target.value === null ||
                   event.target.value === undefined ||
-                  event.target.value === ""
+                  event.target.value === ''
                 ) {
                   props.onUpdateSlippage(null);
                 } else {
@@ -185,30 +185,30 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
                   props.onUpdateSlippage(decToWad(floor4(ceiled / 100)));
                 }
               }}
-              step="0.01"
-              placeholder="0"
-              type="number"
-              label="Slippage"
-              labelRight={"%"}
+              step='0.01'
+              placeholder='0'
+              type='number'
+              label='Slippage'
+              labelRight={'%'}
               bordered
-              size="sm"
-              borderWeight="light"
-              width="7.5rem"
+              size='sm'
+              borderWeight='light'
+              width='7.5rem'
             />
           </Grid>
         </Grid.Container>
         <Text
-          size={"0.75rem"}
-          style={{ paddingLeft: "0.25rem", marginBottom: "0.375rem" }}
+          size={'0.75rem'}
+          style={{ paddingLeft: '0.25rem', marginBottom: '0.375rem' }}
         >
           Targeted health factor ({Number(wadToDec(targetedHealthFactor))})
         </Text>
-        <Card variant="bordered" borderWeight="light">
+        <Card variant='bordered' borderWeight='light'>
           <Card.Body
-            style={{ paddingLeft: "2.25rem", paddingRight: "2.25rem" }}
+            style={{ paddingLeft: '2.25rem', paddingRight: '2.25rem' }}
           >
             <Slider
-              handleStyle={{ borderColor: "#0072F5" }}
+              handleStyle={{ borderColor: '#0072F5' }}
               included={false}
               disabled={props.disableActions}
               value={Number(wadToDec(targetedHealthFactor))}
@@ -222,28 +222,28 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
               tooltip={{ getPopupContainer: (t) => t }}
               marks={{
                 5.0: {
-                  style: { color: "grey", fontSize: "0.75rem" },
-                  label: "Safe",
+                  style: { color: 'grey', fontSize: '0.75rem' },
+                  label: 'Safe',
                 },
                 4.0: {
-                  style: { color: "grey", fontSize: "0.75rem" },
-                  label: "4.0",
+                  style: { color: 'grey', fontSize: '0.75rem' },
+                  label: '4.0',
                 },
                 3.0: {
-                  style: { color: "grey", fontSize: "0.75rem" },
-                  label: "3.0",
+                  style: { color: 'grey', fontSize: '0.75rem' },
+                  label: '3.0',
                 },
                 2.0: {
-                  style: { color: "grey", fontSize: "0.75rem" },
-                  label: "2.0",
+                  style: { color: 'grey', fontSize: '0.75rem' },
+                  label: '2.0',
                 },
                 1.001: {
                   style: {
-                    color: "grey",
-                    fontSize: "0.75rem",
-                    borderColor: "white",
+                    color: 'grey',
+                    fontSize: '0.75rem',
+                    borderColor: 'white',
                   },
-                  label: "Unsafe",
+                  label: 'Unsafe',
                 },
               }}
             />
@@ -254,72 +254,72 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
       <Card.Divider />
       <Modal.Body>
         <Spacer y={0} />
-        <Text b size={"m"}>
+        <Text b size={'m'}>
           Swap Preview
         </Text>
         <Input
           readOnly
-          value={outdated ? " " : floor4(wadToDec(deltaCollateral))}
-          placeholder="0"
-          type="string"
-          label={"Collateral to deposit (incl. slippage)"}
+          value={outdated ? ' ' : floor4(wadToDec(deltaCollateral))}
+          placeholder='0'
+          type='string'
+          label={'Collateral to deposit (incl. slippage)'}
           labelRight={tokenSymbol}
-          contentLeft={outdated ? <Loading size="xs" /> : null}
-          size="sm"
-          status="primary"
+          contentLeft={outdated ? <Loading size='xs' /> : null}
+          size='sm'
+          status='primary'
         />
       </Modal.Body>
       <Spacer y={0.75} />
       <Card.Divider />
       <Modal.Body>
         <Spacer y={0} />
-        <Text b size={"m"}>
+        <Text b size={'m'}>
           Position Preview
         </Text>
         <Input
           readOnly
-          value={outdated ? " " : floor4(wadToDec(collateral))}
-          placeholder="0"
-          type="string"
-          label={"Collateral"}
+          value={outdated ? ' ' : floor4(wadToDec(collateral))}
+          placeholder='0'
+          type='string'
+          label={'Collateral'}
           labelRight={tokenSymbol}
-          contentLeft={outdated ? <Loading size="xs" /> : null}
-          size="sm"
-          status="primary"
+          contentLeft={outdated ? <Loading size='xs' /> : null}
+          size='sm'
+          status='primary'
         />
         <Input
           readOnly
-          value={outdated ? " " : floor4(wadToDec(debt))}
-          placeholder="0"
-          type="string"
-          label="Debt"
-          labelRight={"FIAT"}
-          contentLeft={outdated ? <Loading size="xs" /> : null}
-          size="sm"
-          status="primary"
+          value={outdated ? ' ' : floor4(wadToDec(debt))}
+          placeholder='0'
+          type='string'
+          label='Debt'
+          labelRight={'FIAT'}
+          contentLeft={outdated ? <Loading size='xs' /> : null}
+          size='sm'
+          status='primary'
         />
         <Input
           readOnly
           value={
             outdated
-              ? " "
+              ? ' '
               : healthFactor.eq(ethers.constants.MaxUint256)
-              ? "∞"
+              ? '∞'
               : floor4(wadToDec(healthFactor))
           }
-          placeholder="0"
-          type="string"
-          label="Health Factor"
-          labelRight={"🚦"}
-          contentLeft={outdated ? <Loading size="xs" /> : null}
-          size="sm"
-          status="primary"
+          placeholder='0'
+          type='string'
+          label='Health Factor'
+          labelRight={'🚦'}
+          contentLeft={outdated ? <Loading size='xs' /> : null}
+          size='sm'
+          status='primary'
         />
         {/* <Spacer y={0} />
           <Text b size={'m'}>Summary</Text>
-          <Text size="0.75rem">{(modifyPositionFormData.deltaCollateral.isZero()) ? null : 
-      <Text size="0.75rem">{(modifyPositionFormData.deltaCollateral.isZero()) ? null : 
-          <Text size="0.75rem">{(modifyPositionFormData.deltaCollateral.isZero()) ? null : 
+          <Text size='0.75rem'>{(modifyPositionFormData.deltaCollateral.isZero()) ? null : 
+      <Text size='0.75rem'>{(modifyPositionFormData.deltaCollateral.isZero()) ? null : 
+          <Text size='0.75rem'>{(modifyPositionFormData.deltaCollateral.isZero()) ? null : 
           <>
             Swap <b>{floor2(scaleToDec(modifyPositionFormData.underlier, modifyPositionData.collateralType.properties.underlierScale))} {modifyPositionData.collateralType.properties.underlierSymbol} </b>
             for <b>~{floor2(wadToDec(modifyPositionFormData.deltaCollateral))} {modifyPositionData.collateralType.metadata.symbol}</b>.
@@ -328,47 +328,47 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
           </>
           }</Text> */}
       </Modal.Body>
-      <Modal.Footer justify="space-evenly">
-        <Text size={"0.875rem"}>Approve {underlierSymbol}</Text>
+      <Modal.Footer justify='space-evenly'>
+        <Text size={'0.875rem'}>Approve {underlierSymbol}</Text>
         <Switch
           disabled={props.disableActions || !hasProxy}
           checked={!underlier.isZero() && underlierAllowance?.gte(underlier)}
           onChange={() =>
             !underlier.isZero() && underlierAllowance?.gte(underlier)
-              ? props.onSendTransaction("unsetUnderlierAllowance")
-              : props.onSendTransaction("setUnderlierAllowance")
+              ? props.onSendTransaction('unsetUnderlierAllowance')
+              : props.onSendTransaction('setUnderlierAllowance')
           }
-          color="primary"
+          color='primary'
           icon={
-            ["setUnderlierAllowance", "unsetUnderlierAllowance"].includes(
-              currentTxAction || ""
+            ['setUnderlierAllowance', 'unsetUnderlierAllowance'].includes(
+              currentTxAction || ''
             ) && props.disableActions ? (
-              <Loading size="xs" />
+              <Loading size='xs' />
             ) : null
           }
         />
         <Spacer y={0.5} />
-        <Text size={"0.875rem"}>Enable FIAT</Text>
+        <Text size={'0.875rem'}>Enable FIAT</Text>
         <Switch
           disabled={props.disableActions || !hasProxy}
           checked={monetaDelegate ?? false}
           onChange={() =>
             !!monetaDelegate
-              ? props.onSendTransaction("unsetMonetaDelegate")
-              : props.onSendTransaction("setMonetaDelegate")
+              ? props.onSendTransaction('unsetMonetaDelegate')
+              : props.onSendTransaction('setMonetaDelegate')
           }
-          color="primary"
+          color='primary'
           icon={
-            ["setMonetaDelegate", "unsetMonetaDelegate"].includes(
-              currentTxAction || ""
+            ['setMonetaDelegate', 'unsetMonetaDelegate'].includes(
+              currentTxAction || ''
             ) && props.disableActions ? (
-              <Loading size="xs" />
+              <Loading size='xs' />
             ) : null
           }
         />
         <Spacer y={3} />
         <Button
-          css={{ minWidth: "100%" }}
+          css={{ minWidth: '100%' }}
           disabled={
             props.disableActions ||
             !hasProxy ||
@@ -379,23 +379,23 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
           }
           icon={
             props.disableActions &&
-            currentTxAction === "buyCollateralAndModifyDebt" ? (
-              <Loading size="xs" />
+            currentTxAction === 'buyCollateralAndModifyDebt' ? (
+              <Loading size='xs' />
             ) : null
           }
           onPress={async () => {
             // props.onSendTransaction('buyCollateralAndModifyDebt')}
-            props.setTransactionStatus("sent");
+            props.setTransactionStatus('sent');
             try {
               await buyCollateralAndModifyDebt(
                 props.contextData,
                 props.modifyPositionData.collateralType,
                 props.modifyPositionFormData
               );
-              props.setTransactionStatus("confirmed");
+              props.setTransactionStatus('confirmed');
             } catch (e) {
-              console.error("Error buying collateral: ", e);
-              props.setTransactionStatus("error");
+              console.error('Error buying collateral: ', e);
+              props.setTransactionStatus('error');
             }
           }}
         >

@@ -1,4 +1,4 @@
-import { decToWad, scaleToWad, WAD, wadToScale } from "@fiatdao/sdk";
+import { decToWad, scaleToWad, WAD, wadToScale } from '@fiatdao/sdk';
 
 export const buyCollateralAndModifyDebt = async (
   contextData: any,
@@ -23,9 +23,9 @@ export const buyCollateralAndModifyDebt = async (
   );
 
   switch (properties.vaultType) {
-    case "ERC20:EPT": {
+    case 'ERC20:EPT': {
       if (!properties.eptData) {
-        console.error("Missing EPT data");
+        console.error('Missing EPT data');
         return;
       }
 
@@ -35,7 +35,7 @@ export const buyCollateralAndModifyDebt = async (
         await contextData.fiat.dryrunViaProxy(
           contextData.proxies[0],
           vaultEPTActions,
-          "buyCollateralAndModifyDebt",
+          'buyCollateralAndModifyDebt',
           properties.vault,
           contextData.proxies[0],
           contextData.user,
@@ -56,9 +56,9 @@ export const buyCollateralAndModifyDebt = async (
       break;
     }
 
-    case "ERC1155:FC": {
+    case 'ERC1155:FC': {
       if (!properties.fcData) {
-        console.error("Missing FC data");
+        console.error('Missing FC data');
         return;
       }
 
@@ -79,7 +79,7 @@ export const buyCollateralAndModifyDebt = async (
         await contextData.fiat.dryrunViaProxy(
           contextData.proxies[0],
           vaultFCActions,
-          "buyCollateralAndModifyDebt",
+          'buyCollateralAndModifyDebt',
           properties.vault,
           properties.token,
           properties.tokenId,
@@ -95,9 +95,9 @@ export const buyCollateralAndModifyDebt = async (
       break;
     }
 
-    case "ERC20:FY": {
+    case 'ERC20:FY': {
       if (!properties.fyData) {
-        console.error("Missing FY data");
+        console.error('Missing FY data');
         return;
       }
 
@@ -105,7 +105,7 @@ export const buyCollateralAndModifyDebt = async (
         await contextData.fiat.dryrunViaProxy(
           contextData.proxies[0],
           vaultFYActions,
-          "buyCollateralAndModifyDebt",
+          'buyCollateralAndModifyDebt',
           properties.vault,
           contextData.proxies[0],
           contextData.user,
@@ -124,7 +124,7 @@ export const buyCollateralAndModifyDebt = async (
     }
 
     default: {
-      console.error("Unsupported vault: ", properties.vaultType);
+      console.error('Unsupported vault: ', properties.vaultType);
     }
   }
 };
@@ -151,9 +151,9 @@ export const sellCollateralAndModifyDebt = async (
   );
 
   switch (properties.vaultType) {
-    case "ERC20:EPT": {
+    case 'ERC20:EPT': {
       if (!properties.eptData) {
-        console.error("Missing EPT data");
+        console.error('Missing EPT data');
         return;
       }
 
@@ -163,7 +163,7 @@ export const sellCollateralAndModifyDebt = async (
         await contextData.fiat.dryrunViaProxy(
           contextData.proxies[0],
           vaultEPTActions,
-          "sellCollateralAndModifyDebt",
+          'sellCollateralAndModifyDebt',
           properties.vault,
           contextData.proxies[0],
           contextData.user,
@@ -184,9 +184,9 @@ export const sellCollateralAndModifyDebt = async (
       break;
     }
 
-    case "ERC1155:FC": {
+    case 'ERC1155:FC': {
       if (!properties.fcData) {
-        console.error("Missing FC data");
+        console.error('Missing FC data');
         return;
       }
 
@@ -208,7 +208,7 @@ export const sellCollateralAndModifyDebt = async (
         await contextData.fiat.dryrunViaProxy(
           contextData.proxies[0],
           vaultFCActions,
-          "sellCollateralAndModifyDebt",
+          'sellCollateralAndModifyDebt',
           properties.vault,
           properties.token,
           properties.tokenId,
@@ -223,9 +223,9 @@ export const sellCollateralAndModifyDebt = async (
       break;
     }
 
-    case "ERC20:FY": {
+    case 'ERC20:FY': {
       if (!properties.fyData) {
-        console.error("Missing FY data");
+        console.error('Missing FY data');
         return;
       }
 
@@ -233,7 +233,7 @@ export const sellCollateralAndModifyDebt = async (
         await contextData.fiat.dryrunViaProxy(
           contextData.proxies[0],
           vaultFYActions,
-          "sellCollateralAndModifyDebt",
+          'sellCollateralAndModifyDebt',
           properties.vault,
           contextData.proxies[0],
           contextData.user,
@@ -252,7 +252,7 @@ export const sellCollateralAndModifyDebt = async (
     }
 
     default: {
-      console.error("Unsupported vault: ", properties.vaultType);
+      console.error('Unsupported vault: ', properties.vaultType);
     }
   }
 };
@@ -279,9 +279,9 @@ export const redeemCollateralAndModifyDebt = async (
   );
 
   switch (properties.vaultType) {
-    case "ERC20:EPT": {
+    case 'ERC20:EPT': {
       if (!properties.eptData) {
-        console.error("Missing EPT data");
+        console.error('Missing EPT data');
         return;
       }
 
@@ -289,7 +289,7 @@ export const redeemCollateralAndModifyDebt = async (
         await contextData.fiat.dryrunViaProxy(
           contextData.proxies[0],
           vaultEPTActions,
-          "redeemCollateralAndModifyDebt",
+          'redeemCollateralAndModifyDebt',
           properties.vault,
           properties.token,
           contextData.proxies[0],
@@ -302,9 +302,9 @@ export const redeemCollateralAndModifyDebt = async (
       break;
     }
 
-    case "ERC1155:FC": {
+    case 'ERC1155:FC': {
       if (!properties.fcData) {
-        console.error("Missing FC data");
+        console.error('Missing FC data');
         return;
       }
 
@@ -312,7 +312,7 @@ export const redeemCollateralAndModifyDebt = async (
         await contextData.fiat.dryrunViaProxy(
           contextData.proxies[0],
           vaultFCActions,
-          "redeemCollateralAndModifyDebt",
+          'redeemCollateralAndModifyDebt',
           properties.vault,
           properties.token,
           properties.tokenId,
@@ -326,9 +326,9 @@ export const redeemCollateralAndModifyDebt = async (
       break;
     }
 
-    case "ERC20:FY": {
+    case 'ERC20:FY': {
       if (!properties.fyData) {
-        console.error("Missing FY data");
+        console.error('Missing FY data');
         return;
       }
 
@@ -336,7 +336,7 @@ export const redeemCollateralAndModifyDebt = async (
         await contextData.fiat.dryrunViaProxy(
           contextData.proxies[0],
           vaultFYActions,
-          "redeemCollateralAndModifyDebt",
+          'redeemCollateralAndModifyDebt',
           properties.vault,
           properties.token,
           contextData.proxies[0],
@@ -350,7 +350,7 @@ export const redeemCollateralAndModifyDebt = async (
     }
 
     default: {
-      console.error("Unsupported vault: ", properties.vaultType);
+      console.error('Unsupported vault: ', properties.vaultType);
     }
   }
 };
@@ -378,33 +378,32 @@ export const modifyCollateralAndDebt = async (
   // );
 
   switch (properties.vaultType) {
-    case "ERC20:EPT": {
+    case 'ERC20:EPT': {
       if (!properties.eptData) {
-        console.error("Missing EPT data");
+        console.error('Missing EPT data');
         return;
       }
       break;
     }
 
-    case "ERC1155:FC": {
+    case 'ERC1155:FC': {
       if (!properties.fcData) {
-        console.error("Missing FC data");
+        console.error('Missing FC data');
         return;
       }
       break;
     }
 
-    case "ERC20:FY": {
+    case 'ERC20:FY': {
       if (!properties.fyData) {
-        console.error("Missing FY data");
+        console.error('Missing FY data');
         return;
       }
       break;
     }
 
     default: {
-      console.error("Unsupported vault: ", properties.vaultType);
+      console.error('Unsupported vault: ', properties.vaultType);
     }
   }
 };
-
