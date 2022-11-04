@@ -3,17 +3,15 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import type { NextPage } from 'next';
 import { useProvider, useAccount, useNetwork } from 'wagmi';
 import { ethers } from 'ethers';
-import { Container, Loading, Spacer } from '@nextui-org/react';
-
+import { Container, Spacer } from '@nextui-org/react';
 import { FIAT, ZERO, WAD, decToWad, scaleToWad, wadToScale } from '@fiatdao/sdk';
-
 import { ProxyCard } from '../src/ProxyCard';
 import { CollateralTypesTable } from '../src/CollateralTypesTable';
 import { PositionsTable } from '../src/PositionsTable';
 import { CreatePositionModal } from '../src/CreatePositionModal';
 import { ModifyPositionModal } from '../src/ModifyPositionModal';
-
 import { decodeCollateralTypeId, getCollateralTypeData, decodePositionId, getPositionData, encodePositionId } from '../src/utils';
+import * as userActions from '../src/userActions';
 
 export type TransactionStatus = null | 'error' | 'sent' | 'confirming' | 'confirmed';
 
@@ -388,6 +386,36 @@ const Home: NextPage = () => {
     setTransactionData(initialState.transactionData);
   }
 
+  const buyCollateralAndModifyDebt = async () => {
+    setTransactionData({ status: 'sent', action: 'buyCollateralAndModifyDebt' });
+    await userActions.buyCollateralAndModifyDebt(
+      contextData,
+      modifyPositionData.collateralType,
+      modifyPositionFormData
+    );
+    setTransactionData(initialState.transactionData);
+  }
+
+  const sellCollateralAndModifyDebt = async () => {
+    setTransactionData({ status: 'sent', action: 'sellCollateralAndModifyDebt' });
+    await userActions.sellCollateralAndModifyDebt(
+      contextData,
+      modifyPositionData.collateralType,
+      modifyPositionFormData
+    );
+    setTransactionData(initialState.transactionData);
+  }
+
+  const redeemCollateralAndModifyDebt = async () => {
+    setTransactionData({ status: 'sent', action: 'redeemCollateralAndModifyDebt' });
+    await userActions.redeemCollateralAndModifyDebt(
+      contextData,
+      modifyPositionData.collateralType,
+      modifyPositionFormData
+    );
+    setTransactionData(initialState.transactionData);
+  }
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', padding: 12 }}>
@@ -449,6 +477,7 @@ const Home: NextPage = () => {
       </Container>
 
       <CreatePositionModal
+        buyCollateralAndModifyDebt={buyCollateralAndModifyDebt}
         contextData={contextData}
         disableActions={disableActions}
         modifyPositionData={modifyPositionData}
@@ -501,10 +530,13 @@ const Home: NextPage = () => {
       />
 
       <ModifyPositionModal
+        buyCollateralAndModifyDebt={buyCollateralAndModifyDebt}
         contextData={contextData}
         disableActions={disableActions}
         modifyPositionData={modifyPositionData}
         modifyPositionFormData={modifyPositionFormData}
+        redeemCollateralAndModifyDebt={redeemCollateralAndModifyDebt}
+        sellCollateralAndModifyDebt={sellCollateralAndModifyDebt}
         setTransactionStatus={(status) =>
           setTransactionData({ ...transactionData, status })
         }

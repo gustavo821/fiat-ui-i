@@ -17,10 +17,10 @@ import 'antd/dist/antd.css';
 import { decToScale, decToWad, scaleToDec, wadToDec } from '@fiatdao/sdk';
 
 import { formatUnixTimestamp, floor2, floor4 } from './utils';
-import { buyCollateralAndModifyDebt } from './userActions';
 import { TransactionStatus } from '../pages';
 
 interface CreatePositionModalProps {
+  buyCollateralAndModifyDebt: () => any;
   contextData: any;
   disableActions: boolean;
   modifyPositionData: any;
@@ -388,21 +388,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
               <Loading size='xs' />
             ) : null
           }
-          onPress={async () => {
-            props.onSendTransaction('buyCollateralAndModifyDebt');
-            props.setTransactionStatus('sent');
-            try {
-              await buyCollateralAndModifyDebt(
-                props.contextData,
-                props.modifyPositionData.collateralType,
-                props.modifyPositionFormData
-              );
-              props.setTransactionStatus('confirmed');
-            } catch (e) {
-              console.error('Error buying collateral: ', e);
-              props.setTransactionStatus('error');
-            }
-          }}
+          onPress={() => props.buyCollateralAndModifyDebt()}
         >
           Deposit
         </Button>

@@ -355,55 +355,55 @@ export const redeemCollateralAndModifyDebt = async (
   }
 };
 
-// maybe todo, implement this? underliers only is kinda nice
-export const modifyCollateralAndDebt = async (
-  contextData: any,
-  collateralTypeData: any,
-  modifyPositionFormData: any
-) => {
-  const { vaultEPTActions, vaultFCActions, vaultFYActions } =
-    contextData.fiat.getContracts();
-  const { properties } = collateralTypeData;
+// TODO: maybe implement? or just delete it - underlier actions only is kinda nice
+// export const modifyCollateralAndDebt = async (
+//   contextData: any,
+//   collateralTypeData: any,
+//   modifyPositionFormData: any
+// ) => {
+//   const { vaultEPTActions, vaultFCActions, vaultFYActions } =
+//     contextData.fiat.getContracts();
+//   const { properties } = collateralTypeData;
 
-  // const normalDebt = contextData.fiat
-  //   .debtToNormalDebt(
-  //     modifyPositionFormData.deltaDebt,
-  //     collateralTypeData.state.codex.virtualRate
-  //   )
-  //   .mul(WAD.sub(decToWad(0.001)))
-  //   .div(WAD);
-  // const tokenAmount = wadToScale(
-  //   modifyPositionFormData.deltaCollateral,
-  //   properties.tokenScale
-  // );
+//   const normalDebt = contextData.fiat
+//     .debtToNormalDebt(
+//       modifyPositionFormData.deltaDebt,
+//       collateralTypeData.state.codex.virtualRate
+//     )
+//     .mul(WAD.sub(decToWad(0.001)))
+//     .div(WAD);
+//   const tokenAmount = wadToScale(
+//     modifyPositionFormData.deltaCollateral,
+//     properties.tokenScale
+//   );
 
-  switch (properties.vaultType) {
-    case 'ERC20:EPT': {
-      if (!properties.eptData) {
-        console.error('Missing EPT data');
-        return;
-      }
-      break;
-    }
+//   switch (properties.vaultType) {
+//     case 'ERC20:EPT': {
+//       if (!properties.eptData) {
+//         console.error('Missing EPT data');
+//         return;
+//       }
+//       break;
+//     }
 
-    case 'ERC1155:FC': {
-      if (!properties.fcData) {
-        console.error('Missing FC data');
-        return;
-      }
-      break;
-    }
+//     case 'ERC1155:FC': {
+//       if (!properties.fcData) {
+//         console.error('Missing FC data');
+//         return;
+//       }
+//       break;
+//     }
 
-    case 'ERC20:FY': {
-      if (!properties.fyData) {
-        console.error('Missing FY data');
-        return;
-      }
-      break;
-    }
+//     case 'ERC20:FY': {
+//       if (!properties.fyData) {
+//         console.error('Missing FY data');
+//         return;
+//       }
+//       break;
+//     }
 
-    default: {
-      console.error('Unsupported vault: ', properties.vaultType);
-    }
-  }
-};
+//     default: {
+//       console.error('Unsupported vault: ', properties.vaultType);
+//     }
+//   }
+// };

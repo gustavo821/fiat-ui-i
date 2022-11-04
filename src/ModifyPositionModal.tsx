@@ -15,18 +15,16 @@ import { ethers } from 'ethers';
 import { decToScale, decToWad, scaleToDec, wadToDec } from '@fiatdao/sdk';
 
 import { formatUnixTimestamp, floor2, floor4 } from './utils';
-import {
-  buyCollateralAndModifyDebt,
-  redeemCollateralAndModifyDebt,
-  sellCollateralAndModifyDebt,
-} from './userActions';
 import { TransactionStatus } from '../pages';
 
 interface ModifyPositionModalProps {
+  buyCollateralAndModifyDebt: () => any;
   contextData: any;
   disableActions: boolean;
   modifyPositionData: any;
   modifyPositionFormData: any;
+  redeemCollateralAndModifyDebt: () => any;
+  sellCollateralAndModifyDebt: () => any;
   setTransactionStatus: (status: TransactionStatus) => void;
   setMonetaDelegate: (fiat: any) => any;
   setUnderlierAllowance: (fiat: any) => any;
@@ -455,37 +453,13 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               <Loading size='xs' />
             ) : null
           }
-          onPress={async () => {
-            try {
-              props.setTransactionStatus('sent');
-
-              if (mode === 'deposit') {
-                props.onSendTransaction('buyCollateralAndModifyDebt')
-                await buyCollateralAndModifyDebt(
-                  props.contextData,
-                  props.modifyPositionData.collateralType,
-                  props.modifyPositionFormData
-                );
-              } else if (mode === 'withdraw') {
-                props.onSendTransaction('sellCollateralAndModifyDebt')
-                await sellCollateralAndModifyDebt(
-                  props.contextData,
-                  props.modifyPositionData.collateralType,
-                  props.modifyPositionFormData
-                );
-              } else if (mode === 'redeem') {
-                props.onSendTransaction('redeemCollateralAndModifyDebt')
-                console.log('redeeming');
-                await redeemCollateralAndModifyDebt(
-                  props.contextData,
-                  props.modifyPositionData.collateralType,
-                  props.modifyPositionFormData
-                );
-              }
-              props.setTransactionStatus('confirmed');
-            } catch (e) {
-              console.error('Error performing action: ', e);
-              props.setTransactionStatus('error');
+          onPress={() => {
+            if (mode === 'deposit') {
+              props.buyCollateralAndModifyDebt();
+            } else if (mode === 'withdraw') {
+              props.sellCollateralAndModifyDebt();
+            } else if (mode === 'redeem') {
+              props.redeemCollateralAndModifyDebt();
             }
           }}
         >
