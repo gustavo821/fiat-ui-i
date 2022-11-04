@@ -1,8 +1,6 @@
 import React from 'react';
 import { Text, Spacer, Card, Button, Link } from '@nextui-org/react';
 import { TransactionStatus } from '../pages';
-import { useMutation } from 'wagmi';
-import toast from 'react-hot-toast';
 
 interface ProxyCardProps {
   proxies: Array<string>,
@@ -26,20 +24,6 @@ export const ProxyCard = (props: ProxyCardProps) => {
     }
   }
 
-  // TODO: toasts are just an example of what react-query can do. we can clean this up significantly by having the sdk generate typechain types and implementing react-query-typechain
-  // https://github.com/element-fi/frontend-monorepo/tree/fa382bcbff2b491444c84cbcda16c206063ea014/packages/react-query-typechain
-  const { mutate } = useMutation(createProxy, {
-    onMutate: () => {
-      toast("Transaction sent");
-    },
-    onSuccess: () => {
-      toast.success("Transaction successful");
-    },
-    onError: (e) => {
-      toast.error(`Transaction reverted. Error: ${e}`);
-    },
-  });
-
   return (
     <Card css={{ mw: '450px' }}>
       <Card.Body>
@@ -56,7 +40,7 @@ export const ProxyCard = (props: ProxyCardProps) => {
           : (
             <>
               <Spacer y={1} />
-              <Button onPress={() => mutate()}>
+              <Button onPress={() => createProxy()}>
                 Setup a new Proxy account
               </Button>
             </>

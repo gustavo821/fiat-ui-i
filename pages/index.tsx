@@ -373,6 +373,7 @@ const Home: NextPage = () => {
         //   console.log('resp', resp)
         // }
 
+        // TODO: these next. then react querify calls in the modal. then the next thing
         if (action == 'setUnderlierAllowance') {
           const token = contextData.fiat.getERC20Contract(modifyPositionData.collateralType.properties.underlierToken);
           console.log(await contextData.fiat.dryrun(
