@@ -16,8 +16,8 @@ import { Slider } from 'antd';
 import 'antd/dist/antd.css';
 import { decToScale, decToWad, scaleToDec, wadToDec } from '@fiatdao/sdk';
 
-import { formatUnixTimestamp, floor2, floor4 } from './utils';
-import { TransactionStatus } from '../pages';
+import { formatUnixTimestamp, floor2, floor4 } from '../utils';
+import { TransactionStatus } from '../../pages';
 
 interface CreatePositionModalProps {
   buyCollateralAndModifyDebt: () => any;

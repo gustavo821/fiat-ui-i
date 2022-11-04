@@ -3,7 +3,7 @@ import { Text, Table, Loading } from '@nextui-org/react';
 
 import { wadToDec } from '@fiatdao/sdk';
 
-import { encodePositionId, getCollateralTypeData } from './utils';
+import { encodePositionId, getCollateralTypeData } from '../utils';
 
 interface PositionsTableProps {
   collateralTypesData: Array<any>,

@@ -14,8 +14,8 @@ import {
 import { ethers } from 'ethers';
 import { decToScale, decToWad, scaleToDec, wadToDec } from '@fiatdao/sdk';
 
-import { formatUnixTimestamp, floor2, floor4 } from './utils';
-import { TransactionStatus } from '../pages';
+import { formatUnixTimestamp, floor2, floor4 } from '../utils';
+import { TransactionStatus } from '../../pages';
 
 interface ModifyPositionModalProps {
   buyCollateralAndModifyDebt: () => any;

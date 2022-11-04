@@ -5,11 +5,11 @@ import { useProvider, useAccount, useNetwork } from 'wagmi';
 import { ethers } from 'ethers';
 import { Container, Spacer } from '@nextui-org/react';
 import { FIAT, ZERO, WAD, decToWad, scaleToWad, wadToScale } from '@fiatdao/sdk';
-import { ProxyCard } from '../src/ProxyCard';
-import { CollateralTypesTable } from '../src/CollateralTypesTable';
-import { PositionsTable } from '../src/PositionsTable';
-import { CreatePositionModal } from '../src/CreatePositionModal';
-import { ModifyPositionModal } from '../src/ModifyPositionModal';
+import { ProxyCard } from '../src/components/ProxyCard';
+import { CollateralTypesTable } from '../src/components/CollateralTypesTable';
+import { PositionsTable } from '../src/components/PositionsTable';
+import { CreatePositionModal } from '../src/components/CreatePositionModal';
+import { ModifyPositionModal } from '../src/components/ModifyPositionModal';
 import { decodeCollateralTypeId, getCollateralTypeData, decodePositionId, getPositionData, encodePositionId } from '../src/utils';
 import * as userActions from '../src/userActions';
 
