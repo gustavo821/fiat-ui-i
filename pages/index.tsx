@@ -403,7 +403,7 @@ const Home: NextPage = () => {
 
   if (collateralTypesData.length === 0) {
     return (
-        <Loading />
+      <Loading style={{ marginTop: '50vh', width: '100vw', height: '100vh' }}/>
     )
   }
 

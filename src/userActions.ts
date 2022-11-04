@@ -356,10 +356,6 @@ export const modifyCollateralAndDebt = async (
     contextData.fiat.getContracts();
   const { properties } = collateralTypeData;
 
-  // const { vaultEPTActions, vaultFCActions, vaultFYActions } =
-  //   contextData.fiat.getContracts();
-  // const { collateralTypeData } = properties;
-
   // const normalDebt = contextData.fiat
   //   .debtToNormalDebt(
   //     modifyPositionFormData.deltaDebt,

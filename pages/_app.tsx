@@ -18,6 +18,7 @@ import { alchemyProvider } from 'wagmi/providers/alchemy';
 import { publicProvider } from 'wagmi/providers/public';
 import { NextUIProvider, createTheme } from '@nextui-org/react';
 import { ThemeProvider as NextThemesProvider } from 'next-themes';
+import { CustomToaster } from '../src/toaster';
 
 const { chains, provider, webSocketProvider } = configureChains(
   [
@@ -57,6 +58,9 @@ const wagmiClient = createClient({
   webSocketProvider,
 });
 
+const nextLightTheme = createTheme({type: 'light'})
+const nextDarkTheme = createTheme({type: 'dark'})
+
 function MyApp({ Component, pageProps }: AppProps) {
   return (
     <WagmiConfig client={wagmiClient}>
@@ -64,9 +68,10 @@ function MyApp({ Component, pageProps }: AppProps) {
        <NextThemesProvider 
           defaultTheme='system'
           attribute='class'
-          value={{ light: createTheme({ type: 'light' }).className, dark: createTheme({ type: 'dark' }).className }}
+          value={{ light: nextLightTheme.className, dark: nextDarkTheme.className }}
         >
           <NextUIProvider>
+            <CustomToaster />
             <Component {...pageProps} />
           </NextUIProvider>
         </NextThemesProvider>
