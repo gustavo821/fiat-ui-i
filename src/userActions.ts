@@ -278,7 +278,6 @@ export const redeemCollateralAndModifyDebt = async (
     properties.tokenScale
   );
 
-  console.log('properties.vaultType: ', properties.vaultType);
   switch (properties.vaultType) {
     case "ERC20:EPT": {
       if (!properties.eptData) {
