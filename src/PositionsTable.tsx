@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, Table } from '@nextui-org/react';
+import { Text, Table, Loading } from '@nextui-org/react';
 
 import { wadToDec } from '@fiatdao/sdk';
 
@@ -12,6 +12,12 @@ interface PositionsTableProps {
 }
 
 export const PositionsTable = (props: PositionsTableProps) => {
+  if (props.positionsData === null || props.positionsData.length === 0 || props.collateralTypesData.length === 0) {
+    // TODO
+    // return <Loading />;
+    return null;
+  }
+
   return (
     <>
       <Text h1>Positions</Text>

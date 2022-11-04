@@ -28,7 +28,11 @@ interface ModifyPositionModalProps {
   modifyPositionData: any;
   modifyPositionFormData: any;
   setTransactionStatus: (status: TransactionStatus) => void;
+  setMonetaDelegate: (fiat: any) => any;
+  setUnderlierAllowance: (fiat: any) => any;
   transactionData: any;
+  unsetMonetaDelegate: (fiat: any) => any;
+  unsetUnderlierAllowance: (fiat: any) => any;
   onUpdateDeltaCollateral: (deltaCollateral: null | ethers.BigNumber) => void;
   onUpdateDeltaDebt: (deltaDebt: null | ethers.BigNumber) => void;
   onUpdateUnderlier: (underlier: null | ethers.BigNumber) => void;
@@ -55,7 +59,9 @@ export const ModifyPositionModal = (props: ModifyPositionModalProps) => {
 
 const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
   if (!props.contextData.user || !props.modifyPositionData.collateralType || !props.modifyPositionData.collateralType.metadata ) {
-    return <></>;
+    // TODO
+    // return <Loading />;
+    return null;
   }
 
   const { proxies } = props.contextData;
@@ -369,10 +375,11 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               checked={
                 !underlier.isZero() && underlierAllowance?.gte(underlier)
               }
-              onChange={() =>
+              onChange={() => {
                 !underlier.isZero() && underlierAllowance.gte(underlier)
-                  ? props.onSendTransaction('unsetUnderlierAllowance')
-                  : props.onSendTransaction('setUnderlierAllowance')
+                  ? props.unsetUnderlierAllowance(props.contextData.fiat)
+                  : props.setUnderlierAllowance(props.contextData.fiat)
+              }
               }
               color='primary'
               icon={
@@ -390,8 +397,8 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               checked={!!monetaDelegate}
               onChange={() =>
                 !!monetaDelegate
-                  ? props.onSendTransaction('unsetMonetaDelegate')
-                  : props.onSendTransaction('setMonetaDelegate')
+                  ? props.unsetMonetaDelegate(props.contextData.fiat)
+                  : props.setMonetaDelegate(props.contextData.fiat)
               }
               color='primary'
               icon={
@@ -410,6 +417,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
             <Switch
               disabled={props.disableActions || !hasProxy}
               checked={!deltaDebt.isZero() && fiatAllowance.gte(deltaDebt)}
+              // TODO: these methods are not implemented
               onChange={() =>
                 !deltaDebt.isZero() && fiatAllowance.gte(deltaDebt)
                   ? props.onSendTransaction('unsetFIATAllowance')
@@ -452,21 +460,21 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               props.setTransactionStatus('sent');
 
               if (mode === 'deposit') {
-                // props.onSendTransaction('buyCollateralAndModifyDebt')
+                props.onSendTransaction('buyCollateralAndModifyDebt')
                 await buyCollateralAndModifyDebt(
                   props.contextData,
                   props.modifyPositionData.collateralType,
                   props.modifyPositionFormData
                 );
               } else if (mode === 'withdraw') {
-                // props.onSendTransaction('sellCollateralAndModifyDebt')
+                props.onSendTransaction('sellCollateralAndModifyDebt')
                 await sellCollateralAndModifyDebt(
                   props.contextData,
                   props.modifyPositionData.collateralType,
                   props.modifyPositionFormData
                 );
               } else if (mode === 'redeem') {
-                // props.onSendTransaction('redeemCollateralAndModifyDebt')
+                props.onSendTransaction('redeemCollateralAndModifyDebt')
                 console.log('redeeming');
                 await redeemCollateralAndModifyDebt(
                   props.contextData,

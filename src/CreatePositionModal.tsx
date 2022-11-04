@@ -26,7 +26,11 @@ interface CreatePositionModalProps {
   modifyPositionData: any;
   modifyPositionFormData: any;
   setTransactionStatus: (status: TransactionStatus) => void;
+  setMonetaDelegate: (fiat: any) => any;
+  setUnderlierAllowance: (fiat: any) => any;
   transactionData: any;
+  unsetMonetaDelegate: (fiat: any) => any;
+  unsetUnderlierAllowance: (fiat: any) => any;
   onUpdateUnderlier: (underlier: null | ethers.BigNumber) => void;
   onUpdateSlippage: (slippagePct: null | ethers.BigNumber) => void;
   onUpdateTargetedHealthFactor: (
@@ -53,7 +57,9 @@ export const CreatePositionModal = (props: CreatePositionModalProps) => {
 
 const CreatePositionModalBody = (props: CreatePositionModalProps) => {
   if (!props.contextData.user || !props.modifyPositionData.collateralType || !props.modifyPositionData.collateralType.metadata) {
-    return <></>;
+    // TODO
+    // return <Loading />;
+    return null;
   }
 
   // TODO: remove this from here, use in the sdk
@@ -334,8 +340,8 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
           checked={!underlier.isZero() && underlierAllowance?.gte(underlier)}
           onChange={() =>
             !underlier.isZero() && underlierAllowance?.gte(underlier)
-              ? props.onSendTransaction('unsetUnderlierAllowance')
-              : props.onSendTransaction('setUnderlierAllowance')
+              ? props.unsetUnderlierAllowance(props.contextData.fiat)
+              : props.setUnderlierAllowance(props.contextData.fiat)
           }
           color='primary'
           icon={
@@ -353,8 +359,8 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
           checked={monetaDelegate ?? false}
           onChange={() =>
             !!monetaDelegate
-              ? props.onSendTransaction('unsetMonetaDelegate')
-              : props.onSendTransaction('setMonetaDelegate')
+              ? props.unsetMonetaDelegate(props.contextData.fiat)
+              : props.setMonetaDelegate(props.contextData.fiat)
           }
           color='primary'
           icon={
@@ -383,7 +389,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
             ) : null
           }
           onPress={async () => {
-            // props.onSendTransaction('buyCollateralAndModifyDebt')}
+            props.onSendTransaction('buyCollateralAndModifyDebt');
             props.setTransactionStatus('sent');
             try {
               await buyCollateralAndModifyDebt(

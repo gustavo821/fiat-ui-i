@@ -59,7 +59,7 @@ const Home: NextPage = () => {
     },
     transactionData: {
       action: null as null | string,
-      status: null as TransactionStatus, // error, sent, confirming, confirmed
+      status: null as TransactionStatus,
     }
   }), []) 
 
@@ -346,66 +346,46 @@ const Home: NextPage = () => {
     modifyPositionFormData
   ]);
 
-  // Transaction methods
-  React.useEffect(() => {
-    if (
-      !connector
-      || contextData.fiat == null
-      || transactionData.action == null
-      || transactionData.status === 'sent'
-    ) return;
+  const createProxy = async (fiat: any, user: string) => {
+    const { proxyRegistry } = fiat.getContracts();
+    try {
+      setTransactionData({ ...transactionData, status: 'sent' });
+      console.log(await fiat.dryrun(proxyRegistry, 'deployFor', user));
+      setTransactionData({ ...transactionData, status: 'confirmed' });
+    } catch (e) {
+      console.error('Error creating proxy');
+      setTransactionData({ ...transactionData, status: 'error' });
+    }
+  }
 
-    setTransactionData({ ...transactionData, status: 'sent' });
-    const { action } = transactionData;
+  const setUnderlierAllowance = async (fiat: any) => {
+    setTransactionData({ status: 'sent', action: 'setUnderlierAllowance' });
+    const token = fiat.getERC20Contract(modifyPositionData.collateralType.properties.underlierToken);
+    console.log(await fiat.dryrun(
+      token, 'approve', contextData.proxies[0], modifyPositionFormData.underlier
+    ));
+    setTransactionData(initialState.transactionData);
+  }
 
-    (async function () {
-      if (!contextData.fiat) return;
+  const unsetUnderlierAllowance = async (fiat: any) => {
+    setTransactionData({ status: 'sent', action: 'unsetUnderlierAllowance' });
+    const token = fiat.getERC20Contract(modifyPositionData.collateralType.properties.underlierToken);
+    console.log(await fiat.dryrun(token, 'approve', contextData.proxies[0], 0));
+    setTransactionData(initialState.transactionData);
+  }
 
-      try {
-        const {
-          proxyRegistry, codex, moneta, vaultEPTActions, vaultFCActions, vaultFYActions
-        } = contextData.fiat.getContracts();
+  const setMonetaDelegate = async (fiat: any) => {
+    const { codex, moneta } = fiat.getContracts();
+    setTransactionData({ status: 'sent', action: 'setMonetaDelegate' });
+    console.log(await fiat.dryrun(codex, 'grantDelegate', moneta.address));
+    setTransactionData(initialState.transactionData);
+  }
 
-        if (contextData.proxies.length === 0 || contextData.user === null) return;
-
-        // if (action == 'setupProxy') {
-        //   const resp = await contextData.fiat.dryrun(proxyRegistry, 'deployFor', contextData.user);
-        //   console.log('resp', resp)
-        // }
-
-        // TODO: these next. then react querify calls in the modal. then the next thing
-        if (action == 'setUnderlierAllowance') {
-          const token = contextData.fiat.getERC20Contract(modifyPositionData.collateralType.properties.underlierToken);
-          console.log(await contextData.fiat.dryrun(
-            token, 'approve', contextData.proxies[0], modifyPositionFormData.underlier
-          ));
-        }
-
-        if (action == 'unsetUnderlierAllowance') {
-          const token = contextData.fiat.getERC20Contract(modifyPositionData.collateralType.properties.underlierToken);
-          console.log(await contextData.fiat.dryrun(token, 'approve', contextData.proxies[0], 0));
-        }
-
-        if (action == 'setMonetaDelegate') {
-          console.log(await contextData.fiat.dryrun(codex, 'grantDelegate', moneta.address));
-        }
-
-        if (action == 'unsetMonetaDelegate') {
-          console.log(await contextData.fiat.dryrun(codex, 'revokeDelegate', moneta.address));
-        }
-
-        await new Promise(resolve => setTimeout(resolve, 2000));
-      } catch (error) {
-        console.error(error);
-      }
-      setTransactionData({ ...transactionData, action: null, status: null });
-    })();
-  }, [connector, contextData.fiat, contextData.proxies, contextData.user, modifyPositionData, modifyPositionFormData, transactionData]);
-
-  if (collateralTypesData.length === 0) {
-    return (
-      <Loading style={{ marginTop: '50vh', width: '100vw', height: '100vh' }}/>
-    )
+  const unsetMonetaDelegate = async (fiat: any) => {
+    const { codex, moneta } = fiat.getContracts();
+    setTransactionData({ status: 'sent', action: 'unsetMonetaDelegate' });
+    console.log(await fiat.dryrun(codex, 'revokeDelegate', moneta.address));
+    setTransactionData(initialState.transactionData);
   }
 
   return (
@@ -416,14 +396,11 @@ const Home: NextPage = () => {
       </div>
       <Spacer y={2} />
       <Container>
-        {contextData.user === null || contextData.fiat === null ? null : (
-          <ProxyCard
-            {...contextData}
-            setTransactionStatus={(status) =>
-              setTransactionData({ ...transactionData, status })
-            }
-          />
-        )}
+        <ProxyCard
+          {...contextData}
+          createProxy={createProxy}
+          disableActions={disableActions}
+        />
       </Container>
       <Spacer y={2} />
       <Container>
@@ -479,7 +456,11 @@ const Home: NextPage = () => {
         setTransactionStatus={(status) =>
           setTransactionData({ ...transactionData, status })
         }
+        setMonetaDelegate={setMonetaDelegate}
+        setUnderlierAllowance={setUnderlierAllowance}
         transactionData={transactionData}
+        unsetMonetaDelegate={unsetMonetaDelegate}
+        unsetUnderlierAllowance={unsetUnderlierAllowance}
         onUpdateUnderlier={(underlier) => {
           if (underlier === null) {
             const { underlier, targetedHealthFactor, slippagePct } = modifyPositionFormData;
@@ -527,7 +508,11 @@ const Home: NextPage = () => {
         setTransactionStatus={(status) =>
           setTransactionData({ ...transactionData, status })
         }
+        setMonetaDelegate={setMonetaDelegate}
+        setUnderlierAllowance={setUnderlierAllowance}
         transactionData={transactionData}
+        unsetMonetaDelegate={unsetMonetaDelegate}
+        unsetUnderlierAllowance={unsetUnderlierAllowance}
         onUpdateDeltaCollateral={(deltaCollateral) => {
           if (deltaCollateral === null) {
             const { deltaCollateral, deltaDebt, slippagePct, mode } = modifyPositionFormData;

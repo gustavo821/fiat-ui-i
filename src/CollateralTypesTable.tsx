@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, Table, styled} from '@nextui-org/react';
+import { Text, Table, styled, Loading } from '@nextui-org/react';
 
 import { formatUnixTimestamp, encodeCollateralTypeId } from './utils';
 
@@ -39,11 +39,17 @@ const StyledBadge = styled('span', {
 });
 
 interface CollateralTypesTableProps {
-  collateralTypesData: any,
+  collateralTypesData: Array<any>,
   onSelectCollateralType: (collateralTypeId: string) => void
 }
 
 export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
+  if (props.collateralTypesData.length === 0) {
+    // TODO
+    // return <Loading />;
+    return null;
+  }
+
   return (
     <>
       <Text h1>Collateral Types</Text>
