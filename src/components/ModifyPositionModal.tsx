@@ -56,6 +56,12 @@ export const ModifyPositionModal = (props: ModifyPositionModalProps) => {
 };
 
 const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
+  if (!props.contextData.user || !props.modifyPositionData.collateralType || !props.modifyPositionData.collateralType.metadata ) {
+    // TODO
+    // return <Loading />;
+    return null;
+  }
+
   const { proxies } = props.contextData;
   const {
     collateralType: {
@@ -83,12 +89,6 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
 
   const hasProxy = proxies.length > 0;
   const matured = !(new Date() < new Date(Number(maturity.toString()) * 1000));
-
-  if (!props.contextData.user || !props.modifyPositionData.collateralType || !props.modifyPositionData.collateralType.metadata ) {
-    // TODO
-    // return <Loading />;
-    return null;
-  }
 
   return (
     <>

@@ -56,6 +56,12 @@ export const CreatePositionModal = (props: CreatePositionModalProps) => {
 };
 
 const CreatePositionModalBody = (props: CreatePositionModalProps) => {
+  if (!props.contextData.user || !props.modifyPositionData.collateralType || !props.modifyPositionData.collateralType.metadata) {
+    // TODO
+    // return <Loading />;
+    return null;
+  }
+
   const { proxies } = props.contextData;
   const {
     collateralType: {
@@ -79,12 +85,6 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
   const { action: currentTxAction } = props.transactionData;
 
   const hasProxy = proxies.length > 0;
-
-  if (!props.contextData.user || !props.modifyPositionData.collateralType || !props.modifyPositionData.collateralType.metadata) {
-    // TODO
-    // return <Loading />;
-    return null;
-  }
 
   return (
     <>
