@@ -1,17 +1,20 @@
 import React from 'react';
-import { ConnectButton } from '@rainbow-me/rainbowkit';
-import type { NextPage } from 'next';
 import { useAccount, useNetwork, useProvider } from 'wagmi';
+import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { ethers } from 'ethers';
-import { Container, Spacer } from '@nextui-org/react';
 import { decToWad, FIAT, scaleToWad, WAD, wadToScale, ZERO } from '@fiatdao/sdk';
+import { Container, Spacer } from '@nextui-org/react';
+import type { NextPage } from 'next';
+
 import { ProxyCard } from '../src/components/ProxyCard';
 import { CollateralTypesTable } from '../src/components/CollateralTypesTable';
 import { PositionsTable } from '../src/components/PositionsTable';
 import { CreatePositionModal } from '../src/components/CreatePositionModal';
 import { ModifyPositionModal } from '../src/components/ModifyPositionModal';
-import { decodeCollateralTypeId, decodePositionId, encodePositionId, getCollateralTypeData, getPositionData } from '../src/utils';
-import * as userActions from '../src/userActions';
+import {
+  decodeCollateralTypeId, decodePositionId, encodePositionId, getCollateralTypeData, getPositionData
+} from '../src/utils';
+import * as userActions from '../src/actions';
 
 export type TransactionStatus = null | 'error' | 'sent' | 'confirming' | 'confirmed';
 
@@ -183,7 +186,9 @@ const Home: NextPage = () => {
         { contract: codex, method: 'delegates', args: [proxy, moneta.address] },
         { contract: fiat, method: 'allowance', args: [proxy, vaultEPTActions.address] }
       ]);
-      setModifyPositionData({ ...modifyPositionData, ...data, underlierAllowance, underlierBalance, monetaDelegate, fiatAllowance });
+      setModifyPositionData({
+        ...modifyPositionData, ...data, underlierAllowance, underlierBalance, monetaDelegate, fiatAllowance
+      });
     })();
   }, [
     connector,
@@ -419,7 +424,7 @@ const Home: NextPage = () => {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', padding: 12 }}>
-        <h4 style={{ justifyContent: 'flex',  }}>Experimental FIAT UI</h4>
+        <h4 style={{ justifyContent: 'flex',  }}>(Experimental) FIAT UI</h4>
         <ConnectButton showBalance={false} />
       </div>
       <Spacer y={2} />
@@ -435,23 +440,14 @@ const Home: NextPage = () => {
         <CollateralTypesTable
           collateralTypesData={collateralTypesData}
           onSelectCollateralType={(collateralTypeId) => {
-            // Attempt to find existing position for a given collateral
-            // If it exists, open the ModifyPositionModal modal instead of CreatePositionModal
-            // by setting selectedPositionId rather than selectedCollateralTypeId
+            // If user has an existing position for the collateral type then open ModifyPositionModal instead
             const { vault, tokenId } = decodeCollateralTypeId(collateralTypeId);
-            const foundPosition = getPositionData(positionsData, vault, tokenId, contextData.proxies[0]);
-            if (foundPosition !== undefined) {
-              const positionId = encodePositionId(
-                vault,
-                tokenId,
-                foundPosition.owner
-              );
+            const positionData = getPositionData(positionsData, vault, tokenId, contextData.proxies[0]);
+            if (positionData !== undefined) {
+              const positionId = encodePositionId(vault, tokenId, positionData.owner);
               setSelectedPositionId(positionId);
-              setSelectedCollateralTypeId(
-                initialState.selectedCollateralTypeId
-              );
+              setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
             } else {
-              // If no position for this collateralType was found, open CreatePositionModal like normal
               setSelectedPositionId(initialState.selectedPositionId);
               setSelectedCollateralTypeId(collateralTypeId);
             }

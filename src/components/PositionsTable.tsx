@@ -1,5 +1,5 @@
 import React from 'react';
-import { Loading, Table, Text } from '@nextui-org/react';
+import { Table, Text } from '@nextui-org/react';
 
 import { wadToDec } from '@fiatdao/sdk';
 
