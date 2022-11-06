@@ -142,7 +142,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
         <Text b size={'m'}>
           Inputs
         </Text>
-        {underlierBalance && (
+        {underlierBalance && mode === 'deposit' && (
           <Text size={'$sm'}>
             Wallet: {commifyToDecimalPlaces(underlierBalance, underlierScale, 2)} {underlierSymbol}
           </Text>
