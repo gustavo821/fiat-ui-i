@@ -111,16 +111,16 @@ const Home: NextPage = () => {
           return 0;
         })
       );
-      setContextData({
-        ...contextData,
+      setContextData((curContextData) => ({
+        ...curContextData,
         explorerUrl: chain?.blockExplorers?.etherscan?.url || ''
-      });
+      }));
     })();
-  }, [chain?.blockExplorers?.etherscan?.url, collateralTypesData.length, connector, contextData, provider]);
+  }, [chain?.blockExplorers?.etherscan?.url, collateralTypesData.length, connector, provider]);
 
   // Fetch User and Vault data
   React.useEffect(() => {
-    if (!connector || (contextData.user !== null && contextData.fiat != null)) return;
+    if (!connector) return;
     
     (async function () {
       const signer = (await connector.getSigner());
@@ -131,14 +131,14 @@ const Home: NextPage = () => {
       const positionsData = userData.flatMap((user) => user.positions);
       setPositionsData(positionsData);
       const proxies = userData.filter((user: any) => (user.isProxy === true)).map((user: any) => user.user);
-      setContextData({
-        ...contextData,
+      setContextData((curContextData) => ({
+        ...curContextData,
         fiat,
         user,
         proxies,
-      });
+      }));
     })();
-  }, [connector, contextData]);
+  }, [connector]);
 
   // Populate ModifyPosition data
   React.useEffect(() => {

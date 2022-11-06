@@ -4,19 +4,47 @@ import { Table, Text } from '@nextui-org/react';
 import { wadToDec } from '@fiatdao/sdk';
 
 import { encodePositionId, getCollateralTypeData } from '../utils';
+import Skeleton from 'react-loading-skeleton';
 
 interface PositionsTableProps {
-  collateralTypesData: Array<any>,
-  positionsData: Array<any>,
-  onSelectPosition: (positionId: string) => void
+  collateralTypesData: Array<any>;
+  positionsData: Array<any>;
+  onSelectPosition: (positionId: string) => void;
 }
 
 export const PositionsTable = (props: PositionsTableProps) => {
-  if (props.positionsData === null || props.positionsData.length === 0 || props.collateralTypesData.length === 0) {
-    // TODO
-    // return <Loading />;
-    return null;
-  }
+  const colNames = React.useMemo(() => {
+    return ['Protocol', 'Token', 'TokenId', 'Collateral', 'Normal Debt'];
+  }, []);
+
+  const cells = React.useMemo(() => {
+    return props.collateralTypesData.length === 0 ? (
+      <Table.Row>
+        {colNames.map((colName) => (
+          <Table.Cell key={colName}>
+            <Skeleton count={colNames.length} />
+          </Table.Cell>
+        ))}
+      </Table.Row>
+    ) : (
+      props.positionsData.map((position) => {
+        const { owner, vault, tokenId, collateral, normalDebt } = position;
+        const {
+          properties: { tokenSymbol },
+          metadata: { protocol, asset },
+        } = getCollateralTypeData(props.collateralTypesData, vault, tokenId);
+        return (
+          <Table.Row key={encodePositionId(vault, tokenId, owner)}>
+            <Table.Cell>{protocol}</Table.Cell>
+            <Table.Cell>{`${asset} (${tokenSymbol})`}</Table.Cell>
+            <Table.Cell>{(tokenId as number).toString()}</Table.Cell>
+            <Table.Cell>{wadToDec(collateral)}</Table.Cell>
+            <Table.Cell>{wadToDec(normalDebt)}</Table.Cell>
+          </Table.Row>
+        );
+      })
+    );
+  }, [props.collateralTypesData, props.positionsData, colNames]);
 
   return (
     <>
@@ -26,34 +54,16 @@ export const PositionsTable = (props: PositionsTableProps) => {
         css={{ height: 'auto', minWidth: '100%' }}
         selectionMode='single'
         selectedKeys={'1'}
-        onSelectionChange={(selected) => props.onSelectPosition(Object.values(selected)[0])}
+        onSelectionChange={(selected) =>
+          props.onSelectPosition(Object.values(selected)[0])
+        }
       >
         <Table.Header>
-          <Table.Column>Protocol</Table.Column>
-          <Table.Column>Token</Table.Column>
-          <Table.Column>TokenId</Table.Column>
-          <Table.Column>Collateral</Table.Column>
-          <Table.Column>Normal Debt</Table.Column>
+          {colNames.map((colName) => (
+            <Table.Column key={colName}>{colName}</Table.Column>
+          ))}
         </Table.Header>
-        <Table.Body>
-          {
-            props.positionsData.map((position) => {
-              const { owner, vault, tokenId, collateral, normalDebt } = position;
-              const {
-                properties: { tokenSymbol }, metadata: { protocol, asset }
-              } = getCollateralTypeData(props.collateralTypesData, vault, tokenId);
-              return (
-                <Table.Row key={encodePositionId(vault, tokenId, owner)}>
-                  <Table.Cell>{protocol}</Table.Cell>
-                  <Table.Cell>{`${asset} (${tokenSymbol})`}</Table.Cell>
-                  <Table.Cell>{(tokenId as number).toString()}</Table.Cell>
-                  <Table.Cell>{wadToDec(collateral)}</Table.Cell>
-                  <Table.Cell>{wadToDec(normalDebt)}</Table.Cell>
-                </Table.Row>
-              );
-            })
-          }
-        </Table.Body>
+        <Table.Body>{cells}</Table.Body>
       </Table>
     </>
   );
