@@ -1,5 +1,5 @@
 import React from 'react';
-import { Loading, styled, Table, Text } from '@nextui-org/react';
+import { styled, Table, Text } from '@nextui-org/react';
 
 import { encodeCollateralTypeId, formatUnixTimestamp } from '../utils';
 

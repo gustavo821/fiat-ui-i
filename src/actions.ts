@@ -6,21 +6,14 @@ export const buyCollateralAndModifyDebt = async (
   collateralTypeData: any,
   modifyPositionFormData: any
 ) => {
-  const { vaultEPTActions, vaultFCActions, vaultFYActions } =
-    contextData.fiat.getContracts();
+  const { vaultEPTActions, vaultFCActions, vaultFYActions } = contextData.fiat.getContracts();
   const { properties } = collateralTypeData;
 
   const normalDebt = contextData.fiat
-    .debtToNormalDebt(
-      modifyPositionFormData.deltaDebt,
-      collateralTypeData.state.codex.virtualRate
-    )
+    .debtToNormalDebt(modifyPositionFormData.deltaDebt, collateralTypeData.state.codex.virtualRate)
     .mul(WAD.sub(decToWad(0.001)))
     .div(WAD);
-  const tokenAmount = wadToScale(
-    modifyPositionFormData.deltaCollateral,
-    properties.tokenScale
-  );
+  const tokenAmount = wadToScale(modifyPositionFormData.deltaCollateral, properties.tokenScale);
 
   switch (properties.vaultType) {
     case 'ERC20:EPT': {
@@ -65,12 +58,9 @@ export const buyCollateralAndModifyDebt = async (
       // 1 - (underlier / deltaCollateral)
       const minLendRate = wadToScale(
         WAD.sub(
-          scaleToWad(
-            modifyPositionFormData.underlier,
-            properties.underlierScale
-          )
-            .mul(WAD)
-            .div(modifyPositionFormData.deltaCollateral)
+          scaleToWad(modifyPositionFormData.underlier, properties.underlierScale)
+          .mul(WAD)
+          .div(modifyPositionFormData.deltaCollateral)
         ),
         properties.tokenScale
       );

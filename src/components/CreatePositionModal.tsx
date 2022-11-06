@@ -11,7 +11,7 @@ import {
   Switch,
   Text,
 } from '@nextui-org/react';
-import { BigNumber, ethers } from 'ethers';
+import { ethers } from 'ethers';
 import { Slider } from 'antd';
 import 'antd/dist/antd.css';
 import { decToScale, decToWad, scaleToDec, wadToDec } from '@fiatdao/sdk';

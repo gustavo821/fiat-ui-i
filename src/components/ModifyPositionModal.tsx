@@ -11,7 +11,7 @@ import {
   Switch,
   Text,
 } from '@nextui-org/react';
-import { BigNumber, ethers } from 'ethers';
+import { ethers } from 'ethers';
 import { decToScale, decToWad, scaleToDec, wadToDec } from '@fiatdao/sdk';
 
 import { commifyToDecimalPlaces, floor2, floor4, formatUnixTimestamp } from '../utils';
