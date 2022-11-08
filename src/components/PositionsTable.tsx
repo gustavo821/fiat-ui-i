@@ -1,7 +1,7 @@
 import React from 'react';
-import { styled, Table, Text, User } from '@nextui-org/react';
+import { Col, Row, styled, Table, Text, User } from '@nextui-org/react';
 
-import { wadToDec } from '@fiatdao/sdk';
+import { WAD, wadToDec } from '@fiatdao/sdk';
 
 import { encodePositionId, getCollateralTypeData } from '../utils';
 import Skeleton from 'react-loading-skeleton';
@@ -68,6 +68,7 @@ export const PositionsTable = (props: PositionsTableProps) => {
         const {
           properties: { tokenSymbol, maturity },
           metadata: { protocol, asset, icons, urls },
+          state
         } = getCollateralTypeData(props.collateralTypesData, vault, tokenId);
         const maturityFormatted = new Date(Number(maturity.toString()) * 1000);
         return (
@@ -82,7 +83,16 @@ export const PositionsTable = (props: PositionsTableProps) => {
                 <User.Link href={urls.asset}>{tokenSymbol}</User.Link>
               </User>
             </Table.Cell>
-            <Table.Cell>{wadToDec(collateral)}</Table.Cell>
+            <Table.Cell>
+              <Col>
+                <Row>
+                  {wadToDec(collateral)}
+                </Row>
+                <Row>
+                  {`$${parseFloat(wadToDec(state.collybus.fairPrice.mul(collateral).div(WAD))).toFixed(2)}`}
+                </Row>
+              </Col>
+            </Table.Cell>
             <Table.Cell>{wadToDec(normalDebt)}</Table.Cell>
             <Table.Cell>
               <StyledBadge
