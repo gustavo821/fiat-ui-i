@@ -128,7 +128,7 @@ const Home: NextPage = () => {
         const signer = (await connector.getSigner());
         const user = await signer.getAddress();
         const fiatBalance = await fiat.balanceOf(user)
-        setFiatBalance(`${wadToDec(fiatBalance)} FIAT`)
+        setFiatBalance(`${parseFloat(wadToDec(fiatBalance)).toFixed(2)} FIAT`)
       })();
 
     }
