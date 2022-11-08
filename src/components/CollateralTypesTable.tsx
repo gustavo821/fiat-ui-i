@@ -1,4 +1,4 @@
-import { styled, Table, Text } from '@nextui-org/react';
+import { styled, Table, Text, User } from '@nextui-org/react';
 import React from 'react';
 
 import Skeleton from 'react-loading-skeleton';
@@ -58,15 +58,25 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
       </Table.Row>
     ) : (
       props.collateralTypesData.map((collateralType: any) => {
-        const { vault, tokenId, tokenSymbol, underlierSymbol, maturity } =
+        const { vault, tokenId, underlierSymbol, maturity } =
           collateralType.properties;
-        const { protocol, asset } = collateralType.metadata;
+        const { protocol, asset, icons, urls, symbol } = collateralType.metadata;
         const maturityFormatted = new Date(Number(maturity.toString()) * 1000);
         return (
           <Table.Row key={encodeCollateralTypeId(vault, tokenId)}>
-            <Table.Cell>{protocol}</Table.Cell>
-            <Table.Cell>{`${asset} (${tokenSymbol})`}</Table.Cell>
-            <Table.Cell>{underlierSymbol}</Table.Cell>
+            <Table.Cell>
+              <User src={icons.protocol} name={protocol}>
+                <User.Link href={urls.project}>Visit</User.Link>
+              </User>
+            </Table.Cell>
+            <Table.Cell>
+              <User src={icons.asset} name={asset}>
+                <User.Link href={urls.asset}>{symbol}</User.Link>
+              </User>
+            </Table.Cell>
+            <Table.Cell>
+              <User name={underlierSymbol} src={icons.underlier} size='sm'/>
+            </Table.Cell>
             <Table.Cell>
               <StyledBadge
                 type={new Date() < maturityFormatted ? 'green' : 'red'}

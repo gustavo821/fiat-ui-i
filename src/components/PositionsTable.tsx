@@ -1,5 +1,5 @@
 import React from 'react';
-import { Table, Text } from '@nextui-org/react';
+import { Table, Text, User } from '@nextui-org/react';
 
 import { wadToDec } from '@fiatdao/sdk';
 
@@ -31,12 +31,20 @@ export const PositionsTable = (props: PositionsTableProps) => {
         const { owner, vault, tokenId, collateral, normalDebt } = position;
         const {
           properties: { tokenSymbol },
-          metadata: { protocol, asset },
+          metadata: { protocol, asset, icons, urls },
         } = getCollateralTypeData(props.collateralTypesData, vault, tokenId);
         return (
           <Table.Row key={encodePositionId(vault, tokenId, owner)}>
-            <Table.Cell>{protocol}</Table.Cell>
-            <Table.Cell>{`${asset} (${tokenSymbol})`}</Table.Cell>
+            <Table.Cell>
+              <User src={icons.protocol} name={protocol}>
+                <User.Link href={urls.project}>Visit</User.Link>
+              </User>
+            </Table.Cell>
+            <Table.Cell>
+              <User src={icons.asset} name={asset}>
+                <User.Link href={urls.asset}>{tokenSymbol}</User.Link>
+              </User>
+            </Table.Cell>
             <Table.Cell>{(tokenId as number).toString()}</Table.Cell>
             <Table.Cell>{wadToDec(collateral)}</Table.Cell>
             <Table.Cell>{wadToDec(normalDebt)}</Table.Cell>
