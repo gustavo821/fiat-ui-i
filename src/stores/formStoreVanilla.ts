@@ -5,14 +5,14 @@ import { createStore } from 'zustand';
 
 import { floor4 } from '../utils';
 
-interface FormState {
+export interface FormState {
   underlier: ethers.BigNumber;
   slippagePct: ethers.BigNumber;
   targetedHealthFactor: ethers.BigNumber;
   deltaCollateral: ethers.BigNumber;
 }
 
-interface FormActions {
+export interface FormActions {
   setUnderlier: (value: string, underlierScale: ethers.BigNumber) => void;
   setSlippage: (value: string) => void;
   setTargetedHealthFactor: (value: number) => void;
@@ -29,7 +29,7 @@ const initialState = {
   deltaCollateral: ethers.constants.Zero,
 };
 
-export const useModifyPositionFormDataStore = createStore<FormState & FormActions>(
+export const modifyPositionFormDataStoreVanilla = createStore<FormState & FormActions>()(
   (set, get) => ({
     ...initialState,
     setUnderlier: async (value, underlierScale) => {
