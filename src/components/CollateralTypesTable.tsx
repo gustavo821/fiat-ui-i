@@ -1,6 +1,6 @@
 import { styled, Table, Text, User } from '@nextui-org/react';
 import React from 'react';
-
+import { wadToDec } from '@fiatdao/sdk';
 import Skeleton from 'react-loading-skeleton';
 import { encodeCollateralTypeId, formatUnixTimestamp } from '../utils';
 
@@ -58,9 +58,11 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
       </Table.Row>
     ) : (
       props.collateralTypesData.map((collateralType: any) => {
+        console.log({collateralType})
         const { vault, tokenId, underlierSymbol, maturity } =
           collateralType.properties;
         const { protocol, asset, icons, urls, symbol } = collateralType.metadata;
+        const depositedCollateral = collateralType.state.codex.depositedCollateral;
         const maturityFormatted = new Date(Number(maturity.toString()) * 1000);
         return (
           <Table.Row key={encodeCollateralTypeId(vault, tokenId)}>
@@ -84,7 +86,7 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
                 {formatUnixTimestamp(maturity)}
               </StyledBadge>
             </Table.Cell>
-            <Table.Cell>0</Table.Cell>
+            <Table.Cell>{`${parseFloat(wadToDec(depositedCollateral)).toFixed(2)} ${symbol}`}</Table.Cell>
           </Table.Row>
         );
       })
