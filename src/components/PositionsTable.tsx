@@ -14,7 +14,7 @@ interface PositionsTableProps {
 
 export const PositionsTable = (props: PositionsTableProps) => {
   const colNames = React.useMemo(() => {
-    return ['Protocol', 'Token', 'TokenId', 'Collateral', 'Normal Debt'];
+    return ['Protocol', 'Token', 'Collateral', 'Normal Debt'];
   }, []);
 
   const cells = React.useMemo(() => {
@@ -45,7 +45,6 @@ export const PositionsTable = (props: PositionsTableProps) => {
                 <User.Link href={urls.asset}>{tokenSymbol}</User.Link>
               </User>
             </Table.Cell>
-            <Table.Cell>{(tokenId as number).toString()}</Table.Cell>
             <Table.Cell>{wadToDec(collateral)}</Table.Cell>
             <Table.Cell>{wadToDec(normalDebt)}</Table.Cell>
           </Table.Row>
