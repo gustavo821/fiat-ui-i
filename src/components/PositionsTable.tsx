@@ -1,10 +1,46 @@
 import React from 'react';
-import { Table, Text, User } from '@nextui-org/react';
+import { styled, Table, Text, User } from '@nextui-org/react';
 
 import { wadToDec } from '@fiatdao/sdk';
 
 import { encodePositionId, getCollateralTypeData } from '../utils';
 import Skeleton from 'react-loading-skeleton';
+import { formatUnixTimestamp } from '../utils';
+
+const StyledBadge = styled('span', {
+  display: 'inline-block',
+  textTransform: 'uppercase',
+  padding: '$2 $3',
+  margin: '0 2px',
+  fontSize: '10px',
+  fontWeight: '$bold',
+  borderRadius: '14px',
+  letterSpacing: '0.6px',
+  lineHeight: 1,
+  boxShadow: '1px 2px 5px 0px rgb(0 0 0 / 5%)',
+  alignItems: 'center',
+  alignSelf: 'center',
+  color: '$white',
+  variants: {
+    type: {
+      green: {
+        bg: '$successLight',
+        color: '$successLightContrast',
+      },
+      red: {
+        bg: '$errorLight',
+        color: '$errorLightContrast',
+      },
+      orange: {
+        bg: '$warningLight',
+        color: '$warningLightContrast',
+      },
+    },
+  },
+  defaultVariants: {
+    type: 'active',
+  },
+});
 
 interface PositionsTableProps {
   collateralTypesData: Array<any>;
@@ -14,7 +50,7 @@ interface PositionsTableProps {
 
 export const PositionsTable = (props: PositionsTableProps) => {
   const colNames = React.useMemo(() => {
-    return ['Protocol', 'Token', 'Collateral', 'Normal Debt'];
+    return ['Protocol', 'Token', 'Collateral', 'Normal Debt', 'Maturity'];
   }, []);
 
   const cells = React.useMemo(() => {
@@ -30,9 +66,10 @@ export const PositionsTable = (props: PositionsTableProps) => {
       props.positionsData.map((position) => {
         const { owner, vault, tokenId, collateral, normalDebt } = position;
         const {
-          properties: { tokenSymbol },
+          properties: { tokenSymbol, maturity },
           metadata: { protocol, asset, icons, urls },
         } = getCollateralTypeData(props.collateralTypesData, vault, tokenId);
+        const maturityFormatted = new Date(Number(maturity.toString()) * 1000);
         return (
           <Table.Row key={encodePositionId(vault, tokenId, owner)}>
             <Table.Cell>
@@ -47,6 +84,13 @@ export const PositionsTable = (props: PositionsTableProps) => {
             </Table.Cell>
             <Table.Cell>{wadToDec(collateral)}</Table.Cell>
             <Table.Cell>{wadToDec(normalDebt)}</Table.Cell>
+            <Table.Cell>
+              <StyledBadge
+                type={new Date() < maturityFormatted ? 'green' : 'red'}
+              >
+                {formatUnixTimestamp(maturity)}
+              </StyledBadge>
+            </Table.Cell>
           </Table.Row>
         );
       })
