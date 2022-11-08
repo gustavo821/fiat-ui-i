@@ -6,18 +6,27 @@ import {
   darkTheme,
   getDefaultWallets,
   lightTheme,
-  RainbowKitProvider
+  RainbowKitProvider,
 } from '@rainbow-me/rainbowkit';
 import {
   argentWallet,
   ledgerWallet,
   trustWallet,
 } from '@rainbow-me/rainbowkit/wallets';
-import { chain, configureChains, createClient, WagmiConfig } from 'wagmi';
+import {
+  chain,
+  configureChains,
+  createClient,
+  useProvider,
+  WagmiConfig,
+} from 'wagmi';
 import { alchemyProvider } from 'wagmi/providers/alchemy';
 import { publicProvider } from 'wagmi/providers/public';
 import { createTheme, NextUIProvider } from '@nextui-org/react';
 import { ThemeProvider as NextThemesProvider } from 'next-themes';
+import { useModifyPositionFormDataStore } from '../src/stores/formStore';
+import { useEffect } from 'react';
+import { FIAT } from '@fiatdao/sdk';
 
 const { chains, provider, webSocketProvider } = configureChains(
   [
@@ -61,6 +70,17 @@ const nextLightTheme = createTheme({type: 'light'})
 const nextDarkTheme = createTheme({type: 'dark'})
 
 function MyApp({ Component, pageProps }: AppProps) {
+  const { setFiatSdk } = useModifyPositionFormDataStore()
+  const provider = useProvider();
+
+  useEffect(() => {
+    // Initialize store with FIAT SDK
+    (async () => {
+      const fiatSdk = await FIAT.fromProvider(provider, null);
+      setFiatSdk(fiatSdk);
+    })();
+  }, [provider, setFiatSdk]);
+
   return (
     <WagmiConfig client={wagmiClient}>
       <RainbowKitProvider appInfo={demoAppInfo} chains={chains} theme={{lightMode: lightTheme(), darkMode: darkTheme(),}}>

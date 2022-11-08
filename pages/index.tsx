@@ -20,7 +20,6 @@ export type TransactionStatus = null | 'error' | 'sent' | 'confirming' | 'confir
 
 const Home: NextPage = () => {
   const provider = useProvider();
-  console.log('[index] prov', provider);
   const { connector } = useAccount({ onConnect: () => resetState(), onDisconnect: () => resetState() });
   const { chain } = useNetwork();
 

@@ -6,6 +6,7 @@ import create from 'zustand';
 import { floor4 } from '../utils';
 
 interface FormState {
+  fiatSdk: any;
   underlier: ethers.BigNumber;
   slippagePct: ethers.BigNumber;
   targetedHealthFactor: ethers.BigNumber;
@@ -13,6 +14,7 @@ interface FormState {
 }
 
 interface FormActions {
+  setFiatSdk: any;
   setUnderlier: (value: string, underlierScale: ethers.BigNumber) => void;
   setSlippage: (value: string) => void;
   setTargetedHealthFactor: (value: number) => void;
@@ -23,6 +25,7 @@ interface FormActions {
 }
 
 const initialState = {
+  fiatSdk: null,
   underlier: ethers.constants.Zero,
   slippagePct: decToWad('0.001'),
   targetedHealthFactor: decToWad('1.2'),
@@ -32,6 +35,11 @@ const initialState = {
 export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
   (set, get) => ({
     ...initialState,
+
+    setFiatSdk: (fiatSdk: any) => {
+      set(() => ({ fiatSdk }));
+    },
+
     setUnderlier: async (value, underlierScale) => {
       const bnAmount =
         value === null || value === ''

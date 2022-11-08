@@ -1,4 +1,3 @@
-import create from 'zustand';
 import React from 'react';
 import {
   Button,
@@ -15,7 +14,7 @@ import {
 import { ethers } from 'ethers';
 import { Slider } from 'antd';
 import 'antd/dist/antd.css';
-import { decToScale, decToWad, scaleToDec, wadToDec } from '@fiatdao/sdk';
+import { scaleToDec, wadToDec } from '@fiatdao/sdk';
 
 import {
   commifyToDecimalPlaces,
@@ -24,7 +23,7 @@ import {
   formatUnixTimestamp,
 } from '../utils';
 import { TransactionStatus } from '../../pages';
-import {useModifyPositionFormDataStore} from '../stores/formStore';
+import { useModifyPositionFormDataStore } from '../stores/formStore';
 
 interface CreatePositionModalProps {
   buyCollateralAndModifyDebt: () => any;
@@ -61,91 +60,6 @@ export const CreatePositionModal = (props: CreatePositionModalProps) => {
     </Modal>
   );
 };
-
-// interface FormState {
-//   underlier: ethers.BigNumber,
-//   slippagePct: ethers.BigNumber,
-//   targetedHealthFactor: ethers.BigNumber,
-//   deltaCollateral: ethers.BigNumber,
-// }
-
-// interface FormActions {
-//   setUnderlier: (value: string, underlierScale: ethers.BigNumber) => void,
-//   setSlippage: (value: string) => void,
-//   setTargetedHealthFactor: (value: number) => void,
-//   setDeltaCollateral: (value: string) => void,
-// }
-
-// const initialState = {
-//   underlier: ethers.constants.Zero,
-//   slippagePct: decToWad('0.001'),
-//   targetedHealthFactor: decToWad('1.2'),
-//   deltaCollateral: ethers.constants.Zero,
-// }
-
-// const useModifyPositionFormDataStore = create<FormState & FormActions>()((set) => ({
-//   ...initialState,
-
-//   setUnderlier: (value, underlierScale) => {
-//     const bnAmount = value === null || value === ''
-//       ? initialState.underlier
-//       : decToScale(
-//         floor4(
-//           Number(value) < 0
-//             ? 0
-//             : Number(value)
-//         ),
-//         underlierScale
-//       )
-//       set(() => ({ underlier: bnAmount }));
-
-//       // note that delta collat for creating position is just the value
-//       // but for manage position have to add collateral in position
-//       // set
-//   },
-
-//   setSlippage: (value) => {
-//     let newSlippage: ethers.BigNumber;
-//     if (value === null || value === '') {
-//       newSlippage = initialState.slippagePct;
-//     } else {
-//       const ceiled =
-//         Number(value) < 0
-//           ? 0
-//           : Number(value) > 50
-//             ? 50
-//             : Number(value);
-//             newSlippage = decToWad(floor4(ceiled / 100));
-//     }
-//     set(() => ({ slippagePct: newSlippage }));
-//   },
-
-//   setTargetedHealthFactor: (value) => {
-//     set(() => ({ targetedHealthFactor: decToWad(String(value)) }));
-//   },
-
-//   setDeltaCollateral: (value) => {
-//     let newDeltaCollateral: ethers.BigNumber;
-
-//     if (value === null || value === '') {
-//       newDeltaCollateral = initialState.deltaCollateral;
-//     }
-
-//     newDeltaCollateral = decToWad(
-//       floor4(
-//         Number(value) < 0
-//           ? 0
-//           : Number(value)
-//       )
-//     );
-
-//     set(() => ({ deltaCollateral: newDeltaCollateral }));
-//   },
-
-//   reset: () => {
-//     set(initialState);
-//   },
-// }));
 
 const CreatePositionModalBody = (props: CreatePositionModalProps) => {
   const formDataStore = useModifyPositionFormDataStore();
