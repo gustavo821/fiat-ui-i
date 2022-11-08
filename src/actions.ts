@@ -5,14 +5,14 @@ export const underlierToPToken = async (
   fiat: any,
   underlier: ethers.BigNumber,
   collateralType: any
-) => {
-  const { vault, tokenId, tokenScale, vaultType } = collateralType.properties;
-  const { vaultEPTActions, vaultFCActions, vaultFYActions } =
-    fiat.getContracts();
-
+): Promise<ethers.BigNumber> => {
   if (!underlier.gt(ZERO)) {
     return ZERO;
   }
+
+  const { vault, tokenId, vaultType } = collateralType.properties;
+  const { vaultEPTActions, vaultFCActions, vaultFYActions } =
+    fiat.getContracts();
 
   switch (vaultType) {
     case 'ERC20:EPT': {
@@ -59,6 +59,68 @@ export const underlierToPToken = async (
     default: {
       throw new Error('Unsupported collateral type');
     }
+  }
+};
+
+export const tokenToUnderlier = async (
+  fiat: any,
+  tokenIn: ethers.BigNumber,
+  collateralType: any
+): Promise<ethers.BigNumber> => {
+  if (tokenIn.gt(ZERO)) {
+    return ZERO;
+  }
+
+  const { vault, tokenId, vaultType } = collateralType.properties;
+  const { vaultEPTActions, vaultFCActions, vaultFYActions } =
+    fiat.getContracts();
+
+  switch (vaultType) {
+    case 'ERC20:EPT': {
+      if (collateralType.properties.eptData == undefined)
+        throw new Error('Missing data');
+      const {
+        eptData: { balancerVault: balancer, poolId: pool },
+      } = collateralType.properties;
+      const underlierAmount = await fiat.call(
+        vaultEPTActions,
+        'pTokenToUnderlier',
+        vault,
+        balancer,
+        pool,
+        tokenIn
+      );
+      return underlierAmount;
+    }
+
+    case 'ERC1155:FC': {
+      if (collateralType.properties.fcData == undefined)
+        throw new Error('Missing data');
+      const underlierAmount = await fiat.call(
+        vaultFCActions,
+        'fCashToUnderlier',
+        tokenId,
+        tokenIn
+      );
+      return underlierAmount;
+    }
+
+    case 'ERC20:FY': {
+      if (collateralType.properties.fyData == undefined)
+        throw new Error('Missing data');
+      const {
+        fyData: { yieldSpacePool },
+      } = collateralType.properties;
+      const underlierAmount = await fiat.call(
+        vaultFYActions,
+        'fyTokenToUnderlier',
+        tokenIn,
+        yieldSpacePool
+      );
+      return underlierAmount;
+    }
+    default:
+      throw new Error('Unsupported collateral type');
   }
 };
 

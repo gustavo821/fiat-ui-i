@@ -228,11 +228,11 @@ const Home: NextPage = () => {
             // Applies to manage & create position
             const { underlier } = modifyPositionFormData;
             const tokensOut = await userActions.underlierToPToken(fiat, underlier, collateralType);
-
             const { slippagePct } = modifyPositionFormData;
             const deltaCollateral = scaleToWad(tokensOut, tokenScale).mul(WAD.sub(slippagePct)).div(WAD);
             if (selectedCollateralTypeId !== null) {
               // new position
+              // calculate debt based off chosen health factor
               const { targetedHealthFactor } = modifyPositionFormData;
               const deltaNormalDebt = fiat.computeMaxNormalDebt(
                 deltaCollateral, targetedHealthFactor, rate, liquidationPrice
@@ -247,6 +247,7 @@ const Home: NextPage = () => {
               });
             } else {
               // existing position (selectedCollateralTypeId will be null)
+              // calculate debt based off chosen health factor, taking into account position's existing collateral
               const { deltaDebt } = modifyPositionFormData;
               const normalDebt = fiat.debtToNormalDebt(deltaDebt, rate);
               const collateral = position.collateral.add(deltaCollateral);
@@ -259,21 +260,9 @@ const Home: NextPage = () => {
             }
           } else if (mode === 'withdraw') {
             const { deltaCollateral, deltaDebt, slippagePct } = modifyPositionFormData;
-            const tokenIn = wadToScale(deltaCollateral, tokenScale);
-            let underlierAmount = ethers.constants.Zero;
-            if (vaultType === 'ERC20:EPT' && tokenIn.gt(ZERO)) {
-              if (collateralType.properties.eptData == undefined) throw new Error('Missing data');
-              const { eptData: { balancerVault: balancer, poolId: pool } } = collateralType.properties;
-              underlierAmount = await fiat.call(vaultEPTActions, 'pTokenToUnderlier', vault, balancer, pool, tokenIn);
-            } else if (vaultType === 'ERC1155:FC' && tokenIn.gt(ZERO)) {
-              if (collateralType.properties.fcData == undefined) throw new Error('Missing data');
-              underlierAmount = await fiat.call(vaultFCActions, 'fCashToUnderlier', tokenId, tokenIn);
-            } else if (vaultType === 'ERC20:FY' && tokenIn.gt(ZERO)) {
-              if (collateralType.properties.fyData == undefined) throw new Error('Missing data');
-              const { fyData: { yieldSpacePool } } = collateralType.properties;
-              underlierAmount = await fiat.call(vaultFYActions, 'fyTokenToUnderlier', tokenIn, yieldSpacePool);
-            } else if (tokenIn.gt(ZERO)) { throw new Error('Unsupported collateral type'); }
-            const underlier = underlierAmount.mul(WAD.sub(slippagePct)).div(WAD);
+            const tokenInScaled = wadToScale(deltaCollateral, tokenScale);
+            const underlierAmount = await userActions.tokenToUnderlier(fiat, tokenInScaled, collateralType);
+            const underlier = underlierAmount.mul(WAD.sub(slippagePct)).div(WAD); // with slippage
             const deltaNormalDebt = fiat.debtToNormalDebt(deltaDebt, rate);
             if (position.collateral.lt(deltaCollateral)) throw new Error('Insufficient collateral');
             if (position.normalDebt.lt(deltaNormalDebt)) throw new Error('Insufficient debt');
