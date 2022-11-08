@@ -475,9 +475,20 @@ const Home: NextPage = () => {
                 {(() => {
                   if (!connected) {
                     return (
-                      <Button onClick={openConnectModal} type="button">
-                        Connect Wallet
-                      </Button>
+                      <div style={{ display: 'flex', gap: 12 }}>
+                        <Button
+                          bordered
+                          onClick={openConnectModal}
+                          style={{ display: 'flex', alignItems: 'center' }}
+                          type="button"
+                        >
+                          Ethereum
+                        </Button>
+
+                        <Button onClick={openConnectModal} type="button">
+                          Connect Wallet
+                        </Button>
+                      </div>
                     );
                   }
 
