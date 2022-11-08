@@ -227,19 +227,8 @@ const Home: NextPage = () => {
           if (mode === 'deposit') {
             // Applies to manage & create position
             const { underlier } = modifyPositionFormData;
-            let tokensOut = ethers.constants.Zero;
-            if (vaultType === 'ERC20:EPT' && underlier.gt(ZERO)) {
-              if (collateralType.properties.eptData == undefined) throw new Error('Missing data');
-              const { eptData: { balancerVault: balancer, poolId: pool } } = collateralType.properties;
-              tokensOut = await fiat.call(vaultEPTActions, 'underlierToPToken', vault, balancer, pool, underlier);
-            } else if (vaultType === 'ERC1155:FC' && underlier.gt(ZERO)) {
-              if (collateralType.properties.fcData == undefined) throw new Error('Missing data');
-              tokensOut = await fiat.call(vaultFCActions, 'underlierToFCash', tokenId, underlier);
-            } else if (vaultType === 'ERC20:FY' && underlier.gt(ZERO)) {
-              if (collateralType.properties.fyData == undefined) throw new Error('Missing data');
-              const { fyData: { yieldSpacePool } } = collateralType.properties;
-              tokensOut = await fiat.call(vaultFYActions, 'underlierToFYToken', underlier, yieldSpacePool);
-            } else if (underlier.gt(ZERO)) { throw new Error('Unsupported collateral type'); }
+            const tokensOut = await userActions.underlierToPToken(fiat, underlier, collateralType);
+
             const { slippagePct } = modifyPositionFormData;
             const deltaCollateral = scaleToWad(tokensOut, tokenScale).mul(WAD.sub(slippagePct)).div(WAD);
             if (selectedCollateralTypeId !== null) {
@@ -311,7 +300,7 @@ const Home: NextPage = () => {
             });
           } else { throw new Error('Invalid mode'); }
         } catch (error) {
-          console.log(error);
+          console.log('Error updating form data: ', error);
           if (mode === 'deposit') {
             setModifyPositionFormData({
               ...modifyPositionFormData,

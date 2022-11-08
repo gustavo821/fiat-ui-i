@@ -19,9 +19,6 @@ interface FormActions {
   setSlippage: (value: string) => void;
   setTargetedHealthFactor: (value: number) => void;
   setDeltaCollateral: (value: string) => void;
-  // TODO: maybe have an event listener that calls a set network action, that updates the provider in the store?
-  // but i don't WANT provider in the store and in wagmi hooks, i want to reuse the wagmi hook provider
-  // without recreating the ENTIRE FUCKING STORW
 }
 
 const initialState = {
@@ -50,20 +47,21 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
             );
       set(() => ({ underlier: bnAmount }));
 
-      // const fiatSdk = get().fiatSdk;
-
+      // Estimate output given underlier
+      const fiatSdk = get().fiatSdk;
+      // const { vaultEPTActions, vaultFCActions, vaultFYActions } = fiatSdk.getContracts();
       // const tokensOut = await fiatSdk.call(
       //   vaultEPTActions,
       //   'underlierToPToken',
       //   vault,
       //   balancer,
       //   pool,
-      //   underlier
+      //   bnAmount
       // );
 
-      // note that delta collat for creating position is just the value
+      // note that delta collateral for creating position is just the value
       // but for manage position have to add collateral in position
-      // setDeltaCollateral();
+      // set(() => { deltaCollateral }));
     },
 
     setSlippage: (value) => {
