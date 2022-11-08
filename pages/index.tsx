@@ -2,8 +2,8 @@ import React from 'react';
 import { useAccount, useNetwork, useProvider } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { ethers } from 'ethers';
-import { decToWad, FIAT, scaleToWad, WAD, wadToScale, ZERO } from '@fiatdao/sdk';
-import { Container, Spacer } from '@nextui-org/react';
+import { decToWad, FIAT, scaleToWad, WAD, wadToDec, wadToScale, ZERO } from '@fiatdao/sdk';
+import { Badge, Button, Container, Spacer } from '@nextui-org/react';
 import type { NextPage } from 'next';
 
 import { ProxyCard } from '../src/components/ProxyCard';
@@ -73,6 +73,8 @@ const Home: NextPage = () => {
   const [transactionData, setTransactionData] = React.useState(initialState.transactionData);
   const [selectedPositionId, setSelectedPositionId] = React.useState(initialState.selectedPositionId);
   const [selectedCollateralTypeId, setSelectedCollateralTypeId] = React.useState(initialState.selectedCollateralTypeId);
+  const [fiatBalance, setFiatBalance] = React.useState<string>('0 FIAT');
+
 
   const disableActions = React.useMemo(() => transactionData.status === 'sent', [transactionData.status])
 
@@ -117,6 +119,20 @@ const Home: NextPage = () => {
       }));
     })();
   }, [chain?.blockExplorers?.etherscan?.url, collateralTypesData.length, connector, provider]);
+
+  React.useEffect(() => {
+    if (connector) {
+      (async function () {
+        if (!contextData.fiat) return;
+        const { fiat } = contextData.fiat.getContracts();
+        const signer = (await connector.getSigner());
+        const user = await signer.getAddress();
+        const fiatBalance = await fiat.balanceOf(user)
+        setFiatBalance(`${wadToDec(fiatBalance)} FIAT`)
+      })();
+
+    }
+  }, [connector, contextData.fiat])
 
   // Fetch User and Vault data
   React.useEffect(() => {
@@ -425,7 +441,76 @@ const Home: NextPage = () => {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', padding: 12 }}>
         <h4 style={{ justifyContent: 'flex',  }}>(Experimental) FIAT UI</h4>
-        <ConnectButton showBalance={false} />
+        <ConnectButton.Custom>
+          {({
+            account,
+            chain,
+            openAccountModal,
+            openChainModal,
+            openConnectModal,
+            authenticationStatus,
+            mounted,
+          }) => {
+            // Note: If your app doesn't use authentication, you
+            // can remove all 'authenticationStatus' checks
+            const ready = mounted && authenticationStatus !== 'loading';
+            const connected =
+              ready &&
+              account &&
+              chain &&
+              (!authenticationStatus ||
+                authenticationStatus === 'authenticated');
+
+            return (
+              <div
+                {...(!ready && {
+                  'aria-hidden': true,
+                  'style': {
+                    opacity: 0,
+                    pointerEvents: 'none',
+                    userSelect: 'none',
+                  },
+                })}
+              >
+                {(() => {
+                  if (!connected) {
+                    return (
+                      <Button onClick={openConnectModal} type="button">
+                        Connect Wallet
+                      </Button>
+                    );
+                  }
+
+                  if (chain.unsupported) {
+                    return (
+                      <Button onClick={openChainModal} type="button" color='error'>
+                        Wrong network
+                      </Button>
+                    );
+                  }
+
+                  return (
+                    <div style={{ display: 'flex', gap: 12 }}>
+                      <Button
+                        bordered
+                        onClick={openChainModal}
+                        style={{ display: 'flex', alignItems: 'center' }}
+                        type="button"
+                      >
+                        {chain.name}
+                      </Button>
+
+                      <Button auto onClick={openAccountModal} type="button">
+                        <span style={{marginRight: '20px'}}>{account.displayName}</span>
+                        <Badge isSquared color="primary" variant="bordered">{fiatBalance}</Badge>
+                      </Button>
+                    </div>
+                  );
+                })()}
+              </div>
+            );
+          }}
+        </ConnectButton.Custom>
       </div>
       <Spacer y={2} />
       <Container>
