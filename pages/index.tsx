@@ -20,6 +20,7 @@ export type TransactionStatus = null | 'error' | 'sent' | 'confirming' | 'confir
 
 const Home: NextPage = () => {
   const provider = useProvider();
+  console.log('[index] prov', provider);
   const { connector } = useAccount({ onConnect: () => resetState(), onDisconnect: () => resetState() });
   const { chain } = useNetwork();
 
@@ -225,6 +226,7 @@ const Home: NextPage = () => {
 
         try {
           if (mode === 'deposit') {
+            // Applies to manage & create position
             const { underlier } = modifyPositionFormData;
             let tokensOut = ethers.constants.Zero;
             if (vaultType === 'ERC20:EPT' && underlier.gt(ZERO)) {
@@ -242,6 +244,7 @@ const Home: NextPage = () => {
             const { slippagePct } = modifyPositionFormData;
             const deltaCollateral = scaleToWad(tokensOut, tokenScale).mul(WAD.sub(slippagePct)).div(WAD);
             if (selectedCollateralTypeId !== null) {
+              // new position
               const { targetedHealthFactor } = modifyPositionFormData;
               const deltaNormalDebt = fiat.computeMaxNormalDebt(
                 deltaCollateral, targetedHealthFactor, rate, liquidationPrice
@@ -255,6 +258,7 @@ const Home: NextPage = () => {
                 ...modifyPositionFormData, healthFactor, collateral, debt, deltaCollateral, outdated: false
               });
             } else {
+              // existing position (selectedCollateralTypeId will be null)
               const { deltaDebt } = modifyPositionFormData;
               const normalDebt = fiat.debtToNormalDebt(deltaDebt, rate);
               const collateral = position.collateral.add(deltaCollateral);
