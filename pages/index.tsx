@@ -3,7 +3,7 @@ import { useAccount, useNetwork, useProvider } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { ethers } from 'ethers';
 import { decToWad, FIAT, scaleToWad, WAD, wadToDec, wadToScale, ZERO } from '@fiatdao/sdk';
-import { Badge, Button, Container, Spacer } from '@nextui-org/react';
+import { Badge, Container, Spacer, useTheme } from '@nextui-org/react';
 import type { NextPage } from 'next';
 
 import { ProxyCard } from '../src/components/ProxyCard';
@@ -19,10 +19,10 @@ import * as actions from '../src/actions';
 export type TransactionStatus = null | 'error' | 'sent' | 'confirming' | 'confirmed';
 
 const Home: NextPage = () => {
+  const { theme } = useTheme();
   const provider = useProvider();
-  const { connector } = useAccount({ onConnect: () => resetState(), onDisconnect: () => resetState() });
+  const { connector, isConnected } = useAccount({ onConnect: () => resetState(), onDisconnect: () => resetState() });
   const { chain } = useNetwork();
-
 
   const initialState = React.useMemo(() => ({
     setupListeners: false,
@@ -441,87 +441,28 @@ const Home: NextPage = () => {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', padding: 12 }}>
         <h4 style={{ justifyContent: 'flex',  }}>(Experimental) FIAT UI</h4>
-        <ConnectButton.Custom>
-          {({
-            account,
-            chain,
-            openAccountModal,
-            openChainModal,
-            openConnectModal,
-            authenticationStatus,
-            mounted,
-          }) => {
-            // Note: If your app doesn't use authentication, you
-            // can remove all 'authenticationStatus' checks
-            const ready = mounted && authenticationStatus !== 'loading';
-            const connected =
-              ready &&
-              account &&
-              chain &&
-              (!authenticationStatus ||
-                authenticationStatus === 'authenticated');
-
-            return (
-              <div
-                {...(!ready && {
-                  'aria-hidden': true,
-                  'style': {
-                    opacity: 0,
-                    pointerEvents: 'none',
-                    userSelect: 'none',
-                  },
-                })}
-              >
-                {(() => {
-                  if (!connected) {
-                    return (
-                      <div style={{ display: 'flex', gap: 12 }}>
-                        <Button
-                          bordered
-                          onClick={openConnectModal}
-                          style={{ display: 'flex', alignItems: 'center' }}
-                          type="button"
-                        >
-                          Ethereum
-                        </Button>
-
-                        <Button onClick={openConnectModal} type="button">
-                          Connect Wallet
-                        </Button>
-                      </div>
-                    );
-                  }
-
-                  if (chain.unsupported) {
-                    return (
-                      <Button onClick={openChainModal} type="button" color='error'>
-                        Wrong network
-                      </Button>
-                    );
-                  }
-
-                  return (
-                    <div style={{ display: 'flex', gap: 12 }}>
-                      <Button
-                        bordered
-                        onClick={openChainModal}
-                        style={{ display: 'flex', alignItems: 'center' }}
-                        type="button"
-                      >
-                        {chain.name}
-                      </Button>
-
-                      <Button auto onClick={openAccountModal} type="button">
-                        <span style={{marginRight: '20px'}}>{account.displayName}</span>
-                        <Badge isSquared color="primary" variant="bordered">{fiatBalance}</Badge>
-                      </Button>
-                    </div>
-                  );
-                })()}
-              </div>
-            );
-          }}
-        </ConnectButton.Custom>
+        <div style={{ display: 'flex'}}>
+          { isConnected && 
+            <Badge 
+              style={{marginRight: '10px'}} 
+              css={{
+                fontFamily: 'var(--rk-fonts-body)',
+                fontWeight: 700,
+                fontSize: '100%',
+                borderRadius: '12px',
+                backgroundColor: '$connectButtonBackground',
+                color: '$connectButtonColor',
+                boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
+                '&:hover': {
+                  transform: 'scale(1.03)'
+                }
+              }}
+            >
+              {fiatBalance}
+            </Badge>
+          }
+          <ConnectButton showBalance={false} />
+        </div>
       </div>
       <Spacer y={2} />
       <Container>
