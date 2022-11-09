@@ -40,7 +40,7 @@ export const ProxyButton = (props: ProxyCardProps) => {
             color: '$connectButtonColor',
           }}
         >
-          {`${props.proxies[0].substring(0,4)}...${props.proxies[0].slice(-4)}`}
+          {`${props.proxies[0].substring(0,4)}...${props.proxies[0].slice(-4)}`}&nbsp;
         </Link>
       </Badge>
 
