@@ -341,6 +341,8 @@ const Home: NextPage = () => {
     }
   }
 
+  // TODO: all these methods that use the local state form data should use
+  // the store's form data
   const setUnderlierAllowance = async (fiat: any) => {
     setTransactionData({ status: 'sent', action: 'setUnderlierAllowance' });
     const token = fiat.getERC20Contract(modifyPositionData.collateralType.properties.underlierToken);
@@ -457,47 +459,12 @@ const Home: NextPage = () => {
         contextData={contextData}
         disableActions={disableActions}
         modifyPositionData={modifyPositionData}
-        modifyPositionFormData={modifyPositionFormData}
         selectedCollateralTypeId={selectedCollateralTypeId}
-        setTransactionStatus={(status) =>
-          setTransactionData({ ...transactionData, status })
-        }
         setMonetaDelegate={setMonetaDelegate}
         setUnderlierAllowance={setUnderlierAllowance}
         transactionData={transactionData}
         unsetMonetaDelegate={unsetMonetaDelegate}
         unsetUnderlierAllowance={unsetUnderlierAllowance}
-        onUpdateUnderlier={(underlier) => {
-          if (underlier === null) {
-            const { underlier, targetedHealthFactor, slippagePct } = modifyPositionFormData;
-            setModifyPositionFormData({ 
-              ...initialState.modifyPositionFormData, underlier, targetedHealthFactor, slippagePct, outdated: false
-            });  
-          } else {
-            setModifyPositionFormData({ ...modifyPositionFormData, underlier, outdated: true });
-          }
-        }}
-        onUpdateSlippage={(slippagePct) => {
-          if (slippagePct === null) {
-            const { slippagePct, targetedHealthFactor, underlier } = modifyPositionFormData;
-            setModifyPositionFormData({ 
-              ...initialState.modifyPositionFormData, slippagePct, targetedHealthFactor, underlier, outdated: false
-            }); 
-          } else {
-            setModifyPositionFormData({ ...modifyPositionFormData, slippagePct, outdated: true });
-          }
-        }}
-        onUpdateTargetedHealthFactor={(targetedHealthFactor) => {
-          if (targetedHealthFactor === null) {
-            const { underlier, slippagePct, targetedHealthFactor } = modifyPositionFormData;
-            setModifyPositionFormData({ 
-              ...initialState.modifyPositionFormData, underlier, slippagePct, targetedHealthFactor, outdated: false
-            }); 
-          } else {
-            setModifyPositionFormData({ ...modifyPositionFormData, targetedHealthFactor, outdated: true });
-          }
-        }}
-        onSendTransaction={(action) => setTransactionData({ ...transactionData, action })}
         open={(!!selectedCollateralTypeId)}
         onClose={() => {
           setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
