@@ -472,14 +472,6 @@ const Home: NextPage = () => {
       </div>
       <Spacer y={2} />
       <Container>
-        <ProxyCard
-          {...contextData}
-          createProxy={createProxy}
-          disableActions={disableActions}
-        />
-      </Container>
-      <Spacer y={2} />
-      <Container>
         <CollateralTypesTable
           collateralTypesData={collateralTypesData}
           onSelectCollateralType={(collateralTypeId) => {
