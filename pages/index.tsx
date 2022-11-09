@@ -15,6 +15,7 @@ import {
   decodeCollateralTypeId, decodePositionId, encodePositionId, getCollateralTypeData, getPositionData
 } from '../src/utils';
 import * as userActions from '../src/actions';
+import { useModifyPositionFormDataStore } from '../src/stores/formStore';
 
 export type TransactionStatus = null | 'error' | 'sent' | 'confirming' | 'confirmed';
 
@@ -63,6 +64,8 @@ const Home: NextPage = () => {
       status: null as TransactionStatus,
     }
   }), []) 
+
+  const formDataStore = useModifyPositionFormDataStore();
 
   const [setupListeners, setSetupListeners] = React.useState(false);
   const [contextData, setContextData] = React.useState(initialState.contextData);
@@ -471,7 +474,7 @@ const Home: NextPage = () => {
         onClose={() => {
           setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
           setModifyPositionData(initialState.modifyPositionData);
-          setModifyPositionFormData(initialState.modifyPositionFormData);
+          formDataStore.reset();
         }}
       />
 
@@ -546,6 +549,7 @@ const Home: NextPage = () => {
           setSelectedPositionId(initialState.selectedCollateralTypeId);
           setModifyPositionData(initialState.modifyPositionData);
           setModifyPositionFormData(initialState.modifyPositionFormData);
+          formDataStore.reset();
         }}
       />
       <Spacer />
