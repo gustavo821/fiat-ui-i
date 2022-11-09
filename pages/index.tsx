@@ -14,7 +14,7 @@ import { ModifyPositionModal } from '../src/components/ModifyPositionModal';
 import {
   decodeCollateralTypeId, decodePositionId, encodePositionId, getCollateralTypeData, getPositionData
 } from '../src/utils';
-import * as userActions from '../src/actions';
+import * as actions from '../src/actions';
 
 export type TransactionStatus = null | 'error' | 'sent' | 'confirming' | 'confirmed';
 
@@ -105,6 +105,7 @@ const Home: NextPage = () => {
     (async function () {
       const fiat = await FIAT.fromProvider(provider, null);
       const collateralTypesData_ = await fiat.fetchCollateralTypesAndPrices([]);
+      console.log(await actions.getEarnableRate(fiat, collateralTypesData_));
       setCollateralTypesData(collateralTypesData_
         .filter((collateralType: any) => (collateralType.metadata != undefined))
         .sort((a: any, b: any) => {
@@ -130,7 +131,6 @@ const Home: NextPage = () => {
         const fiatBalance = await fiat.balanceOf(user)
         setFiatBalance(`${parseFloat(wadToDec(fiatBalance)).toFixed(2)} FIAT`)
       })();
-
     }
   }, [connector, contextData.fiat])
 
@@ -409,7 +409,7 @@ const Home: NextPage = () => {
 
   const buyCollateralAndModifyDebt = async () => {
     setTransactionData({ status: 'sent', action: 'buyCollateralAndModifyDebt' });
-    await userActions.buyCollateralAndModifyDebt(
+    await actions.buyCollateralAndModifyDebt(
       contextData,
       modifyPositionData.collateralType,
       modifyPositionFormData
@@ -419,7 +419,7 @@ const Home: NextPage = () => {
 
   const sellCollateralAndModifyDebt = async () => {
     setTransactionData({ status: 'sent', action: 'sellCollateralAndModifyDebt' });
-    await userActions.sellCollateralAndModifyDebt(
+    await actions.sellCollateralAndModifyDebt(
       contextData,
       modifyPositionData.collateralType,
       modifyPositionFormData
@@ -429,7 +429,7 @@ const Home: NextPage = () => {
 
   const redeemCollateralAndModifyDebt = async () => {
     setTransactionData({ status: 'sent', action: 'redeemCollateralAndModifyDebt' });
-    await userActions.redeemCollateralAndModifyDebt(
+    await actions.redeemCollateralAndModifyDebt(
       contextData,
       modifyPositionData.collateralType,
       modifyPositionFormData
