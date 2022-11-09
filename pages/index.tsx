@@ -74,7 +74,7 @@ const Home: NextPage = () => {
   const [transactionData, setTransactionData] = React.useState(initialState.transactionData);
   const [selectedPositionId, setSelectedPositionId] = React.useState(initialState.selectedPositionId);
   const [selectedCollateralTypeId, setSelectedCollateralTypeId] = React.useState(initialState.selectedCollateralTypeId);
-  const [fiatBalance, setFiatBalance] = React.useState<string>('0 FIAT');
+  const [fiatBalance, setFiatBalance] = React.useState<string>('');
 
 
   const disableActions = React.useMemo(() => transactionData.status === 'sent', [transactionData.status])
@@ -448,7 +448,7 @@ const Home: NextPage = () => {
             createProxy={createProxy}
             disableActions={disableActions}
           />
-          { isConnected && 
+          { fiatBalance && 
             <Badge 
               style={{marginRight: '10px'}} 
               css={{
