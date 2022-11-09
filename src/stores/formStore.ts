@@ -27,6 +27,7 @@ interface FormState {
 }
 
 interface FormActions {
+  setMode: (mode: string) => void;
   setUnderlier: (
     fiat: any,
     value: string,
@@ -69,6 +70,8 @@ const initialState = {
 export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
   (set, get) => ({
     ...initialState,
+
+    setMode: (mode) => { set(() => ({ mode })) },
 
     // Sets underlier and estimates output of bond tokens
     setUnderlier: async (

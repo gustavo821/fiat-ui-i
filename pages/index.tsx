@@ -154,8 +154,6 @@ const Home: NextPage = () => {
     let position;
     if (selectedPositionId) {
       const { owner } = decodePositionId(selectedPositionId);
-      const matured = !(new Date() < (new Date(Number(collateralType.properties.maturity.toString()) * 1000)));
-      setModifyPositionFormData({ ...modifyPositionFormData, mode: (matured) ? 'redeem' : 'deposit' });
       position = getPositionData(positionsData, vault, tokenId, owner);
     }
     const data = { ...modifyPositionData, collateralType, position };
@@ -197,8 +195,7 @@ const Home: NextPage = () => {
     positionsData,
     selectedCollateralTypeId,
     selectedPositionId,
-    modifyPositionData,
-    modifyPositionFormData
+    modifyPositionData
   ]);
 
   // Update ModifyPosition form data
