@@ -1,4 +1,10 @@
-import { decToScale, decToWad, scaleToDec, scaleToWad, WAD } from '@fiatdao/sdk';
+import {
+  decToScale,
+  decToWad,
+  scaleToDec,
+  scaleToWad,
+  WAD,
+} from '@fiatdao/sdk';
 import * as userActions from '../actions';
 import 'antd/dist/antd.css';
 import { ethers } from 'ethers';
@@ -6,17 +12,19 @@ import create from 'zustand';
 
 import { floor4 } from '../utils';
 
+/// A store for setting and getting form values.
+/// Used to create and manage positions.
 interface FormState {
-  mode: string, // [deposit, withdraw, redeem]
-  slippagePct: ethers.BigNumber, // [wad]
-  underlier: ethers.BigNumber, // [underlierScale]
-  deltaCollateral: ethers.BigNumber, // [wad]
-  deltaDebt: ethers.BigNumber, // [wad]
-  targetedHealthFactor: ethers.BigNumber, // [wad]
-  collateral: ethers.BigNumber, // [wad]
-  debt: ethers.BigNumber, // [wad]
-  healthFactor: ethers.BigNumber, // [wad] estimated new health factor
-  formDataLoading: boolean,
+  mode: string; // [deposit, withdraw, redeem]
+  slippagePct: ethers.BigNumber; // [wad]
+  underlier: ethers.BigNumber; // [underlierScale]
+  deltaCollateral: ethers.BigNumber; // [wad]
+  deltaDebt: ethers.BigNumber; // [wad]
+  targetedHealthFactor: ethers.BigNumber; // [wad]
+  collateral: ethers.BigNumber; // [wad]
+  debt: ethers.BigNumber; // [wad]
+  healthFactor: ethers.BigNumber; // [wad] estimated new health factor
+  formDataLoading: boolean;
 }
 
 interface FormActions {
@@ -24,14 +32,19 @@ interface FormActions {
     fiat: any,
     value: string,
     modifyPositionData: any,
-    selectedCollateralTypeId: string,
+    selectedCollateralTypeId: string
   ) => void;
-  setSlippage: (value: string) => void;
+  setSlippagePct: (
+    fiat: any,
+    value: string,
+    modifyPositionData: any,
+    selectedCollateralTypeId: string
+  ) => void;
   setTargetedHealthFactor: (
     fiat: any,
     value: number,
     modifyPositionData: any,
-    selectedCollateralTypeId: string,
+    selectedCollateralTypeId: string
   ) => void;
   setDeltaCollateral: (value: string) => void;
 }
@@ -58,7 +71,7 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
       fiat,
       value,
       modifyPositionData,
-      selectedCollateralTypeId,
+      selectedCollateralTypeId
     ) => {
       const collateralType = modifyPositionData.collateralType;
       const underlierScale = collateralType.properties.underlierScale;
@@ -150,7 +163,12 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
       set(() => ({ formDataLoading: false }));
     },
 
-    setSlippage: (value) => {
+    setSlippagePct: (
+      fiat,
+      value,
+      modifyPositionData,
+      selectedCollateralTypeId
+    ) => {
       let newSlippage: ethers.BigNumber;
       if (value === null || value === '') {
         newSlippage = initialState.slippagePct;
@@ -160,15 +178,41 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
         newSlippage = decToWad(floor4(ceiled / 100));
       }
       set(() => ({ slippagePct: newSlippage }));
+
+      // Call setUnderlier with previously stored value to re-estimate deltaCollateral
+      const { underlier, setUnderlier } = get();
+      const underlierString = scaleToDec(
+        underlier,
+        modifyPositionData.collateralType.properties.underlierScale
+      );
+      setUnderlier(
+        fiat,
+        underlierString,
+        modifyPositionData,
+        selectedCollateralTypeId
+      );
     },
 
-    setTargetedHealthFactor: (fiat, value, modifyPositionData, selectedCollateralTypeId) => {
+    setTargetedHealthFactor: (
+      fiat,
+      value,
+      modifyPositionData,
+      selectedCollateralTypeId
+    ) => {
       set(() => ({ targetedHealthFactor: decToWad(String(value)) }));
 
-      // Call setUnderlier with previously stored value to re-estimate new health factor
+      // Call setUnderlier with previously stored value to re-estimate new health factor and debt
       const { underlier, setUnderlier } = get();
-      const underlierString = scaleToDec(underlier, modifyPositionData.collateralType.properties.underlierScale);
-      setUnderlier(fiat, underlierString, modifyPositionData, selectedCollateralTypeId);
+      const underlierString = scaleToDec(
+        underlier,
+        modifyPositionData.collateralType.properties.underlierScale
+      );
+      setUnderlier(
+        fiat,
+        underlierString,
+        modifyPositionData,
+        selectedCollateralTypeId
+      );
     },
 
     setDeltaCollateral: (value) => {

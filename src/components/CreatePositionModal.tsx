@@ -154,7 +154,11 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
               disabled={props.disableActions}
               value={floor2(Number(wadToDec(formDataStore.slippagePct)) * 100)}
               onChange={(event) => {
-                formDataStore.setSlippage(event.target.value);
+                if (!props.selectedCollateralTypeId) {
+                  console.error('No selectedCollateralTypeId!');
+                  return;
+                }
+                formDataStore.setSlippagePct(props.contextData.fiat, event.target.value, props.modifyPositionData, props.selectedCollateralTypeId);
               }}
               step='0.01'
               placeholder='0'
