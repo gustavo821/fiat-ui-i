@@ -46,7 +46,7 @@ interface CollateralTypesTableProps {
 
 export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
   const colNames = React.useMemo(() => {
-    return ['Protocol', 'Token', 'Underlier', 'Maturity', 'TVL'];
+    return ['Asset', 'Underlier', 'Total Assets', 'Maturity'];
   }, []);
 
   const cells = React.useMemo(() => {
@@ -58,35 +58,26 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
       </Table.Row>
     ) : (
       props.collateralTypesData.map((collateralType: any) => {
-        console.log({collateralType})
-        const { vault, tokenId, underlierSymbol, maturity } =
-          collateralType.properties;
+        const { vault, tokenId, underlierSymbol, maturity } = collateralType.properties;
         const { protocol, asset, icons, urls, symbol } = collateralType.metadata;
         const depositedCollateral = collateralType.state.codex.depositedCollateral;
         const maturityFormatted = new Date(Number(maturity.toString()) * 1000);
         return (
           <Table.Row key={encodeCollateralTypeId(vault, tokenId)}>
             <Table.Cell>
-              <User src={icons.protocol} name={protocol}>
-                <User.Link href={urls.project}>Visit</User.Link>
-              </User>
-            </Table.Cell>
-            <Table.Cell>
               <User src={icons.asset} name={asset}>
-                <User.Link href={urls.asset}>{symbol}</User.Link>
+                <User.Link href={urls.asset}>{protocol}</User.Link>
               </User>
             </Table.Cell>
             <Table.Cell>
               <User name={underlierSymbol} src={icons.underlier} size='sm'/>
             </Table.Cell>
+            <Table.Cell>{`${parseFloat(wadToDec(depositedCollateral)).toFixed(2)} ${symbol}`}</Table.Cell>
             <Table.Cell>
-              <StyledBadge
-                type={new Date() < maturityFormatted ? 'green' : 'red'}
-              >
+              <StyledBadge type={new Date() < maturityFormatted ? 'green' : 'red'} >
                 {formatUnixTimestamp(maturity)}
               </StyledBadge>
             </Table.Cell>
-            <Table.Cell>{`${parseFloat(wadToDec(depositedCollateral)).toFixed(2)} ${symbol}`}</Table.Cell>
           </Table.Row>
         );
       })
@@ -95,7 +86,7 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
 
   return (
     <>
-      <Text h1>Collateral Types</Text>
+      <Text h1>Create Position</Text>
       <Table
         aria-label='Collateral Types'
         css={{ height: 'auto', minWidth: '100%' }}

@@ -50,7 +50,7 @@ interface PositionsTableProps {
 
 export const PositionsTable = (props: PositionsTableProps) => {
   const colNames = React.useMemo(() => {
-    return ['Protocol', 'Token', 'Collateral', 'Normal Debt', 'Maturity'];
+    return ['Asset', 'Underlier', 'Collateral', 'Normal Debt', 'Maturity'];
   }, []);
 
   const cells = React.useMemo(() => {
@@ -66,7 +66,7 @@ export const PositionsTable = (props: PositionsTableProps) => {
       props.positionsData.map((position) => {
         const { owner, vault, tokenId, collateral, normalDebt } = position;
         const {
-          properties: { tokenSymbol, maturity },
+          properties: { underlierSymbol, maturity },
           metadata: { protocol, asset, icons, urls },
           state
         } = getCollateralTypeData(props.collateralTypesData, vault, tokenId);
@@ -74,14 +74,12 @@ export const PositionsTable = (props: PositionsTableProps) => {
         return (
           <Table.Row key={encodePositionId(vault, tokenId, owner)}>
             <Table.Cell>
-              <User src={icons.protocol} name={protocol}>
-                <User.Link href={urls.project}>Visit</User.Link>
+              <User src={icons.asset} name={asset}>
+                <User.Link href={urls.asset}>{protocol}</User.Link>
               </User>
             </Table.Cell>
             <Table.Cell>
-              <User src={icons.asset} name={asset}>
-                <User.Link href={urls.asset}>{tokenSymbol}</User.Link>
-              </User>
+              <User name={underlierSymbol} src={icons.underlier} size='sm'/>
             </Table.Cell>
             <Table.Cell>
               <Col>
