@@ -58,3 +58,17 @@ export const getPositionData = (
     vault === vault_ && tokenId.toString() === tokenId_.toString() && owner === owner_
   ));
 }
+
+// Returns a function, that, as long as it continues to be invoked, will not
+// be triggered. The function will be called after it stops being called for
+// `delay` milliseconds.
+export function debounce(
+  callback: (...args: any[]) => unknown,
+  delay = 250, // in ms
+): typeof callback {
+  let timeoutId: number | NodeJS.Timeout;
+  return function (...args) {
+    clearTimeout(timeoutId as number);
+    timeoutId = setTimeout(() => callback(...args), delay);
+  };
+}
