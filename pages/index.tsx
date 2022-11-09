@@ -7,6 +7,7 @@ import { Badge, Container, Spacer, useTheme } from '@nextui-org/react';
 import type { NextPage } from 'next';
 
 import { ProxyCard } from '../src/components/ProxyCard';
+import { ProxyButton } from '../src/components/ProxyButton';
 import { CollateralTypesTable } from '../src/components/CollateralTypesTable';
 import { PositionsTable } from '../src/components/PositionsTable';
 import { CreatePositionModal } from '../src/components/CreatePositionModal';
@@ -442,6 +443,11 @@ const Home: NextPage = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', padding: 12 }}>
         <h4 style={{ justifyContent: 'flex',  }}>(Experimental) FIAT UI</h4>
         <div style={{ display: 'flex'}}>
+          <ProxyButton
+            {...contextData}
+            createProxy={createProxy}
+            disableActions={disableActions}
+          />
           { isConnected && 
             <Badge 
               style={{marginRight: '10px'}} 
