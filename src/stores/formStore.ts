@@ -35,11 +35,6 @@ interface FormActions {
     modifyPositionData: any,
     selectedCollateralTypeId: string | null
   ) => void;
-  calculateNewPositionData: (
-    fiat: any,
-    modifyPositionData: any,
-    selectedCollateralTypeId: string | null
-  ) => void;
   setSlippagePct: (
     fiat: any,
     value: string,
@@ -52,7 +47,23 @@ interface FormActions {
     modifyPositionData: any,
     selectedCollateralTypeId: string
   ) => void;
-  setDeltaCollateral: (value: string) => void;
+  setDeltaCollateral: (
+    fiat: any,
+    value: string,
+    modifyPositionData: any,
+    selectedCollateralTypeId: string | null
+  ) => void;
+  setDeltaDebt: (
+    fiat: any,
+    value: string,
+    modifyPositionData: any,
+    selectedCollateralTypeId: string | null
+  ) => void;
+  calculateNewPositionData: (
+    fiat: any,
+    modifyPositionData: any,
+    selectedCollateralTypeId: string | null
+  ) => void;
   reset: () => void;
 }
 
@@ -103,7 +114,114 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
         modifyPositionData,
         selectedCollateralTypeId
       );
-      set(() => ({ formDataLoading: true }));
+    },
+
+    setSlippagePct: (
+      fiat,
+      value,
+      modifyPositionData,
+      selectedCollateralTypeId
+    ) => {
+      let newSlippage: ethers.BigNumber;
+      if (value === null || value === '') {
+        newSlippage = initialState.slippagePct;
+      } else {
+        const ceiled =
+          Number(value) < 0 ? 0 : Number(value) > 50 ? 50 : Number(value);
+        newSlippage = decToWad(floor4(ceiled / 100));
+      }
+      set(() => ({ slippagePct: newSlippage }));
+
+      // Call setUnderlier with previously stored value to re-estimate deltaCollateral
+      const { underlier, setUnderlier } = get();
+      const underlierString = scaleToDec(
+        underlier,
+        modifyPositionData.collateralType.properties.underlierScale
+      );
+      setUnderlier(
+        fiat,
+        underlierString,
+        modifyPositionData,
+        selectedCollateralTypeId
+      );
+    },
+
+    setTargetedHealthFactor: (
+      fiat,
+      value,
+      modifyPositionData,
+      selectedCollateralTypeId
+    ) => {
+      set(() => ({ targetedHealthFactor: decToWad(String(value)) }));
+
+      // Call setUnderlier with previously stored value to re-estimate new health factor and debt
+      const { underlier, setUnderlier } = get();
+      const underlierString = scaleToDec(
+        underlier,
+        modifyPositionData.collateralType.properties.underlierScale
+      );
+      setUnderlier(
+        fiat,
+        underlierString,
+        modifyPositionData,
+        selectedCollateralTypeId
+      );
+    },
+
+    setDeltaCollateral: (
+      fiat,
+      value,
+      modifyPositionData,
+      selectedCollateralTypeId
+    ) => {
+      let newDeltaCollateral: ethers.BigNumber;
+      if (value === null || value === '') {
+        newDeltaCollateral = initialState.deltaCollateral;
+      }
+      newDeltaCollateral = decToWad(
+        floor4(Number(value) < 0 ? 0 : Number(value))
+      );
+      set(() => ({ deltaCollateral: newDeltaCollateral }));
+
+      // Call setUnderlier with previously stored value to re-estimate new health factor and debt
+      const { underlier, setUnderlier } = get();
+      const underlierString = scaleToDec(
+        underlier,
+        modifyPositionData.collateralType.properties.underlierScale
+      );
+      setUnderlier(
+        fiat,
+        underlierString,
+        modifyPositionData,
+        selectedCollateralTypeId
+      );
+    },
+
+    setDeltaDebt: (
+      fiat,
+      value,
+      modifyPositionData,
+      selectedCollateralTypeId
+    ) => {
+      let newDeltaDebt: ethers.BigNumber;
+      if (value === null || value === '') {
+        newDeltaDebt = initialState.deltaCollateral;
+      }
+      newDeltaDebt = decToWad(floor4(Number(value) < 0 ? 0 : Number(value)));
+      set(() => ({ deltaDebt: newDeltaDebt }));
+
+      const { underlier, setUnderlier } = get();
+      const underlierString = scaleToDec(
+        underlier,
+        modifyPositionData.collateralType.properties.underlierScale
+      );
+
+      setUnderlier(
+        fiat,
+        underlierString,
+        modifyPositionData,
+        selectedCollateralTypeId
+      );
     },
 
     // Calculates new health factor, collateral, debt, and deltaCollateral as needed
@@ -273,72 +391,6 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
 
       set(() => ({ formDataLoading: false }));
     }),
-
-    setSlippagePct: (
-      fiat,
-      value,
-      modifyPositionData,
-      selectedCollateralTypeId
-    ) => {
-      let newSlippage: ethers.BigNumber;
-      if (value === null || value === '') {
-        newSlippage = initialState.slippagePct;
-      } else {
-        const ceiled =
-          Number(value) < 0 ? 0 : Number(value) > 50 ? 50 : Number(value);
-        newSlippage = decToWad(floor4(ceiled / 100));
-      }
-      set(() => ({ slippagePct: newSlippage }));
-
-      // Call setUnderlier with previously stored value to re-estimate deltaCollateral
-      const { underlier, setUnderlier } = get();
-      const underlierString = scaleToDec(
-        underlier,
-        modifyPositionData.collateralType.properties.underlierScale
-      );
-      setUnderlier(
-        fiat,
-        underlierString,
-        modifyPositionData,
-        selectedCollateralTypeId
-      );
-    },
-
-    setTargetedHealthFactor: (
-      fiat,
-      value,
-      modifyPositionData,
-      selectedCollateralTypeId
-    ) => {
-      set(() => ({ targetedHealthFactor: decToWad(String(value)) }));
-
-      // Call setUnderlier with previously stored value to re-estimate new health factor and debt
-      const { underlier, setUnderlier } = get();
-      const underlierString = scaleToDec(
-        underlier,
-        modifyPositionData.collateralType.properties.underlierScale
-      );
-      setUnderlier(
-        fiat,
-        underlierString,
-        modifyPositionData,
-        selectedCollateralTypeId
-      );
-    },
-
-    setDeltaCollateral: (value) => {
-      let newDeltaCollateral: ethers.BigNumber;
-
-      if (value === null || value === '') {
-        newDeltaCollateral = initialState.deltaCollateral;
-      }
-
-      newDeltaCollateral = decToWad(
-        floor4(Number(value) < 0 ? 0 : Number(value))
-      );
-
-      set(() => ({ deltaCollateral: newDeltaCollateral }));
-    },
 
     reset: () => {
       set(initialState);

@@ -378,9 +378,9 @@ const Home: NextPage = () => {
     await userActions.buyCollateralAndModifyDebt(
       contextData,
       modifyPositionData.collateralType,
-      modifyPositionFormData.deltaCollateral,
-      modifyPositionFormData.deltaDebt,
-      modifyPositionFormData.underlier,
+      formDataStore.deltaCollateral,
+      formDataStore.deltaDebt,
+      formDataStore.underlier,
     );
     setTransactionData(initialState.transactionData);
   }
@@ -390,9 +390,9 @@ const Home: NextPage = () => {
     await userActions.sellCollateralAndModifyDebt(
       contextData,
       modifyPositionData.collateralType,
-      modifyPositionFormData.deltaCollateral,
-      modifyPositionFormData.deltaDebt,
-      modifyPositionFormData.underlier,
+      formDataStore.deltaCollateral,
+      formDataStore.deltaDebt,
+      formDataStore.underlier,
     );
     setTransactionData(initialState.transactionData);
   }
@@ -402,8 +402,8 @@ const Home: NextPage = () => {
     await userActions.redeemCollateralAndModifyDebt(
       contextData,
       modifyPositionData.collateralType,
-      modifyPositionFormData.deltaCollateral,
-      modifyPositionFormData.deltaDebt,
+      formDataStore.deltaCollateral,
+      formDataStore.deltaDebt,
     );
     setTransactionData(initialState.transactionData);
   }
@@ -483,7 +483,6 @@ const Home: NextPage = () => {
         contextData={contextData}
         disableActions={disableActions}
         modifyPositionData={modifyPositionData}
-        modifyPositionFormData={modifyPositionFormData}
         redeemCollateralAndModifyDebt={redeemCollateralAndModifyDebt}
         sellCollateralAndModifyDebt={sellCollateralAndModifyDebt}
         setTransactionStatus={(status) =>
@@ -494,55 +493,6 @@ const Home: NextPage = () => {
         transactionData={transactionData}
         unsetMonetaDelegate={unsetMonetaDelegate}
         unsetUnderlierAllowance={unsetUnderlierAllowance}
-        onUpdateDeltaCollateral={(deltaCollateral) => {
-          if (deltaCollateral === null) {
-            const { deltaCollateral, deltaDebt, slippagePct, mode } = modifyPositionFormData;
-            setModifyPositionFormData({ 
-              ...initialState.modifyPositionFormData, deltaCollateral, deltaDebt, slippagePct, mode, outdated: false
-            });  
-          } else {
-            setModifyPositionFormData({ ...modifyPositionFormData, deltaCollateral, outdated: true });
-          }
-        }}
-        onUpdateDeltaDebt={(deltaDebt) => {
-          if (deltaDebt === null) {
-            const { deltaCollateral, deltaDebt, slippagePct, mode } = modifyPositionFormData;
-            setModifyPositionFormData({ 
-              ...initialState.modifyPositionFormData, deltaCollateral, deltaDebt, slippagePct, mode, outdated: false
-            });  
-          } else {
-            setModifyPositionFormData({ ...modifyPositionFormData, deltaDebt, outdated: true });
-          }
-        }}
-        onUpdateUnderlier={(underlier) => {
-          if (underlier === null) {
-            const { underlier, deltaDebt, slippagePct, mode } = modifyPositionFormData;
-            setModifyPositionFormData({ 
-              ...initialState.modifyPositionFormData, underlier, deltaDebt, slippagePct, mode, outdated: false
-            });  
-          } else {
-            setModifyPositionFormData({ ...modifyPositionFormData, underlier, outdated: true });
-          }
-        }}
-        onUpdateSlippage={(slippagePct) => {
-          if (slippagePct === null) {
-            const { slippagePct, underlier, deltaCollateral, deltaDebt, mode } = modifyPositionFormData;
-            if (modifyPositionFormData.mode === 'deposit') {
-              setModifyPositionFormData({ 
-                ...initialState.modifyPositionFormData, slippagePct, deltaDebt, underlier, mode, outdated: false,
-              }); 
-            } else {
-              setModifyPositionFormData({ 
-                ...initialState.modifyPositionFormData, slippagePct, deltaDebt, deltaCollateral, mode, outdated: false,
-              }); 
-            }
-          } else {
-            setModifyPositionFormData({ ...modifyPositionFormData, slippagePct, outdated: true });
-          }
-        }}
-        onUpdateMode={(mode) => {
-          setModifyPositionFormData({  ...initialState.modifyPositionFormData, mode, outdated: false }); 
-        }}
         onSendTransaction={(action) => setTransactionData({ ...transactionData, action })}
         open={(!!selectedPositionId)}
         onClose={() => {
