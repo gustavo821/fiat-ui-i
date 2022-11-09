@@ -75,16 +75,6 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
     underlierBalance,
     monetaDelegate,
   } = props.modifyPositionData;
-  const {
-    outdated,
-    underlier,
-    slippagePct,
-    targetedHealthFactor,
-    deltaCollateral,
-    collateral,
-    debt,
-    healthFactor,
-  } = props.modifyPositionFormData;
   const { action: currentTxAction } = props.transactionData;
 
   const hasProxy = proxies.length > 0;
@@ -244,12 +234,12 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
         </Text>
         <Input
           readOnly
-          value={outdated ? ' ' : floor4(wadToDec(formDataStore.deltaCollateral))}
+          value={formDataStore.formDataLoading ? ' ' : floor4(wadToDec(formDataStore.deltaCollateral))}
           placeholder='0'
           type='string'
           label={'Collateral to deposit (incl. slippage)'}
           labelRight={tokenSymbol}
-          contentLeft={outdated ? <Loading size='xs' /> : null}
+          contentLeft={formDataStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
           status='primary'
         />
@@ -263,30 +253,30 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
         </Text>
         <Input
           readOnly
-          value={outdated ? ' ' : floor4(wadToDec(formDataStore.collateral))}
+          value={formDataStore.formDataLoading ? ' ' : floor4(wadToDec(formDataStore.collateral))}
           placeholder='0'
           type='string'
           label={'Collateral'}
           labelRight={tokenSymbol}
-          contentLeft={outdated ? <Loading size='xs' /> : null}
+          contentLeft={formDataStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
           status='primary'
         />
         <Input
           readOnly
-          value={outdated ? ' ' : floor4(wadToDec(formDataStore.debt))}
+          value={formDataStore.formDataLoading ? ' ' : floor4(wadToDec(formDataStore.debt))}
           placeholder='0'
           type='string'
           label='Debt'
           labelRight={'FIAT'}
-          contentLeft={outdated ? <Loading size='xs' /> : null}
+          contentLeft={formDataStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
           status='primary'
         />
         <Input
           readOnly
           value={
-            outdated
+            formDataStore.formDataLoading
               ? ' '
               : formDataStore.healthFactor.eq(ethers.constants.MaxUint256)
               ? '∞'
@@ -296,7 +286,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
           type='string'
           label='Health Factor'
           labelRight={'🚦'}
-          contentLeft={outdated ? <Loading size='xs' /> : null}
+          contentLeft={formDataStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
           status='primary'
         />

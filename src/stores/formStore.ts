@@ -16,6 +16,7 @@ interface FormState {
   collateral: ethers.BigNumber, // [wad]
   debt: ethers.BigNumber, // [wad]
   healthFactor: ethers.BigNumber, // [wad] estimated new health factor
+  formDataLoading: boolean,
 }
 
 interface FormActions {
@@ -45,6 +46,7 @@ const initialState = {
   collateral: ethers.constants.Zero, // [wad]
   debt: ethers.constants.Zero, // [wad]
   healthFactor: ethers.constants.Zero, // [wad] estimated new health factor
+  formDataLoading: false,
 };
 
 export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
@@ -77,6 +79,7 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
         collybus: { liquidationPrice },
       } = collateralType.state;
 
+      set(() => ({ formDataLoading: true }));
       const tokensOut = await userActions.underlierToBondToken(
         fiat,
         underlier,
@@ -107,8 +110,8 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
           liquidationPrice
         );
 
-        if (healthFactor.lte(WAD)) {
-          throw new Error('Health factor has to be greater than 1.0');
+        if (healthFactor.lte(ethers.constants.One)) {
+          console.error('Health factor has to be greater than 1.0');
         }
 
         set(() => ({
@@ -133,8 +136,8 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
           rate,
           liquidationPrice
         );
-        if (healthFactor.lte(WAD)) {
-          throw new Error('Health factor has to be greater than 1.0');
+        if (healthFactor.lte(ethers.constants.One)) {
+          console.error('Health factor has to be greater than 1.0');
         }
 
         set(() => ({
@@ -144,6 +147,7 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
           deltaCollateral,
         }));
       }
+      set(() => ({ formDataLoading: false }));
     },
 
     setSlippage: (value) => {
