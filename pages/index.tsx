@@ -378,7 +378,9 @@ const Home: NextPage = () => {
     await userActions.buyCollateralAndModifyDebt(
       contextData,
       modifyPositionData.collateralType,
-      modifyPositionFormData
+      modifyPositionFormData.deltaCollateral,
+      modifyPositionFormData.deltaDebt,
+      modifyPositionFormData.underlier,
     );
     setTransactionData(initialState.transactionData);
   }
@@ -388,7 +390,9 @@ const Home: NextPage = () => {
     await userActions.sellCollateralAndModifyDebt(
       contextData,
       modifyPositionData.collateralType,
-      modifyPositionFormData
+      modifyPositionFormData.deltaCollateral,
+      modifyPositionFormData.deltaDebt,
+      modifyPositionFormData.underlier,
     );
     setTransactionData(initialState.transactionData);
   }
@@ -398,7 +402,8 @@ const Home: NextPage = () => {
     await userActions.redeemCollateralAndModifyDebt(
       contextData,
       modifyPositionData.collateralType,
-      modifyPositionFormData
+      modifyPositionFormData.deltaCollateral,
+      modifyPositionFormData.deltaDebt,
     );
     setTransactionData(initialState.transactionData);
   }
