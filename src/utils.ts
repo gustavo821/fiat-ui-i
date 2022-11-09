@@ -59,16 +59,15 @@ export const getPositionData = (
   ));
 }
 
-// Returns a function, that, as long as it continues to be invoked, will not
-// be triggered. The function will be called after it stops being called for
-// `delay` milliseconds.
-export function debounce(
-  callback: (...args: any[]) => unknown,
-  delay = 250, // in ms
-): typeof callback {
-  let timeoutId: number | NodeJS.Timeout;
-  return function (...args) {
-    clearTimeout(timeoutId as number);
-    timeoutId = setTimeout(() => callback(...args), delay);
+// Take a function as an argument and returns a "debounced" version. This debounced
+// version will only be executed after `delay` milliseconds have passed after it's last invocation
+export function debounce<F extends (...args: Parameters<F>) => ReturnType<F>>(
+  func: F,
+  delay = 500,
+): (...args: Parameters<F>) => void {
+  let timeout: number | NodeJS.Timeout;
+  return (...args: Parameters<F>): void => {
+    clearTimeout(timeout as number); // this number cast is for browser support NodeJS.Timeout is for Node envs and so tsc stops whining
+    timeout = setTimeout(() => func(...args), delay);
   };
 }

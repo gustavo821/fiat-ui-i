@@ -9,7 +9,6 @@ import * as userActions from '../actions';
 import 'antd/dist/antd.css';
 import { ethers } from 'ethers';
 import create from 'zustand';
-
 import { debounce, floor4 } from '../utils';
 
 /// A store for setting and getting form values.
@@ -31,6 +30,11 @@ interface FormActions {
   setUnderlier: (
     fiat: any,
     value: string,
+    modifyPositionData: any,
+    selectedCollateralTypeId: string
+  ) => void;
+  calculateNewPositionData: (
+    fiat: any,
     modifyPositionData: any,
     selectedCollateralTypeId: string
   ) => void;
@@ -86,86 +90,99 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
       set(() => ({ underlier }));
 
       // Estimate output values given underlier
-      const { slippagePct } = get();
+      set(() => ({ formDataLoading: true }));
+      get().calculateNewPositionData(
+        fiat,
+        modifyPositionData,
+        selectedCollateralTypeId
+      );
+      set(() => ({ formDataLoading: true }));
+    },
+
+    // Calculates new health factor, collateral, debt, and deltaCollateral as needed
+    // Debounced to prevent spamming RPC calls
+    calculateNewPositionData: debounce(async function (
+      fiat: any,
+      modifyPositionData: any,
+      selectedCollateralTypeId: string
+    ) {
+      const collateralType = modifyPositionData.collateralType;
+      const underlierScale = collateralType.properties.underlierScale;
+      const { slippagePct, underlier } = get();
       const {
         codex: { virtualRate: rate },
         collybus: { liquidationPrice },
       } = collateralType.state;
+      const tokensOut = await userActions.underlierToBondToken(
+        fiat,
+        underlier,
+        collateralType
+      );
 
-      set(() => ({ formDataLoading: true }));
-      // Debounce this logic to prevent spamming RPC calls
-      debounce(async () => {
-        const tokensOut = await userActions.underlierToBondToken(
-          fiat,
-          underlier,
-          collateralType
-        );
-
-        const deltaCollateral = scaleToWad(tokensOut, underlierScale)
+      const deltaCollateral = scaleToWad(tokensOut, underlierScale)
         .mul(WAD.sub(slippagePct))
         .div(WAD);
 
-        if (selectedCollateralTypeId !== null) {
-          // new position
-          // calculate debt based off chosen health factor
-          const { targetedHealthFactor } = get();
-          const deltaNormalDebt = fiat.computeMaxNormalDebt(
-            deltaCollateral,
-            targetedHealthFactor,
-            rate,
-            liquidationPrice
-          );
-          const deltaDebt = fiat.normalDebtToDebt(deltaNormalDebt, rate);
-          const collateral = deltaCollateral;
-          const debt = deltaDebt;
-          const healthFactor = fiat.computeHealthFactor(
-            collateral,
-            deltaNormalDebt,
-            rate,
-            liquidationPrice
-          );
+      if (selectedCollateralTypeId !== null) {
+        // new position
+        // calculate debt based off chosen health factor
+        const { targetedHealthFactor } = get();
+        const deltaNormalDebt = fiat.computeMaxNormalDebt(
+          deltaCollateral,
+          targetedHealthFactor,
+          rate,
+          liquidationPrice
+        );
+        const deltaDebt = fiat.normalDebtToDebt(deltaNormalDebt, rate);
+        const collateral = deltaCollateral;
+        const debt = deltaDebt;
+        const healthFactor = fiat.computeHealthFactor(
+          collateral,
+          deltaNormalDebt,
+          rate,
+          liquidationPrice
+        );
 
-          if (healthFactor.lte(ethers.constants.One)) {
-            console.error('Health factor has to be greater than 1.0');
-          }
-
-          set(() => ({
-            healthFactor, // new est. health factor, not user's targetedHealthFactor
-            collateral,
-            debt,
-            deltaCollateral,
-          }));
-        } else {
-          const position = modifyPositionData.position;
-          // existing position (selectedCollateralTypeId will be null)
-          // calculate debt based off chosen health factor, taking into account position's existing collateral
-          const { deltaDebt } = get();
-          const normalDebt = fiat.debtToNormalDebt(deltaDebt, rate);
-          const collateral = position.collateral.add(deltaCollateral);
-          const debt = fiat
-          .normalDebtToDebt(position.normalDebt, rate)
-          .add(deltaDebt);
-          const healthFactor = fiat.computeHealthFactor(
-            collateral,
-            normalDebt,
-            rate,
-            liquidationPrice
-          );
-          if (healthFactor.lte(ethers.constants.One)) {
-            console.error('Health factor has to be greater than 1.0');
-          }
-
-          set(() => ({
-            healthFactor, // new est. health factor, not user's targetedHealthFactor
-            collateral,
-            debt,
-            deltaCollateral,
-          }));
+        if (healthFactor.lte(ethers.constants.One)) {
+          console.error('Health factor has to be greater than 1.0');
         }
 
-        set(() => ({ formDataLoading: false }));
-      })();
-    },
+        set(() => ({
+          healthFactor, // new est. health factor, not user's targetedHealthFactor
+          collateral,
+          debt,
+          deltaCollateral,
+        }));
+      } else {
+        const position = modifyPositionData.position;
+        // existing position (selectedCollateralTypeId will be null)
+        // calculate debt based off chosen health factor, taking into account position's existing collateral
+        const { deltaDebt } = get();
+        const normalDebt = fiat.debtToNormalDebt(deltaDebt, rate);
+        const collateral = position.collateral.add(deltaCollateral);
+        const debt = fiat
+          .normalDebtToDebt(position.normalDebt, rate)
+          .add(deltaDebt);
+        const healthFactor = fiat.computeHealthFactor(
+          collateral,
+          normalDebt,
+          rate,
+          liquidationPrice
+        );
+        if (healthFactor.lte(ethers.constants.One)) {
+          console.error('Health factor has to be greater than 1.0');
+        }
+
+        set(() => ({
+          healthFactor, // new est. health factor, not user's targetedHealthFactor
+          collateral,
+          debt,
+          deltaCollateral,
+        }));
+      }
+
+      set(() => ({ formDataLoading: false }));
+    }),
 
     setSlippagePct: (
       fiat,
