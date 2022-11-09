@@ -14,29 +14,27 @@ import {
 import { ethers } from 'ethers';
 import { Slider } from 'antd';
 import 'antd/dist/antd.css';
-import { decToScale, decToWad, scaleToDec, wadToDec } from '@fiatdao/sdk';
+import { scaleToDec, wadToDec } from '@fiatdao/sdk';
 
-import { commifyToDecimalPlaces, floor2, floor4, formatUnixTimestamp } from '../utils';
-import { TransactionStatus } from '../../pages';
+import {
+  commifyToDecimalPlaces,
+  floor2,
+  floor4,
+  formatUnixTimestamp,
+} from '../utils';
+import { useModifyPositionFormDataStore } from '../stores/formStore';
 
 interface CreatePositionModalProps {
   buyCollateralAndModifyDebt: () => any;
   contextData: any;
   disableActions: boolean;
   modifyPositionData: any;
-  modifyPositionFormData: any;
-  setTransactionStatus: (status: TransactionStatus) => void;
+  selectedCollateralTypeId: string | null;
   setMonetaDelegate: (fiat: any) => any;
   setUnderlierAllowance: (fiat: any) => any;
   transactionData: any;
   unsetMonetaDelegate: (fiat: any) => any;
   unsetUnderlierAllowance: (fiat: any) => any;
-  onUpdateUnderlier: (underlier: null | ethers.BigNumber) => void;
-  onUpdateSlippage: (slippagePct: null | ethers.BigNumber) => void;
-  onUpdateTargetedHealthFactor: (
-    targetedHealthFactor: null | ethers.BigNumber
-  ) => void;
-  onSendTransaction: (action: string) => void;
   open: boolean;
   onClose: () => void;
 }
@@ -56,8 +54,14 @@ export const CreatePositionModal = (props: CreatePositionModalProps) => {
 };
 
 const CreatePositionModalBody = (props: CreatePositionModalProps) => {
-  if (!props.contextData.user || !props.modifyPositionData.collateralType || !props.modifyPositionData.collateralType.metadata) {
-    // TODO
+  const formDataStore = useModifyPositionFormDataStore();
+
+  if (
+    !props.contextData.user ||
+    !props.modifyPositionData.collateralType ||
+    !props.modifyPositionData.collateralType.metadata
+  ) {
+    // TODO: add skeleton components instead of loading
     // return <Loading />;
     return null;
   }
@@ -72,16 +76,6 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
     underlierBalance,
     monetaDelegate,
   } = props.modifyPositionData;
-  const {
-    outdated,
-    underlier,
-    slippagePct,
-    targetedHealthFactor,
-    deltaCollateral,
-    collateral,
-    debt,
-    healthFactor,
-  } = props.modifyPositionFormData;
   const { action: currentTxAction } = props.transactionData;
 
   const hasProxy = proxies.length > 0;
@@ -116,7 +110,9 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
         </Text>
         {underlierBalance && (
           <Text size={'$sm'}>
-            Wallet: {commifyToDecimalPlaces(underlierBalance, underlierScale, 2)} {underlierSymbol}
+            Wallet:{' '}
+            {commifyToDecimalPlaces(underlierBalance, underlierScale, 2)}{' '}
+            {underlierSymbol}
           </Text>
         )}
         <Grid.Container
@@ -127,26 +123,13 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
           <Grid>
             <Input
               disabled={props.disableActions}
-              value={floor2(scaleToDec(underlier, underlierScale))}
+              value={floor2(scaleToDec(formDataStore.underlier, underlierScale))}
               onChange={(event) => {
-                if (
-                  event.target.value === null ||
-                  event.target.value === undefined ||
-                  event.target.value === ''
-                ) {
-                  props.onUpdateUnderlier(null);
-                } else {
-                  props.onUpdateUnderlier(
-                    decToScale(
-                      floor4(
-                        Number(event.target.value) < 0
-                          ? 0
-                          : Number(event.target.value)
-                      ),
-                      underlierScale
-                    )
-                  );
+                if (!props.selectedCollateralTypeId) {
+                  console.error('No selectedCollateralTypeId!');
+                  return;
                 }
+                formDataStore.setUnderlier(props.contextData.fiat, event.target.value, props.modifyPositionData, props.selectedCollateralTypeId);
               }}
               placeholder='0'
               type='number'
@@ -160,23 +143,13 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
           <Grid>
             <Input
               disabled={props.disableActions}
-              value={floor2(Number(wadToDec(slippagePct)) * 100)}
+              value={floor2(Number(wadToDec(formDataStore.slippagePct)) * 100)}
               onChange={(event) => {
-                if (
-                  event.target.value === null ||
-                  event.target.value === undefined ||
-                  event.target.value === ''
-                ) {
-                  props.onUpdateSlippage(null);
-                } else {
-                  const ceiled =
-                    Number(event.target.value) < 0
-                      ? 0
-                      : Number(event.target.value) > 50
-                      ? 50
-                      : Number(event.target.value);
-                  props.onUpdateSlippage(decToWad(floor4(ceiled / 100)));
+                if (!props.selectedCollateralTypeId) {
+                  console.error('No selectedCollateralTypeId!');
+                  return;
                 }
+                formDataStore.setSlippagePct(props.contextData.fiat, event.target.value, props.modifyPositionData, props.selectedCollateralTypeId);
               }}
               step='0.01'
               placeholder='0'
@@ -194,7 +167,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
           size={'0.75rem'}
           style={{ paddingLeft: '0.25rem', marginBottom: '0.375rem' }}
         >
-          Targeted health factor ({Number(wadToDec(targetedHealthFactor))})
+          Targeted health factor ({Number(wadToDec(formDataStore.targetedHealthFactor))})
         </Text>
         <Card variant='bordered' borderWeight='light'>
           <Card.Body
@@ -204,10 +177,14 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
               handleStyle={{ borderColor: '#0072F5' }}
               included={false}
               disabled={props.disableActions}
-              value={Number(wadToDec(targetedHealthFactor))}
-              onChange={(value) =>
-                props.onUpdateTargetedHealthFactor(decToWad(String(value)))
-              }
+              value={Number(wadToDec(formDataStore.targetedHealthFactor))}
+              onChange={(value) => {
+                if (!props.selectedCollateralTypeId) {
+                  console.error('No selectedCollateralTypeId!');
+                  return;
+                }
+                formDataStore.setTargetedHealthFactor(props.contextData.fiat, value, props.modifyPositionData, props.selectedCollateralTypeId);
+              }}
               min={1.001}
               max={5.0}
               step={0.001}
@@ -252,12 +229,12 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
         </Text>
         <Input
           readOnly
-          value={outdated ? ' ' : floor4(wadToDec(deltaCollateral))}
+          value={formDataStore.formDataLoading ? ' ' : floor4(wadToDec(formDataStore.deltaCollateral))}
           placeholder='0'
           type='string'
           label={'Collateral to deposit (incl. slippage)'}
           labelRight={tokenSymbol}
-          contentLeft={outdated ? <Loading size='xs' /> : null}
+          contentLeft={formDataStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
           status='primary'
         />
@@ -271,40 +248,40 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
         </Text>
         <Input
           readOnly
-          value={outdated ? ' ' : floor4(wadToDec(collateral))}
+          value={formDataStore.formDataLoading ? ' ' : floor4(wadToDec(formDataStore.collateral))}
           placeholder='0'
           type='string'
           label={'Collateral'}
           labelRight={tokenSymbol}
-          contentLeft={outdated ? <Loading size='xs' /> : null}
+          contentLeft={formDataStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
           status='primary'
         />
         <Input
           readOnly
-          value={outdated ? ' ' : floor4(wadToDec(debt))}
+          value={formDataStore.formDataLoading ? ' ' : floor4(wadToDec(formDataStore.debt))}
           placeholder='0'
           type='string'
           label='Debt'
           labelRight={'FIAT'}
-          contentLeft={outdated ? <Loading size='xs' /> : null}
+          contentLeft={formDataStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
           status='primary'
         />
         <Input
           readOnly
           value={
-            outdated
+            formDataStore.formDataLoading
               ? ' '
-              : healthFactor.eq(ethers.constants.MaxUint256)
+              : formDataStore.healthFactor.eq(ethers.constants.MaxUint256)
               ? '∞'
-              : floor4(wadToDec(healthFactor))
+              : floor4(wadToDec(formDataStore.healthFactor))
           }
           placeholder='0'
           type='string'
           label='Health Factor'
           labelRight={'🚦'}
-          contentLeft={outdated ? <Loading size='xs' /> : null}
+          contentLeft={formDataStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
           status='primary'
         />
@@ -325,9 +302,9 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
         <Text size={'0.875rem'}>Approve {underlierSymbol}</Text>
         <Switch
           disabled={props.disableActions || !hasProxy}
-          checked={!underlier.isZero() && underlierAllowance?.gte(underlier)}
+          checked={!formDataStore.underlier.isZero() && underlierAllowance?.gte(formDataStore.underlier)}
           onChange={() =>
-            !underlier.isZero() && underlierAllowance?.gte(underlier)
+            !formDataStore.underlier.isZero() && underlierAllowance?.gte(formDataStore.underlier)
               ? props.unsetUnderlierAllowance(props.contextData.fiat)
               : props.setUnderlierAllowance(props.contextData.fiat)
           }
@@ -365,9 +342,9 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
           disabled={
             props.disableActions ||
             !hasProxy ||
-            underlier?.isZero() ||
-            deltaCollateral?.isZero() ||
-            underlierAllowance?.lt(underlier) ||
+            formDataStore.underlier?.isZero() ||
+            formDataStore.deltaCollateral?.isZero() ||
+            underlierAllowance?.lt(formDataStore.underlier) ||
             monetaDelegate === false
           }
           icon={

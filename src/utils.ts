@@ -58,3 +58,16 @@ export const getPositionData = (
     vault === vault_ && tokenId.toString() === tokenId_.toString() && owner === owner_
   ));
 }
+
+// Take a function as an argument and returns a "debounced" version. This debounced
+// version will only be executed after `delay` milliseconds have passed after it's last invocation
+export function debounce<F extends (...args: Parameters<F>) => ReturnType<F>>(
+  func: F,
+  delay = 500,
+): (...args: Parameters<F>) => void {
+  let timeout: number | NodeJS.Timeout;
+  return (...args: Parameters<F>): void => {
+    clearTimeout(timeout as number); // this number cast is for browser support NodeJS.Timeout is for Node envs and so tsc stops whining
+    timeout = setTimeout(() => func(...args), delay);
+  };
+}

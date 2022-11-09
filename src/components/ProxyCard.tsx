@@ -1,5 +1,7 @@
 import { Button, Card, Link, Spacer, Text } from '@nextui-org/react';
+import { useConnectModal } from '@rainbow-me/rainbowkit';
 import Skeleton, { SkeletonTheme } from 'react-loading-skeleton';
+import { useSigner } from 'wagmi';
 
 interface ProxyCardProps {
   createProxy: (fiat: any, user: string) => any;
@@ -11,6 +13,9 @@ interface ProxyCardProps {
 }
 
 export const ProxyCard = (props: ProxyCardProps) => {
+  const { openConnectModal } = useConnectModal();
+  const { data: signerData, isFetching: isFetchingSigner } = useSigner();
+
   return (
     <SkeletonTheme baseColor='#202020' highlightColor='#444'>
       <Card
@@ -19,7 +24,7 @@ export const ProxyCard = (props: ProxyCardProps) => {
         }}
       >
         <Card.Body>
-          {props.user === null || props.fiat === null ? (
+          {!signerData && isFetchingSigner ? (
             <Skeleton count={2} />
           ) : (
             <>
@@ -38,7 +43,17 @@ export const ProxyCard = (props: ProxyCardProps) => {
                 <>
                   <Spacer y={1} />
                   <Button
-                    onPress={() => props.createProxy(props.fiat, props.user!)}
+                    onPress={() => {
+                      // If no address available, prompt user to connect when they click the button
+                      if (!props.user) {
+                        if (openConnectModal) {
+                          // prompt to connect
+                          openConnectModal();
+                        }
+                      } else {
+                        props.createProxy(props.fiat, props.user)
+                      }
+                    }}
                     disabled={props.disableActions}
                   >
                     Setup a new Proxy account
