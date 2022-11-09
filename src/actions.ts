@@ -1,7 +1,7 @@
 import { decToWad, scaleToWad, WAD, wadToScale, ZERO } from '@fiatdao/sdk';
 import { ethers } from 'ethers';
 
-export const underlierToPToken = async (
+export const underlierToBondToken = async (
   fiat: any,
   underlier: ethers.BigNumber,
   collateralType: any
@@ -62,7 +62,7 @@ export const underlierToPToken = async (
   }
 };
 
-export const tokenToUnderlier = async (
+export const bondTokenToUnderlier = async (
   fiat: any,
   tokenIn: ethers.BigNumber,
   collateralType: any

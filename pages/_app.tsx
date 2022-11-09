@@ -70,17 +70,6 @@ const nextLightTheme = createTheme({type: 'light'})
 const nextDarkTheme = createTheme({type: 'dark'})
 
 function MyApp({ Component, pageProps }: AppProps) {
-  const { setFiatSdk } = useModifyPositionFormDataStore()
-  const provider = useProvider();
-
-  useEffect(() => {
-    // Initialize store with FIAT SDK
-    (async () => {
-      const fiatSdk = await FIAT.fromProvider(provider, null);
-      setFiatSdk(fiatSdk);
-    })();
-  }, [provider, setFiatSdk]);
-
   return (
     <WagmiConfig client={wagmiClient}>
       <RainbowKitProvider appInfo={demoAppInfo} chains={chains} theme={{lightMode: lightTheme(), darkMode: darkTheme(),}}>

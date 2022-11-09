@@ -55,7 +55,7 @@ const Home: NextPage = () => {
       targetedHealthFactor: decToWad('1.2') as ethers.BigNumber, // [wad]
       collateral: ZERO as ethers.BigNumber, // [wad]
       debt: ZERO as ethers.BigNumber, // [wad]
-      healthFactor: ZERO as ethers.BigNumber, // [wad]
+      healthFactor: ZERO as ethers.BigNumber, // [wad] estimated new health factor
       error: null as null | string
     },
     transactionData: {
@@ -218,16 +218,15 @@ const Home: NextPage = () => {
         if (!contextData.fiat) return
         const { collateralType, position } = modifyPositionData;
         const { mode } = modifyPositionFormData;
-        const { vault, tokenId, tokenScale, vaultType } = collateralType.properties;
+        const { tokenScale } = collateralType.properties;
         const { codex: { virtualRate: rate }, collybus: { liquidationPrice } } = collateralType.state;
         const { fiat } = contextData;
-        const { vaultEPTActions, vaultFCActions, vaultFYActions } = fiat.getContracts();
 
         try {
           if (mode === 'deposit') {
             // Applies to manage & create position
             const { underlier } = modifyPositionFormData;
-            const tokensOut = await userActions.underlierToPToken(fiat, underlier, collateralType);
+            const tokensOut = await userActions.underlierToBondToken(fiat, underlier, collateralType);
             const { slippagePct } = modifyPositionFormData;
             const deltaCollateral = scaleToWad(tokensOut, tokenScale).mul(WAD.sub(slippagePct)).div(WAD);
             if (selectedCollateralTypeId !== null) {
@@ -261,7 +260,7 @@ const Home: NextPage = () => {
           } else if (mode === 'withdraw') {
             const { deltaCollateral, deltaDebt, slippagePct } = modifyPositionFormData;
             const tokenInScaled = wadToScale(deltaCollateral, tokenScale);
-            const underlierAmount = await userActions.tokenToUnderlier(fiat, tokenInScaled, collateralType);
+            const underlierAmount = await userActions.bondTokenToUnderlier(fiat, tokenInScaled, collateralType);
             const underlier = underlierAmount.mul(WAD.sub(slippagePct)).div(WAD); // with slippage
             const deltaNormalDebt = fiat.debtToNormalDebt(deltaDebt, rate);
             if (position.collateral.lt(deltaCollateral)) throw new Error('Insufficient collateral');
@@ -459,6 +458,7 @@ const Home: NextPage = () => {
         disableActions={disableActions}
         modifyPositionData={modifyPositionData}
         modifyPositionFormData={modifyPositionFormData}
+        selectedCollateralTypeId={selectedCollateralTypeId}
         setTransactionStatus={(status) =>
           setTransactionData({ ...transactionData, status })
         }
