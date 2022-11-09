@@ -160,6 +160,7 @@ const Home: NextPage = () => {
       position = getPositionData(positionsData, vault, tokenId, owner);
     }
     const data = { ...modifyPositionData, collateralType, position };
+    formDataStore.calculateNewPositionData(contextData.fiat, data, null);
     setModifyPositionData(data);
 
     (async function () {
@@ -191,15 +192,7 @@ const Home: NextPage = () => {
         ...modifyPositionData, ...data, underlierAllowance, underlierBalance, monetaDelegate, fiatAllowance
       });
     })();
-  }, [
-    connector,
-    contextData,
-    collateralTypesData,
-    positionsData,
-    selectedCollateralTypeId,
-    selectedPositionId,
-    modifyPositionData
-  ]);
+  }, [connector, contextData, collateralTypesData, positionsData, selectedCollateralTypeId, selectedPositionId, modifyPositionData, formDataStore]);
 
   const createProxy = async (fiat: any, user: string) => {
     const { proxyRegistry } = fiat.getContracts();
@@ -213,8 +206,6 @@ const Home: NextPage = () => {
     }
   }
 
-  // TODO: all these methods that use the local state form data should use
-  // the store's form data
   const setUnderlierAllowance = async (fiat: any) => {
     setTransactionData({ status: 'sent', action: 'setUnderlierAllowance' });
     const token = fiat.getERC20Contract(modifyPositionData.collateralType.properties.underlierToken);

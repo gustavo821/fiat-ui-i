@@ -62,7 +62,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
     if (formDataStore.mode !== mode) {
       formDataStore.setMode(mode);
     }
-  }, [formDataStore, matured])
+  }, [formDataStore, matured, props.contextData.fiat, props.modifyPositionData])
 
   if (!props.contextData.user || !props.modifyPositionData.collateralType || !props.modifyPositionData.collateralType.metadata ) {
     // TODO: add skeleton components instead of loading
