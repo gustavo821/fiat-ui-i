@@ -2,7 +2,7 @@ import React from 'react';
 import { useAccount, useNetwork, useProvider } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { ethers } from 'ethers';
-import { decToWad, FIAT, scaleToWad, WAD, wadToScale, ZERO } from '@fiatdao/sdk';
+import { decToWad, FIAT, ZERO } from '@fiatdao/sdk';
 import { Container, Spacer } from '@nextui-org/react';
 import type { NextPage } from 'next';
 
@@ -199,134 +199,6 @@ const Home: NextPage = () => {
     selectedCollateralTypeId,
     selectedPositionId,
     modifyPositionData
-  ]);
-
-  // Update ModifyPosition form data
-  React.useEffect(() => {
-    // TODO: might have to swap for userReducer NOW.
-    // or implement a debounce/use zustand if it's calling a certain rpc method
-    if (
-      !connector
-      || modifyPositionData.collateralType == null
-      || (selectedCollateralTypeId == null && selectedPositionId == null)
-      || modifyPositionFormData.outdated === false
-    ) return;
-
-
-    const timeOutId = setTimeout(() => {
-      (async function () {
-        if (!contextData.fiat) return
-        const { collateralType, position } = modifyPositionData;
-        const { mode } = modifyPositionFormData;
-        const { tokenScale } = collateralType.properties;
-        const { codex: { virtualRate: rate }, collybus: { liquidationPrice } } = collateralType.state;
-        const { fiat } = contextData;
-
-        try {
-          if (mode === 'deposit') {
-            // Applies to manage & create position
-            const { underlier } = modifyPositionFormData;
-            const tokensOut = await userActions.underlierToBondToken(fiat, underlier, collateralType);
-            const { slippagePct } = modifyPositionFormData;
-            const deltaCollateral = scaleToWad(tokensOut, tokenScale).mul(WAD.sub(slippagePct)).div(WAD);
-            if (selectedCollateralTypeId !== null) {
-              // new position
-              // calculate debt based off chosen health factor
-              const { targetedHealthFactor } = modifyPositionFormData;
-              const deltaNormalDebt = fiat.computeMaxNormalDebt(
-                deltaCollateral, targetedHealthFactor, rate, liquidationPrice
-              );
-              const deltaDebt = fiat.normalDebtToDebt(deltaNormalDebt, rate);
-              const collateral = deltaCollateral;
-              const debt = deltaDebt;
-              const healthFactor = fiat.computeHealthFactor(collateral, deltaNormalDebt, rate, liquidationPrice);
-              if (healthFactor.lte(WAD)) throw new Error('Health factor has to be greater than 1.0');
-              setModifyPositionFormData({
-                ...modifyPositionFormData, healthFactor, collateral, debt, deltaCollateral, outdated: false
-              });
-            } else {
-              // existing position (selectedCollateralTypeId will be null)
-              // calculate debt based off chosen health factor, taking into account position's existing collateral
-              const { deltaDebt } = modifyPositionFormData;
-              const normalDebt = fiat.debtToNormalDebt(deltaDebt, rate);
-              const collateral = position.collateral.add(deltaCollateral);
-              const debt = fiat.normalDebtToDebt(position.normalDebt, rate).add(deltaDebt);
-              const healthFactor = fiat.computeHealthFactor(collateral, normalDebt, rate, liquidationPrice);
-              if (healthFactor.lte(WAD)) throw new Error('Health factor has to be greater than 1.0');
-              setModifyPositionFormData({
-                ...modifyPositionFormData, healthFactor, collateral, debt, deltaCollateral, outdated: false
-              });
-            }
-          } else if (mode === 'withdraw') {
-            const { deltaCollateral, deltaDebt, slippagePct } = modifyPositionFormData;
-            const tokenInScaled = wadToScale(deltaCollateral, tokenScale);
-            const underlierAmount = await userActions.bondTokenToUnderlier(fiat, tokenInScaled, collateralType);
-            const underlier = underlierAmount.mul(WAD.sub(slippagePct)).div(WAD); // with slippage
-            const deltaNormalDebt = fiat.debtToNormalDebt(deltaDebt, rate);
-            if (position.collateral.lt(deltaCollateral)) throw new Error('Insufficient collateral');
-            if (position.normalDebt.lt(deltaNormalDebt)) throw new Error('Insufficient debt');
-            const collateral = position.collateral.sub(deltaCollateral);
-            const normalDebt = position.normalDebt.sub(deltaNormalDebt);
-            const debt = fiat.normalDebtToDebt(normalDebt, rate);
-            const healthFactor = fiat.computeHealthFactor(collateral, normalDebt, rate, liquidationPrice);
-            if (healthFactor.lte(WAD)) throw new Error('Health factor has to be greater than 1.0');
-            setModifyPositionFormData({
-              ...modifyPositionFormData, healthFactor, underlier, collateral, debt, outdated: false
-            });
-          } else if (mode === 'redeem') {
-            const { deltaCollateral, deltaDebt } = modifyPositionFormData;
-            const deltaNormalDebt = fiat.debtToNormalDebt(deltaDebt, rate);
-            if (position.collateral.lt(deltaCollateral)) throw new Error('Insufficient collateral');
-            if (position.normalDebt.lt(deltaNormalDebt)) throw new Error('Insufficient debt');
-            const collateral = position.collateral.sub(deltaCollateral);
-            const normalDebt = position.normalDebt.sub(deltaNormalDebt);
-            const debt = fiat.normalDebtToDebt(normalDebt, rate);
-            const healthFactor = fiat.computeHealthFactor(collateral, normalDebt, rate, liquidationPrice);
-            if (healthFactor.lte(WAD)) throw new Error('Health factor has to be greater than 1.0');
-            setModifyPositionFormData({
-              ...modifyPositionFormData, healthFactor, collateral, debt, outdated: false,
-            });
-          } else { throw new Error('Invalid mode'); }
-        } catch (error) {
-          console.log('Error updating form data: ', error);
-          if (mode === 'deposit') {
-            setModifyPositionFormData({
-              ...modifyPositionFormData,
-              underlier: modifyPositionFormData.underlier,
-              deltaCollateral: ZERO,
-              deltaDebt: ZERO,
-              collateral: ZERO,
-              debt: ZERO,
-              healthFactor: ZERO,
-              outdated: false,
-              error: JSON.stringify(error)
-            });
-          } else if (mode === 'withdraw' || mode === 'redeem') {
-            setModifyPositionFormData({
-              ...modifyPositionFormData,
-              underlier: ZERO,
-              deltaCollateral: modifyPositionFormData.underlier,
-              deltaDebt: modifyPositionFormData.deltaDebt,
-              collateral: ZERO,
-              debt: ZERO,
-              healthFactor: ZERO,
-              outdated: false,
-              error: JSON.stringify(error)
-            });
-          }
-        }
-      })();
-    }, 2000);
-    // prevent timeout callback from executing if useEffect was interrupted by a rerender
-    return () => clearTimeout(timeOutId)
-  }, [
-    connector,
-    initialState,
-    contextData,
-    selectedCollateralTypeId,
-    selectedPositionId,
-    modifyPositionData,
-    modifyPositionFormData
   ]);
 
   const createProxy = async (fiat: any, user: string) => {

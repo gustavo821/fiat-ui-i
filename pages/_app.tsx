@@ -17,16 +17,12 @@ import {
   chain,
   configureChains,
   createClient,
-  useProvider,
   WagmiConfig,
 } from 'wagmi';
 import { alchemyProvider } from 'wagmi/providers/alchemy';
 import { publicProvider } from 'wagmi/providers/public';
 import { createTheme, NextUIProvider } from '@nextui-org/react';
 import { ThemeProvider as NextThemesProvider } from 'next-themes';
-import { useModifyPositionFormDataStore } from '../src/stores/formStore';
-import { useEffect } from 'react';
-import { FIAT } from '@fiatdao/sdk';
 
 const { chains, provider, webSocketProvider } = configureChains(
   [
