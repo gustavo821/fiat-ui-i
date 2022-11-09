@@ -12,8 +12,7 @@ import { ethers } from 'ethers';
 import create from 'zustand';
 import { debounce, floor4 } from '../utils';
 
-/// A store for setting and getting form values.
-/// Used to create and manage positions.
+/// A store for setting and getting form values to create and manage positions.
 interface FormState {
   mode: string; // [deposit, withdraw, redeem]
   slippagePct: ethers.BigNumber; // [wad]
