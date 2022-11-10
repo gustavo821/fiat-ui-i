@@ -1,7 +1,6 @@
-import { styled, Table, Text } from '@nextui-org/react';
 import React from 'react';
+import { styled, Table, Text } from '@nextui-org/react';
 
-import Skeleton from 'react-loading-skeleton';
 import { encodeCollateralTypeId, formatUnixTimestamp } from '../utils';
 
 const StyledBadge = styled('span', {
@@ -22,64 +21,34 @@ const StyledBadge = styled('span', {
     type: {
       green: {
         bg: '$successLight',
-        color: '$successLightContrast',
+        color: '$successLightContrast'
       },
       red: {
         bg: '$errorLight',
-        color: '$errorLightContrast',
+        color: '$errorLightContrast'
       },
       orange: {
         bg: '$warningLight',
-        color: '$warningLightContrast',
-      },
-    },
+        color: '$warningLightContrast'
+      }
+    }
   },
   defaultVariants: {
-    type: 'active',
-  },
+    type: 'active'
+  }
 });
 
 interface CollateralTypesTableProps {
-  collateralTypesData: Array<any>;
-  onSelectCollateralType: (collateralTypeId: string) => void;
+  collateralTypesData: Array<any>,
+  onSelectCollateralType: (collateralTypeId: string) => void
 }
 
 export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
-  const colNames = React.useMemo(() => {
-    return ['Protocol', 'Token', 'Underlier', 'Maturity', 'TVL'];
-  }, []);
-
-  const cells = React.useMemo(() => {
-    return props.collateralTypesData.length === 0 ? (
-      <Table.Row>
-        {colNames.map((colName) => (
-          <Table.Cell key={colName}><Skeleton count={colNames.length}/></Table.Cell>
-        ))}
-      </Table.Row>
-    ) : (
-      props.collateralTypesData.map((collateralType: any) => {
-        const { vault, tokenId, tokenSymbol, underlierSymbol, maturity } =
-          collateralType.properties;
-        const { protocol, asset } = collateralType.metadata;
-        const maturityFormatted = new Date(Number(maturity.toString()) * 1000);
-        return (
-          <Table.Row key={encodeCollateralTypeId(vault, tokenId)}>
-            <Table.Cell>{protocol}</Table.Cell>
-            <Table.Cell>{`${asset} (${tokenSymbol})`}</Table.Cell>
-            <Table.Cell>{underlierSymbol}</Table.Cell>
-            <Table.Cell>
-              <StyledBadge
-                type={new Date() < maturityFormatted ? 'green' : 'red'}
-              >
-                {formatUnixTimestamp(maturity)}
-              </StyledBadge>
-            </Table.Cell>
-            <Table.Cell>0</Table.Cell>
-          </Table.Row>
-        );
-      })
-    );
-  }, [props.collateralTypesData, colNames]);
+  if (props.collateralTypesData.length === 0) {
+    // TODO
+    // return <Loading />;
+    return null;
+  }
 
   return (
     <>
@@ -89,16 +58,37 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
         css={{ height: 'auto', minWidth: '100%' }}
         selectionMode='single'
         selectedKeys={'1'}
-        onSelectionChange={(selected) =>
-          props.onSelectCollateralType(Object.values(selected)[0])
-        }
+        onSelectionChange={(selected) => props.onSelectCollateralType(Object.values(selected)[0])}
       >
         <Table.Header>
-          {colNames.map((colName) => (
-            <Table.Column key={colName}>{colName}</Table.Column>
-          ))}
+          <Table.Column>Protocol</Table.Column>
+          <Table.Column>Token</Table.Column>
+          <Table.Column>Underlier</Table.Column>
+          <Table.Column>Maturity</Table.Column>
+          <Table.Column>TVL</Table.Column>
         </Table.Header>
-        <Table.Body>{cells}</Table.Body>
+        <Table.Body>
+          {
+            props.collateralTypesData.map((collateralType: any) => {
+              const { vault, tokenId, tokenSymbol, underlierSymbol, maturity } = collateralType.properties;
+              const { protocol, asset } = collateralType.metadata;
+              const maturityFormatted = new Date(Number(maturity.toString()) * 1000);
+              return (
+                <Table.Row key={encodeCollateralTypeId(vault, tokenId)}>
+                  <Table.Cell>{protocol}</Table.Cell>
+                  <Table.Cell>{`${asset} (${tokenSymbol})`}</Table.Cell>
+                  <Table.Cell>{underlierSymbol}</Table.Cell>
+                  <Table.Cell>
+                    <StyledBadge type={(new Date() < maturityFormatted) ? 'green' : 'red'}>
+                      {formatUnixTimestamp(maturity)}
+                    </StyledBadge>
+                  </Table.Cell>
+                  <Table.Cell>0</Table.Cell>
+                </Table.Row>
+              );
+            })
+          }
+        </Table.Body>
       </Table>
     </>
   );
