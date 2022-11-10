@@ -45,26 +45,30 @@ interface CollateralTypesTableProps {
 }
 
 export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
+  const [sortedData, setSortedData] = React.useState<any[]>([]);
   const [sortProps, setSortProps] = React.useState<SortDescriptor>({
     column: 'Maturity',
     direction: 'descending'
   });
-  const colNames = React.useMemo(() => {
-    return ['Asset', 'Underlier', 'Total Assets', '% Return', 'Maturity'];
-  }, []);
   
+  React.useEffect(() => {
+    const data = [...props.collateralTypesData]
+    data.sort((a: any, b: any) : number => {
+      if (sortProps.direction === 'descending' ) {
+        return a.properties.maturity.toNumber() < b.properties.maturity.toNumber() ? 1 : -1
+      }
+      return a.properties.maturity.toNumber() > b.properties.maturity.toNumber() ? 1 : -1
+    });
+    console.log({data})
+    setSortedData(data);
+  }, [props.collateralTypesData, sortProps.direction])
+
+
   if (props.collateralTypesData.length === 0) {
     // TODO
     // return <Loading />;
     return null;
   }
-
-  props.collateralTypesData.sort((a: any, b: any) : number => {
-    if (sortProps.direction === 'descending' ) {
-      return a.properties.maturity.toNumber() < b.properties.maturity.toNumber() ? 1 : -1
-    }
-    return a.properties.maturity.toNumber() > b.properties.maturity.toNumber() ? 1 : -1
-  });
 
   return (
     <>
@@ -94,7 +98,7 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
         </Table.Header>
         <Table.Body>
           {
-            props.collateralTypesData.map((collateralType: any) => {
+            sortedData.map((collateralType: any) => {
               const { vault, tokenId, underlierSymbol, maturity } = collateralType.properties;
               const { protocol, asset, icons, urls, symbol } = collateralType.metadata;
               const depositedCollateral = collateralType.state.codex.depositedCollateral;

@@ -55,7 +55,8 @@ export const PositionsTable = (props: PositionsTableProps) => {
   });
 
   React.useEffect(() => {
-    const result = props.positionsData.sort((a: any, b: any) : number => {
+    const data = [...props.positionsData]
+    data.sort((a: any, b: any) : number => {
       if (!props.collateralTypesData || !a || !b) return 0;
       const { vault: vaultA, tokenId: tokenIdA } = a;
       const { vault: vaultB, tokenId: tokenIdB } = b;
@@ -63,12 +64,12 @@ export const PositionsTable = (props: PositionsTableProps) => {
       const dataB = getCollateralTypeData(props.collateralTypesData, vaultB, tokenIdB);
       if (!dataA || !dataB) return 0;
       if (sortProps.direction === 'descending' ) {
-        return dataA.properties.maturity.toNumber() > dataB.properties.maturity.toNumber() ? 1 : -1
+        return dataA.properties.maturity.toNumber() < dataB.properties.maturity.toNumber() ? 1 : -1
       }
-      return dataA.properties.maturity.toNumber() < dataB.properties.maturity.toNumber() ? 1 : -1
+      return dataA.properties.maturity.toNumber() > dataB.properties.maturity.toNumber() ? 1 : -1
     });
-    setSortedData(result);
-  }, [props.collateralTypesData, props.positionsData, sortProps])
+    setSortedData(data);
+  }, [props.collateralTypesData, props.positionsData, sortProps.direction])
 
   if (props.positionsData === null || props.positionsData.length === 0 || props.collateralTypesData.length === 0) {
     // TODO
