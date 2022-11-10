@@ -1,6 +1,6 @@
+import { SortDescriptor, styled, Table, Text, User } from '@nextui-org/react';
 import React from 'react';
-import { styled, Table, Text } from '@nextui-org/react';
-
+import { wadToDec, ZERO } from '@fiatdao/sdk';
 import { encodeCollateralTypeId, formatUnixTimestamp } from '../utils';
 
 const StyledBadge = styled('span', {
@@ -44,6 +44,25 @@ interface CollateralTypesTableProps {
 }
 
 export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
+  const [sortedData, setSortedData] = React.useState<any[]>([]);
+  const [sortProps, setSortProps] = React.useState<SortDescriptor>({
+    column: 'Maturity',
+    direction: 'descending'
+  });
+  
+  React.useEffect(() => {
+    const data = [...props.collateralTypesData]
+    data.sort((a: any, b: any) : number => {
+      if (sortProps.direction === 'descending' ) {
+        return a.properties.maturity.toNumber() < b.properties.maturity.toNumber() ? 1 : -1
+      }
+      return a.properties.maturity.toNumber() > b.properties.maturity.toNumber() ? 1 : -1
+    });
+    console.log({data})
+    setSortedData(data);
+  }, [props.collateralTypesData, sortProps.direction])
+
+
   if (props.collateralTypesData.length === 0) {
     // TODO
     // return <Loading />;
@@ -52,38 +71,69 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
 
   return (
     <>
-      <Text h1>Collateral Types</Text>
+      <Text h1>Create Position</Text>
       <Table
         aria-label='Collateral Types'
         css={{ height: 'auto', minWidth: '100%' }}
         selectionMode='single'
         selectedKeys={'1'}
-        onSelectionChange={(selected) => props.onSelectCollateralType(Object.values(selected)[0])}
+        onSelectionChange={(selected) =>
+          props.onSelectCollateralType(Object.values(selected)[0])
+        }
+        sortDescriptor={sortProps as SortDescriptor}
+        onSortChange={(data) => {
+          setSortProps({
+            direction: data.direction,
+            column: data.column
+          })
+        }}
       >
         <Table.Header>
-          <Table.Column>Protocol</Table.Column>
-          <Table.Column>Token</Table.Column>
+          <Table.Column>Asset</Table.Column>
           <Table.Column>Underlier</Table.Column>
-          <Table.Column>Maturity</Table.Column>
-          <Table.Column>TVL</Table.Column>
+          <Table.Column>Total Assets</Table.Column>
+          <Table.Column>% Gain</Table.Column>
+          <Table.Column allowsSorting>Maturity</Table.Column>
         </Table.Header>
         <Table.Body>
           {
-            props.collateralTypesData.map((collateralType: any) => {
-              const { vault, tokenId, tokenSymbol, underlierSymbol, maturity } = collateralType.properties;
-              const { protocol, asset } = collateralType.metadata;
+            sortedData.map((collateralType: any) => {
+              const { vault, tokenId, underlierSymbol, maturity } = collateralType.properties;
+              const { protocol, asset, icons, urls, symbol } = collateralType.metadata;
+              const depositedCollateral = collateralType.state.codex.depositedCollateral;
+              const earnableRate = collateralType?.earnableRate?.mul(100);
               const maturityFormatted = new Date(Number(maturity.toString()) * 1000);
               return (
                 <Table.Row key={encodeCollateralTypeId(vault, tokenId)}>
-                  <Table.Cell>{protocol}</Table.Cell>
-                  <Table.Cell>{`${asset} (${tokenSymbol})`}</Table.Cell>
-                  <Table.Cell>{underlierSymbol}</Table.Cell>
                   <Table.Cell>
-                    <StyledBadge type={(new Date() < maturityFormatted) ? 'green' : 'red'}>
+                    <User src={icons.asset} name={asset} css={{
+                      borderRadius: '0px',
+                      '& span': {
+                        '& .nextui-avatar-bg': {
+                          background: 'transparent !important'
+                        },
+                        borderRadius: '0px !important',
+                        '& img': {
+                          borderRadius: '0px !important',
+                          background: 'transparent !important',
+                        }
+                      },
+                    }}>
+                      <User.Link href={urls.asset}>{protocol}</User.Link>
+                    </User>
+                  </Table.Cell>
+                  <Table.Cell>
+                    <User name={underlierSymbol} src={icons.underlier} size='sm'/>
+                  </Table.Cell>
+                  <Table.Cell>{`${parseFloat(wadToDec(depositedCollateral)).toFixed(2)} ${symbol}`}</Table.Cell>
+                  <Table.Cell>
+                    {`${parseFloat(wadToDec(earnableRate ?? ZERO)).toFixed(2)}%`}
+                  </Table.Cell>
+                  <Table.Cell>
+                    <StyledBadge type={new Date() < maturityFormatted ? 'green' : 'red'} >
                       {formatUnixTimestamp(maturity)}
                     </StyledBadge>
                   </Table.Cell>
-                  <Table.Cell>0</Table.Cell>
                 </Table.Row>
               );
             })
