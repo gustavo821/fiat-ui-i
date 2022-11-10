@@ -207,8 +207,8 @@ const Home: NextPage = () => {
       // uncomment setTimeout(resolve(...)) simulate loading state of a real txn
       // uncomment setTimeout(reject(...)) to simulate a txn error
       await new Promise((resolve: any, reject: any) => {
-        // setTimeout(resolve, 200);
-        setTimeout(reject({message: 'Mock dryrun error, Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut convallis luctus lectus vel tempor. Vestibulum porta odio et dui pretium, nec hendrerit ante efficitur. Duis cursus eleifend fringilla.'}), 200);
+        setTimeout(resolve, 2000);
+        // setTimeout(reject({message: 'Mock dryrun error, Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut convallis luctus lectus vel tempor. Vestibulum porta odio et dui pretium, nec hendrerit ante efficitur. Duis cursus eleifend fringilla.'}), 20000);
       });
 
       const resp = await fiat.dryrun(contract, method, ...args);
@@ -242,14 +242,14 @@ const Home: NextPage = () => {
 
   const setUnderlierAllowance = async (fiat: any) => {
     const token = fiat.getERC20Contract(modifyPositionData.collateralType.properties.underlierToken);
-    // await dryRun(fiat, 'setUnderlierAllowance', token, 'approve', contextData.proxies[0], formDataStore.underlier);
-    await sendAndWait(fiat, 'setUnderlierAllowance', token, 'approve', contextData.proxies[0], formDataStore.underlier);
+    await dryRun(fiat, 'setUnderlierAllowance', token, 'approve', contextData.proxies[0], formDataStore.underlier);
+    // await sendAndWait(fiat, 'setUnderlierAllowance', token, 'approve', contextData.proxies[0], formDataStore.underlier);
   }
 
   const unsetUnderlierAllowance = async (fiat: any) => {
     const token = fiat.getERC20Contract(modifyPositionData.collateralType.properties.underlierToken);
-    // await dryRun(fiat, 'unsetUnderlierAllowance', token, 'approve', contextData.proxies[0], 0);
-    await sendAndWait(fiat, 'unsetUnderlierAllowance', token, 'approve', contextData.proxies[0], 0);
+    await dryRun(fiat, 'unsetUnderlierAllowance', token, 'approve', contextData.proxies[0], 0);
+    // await sendAndWait(fiat, 'unsetUnderlierAllowance', token, 'approve', contextData.proxies[0], 0);
   }
 
   const setFIATAllowance = async (fiat: any) => {

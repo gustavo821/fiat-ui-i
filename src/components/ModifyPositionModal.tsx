@@ -313,7 +313,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               // Next UI Switch `checked` type is wrong, this is necessary
               // eslint-disable-next-line @typescript-eslint/ban-ts-comment
               // @ts-ignore
-              checked={() => !formDataStore.underlier.isZero() && underlierAllowance?.gte(formDataStore.underlier)}
+              checked={() => underlierAllowance?.gte(0) && underlierAllowance?.gte(formDataStore.underlier)}
               onChange={() => {
                 !formDataStore.underlier.isZero() && underlierAllowance.gte(formDataStore.underlier)
                   ? props.unsetUnderlierAllowance(props.contextData.fiat)
@@ -361,7 +361,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               // Next UI Switch `checked` type is wrong, this is necessary
               // eslint-disable-next-line @typescript-eslint/ban-ts-comment
               // @ts-ignore
-              checked={() => fiatAllowance?.gte(formDataStore.deltaDebt) ?? false}
+              checked={() => fiatAllowance?.gt(0) && fiatAllowance?.gte(formDataStore.deltaDebt) ?? false}
               onChange={() =>
                 !formDataStore.deltaDebt.isZero() && fiatAllowance.gte(formDataStore.deltaDebt)
                   ? props.unsetFIATAllowance(props.contextData.fiat)
