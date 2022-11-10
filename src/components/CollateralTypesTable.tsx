@@ -22,26 +22,26 @@ const StyledBadge = styled('span', {
     type: {
       green: {
         bg: '$successLight',
-        color: '$successLightContrast',
+        color: '$successLightContrast'
       },
       red: {
         bg: '$errorLight',
-        color: '$errorLightContrast',
+        color: '$errorLightContrast'
       },
       orange: {
         bg: '$warningLight',
-        color: '$warningLightContrast',
-      },
-    },
+        color: '$warningLightContrast'
+      }
+    }
   },
   defaultVariants: {
-    type: 'active',
-  },
+    type: 'active'
+  }
 });
 
 interface CollateralTypesTableProps {
-  collateralTypesData: Array<any>;
-  onSelectCollateralType: (collateralTypeId: string) => void;
+  collateralTypesData: Array<any>,
+  onSelectCollateralType: (collateralTypeId: string) => void
 }
 
 export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
@@ -52,60 +52,19 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
   const colNames = React.useMemo(() => {
     return ['Asset', 'Underlier', 'Total Assets', '% Return', 'Maturity'];
   }, []);
+  
+  if (props.collateralTypesData.length === 0) {
+    // TODO
+    // return <Loading />;
+    return null;
+  }
 
-  const cells = React.useMemo(() => {
-    props.collateralTypesData.sort((a: any, b: any) : number => {
-      if (sortProps.direction === 'descending' ) {
-        return a.properties.maturity.toNumber() < b.properties.maturity.toNumber() ? 1 : -1
-      }
-      return a.properties.maturity.toNumber() > b.properties.maturity.toNumber() ? 1 : -1
-    });
-    return props.collateralTypesData.length === 0 ? (
-      <Table.Row>
-        {colNames.map((colName) => (
-          <Table.Cell key={colName}><Skeleton count={colNames.length}/></Table.Cell>
-        ))}
-      </Table.Row>
-    ) : (
-      props.collateralTypesData.map((collateralType: any) => {
-        const { vault, tokenId, underlierSymbol, maturity } = collateralType.properties;
-        const { protocol, asset, icons, urls, symbol } = collateralType.metadata;
-        const depositedCollateral = collateralType.state.codex.depositedCollateral;
-        const earnableRate = collateralType?.earnableRate?.mul(100);
-        const maturityFormatted = new Date(Number(maturity.toString()) * 1000);
-        return (
-          <Table.Row key={encodeCollateralTypeId(vault, tokenId)}>
-            <Table.Cell>
-              <User src={icons.asset} name={asset} css={{
-                borderRadius: '0px',
-                '& span': {
-                  borderRadius: '0px !important',
-                  '& img': {
-                    borderRadius: '0px !important'
-                  }
-                },
-                
-              }}>
-                <User.Link href={urls.asset}>{protocol}</User.Link>
-              </User>
-            </Table.Cell>
-            <Table.Cell>
-              <User name={underlierSymbol} src={icons.underlier} size='sm'/>
-            </Table.Cell>
-            <Table.Cell>{`${parseFloat(wadToDec(depositedCollateral)).toFixed(2)} ${symbol}`}</Table.Cell>
-            <Table.Cell>
-              {`${parseFloat(wadToDec(earnableRate ?? ZERO)).toFixed(2)}%`}
-            </Table.Cell>
-            <Table.Cell>
-              <StyledBadge type={new Date() < maturityFormatted ? 'green' : 'red'} >
-                {formatUnixTimestamp(maturity)}
-              </StyledBadge>
-            </Table.Cell>
-          </Table.Row>
-        );
-      })
-    );
-  }, [props.collateralTypesData, colNames, sortProps]);
+  props.collateralTypesData.sort((a: any, b: any) : number => {
+    if (sortProps.direction === 'descending' ) {
+      return a.properties.maturity.toNumber() < b.properties.maturity.toNumber() ? 1 : -1
+    }
+    return a.properties.maturity.toNumber() > b.properties.maturity.toNumber() ? 1 : -1
+  });
 
   return (
     <>
@@ -127,11 +86,53 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
         }}
       >
         <Table.Header>
-          {colNames.map((colName) => (
-            <Table.Column allowsSorting={colName === 'Maturity' ? true : false} key={colName}>{colName}</Table.Column>
-          ))}
+          <Table.Column>Asset</Table.Column>
+          <Table.Column>Underlier</Table.Column>
+          <Table.Column>Total Assets</Table.Column>
+          <Table.Column>& Gain</Table.Column>
+          <Table.Column allowsSorting>Maturity</Table.Column>
         </Table.Header>
-        <Table.Body>{cells}</Table.Body>
+        <Table.Body>
+          {
+            props.collateralTypesData.map((collateralType: any) => {
+              const { vault, tokenId, underlierSymbol, maturity } = collateralType.properties;
+              const { protocol, asset, icons, urls, symbol } = collateralType.metadata;
+              const depositedCollateral = collateralType.state.codex.depositedCollateral;
+              const earnableRate = collateralType?.earnableRate?.mul(100);
+              const maturityFormatted = new Date(Number(maturity.toString()) * 1000);
+              return (
+                <Table.Row key={encodeCollateralTypeId(vault, tokenId)}>
+                  <Table.Cell>
+                    <User src={icons.asset} name={asset} css={{
+                      borderRadius: '0px',
+                      '& span': {
+                        borderRadius: '0px !important',
+                        '& img': {
+                          borderRadius: '0px !important'
+                        }
+                      },
+                      
+                    }}>
+                      <User.Link href={urls.asset}>{protocol}</User.Link>
+                    </User>
+                  </Table.Cell>
+                  <Table.Cell>
+                    <User name={underlierSymbol} src={icons.underlier} size='sm'/>
+                  </Table.Cell>
+                  <Table.Cell>{`${parseFloat(wadToDec(depositedCollateral)).toFixed(2)} ${symbol}`}</Table.Cell>
+                  <Table.Cell>
+                    {`${parseFloat(wadToDec(earnableRate ?? ZERO)).toFixed(2)}%`}
+                  </Table.Cell>
+                  <Table.Cell>
+                    <StyledBadge type={new Date() < maturityFormatted ? 'green' : 'red'} >
+                      {formatUnixTimestamp(maturity)}
+                    </StyledBadge>
+                  </Table.Cell>
+                </Table.Row>
+              );
+            })
+          }
+        </Table.Body>
       </Table>
     </>
   );
