@@ -62,8 +62,23 @@ const wagmiClient = createClient({
   webSocketProvider,
 });
 
-const nextLightTheme = createTheme({type: 'light'})
-const nextDarkTheme = createTheme({type: 'dark'})
+const nextLightTheme = createTheme({
+  type: 'light',
+  theme: {
+    colors: {
+      connectButtonBackground: '#FFF',
+      connectButtonColor: '#25292e',
+    }
+  }
+})
+const nextDarkTheme = createTheme({
+  type: 'dark',
+  theme: {
+    colors: {
+      connectButtonBackground: '#1a1b1f'
+    }
+  }
+})
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (

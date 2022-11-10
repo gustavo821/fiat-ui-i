@@ -2,11 +2,11 @@ import React from 'react';
 import { useAccount, useNetwork, useProvider } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { ethers } from 'ethers';
-import { decToWad, FIAT, ZERO } from '@fiatdao/sdk';
-import { Container, Spacer } from '@nextui-org/react';
+import { decToWad, FIAT, wadToDec, ZERO } from '@fiatdao/sdk';
+import { Badge, Container, Spacer } from '@nextui-org/react';
 import type { NextPage } from 'next';
 
-import { ProxyCard } from '../src/components/ProxyCard';
+import { ProxyButton } from '../src/components/ProxyButton';
 import { CollateralTypesTable } from '../src/components/CollateralTypesTable';
 import { PositionsTable } from '../src/components/PositionsTable';
 import { CreatePositionModal } from '../src/components/CreatePositionModal';
@@ -23,7 +23,6 @@ const Home: NextPage = () => {
   const provider = useProvider();
   const { connector } = useAccount({ onConnect: () => resetState(), onDisconnect: () => resetState() });
   const { chain } = useNetwork();
-
 
   const initialState = React.useMemo(() => ({
     setupListeners: false,
@@ -76,6 +75,8 @@ const Home: NextPage = () => {
   const [transactionData, setTransactionData] = React.useState(initialState.transactionData);
   const [selectedPositionId, setSelectedPositionId] = React.useState(initialState.selectedPositionId);
   const [selectedCollateralTypeId, setSelectedCollateralTypeId] = React.useState(initialState.selectedCollateralTypeId);
+  const [fiatBalance, setFiatBalance] = React.useState<string>('');
+
 
   const disableActions = React.useMemo(() => transactionData.status === 'sent', [transactionData.status])
 
@@ -106,12 +107,21 @@ const Home: NextPage = () => {
     (async function () {
       const fiat = await FIAT.fromProvider(provider, null);
       const collateralTypesData_ = await fiat.fetchCollateralTypesAndPrices([]);
+      const earnableRates = await userActions.getEarnableRate(fiat, collateralTypesData_);
+
       setCollateralTypesData(collateralTypesData_
         .filter((collateralType: any) => (collateralType.metadata != undefined))
         .sort((a: any, b: any) => {
           if (Number(a.properties.maturity) > Number(b.properties.maturity)) return -1;
           if (Number(a.properties.maturity) < Number(b.properties.maturity)) return 1;
           return 0;
+        })
+        .map((collateralType: any) => {
+          const earnableRate = earnableRates.find((item: any)  => item.vault === collateralType.properties.vault)
+          return {
+            ...collateralType,
+            earnableRate: earnableRate?.earnableRate
+          }
         })
       );
       setContextData((curContextData) => ({
@@ -120,6 +130,19 @@ const Home: NextPage = () => {
       }));
     })();
   }, [chain?.blockExplorers?.etherscan?.url, collateralTypesData.length, connector, provider]);
+
+  React.useEffect(() => {
+    if (connector) {
+      (async function () {
+        if (!contextData.fiat) return;
+        const { fiat } = contextData.fiat.getContracts();
+        const signer = (await connector.getSigner());
+        const user = await signer.getAddress();
+        const fiatBalance = await fiat.balanceOf(user)
+        setFiatBalance(`${parseFloat(wadToDec(fiatBalance)).toFixed(2)} FIAT`)
+      })();
+    }
+  }, [connector, contextData.fiat])
 
   // Fetch User and Vault data
   React.useEffect(() => {
@@ -330,16 +353,34 @@ const Home: NextPage = () => {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', padding: 12 }}>
         <h4 style={{ justifyContent: 'flex',  }}>(Experimental) FIAT UI</h4>
-        <ConnectButton showBalance={false} />
+        <div style={{ display: 'flex'}}>
+          <ProxyButton
+            {...contextData}
+            createProxy={createProxy}
+            disableActions={disableActions}
+          />
+          { fiatBalance && 
+            <Badge 
+              style={{marginRight: '10px'}} 
+              css={{
+                fontFamily: 'var(--rk-fonts-body)',
+                fontWeight: 700,
+                fontSize: '100%',
+                borderRadius: '12px',
+                backgroundColor: '$connectButtonBackground',
+                color: '$connectButtonColor',
+                boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
+                '&:hover': {
+                  transform: 'scale(1.03)'
+                }
+              }}
+            >
+              {fiatBalance}
+            </Badge>
+          }
+          <ConnectButton showBalance={false} />
+        </div>
       </div>
-      <Spacer y={2} />
-      <Container>
-        <ProxyCard
-          {...contextData}
-          createProxy={createProxy}
-          disableActions={disableActions}
-        />
-      </Container>
       <Spacer y={2} />
       <Container>
         <CollateralTypesTable
