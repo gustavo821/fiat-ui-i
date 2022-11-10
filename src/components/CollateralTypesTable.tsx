@@ -109,12 +109,15 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
                     <User src={icons.asset} name={asset} css={{
                       borderRadius: '0px',
                       '& span': {
+                        '& .nextui-avatar-bg': {
+                          background: 'transparent !important'
+                        },
                         borderRadius: '0px !important',
                         '& img': {
-                          borderRadius: '0px !important'
+                          borderRadius: '0px !important',
+                          background: 'transparent !important',
                         }
                       },
-                      
                     }}>
                       <User.Link href={urls.asset}>{protocol}</User.Link>
                     </User>
