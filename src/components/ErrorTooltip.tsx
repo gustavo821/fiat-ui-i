@@ -35,13 +35,34 @@ export const ErrorTooltip = ({ error }: { error: string }) => {
             wordWrap: 'break-word',
           }}
         >
-          <Text style={{ wordWrap: 'break-word' }}>{error}</Text>
+          <Text
+            style={{
+              wordWrap: 'break-word',
+            }}
+          >
+            {error}
+          </Text>
         </div>
       }
       placement='bottomEnd'
+      style={{
+        width: '100%',
+        border: '1px solid rgba(250, 43, 57, 0.24)',
+        borderRadius: 'var(--nextui-radii-md)',
+        padding: '.25rem 1rem .25rem 1rem',
+      }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-        <InfoIcon fill='red' />
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          cursor: 'pointer',
+          width: '100%',
+        }}
+      >
+        <div>
+          <InfoIcon fill='red' />
+        </div>
         <Text
           color='error'
           style={{
