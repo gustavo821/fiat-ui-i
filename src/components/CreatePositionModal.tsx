@@ -302,7 +302,10 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
         <Text size={'0.875rem'}>Approve {underlierSymbol}</Text>
         <Switch
           disabled={props.disableActions || !hasProxy}
-          checked={!formDataStore.underlier.isZero() && underlierAllowance?.gte(formDataStore.underlier)}
+          // Next UI Switch `checked` type is wrong, this is necessary
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          checked={() => !formDataStore.underlier.isZero() && underlierAllowance?.gte(formDataStore.underlier)}
           onChange={() =>
             !formDataStore.underlier.isZero() && underlierAllowance?.gte(formDataStore.underlier)
               ? props.unsetUnderlierAllowance(props.contextData.fiat)
@@ -321,7 +324,10 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
         <Text size={'0.875rem'}>Enable FIAT</Text>
         <Switch
           disabled={props.disableActions || !hasProxy}
-          checked={monetaDelegate ?? false}
+          // Switch type is wrong, this is necessary
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          checked={() => monetaDelegate ?? false}
           onChange={() =>
             !!monetaDelegate
               ? props.unsetMonetaDelegate(props.contextData.fiat)

@@ -25,13 +25,14 @@ interface ModifyPositionModalProps {
   modifyPositionData: any;
   redeemCollateralAndModifyDebt: () => any;
   sellCollateralAndModifyDebt: () => any;
+  setFIATAllowance: (fiat: any) => any;
   setTransactionStatus: (status: TransactionStatus) => void;
   setMonetaDelegate: (fiat: any) => any;
   setUnderlierAllowance: (fiat: any) => any;
   transactionData: any;
+  unsetFIATAllowance: (fiat: any) => any;
   unsetMonetaDelegate: (fiat: any) => any;
   unsetUnderlierAllowance: (fiat: any) => any;
-  onSendTransaction: (action: string) => void;
   open: boolean;
   onClose: () => void;
 }
@@ -309,9 +310,10 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
             <Text size={'0.875rem'}>Approve {underlierSymbol}</Text>
             <Switch
               disabled={props.disableActions || !hasProxy}
-              checked={
-                !formDataStore.underlier.isZero() && underlierAllowance?.gte(formDataStore.underlier)
-              }
+              // Next UI Switch `checked` type is wrong, this is necessary
+              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+              // @ts-ignore
+              checked={() => !formDataStore.underlier.isZero() && underlierAllowance?.gte(formDataStore.underlier)}
               onChange={() => {
                 !formDataStore.underlier.isZero() && underlierAllowance.gte(formDataStore.underlier)
                   ? props.unsetUnderlierAllowance(props.contextData.fiat)
@@ -331,7 +333,10 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
             <Text size={'0.875rem'}>Enable FIAT</Text>
             <Switch
               disabled={props.disableActions || !hasProxy}
-              checked={!!monetaDelegate}
+              // Next UI Switch `checked` type is wrong, this is necessary
+              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+              // @ts-ignore
+              checked={() => !!monetaDelegate}
               onChange={() =>
                 !!monetaDelegate
                   ? props.unsetMonetaDelegate(props.contextData.fiat)
@@ -353,12 +358,14 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
             <Text size={'0.875rem'}>Approve FIAT</Text>
             <Switch
               disabled={props.disableActions || !hasProxy}
-              checked={!formDataStore.deltaDebt.isZero() && fiatAllowance.gte(formDataStore.deltaDebt)}
-              // TODO: these methods are not implemented
+              // Next UI Switch `checked` type is wrong, this is necessary
+              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+              // @ts-ignore
+              checked={() => fiatAllowance?.gte(formDataStore.deltaDebt) ?? false}
               onChange={() =>
                 !formDataStore.deltaDebt.isZero() && fiatAllowance.gte(formDataStore.deltaDebt)
-                  ? props.onSendTransaction('unsetFIATAllowance')
-                  : props.onSendTransaction('setFIATAllowance')
+                  ? props.unsetFIATAllowance(props.contextData.fiat)
+                  : props.setFIATAllowance(props.contextData.fiat)
               }
               color='primary'
               icon={
