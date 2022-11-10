@@ -58,6 +58,7 @@ interface FormActions {
     modifyPositionData: any,
     selectedCollateralTypeId: string | null
   ) => void;
+  setFormDataLoading: (isLoading: boolean) => void;
   calculateNewPositionData: (
     fiat: any,
     modifyPositionData: any,
@@ -221,6 +222,10 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
         modifyPositionData,
         selectedCollateralTypeId
       );
+    },
+
+    setFormDataLoading: (isLoading) => {
+      set(() => ({ formDataLoading: isLoading }));
     },
 
     // Calculates new health factor, collateral, debt, and deltaCollateral as needed

@@ -160,6 +160,7 @@ const Home: NextPage = () => {
       position = getPositionData(positionsData, vault, tokenId, owner);
     }
     const data = { ...modifyPositionData, collateralType, position };
+    formDataStore.setFormDataLoading(true);
     formDataStore.calculateNewPositionData(contextData.fiat, data, null);
     setModifyPositionData(data);
 
@@ -192,7 +193,10 @@ const Home: NextPage = () => {
         ...modifyPositionData, ...data, underlierAllowance, underlierBalance, monetaDelegate, fiatAllowance
       });
     })();
-  }, [connector, contextData, collateralTypesData, positionsData, selectedCollateralTypeId, selectedPositionId, modifyPositionData, formDataStore]);
+
+    // Eslint thinks formDataStore is a dependency, but that will never change. The only true dependency is its the calculateNewPositionData method
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connector, contextData, collateralTypesData, positionsData, selectedCollateralTypeId, selectedPositionId, modifyPositionData, formDataStore.calculateNewPositionData]);
 
   const dryRun = async (fiat: any, action: string, contract: ethers.Contract, method: string, ...args: any[]) => {
     try {
