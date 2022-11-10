@@ -1,4 +1,4 @@
-import { Button, Card, Link, Spacer, Text } from '@nextui-org/react';
+import { Button, Card, Link, Loading, Spacer, Text } from '@nextui-org/react';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import {useState} from 'react';
 import Skeleton, { SkeletonTheme } from 'react-loading-skeleton';
@@ -64,7 +64,7 @@ export const ProxyCard = (props: ProxyCardProps) => {
                     }}
                     disabled={props.disableActions}
                   >
-                    Setup a new Proxy account
+                    {props.disableActions ? <Loading /> : 'Setup a new Proxy account'}
                   </Button>
                   { error === ''
                     ? null

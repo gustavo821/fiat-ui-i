@@ -194,17 +194,17 @@ const Home: NextPage = () => {
     })();
   }, [connector, contextData, collateralTypesData, positionsData, selectedCollateralTypeId, selectedPositionId, modifyPositionData, formDataStore]);
 
-  /*
-   * So basically 2 kinds of errors/loading states
-   * Create proxy 
-   *
-   *
-   */
   const dryRun = async (fiat: any, contract: ethers.Contract, method: string, ...args: any[]) => {
     try {
       setTransactionData({ action: method, status: 'sent' });
+
+      // OPTIONAL: wait to simulate a real txn
+      await new Promise((resolve) => {
+        setTimeout(resolve, 200);
+      });
+
       const resp = await fiat.dryrun(contract, method, ...args);
-      console.log('resp: ', resp);
+      console.log('Dryrun resp: ', resp);
       setTransactionData(initialState.transactionData);
     } catch (e) {
       console.error('Error: ', e);
@@ -225,8 +225,8 @@ const Home: NextPage = () => {
   }
 
   const createProxy = async (fiat: any, user: string) => {
-    // await dryRun(fiat, fiat.getContracts().proxyRegistry, 'deployFor', contextData.user);
-    await sendAndWait(fiat, fiat.getContracts().proxyRegistry, 'deployFor', user);
+    await dryRun(fiat, fiat.getContracts().proxyRegistry, 'deployFor', user);
+    // await sendAndWait(fiat, fiat.getContracts().proxyRegistry, 'deployFor', user);
   }
 
   const setUnderlierAllowance = async (fiat: any) => {
