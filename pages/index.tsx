@@ -207,8 +207,8 @@ const Home: NextPage = () => {
       // uncomment setTimeout(resolve(...)) simulate loading state of a real txn
       // uncomment setTimeout(reject(...)) to simulate a txn error
       await new Promise((resolve: any, reject: any) => {
-        setTimeout(resolve, 200);
-        // setTimeout(reject({message: 'Mock dryrun error, Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut convallis luctus lectus vel tempor. Vestibulum porta odio et dui pretium, nec hendrerit ante efficitur. Duis cursus eleifend fringilla.'}), 200);
+        // setTimeout(resolve, 200);
+        setTimeout(reject({message: 'Mock dryrun error, Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut convallis luctus lectus vel tempor. Vestibulum porta odio et dui pretium, nec hendrerit ante efficitur. Duis cursus eleifend fringilla.'}), 200);
       });
 
       const resp = await fiat.dryrun(contract, method, ...args);

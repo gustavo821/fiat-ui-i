@@ -28,6 +28,16 @@ export const InfoIcon = (props: any) => {
 export const ErrorTooltip = ({ error }: { error: string }) => {
   return (
     <Tooltip
+      style={{
+        width: '100%',
+        border: '1px solid rgba(250, 43, 57, 0.24)',
+        borderRadius: 'var(--nextui-radii-md)',
+        padding: '.25rem 1rem .25rem 1rem',
+      }}
+      trigger='hover'
+      css={{
+        zIndex: '999999 !important',
+      }}
       content={
         <div
           style={{
@@ -44,13 +54,6 @@ export const ErrorTooltip = ({ error }: { error: string }) => {
           </Text>
         </div>
       }
-      placement='bottomEnd'
-      style={{
-        width: '100%',
-        border: '1px solid rgba(250, 43, 57, 0.24)',
-        borderRadius: 'var(--nextui-radii-md)',
-        padding: '.25rem 1rem .25rem 1rem',
-      }}
     >
       <div
         style={{
@@ -60,7 +63,12 @@ export const ErrorTooltip = ({ error }: { error: string }) => {
           width: '100%',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center' }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+          }}
+        >
           <InfoIcon fill='red' />
         </div>
         <Text
