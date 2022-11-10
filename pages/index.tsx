@@ -198,17 +198,20 @@ const Home: NextPage = () => {
     try {
       setTransactionData({ action: method, status: 'sent' });
 
-      // OPTIONAL: wait to simulate a real txn
-      await new Promise((resolve) => {
+      // OPTIONAL: resolve with wait to to simulate a real txn
+      // and reject with a fake error to test error states
+      await new Promise((resolve: any, reject: any) => {
         setTimeout(resolve, 200);
+        // setTimeout(reject({message: 'Fake error'}), 200);
       });
 
       const resp = await fiat.dryrun(contract, method, ...args);
       console.log('Dryrun resp: ', resp);
       setTransactionData(initialState.transactionData);
     } catch (e) {
-      console.error('Error: ', e);
+      console.error('Dryrun error: ', e);
       setTransactionData({ ...transactionData, status: 'error' });
+      throw e
     }
   }
 
