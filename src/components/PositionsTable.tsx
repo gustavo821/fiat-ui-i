@@ -146,7 +146,7 @@ export const PositionsTable = (props: PositionsTableProps) => {
                       </Row>
                     </Col>
                   </Table.Cell>
-                  <Table.Cell>{wadToDec(debt)}</Table.Cell>
+                  <Table.Cell>{parseFloat(wadToDec(debt)).toFixed(2)}</Table.Cell>
                   <Table.Cell>
                     <StyledBadge
                       type={new Date() < maturityFormatted ? 'green' : 'red'}
