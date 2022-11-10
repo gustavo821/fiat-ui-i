@@ -198,8 +198,9 @@ const Home: NextPage = () => {
     try {
       setTransactionData({ action, status: 'sent' });
 
-      // OPTIONAL: resolve with wait to to simulate a real txn
-      // and reject with a fake error to test error states
+      // OPTIONAL:
+      // uncomment setTimeout(resolve(...)) simulate loading state of a real txn
+      // uncomment setTimeout(reject(...)) to simulate a txn error
       await new Promise((resolve: any, reject: any) => {
         setTimeout(resolve, 200);
         // setTimeout(reject({message: 'Fake error'}), 200);
