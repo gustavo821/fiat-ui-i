@@ -100,7 +100,7 @@ export const PositionsTable = (props: PositionsTableProps) => {
           <Table.Column>Asset</Table.Column>
           <Table.Column>Underlier</Table.Column>
           <Table.Column>Collateral</Table.Column>
-          <Table.Column>Normal Debt</Table.Column>
+          <Table.Column>Debt</Table.Column>
           <Table.Column allowsSorting>Maturity</Table.Column>
         </Table.Header>
         <Table.Body>
@@ -113,6 +113,7 @@ export const PositionsTable = (props: PositionsTableProps) => {
                 state
               } = getCollateralTypeData(props.collateralTypesData, vault, tokenId);
               const maturityFormatted = new Date(Number(maturity.toString()) * 1000);
+              const debt = normalDebt.mul(state.codex.virtualRate).div(WAD)
               return (
                 <Table.Row key={encodePositionId(vault, tokenId, owner)}>
                   <Table.Cell>
@@ -141,7 +142,7 @@ export const PositionsTable = (props: PositionsTableProps) => {
                       </Row>
                     </Col>
                   </Table.Cell>
-                  <Table.Cell>{wadToDec(normalDebt)}</Table.Cell>
+                  <Table.Cell>{wadToDec(debt)}</Table.Cell>
                   <Table.Cell>
                     <StyledBadge
                       type={new Date() < maturityFormatted ? 'green' : 'red'}
