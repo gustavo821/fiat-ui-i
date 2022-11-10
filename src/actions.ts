@@ -158,8 +158,8 @@ export const buyCollateralAndModifyDebt = async (
       const deadline = Math.round(+new Date() / 1000) + 3600;
 
       console.log(
-        await contextData.fiat.dryrunViaProxy(
-        // await contextData.fiat.sendAndWaitViaProxy(
+        // await contextData.fiat.dryrunViaProxy(
+        await contextData.fiat.sendAndWaitViaProxy(
           contextData.proxies[0],
           vaultEPTActions,
           'buyCollateralAndModifyDebt',
@@ -203,8 +203,8 @@ export const buyCollateralAndModifyDebt = async (
       );
 
       console.log(
-        await contextData.fiat.dryrunViaProxy(
-        // await contextData.fiat.sendAndWaitViaProxy(
+        // await contextData.fiat.dryrunViaProxy(
+        await contextData.fiat.sendAndWaitViaProxy(
           contextData.proxies[0],
           vaultFCActions,
           'buyCollateralAndModifyDebt',
@@ -230,8 +230,8 @@ export const buyCollateralAndModifyDebt = async (
       }
 
       console.log(
-        await contextData.fiat.dryrunViaProxy(
-        // await contextData.fiat.sendAndWaitViaProxy(
+        // await contextData.fiat.dryrunViaProxy(
+        await contextData.fiat.sendAndWaitViaProxy(
           contextData.proxies[0],
           vaultFYActions,
           'buyCollateralAndModifyDebt',
@@ -291,8 +291,8 @@ export const sellCollateralAndModifyDebt = async (
       const deadline = Math.round(+new Date() / 1000) + 3600;
 
       console.log(
-        await contextData.fiat.dryrunViaProxy(
-        // await contextData.fiat.sendAndWaitViaProxy(
+        // await contextData.fiat.dryrunViaProxy(
+        await contextData.fiat.sendAndWaitViaProxy(
           contextData.proxies[0],
           vaultEPTActions,
           'sellCollateralAndModifyDebt',
@@ -337,8 +337,8 @@ export const sellCollateralAndModifyDebt = async (
       );
 
       console.log(
-        await contextData.fiat.dryrunViaProxy(
-        // await contextData.fiat.sendAndWaitViaProxy(
+        // await contextData.fiat.dryrunViaProxy(
+        await contextData.fiat.sendAndWaitViaProxy(
           contextData.proxies[0],
           vaultFCActions,
           'sellCollateralAndModifyDebt',
@@ -363,8 +363,8 @@ export const sellCollateralAndModifyDebt = async (
       }
 
       console.log(
-        await contextData.fiat.dryrunViaProxy(
-        // await contextData.fiat.sendAndWaitViaProxy(
+        // await contextData.fiat.dryrunViaProxy(
+        await contextData.fiat.sendAndWaitViaProxy(
           contextData.proxies[0],
           vaultFYActions,
           'sellCollateralAndModifyDebt',
@@ -421,8 +421,8 @@ export const redeemCollateralAndModifyDebt = async (
       }
 
       console.log(
-        await contextData.fiat.dryrunViaProxy(
-        // await contextData.fiat.sendAndWaitViaProxy(
+        // await contextData.fiat.dryrunViaProxy(
+        await contextData.fiat.sendAndWaitViaProxy(
           contextData.proxies[0],
           vaultEPTActions,
           'redeemCollateralAndModifyDebt',
@@ -445,8 +445,8 @@ export const redeemCollateralAndModifyDebt = async (
       }
 
       console.log(
-        await contextData.fiat.dryrunViaProxy(
-        // await contextData.fiat.sendAndWaitViaProxy(
+        // await contextData.fiat.dryrunViaProxy(
+        await contextData.fiat.sendAndWaitViaProxy(
           contextData.proxies[0],
           vaultFCActions,
           'redeemCollateralAndModifyDebt',
@@ -470,8 +470,8 @@ export const redeemCollateralAndModifyDebt = async (
       }
 
       console.log(
-        await contextData.fiat.dryrunViaProxy(
-        // await contextData.fiat.sendAndWaitViaProxy(
+        // await contextData.fiat.dryrunViaProxy(
+        await contextData.fiat.sendAndWaitViaProxy(
           contextData.proxies[0],
           vaultFYActions,
           'redeemCollateralAndModifyDebt',
