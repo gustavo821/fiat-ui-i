@@ -1,5 +1,5 @@
 import React from 'react';
-import { Col, Row, styled, Table, Text, User } from '@nextui-org/react';
+import { SortDescriptor, Col, Row, styled, Table, Text, User } from '@nextui-org/react';
 
 import { WAD, wadToDec } from '@fiatdao/sdk';
 
@@ -49,11 +49,27 @@ interface PositionsTableProps {
 }
 
 export const PositionsTable = (props: PositionsTableProps) => {
+  const [sortProps, setSortProps] = React.useState<SortDescriptor>({
+    column: 'Maturity',
+    direction: 'descending'
+  });
   const colNames = React.useMemo(() => {
     return ['Asset', 'Underlier', 'Collateral', 'Normal Debt', 'Maturity'];
   }, []);
 
   const cells = React.useMemo(() => {
+    props.positionsData.sort((a: any, b: any) : number => {
+      if (!props.collateralTypesData || !a || !b) return 0;
+      const { vault: vaultA, tokenId: tokenIdA } = a;
+      const { vault: vaultB, tokenId: tokenIdB } = b;
+      const { properties: { maturity: maturityA }} = getCollateralTypeData(props.collateralTypesData, vaultA, tokenIdA);
+      const { properties: { maturity: maturityB }} = getCollateralTypeData(props.collateralTypesData, vaultB, tokenIdB);
+      if (sortProps.direction === 'descending' ) {
+        return maturityA.toNumber() < maturityB.toNumber() ? 1 : -1
+      }
+      return maturityA.toNumber() > maturityB.toNumber() ? 1 : -1
+    });
+
     return props.collateralTypesData.length === 0 ? (
       <Table.Row>
         {colNames.map((colName) => (
@@ -103,7 +119,7 @@ export const PositionsTable = (props: PositionsTableProps) => {
         );
       })
     );
-  }, [props.collateralTypesData, props.positionsData, colNames]);
+  }, [props.collateralTypesData, props.positionsData, colNames, sortProps]);
 
   return (
     <>
@@ -116,10 +132,17 @@ export const PositionsTable = (props: PositionsTableProps) => {
         onSelectionChange={(selected) =>
           props.onSelectPosition(Object.values(selected)[0])
         }
+        sortDescriptor={sortProps as SortDescriptor}
+        onSortChange={(data) => {
+          setSortProps({
+            direction: data.direction,
+            column: data.column
+          })
+        }}
       >
         <Table.Header>
           {colNames.map((colName) => (
-            <Table.Column key={colName}>{colName}</Table.Column>
+            <Table.Column key={colName} allowsSorting={colName === 'Maturity' ? true : false}>{colName}</Table.Column>
           ))}
         </Table.Header>
         <Table.Body>{cells}</Table.Body>
