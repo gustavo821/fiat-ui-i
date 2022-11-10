@@ -3,7 +3,7 @@ import { useAccount, useNetwork, useProvider } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { ethers } from 'ethers';
 import { decToWad, FIAT, wadToDec, ZERO } from '@fiatdao/sdk';
-import { Badge, Container, Spacer, useTheme } from '@nextui-org/react';
+import { Badge, Container, Spacer } from '@nextui-org/react';
 import type { NextPage } from 'next';
 
 import { ProxyButton } from '../src/components/ProxyButton';
