@@ -48,7 +48,7 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
   const [sortProps, setSortProps] = React.useState<SortDescriptor>({
     column: 'Maturity',
     direction: 'descending'
-  })
+  });
   const colNames = React.useMemo(() => {
     return ['Asset', 'Underlier', 'Total Assets', '% Return', 'Maturity'];
   }, []);
@@ -76,7 +76,16 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
         return (
           <Table.Row key={encodeCollateralTypeId(vault, tokenId)}>
             <Table.Cell>
-              <User src={icons.asset} name={asset}>
+              <User src={icons.asset} name={asset} css={{
+                borderRadius: '0px',
+                '& span': {
+                  borderRadius: '0px !important',
+                  '& img': {
+                    borderRadius: '0px !important'
+                  }
+                },
+                
+              }}>
                 <User.Link href={urls.asset}>{protocol}</User.Link>
               </User>
             </Table.Cell>
@@ -119,7 +128,7 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
       >
         <Table.Header>
           {colNames.map((colName) => (
-            <Table.Column allowsSorting={colName === 'Maturity' ? true : false}key={colName}>{colName}</Table.Column>
+            <Table.Column allowsSorting={colName === 'Maturity' ? true : false} key={colName}>{colName}</Table.Column>
           ))}
         </Table.Header>
         <Table.Body>{cells}</Table.Body>

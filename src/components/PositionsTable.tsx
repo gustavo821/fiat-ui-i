@@ -62,12 +62,12 @@ export const PositionsTable = (props: PositionsTableProps) => {
       if (!props.collateralTypesData || !a || !b) return 0;
       const { vault: vaultA, tokenId: tokenIdA } = a;
       const { vault: vaultB, tokenId: tokenIdB } = b;
-      const { properties: { maturity: maturityA }} = getCollateralTypeData(props.collateralTypesData, vaultA, tokenIdA);
-      const { properties: { maturity: maturityB }} = getCollateralTypeData(props.collateralTypesData, vaultB, tokenIdB);
+      const dataA = getCollateralTypeData(props.collateralTypesData, vaultA, tokenIdA);
+      const dataB = getCollateralTypeData(props.collateralTypesData, vaultB, tokenIdB);
       if (sortProps.direction === 'descending' ) {
-        return maturityA.toNumber() < maturityB.toNumber() ? 1 : -1
+        return dataA.properties.maturity.toNumber() < dataB.properties.maturity.toNumber() ? 1 : -1
       }
-      return maturityA.toNumber() > maturityB.toNumber() ? 1 : -1
+      return dataA.properties.maturity.toNumber() > dataB.properties.maturity.toNumber() ? 1 : -1
     });
 
     return props.collateralTypesData.length === 0 ? (
@@ -90,7 +90,15 @@ export const PositionsTable = (props: PositionsTableProps) => {
         return (
           <Table.Row key={encodePositionId(vault, tokenId, owner)}>
             <Table.Cell>
-              <User src={icons.asset} name={asset}>
+              <User src={icons.asset} name={asset} css={{
+                borderRadius: '0px',
+                '& span': {
+                  borderRadius: '0px !important',
+                  '& img': {
+                    borderRadius: '0px !important'
+                  }
+                }
+              }}>
                 <User.Link href={urls.asset}>{protocol}</User.Link>
               </User>
             </Table.Cell>
