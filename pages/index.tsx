@@ -109,13 +109,21 @@ const Home: NextPage = () => {
     (async function () {
       const fiat = await FIAT.fromProvider(provider, null);
       const collateralTypesData_ = await fiat.fetchCollateralTypesAndPrices([]);
-      console.log(await userActions.getEarnableRate(fiat, collateralTypesData_));
+      const earnableRates = await userActions.getEarnableRate(fiat, collateralTypesData_);
+
       setCollateralTypesData(collateralTypesData_
         .filter((collateralType: any) => (collateralType.metadata != undefined))
         .sort((a: any, b: any) => {
           if (Number(a.properties.maturity) > Number(b.properties.maturity)) return -1;
           if (Number(a.properties.maturity) < Number(b.properties.maturity)) return 1;
           return 0;
+        })
+        .map((collateralType: any) => {
+          const earnableRate = earnableRates.find((item: any)  => item.vault === collateralType.properties.vault)
+          return {
+            ...collateralType,
+            earnableRate: earnableRate?.earnableRate
+          }
         })
       );
       setContextData((curContextData) => ({

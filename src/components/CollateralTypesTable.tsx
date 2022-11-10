@@ -1,6 +1,6 @@
 import { styled, Table, Text, User } from '@nextui-org/react';
 import React from 'react';
-import { wadToDec } from '@fiatdao/sdk';
+import { wadToDec, ZERO } from '@fiatdao/sdk';
 import Skeleton from 'react-loading-skeleton';
 import { encodeCollateralTypeId, formatUnixTimestamp } from '../utils';
 
@@ -46,7 +46,7 @@ interface CollateralTypesTableProps {
 
 export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
   const colNames = React.useMemo(() => {
-    return ['Asset', 'Underlier', 'Total Assets', 'Maturity'];
+    return ['Asset', 'Underlier', 'Total Assets', '% Return', 'Maturity'];
   }, []);
 
   const cells = React.useMemo(() => {
@@ -61,6 +61,7 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
         const { vault, tokenId, underlierSymbol, maturity } = collateralType.properties;
         const { protocol, asset, icons, urls, symbol } = collateralType.metadata;
         const depositedCollateral = collateralType.state.codex.depositedCollateral;
+        const earnableRate = collateralType?.earnableRate?.mul(100);
         const maturityFormatted = new Date(Number(maturity.toString()) * 1000);
         return (
           <Table.Row key={encodeCollateralTypeId(vault, tokenId)}>
@@ -73,6 +74,9 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
               <User name={underlierSymbol} src={icons.underlier} size='sm'/>
             </Table.Cell>
             <Table.Cell>{`${parseFloat(wadToDec(depositedCollateral)).toFixed(2)} ${symbol}`}</Table.Cell>
+            <Table.Cell>
+              {`${parseFloat(wadToDec(earnableRate ?? ZERO)).toFixed(2)}%`}
+            </Table.Cell>
             <Table.Cell>
               <StyledBadge type={new Date() < maturityFormatted ? 'green' : 'red'} >
                 {formatUnixTimestamp(maturity)}
