@@ -30,7 +30,7 @@ export const ErrorTooltip = ({ error }: { error: string }) => {
     <Tooltip
       style={{
         width: '100%',
-        border: '1px solid rgba(250, 43, 57, 0.24)',
+        border: '1px solid var(--nextui-colors-error)',
         borderRadius: 'var(--nextui-radii-md)',
         padding: '.25rem 1rem .25rem 1rem',
       }}
@@ -69,7 +69,7 @@ export const ErrorTooltip = ({ error }: { error: string }) => {
             alignItems: 'center',
           }}
         >
-          <InfoIcon fill='red' />
+          <InfoIcon fill='var(--nextui-colors-error)' />
         </div>
         <Text
           color='error'
