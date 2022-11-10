@@ -1,4 +1,4 @@
-import { styled, Table, Text, User } from '@nextui-org/react';
+import { SortDescriptor, styled, Table, Text, useAsyncList, User } from '@nextui-org/react';
 import React from 'react';
 import { wadToDec, ZERO } from '@fiatdao/sdk';
 import Skeleton from 'react-loading-skeleton';
@@ -45,11 +45,21 @@ interface CollateralTypesTableProps {
 }
 
 export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
+  const [sortProps, setSortProps] = React.useState<SortDescriptor>({
+    column: 'Maturity',
+    direction: 'descending'
+  })
   const colNames = React.useMemo(() => {
     return ['Asset', 'Underlier', 'Total Assets', '% Return', 'Maturity'];
   }, []);
 
   const cells = React.useMemo(() => {
+    props.collateralTypesData.sort((a: any, b: any) : number => {
+      if (sortProps.direction === 'descending' ) {
+        return a.properties.maturity.toNumber() < b.properties.maturity.toNumber() ? 1 : -1
+      }
+      return a.properties.maturity.toNumber() > b.properties.maturity.toNumber() ? 1 : -1
+    });
     return props.collateralTypesData.length === 0 ? (
       <Table.Row>
         {colNames.map((colName) => (
@@ -86,7 +96,7 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
         );
       })
     );
-  }, [props.collateralTypesData, colNames]);
+  }, [props.collateralTypesData, colNames, sortProps]);
 
   return (
     <>
@@ -99,10 +109,17 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
         onSelectionChange={(selected) =>
           props.onSelectCollateralType(Object.values(selected)[0])
         }
+        sortDescriptor={sortProps as SortDescriptor}
+        onSortChange={(data) => {
+          setSortProps({
+            direction: data.direction,
+            column: data.column
+          })
+        }}
       >
         <Table.Header>
           {colNames.map((colName) => (
-            <Table.Column key={colName}>{colName}</Table.Column>
+            <Table.Column allowsSorting={colName === 'Maturity' ? true : false}key={colName}>{colName}</Table.Column>
           ))}
         </Table.Header>
         <Table.Body>{cells}</Table.Body>
