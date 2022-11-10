@@ -1,7 +1,9 @@
 import { Button, Card, Link, Spacer, Text } from '@nextui-org/react';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
+import {useState} from 'react';
 import Skeleton, { SkeletonTheme } from 'react-loading-skeleton';
 import { useSigner } from 'wagmi';
+import { ErrorTooltip } from './ErrorTooltip';
 
 interface ProxyCardProps {
   createProxy: (fiat: any, user: string) => any;
@@ -15,6 +17,7 @@ interface ProxyCardProps {
 export const ProxyCard = (props: ProxyCardProps) => {
   const { openConnectModal } = useConnectModal();
   const { data: signerData, isFetching: isFetchingSigner } = useSigner();
+  const [error, setError] = useState('');
 
   return (
     <SkeletonTheme baseColor='#202020' highlightColor='#444'>
@@ -43,7 +46,7 @@ export const ProxyCard = (props: ProxyCardProps) => {
                 <>
                   <Spacer y={1} />
                   <Button
-                    onPress={() => {
+                    onPress={async () => {
                       // If no address available, prompt user to connect when they click the button
                       if (!props.user) {
                         if (openConnectModal) {
@@ -51,13 +54,27 @@ export const ProxyCard = (props: ProxyCardProps) => {
                           openConnectModal();
                         }
                       } else {
-                        props.createProxy(props.fiat, props.user)
+                        try {
+                          setError('');
+                          await props.createProxy(props.fiat, props.user)
+                        } catch (e: any) {
+                          setError(e.message);
+                        }
                       }
                     }}
                     disabled={props.disableActions}
                   >
                     Setup a new Proxy account
                   </Button>
+                  { error === ''
+                    ? null
+                    :(
+                      <>
+                        <Spacer y={0.5} />
+                        <ErrorTooltip error={error} />
+                      </>
+                    )
+                  }
                 </>
               )}
             </>

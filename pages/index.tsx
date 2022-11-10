@@ -194,16 +194,39 @@ const Home: NextPage = () => {
     })();
   }, [connector, contextData, collateralTypesData, positionsData, selectedCollateralTypeId, selectedPositionId, modifyPositionData, formDataStore]);
 
-  const createProxy = async (fiat: any, user: string) => {
-    const { proxyRegistry } = fiat.getContracts();
+  /*
+   * So basically 2 kinds of errors/loading states
+   * Create proxy 
+   *
+   *
+   */
+  const dryRun = async (fiat: any, contract: ethers.Contract, method: string, ...args: any[]) => {
     try {
-      setTransactionData({ ...transactionData, status: 'sent' });
-      console.log(await fiat.dryrun(proxyRegistry, 'deployFor', user));
-      setTransactionData({ ...transactionData, status: 'confirmed' });
+      setTransactionData({ action: method, status: 'sent' });
+      const resp = await fiat.dryrun(contract, method, ...args);
+      console.log('resp: ', resp);
+      setTransactionData(initialState.transactionData);
     } catch (e) {
-      console.error('Error creating proxy');
+      console.error('Error: ', e);
       setTransactionData({ ...transactionData, status: 'error' });
     }
+  }
+
+  const sendAndWait = async (fiat: any, contract: ethers.Contract, method: string, ...args: any[]) => {
+    try {
+      setTransactionData({ action: method, status: 'sent' });
+      await fiat.send(contract, method, ...args);
+      setTransactionData(initialState.transactionData);
+    } catch (e) {
+      console.log(e);
+      setTransactionData({ ...transactionData, status: 'error' });
+      throw e
+    }
+  }
+
+  const createProxy = async (fiat: any, user: string) => {
+    // await dryRun(fiat, fiat.getContracts().proxyRegistry, 'deployFor', contextData.user);
+    await sendAndWait(fiat, fiat.getContracts().proxyRegistry, 'deployFor', user);
   }
 
   const setUnderlierAllowance = async (fiat: any) => {
