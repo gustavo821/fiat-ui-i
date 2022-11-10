@@ -230,32 +230,32 @@ const Home: NextPage = () => {
   }
 
   const createProxy = async (fiat: any, user: string) => {
-    // await dryRun(fiat, 'createProxy', fiat.getContracts().proxyRegistry, 'deployFor', user);
-    await sendAndWait(fiat, 'createProxy', fiat.getContracts().proxyRegistry, 'deployFor', user);
+    await dryRun(fiat, 'createProxy', fiat.getContracts().proxyRegistry, 'deployFor', user);
+    // await sendAndWait(fiat, 'createProxy', fiat.getContracts().proxyRegistry, 'deployFor', user);
   }
 
   const setUnderlierAllowance = async (fiat: any) => {
     const token = fiat.getERC20Contract(modifyPositionData.collateralType.properties.underlierToken);
-    // await dryRun(fiat, 'setUnderlierAllowance', token, 'approve', contextData.proxies[0], modifyPositionFormData.underlier);
-    await sendAndWait(fiat, 'setUnderlierAllowance', token, 'approve', contextData.proxies[0], modifyPositionFormData.underlier);
+    await dryRun(fiat, 'setUnderlierAllowance', token, 'approve', contextData.proxies[0], modifyPositionFormData.underlier);
+    // await sendAndWait(fiat, 'setUnderlierAllowance', token, 'approve', contextData.proxies[0], modifyPositionFormData.underlier);
   }
 
   const unsetUnderlierAllowance = async (fiat: any) => {
     const token = fiat.getERC20Contract(modifyPositionData.collateralType.properties.underlierToken);
-    // await dryRun(fiat, 'unsetUnderlierAllowance', token, 'approve', contextData.proxies[0], 0);
-    await sendAndWait(fiat, 'unsetUnderlierAllowance', token, 'approve', contextData.proxies[0], 0);
+    await dryRun(fiat, 'unsetUnderlierAllowance', token, 'approve', contextData.proxies[0], 0);
+    // await sendAndWait(fiat, 'unsetUnderlierAllowance', token, 'approve', contextData.proxies[0], 0);
   }
 
   const setMonetaDelegate = async (fiat: any) => {
     const { codex, moneta } = fiat.getContracts();
-    // await dryRun(fiat, 'setMonetaDelegate', codex, 'grantDelegate', moneta.address);
-    await sendAndWait(fiat, 'setMonetaDelegate', codex, 'grantDelegate', moneta.address);
+    await dryRun(fiat, 'setMonetaDelegate', codex, 'grantDelegate', moneta.address);
+    // await sendAndWait(fiat, 'setMonetaDelegate', codex, 'grantDelegate', moneta.address);
   }
 
   const unsetMonetaDelegate = async (fiat: any) => {
     const { codex, moneta } = fiat.getContracts();
-    // await dryRun(fiat, 'unsetMonetaDelegate', codex, 'revokeDelegate', moneta.address);
-    await sendAndWait(fiat, 'unsetMonetaDelegate', codex, 'revokeDelegate', moneta.address);
+    await dryRun(fiat, 'unsetMonetaDelegate', codex, 'revokeDelegate', moneta.address);
+    // await sendAndWait(fiat, 'unsetMonetaDelegate', codex, 'revokeDelegate', moneta.address);
   }
 
   const buyCollateralAndModifyDebt = async () => {
