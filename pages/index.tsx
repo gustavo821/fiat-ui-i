@@ -2,11 +2,10 @@ import React from 'react';
 import { useAccount, useNetwork, useProvider } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { ethers } from 'ethers';
-import { decToWad, FIAT, scaleToWad, WAD, wadToDec, wadToScale, ZERO } from '@fiatdao/sdk';
+import { decToWad, FIAT, wadToDec, ZERO } from '@fiatdao/sdk';
 import { Badge, Container, Spacer, useTheme } from '@nextui-org/react';
 import type { NextPage } from 'next';
 
-import { ProxyCard } from '../src/components/ProxyCard';
 import { ProxyButton } from '../src/components/ProxyButton';
 import { CollateralTypesTable } from '../src/components/CollateralTypesTable';
 import { PositionsTable } from '../src/components/PositionsTable';
@@ -21,9 +20,8 @@ import { useModifyPositionFormDataStore } from '../src/stores/formStore';
 export type TransactionStatus = null | 'error' | 'sent' | 'confirming' | 'confirmed';
 
 const Home: NextPage = () => {
-  const { theme } = useTheme();
   const provider = useProvider();
-  const { connector, isConnected } = useAccount({ onConnect: () => resetState(), onDisconnect: () => resetState() });
+  const { connector } = useAccount({ onConnect: () => resetState(), onDisconnect: () => resetState() });
   const { chain } = useNetwork();
 
   const initialState = React.useMemo(() => ({

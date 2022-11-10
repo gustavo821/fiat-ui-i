@@ -1,5 +1,5 @@
-import { Badge, Button, Card, Link, Spacer, Text } from '@nextui-org/react';
-import Skeleton, { SkeletonTheme } from 'react-loading-skeleton';
+import { Badge, Button, Link } from '@nextui-org/react';
+import Skeleton from 'react-loading-skeleton';
 
 interface ProxyCardProps {
   createProxy: (fiat: any, user: string) => any;
@@ -11,7 +11,7 @@ interface ProxyCardProps {
 }
 
 export const ProxyButton = (props: ProxyCardProps) => {
-  if (props.user === null || props.fiat === null) {
+  if (!props.user|| !props.fiat) {
     return <Skeleton count={2} />
   }
   if (props.proxies.length > 0) {

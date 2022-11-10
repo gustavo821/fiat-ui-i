@@ -1,7 +1,6 @@
-import { SortDescriptor, styled, Table, Text, useAsyncList, User } from '@nextui-org/react';
+import { SortDescriptor, styled, Table, Text, User } from '@nextui-org/react';
 import React from 'react';
 import { wadToDec, ZERO } from '@fiatdao/sdk';
-import Skeleton from 'react-loading-skeleton';
 import { encodeCollateralTypeId, formatUnixTimestamp } from '../utils';
 
 const StyledBadge = styled('span', {
