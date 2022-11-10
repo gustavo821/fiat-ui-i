@@ -1,6 +1,6 @@
 import { Button, Card, Link, Loading, Spacer, Text } from '@nextui-org/react';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
-import {useState} from 'react';
+import { useState } from 'react';
 import Skeleton, { SkeletonTheme } from 'react-loading-skeleton';
 import { useSigner } from 'wagmi';
 import { ErrorTooltip } from './ErrorTooltip';

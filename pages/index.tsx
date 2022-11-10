@@ -184,7 +184,7 @@ const Home: NextPage = () => {
       if (!signer || !signer.provider) return;
       const user = await signer.getAddress();
       const [underlierAllowance, underlierBalance, monetaDelegate, fiatAllowance] = await contextData.fiat.multicall([
-        { contract: underlier, method: 'allowance', args: [proxy, vaultEPTActions.address] },
+        { contract: underlier, method: 'allowance', args: [user, proxy] },
         { contract: underlier, method: 'balanceOf', args: [user] },
         { contract: codex, method: 'delegates', args: [proxy, moneta.address] },
         { contract: fiat, method: 'allowance', args: [user, proxy] }
@@ -242,14 +242,14 @@ const Home: NextPage = () => {
 
   const setUnderlierAllowance = async (fiat: any) => {
     const token = fiat.getERC20Contract(modifyPositionData.collateralType.properties.underlierToken);
-    await dryRun(fiat, 'setUnderlierAllowance', token, 'approve', contextData.proxies[0], formDataStore.underlier);
-    // await sendAndWait(fiat, 'setUnderlierAllowance', token, 'approve', contextData.proxies[0], formDataStore.underlier);
+    // await dryRun(fiat, 'setUnderlierAllowance', token, 'approve', contextData.proxies[0], formDataStore.underlier);
+    await sendAndWait(fiat, 'setUnderlierAllowance', token, 'approve', contextData.proxies[0], formDataStore.underlier);
   }
 
   const unsetUnderlierAllowance = async (fiat: any) => {
     const token = fiat.getERC20Contract(modifyPositionData.collateralType.properties.underlierToken);
-    await dryRun(fiat, 'unsetUnderlierAllowance', token, 'approve', contextData.proxies[0], 0);
-    // await sendAndWait(fiat, 'unsetUnderlierAllowance', token, 'approve', contextData.proxies[0], 0);
+    // await dryRun(fiat, 'unsetUnderlierAllowance', token, 'approve', contextData.proxies[0], 0);
+    await sendAndWait(fiat, 'unsetUnderlierAllowance', token, 'approve', contextData.proxies[0], 0);
   }
 
   const setFIATAllowance = async (fiat: any) => {

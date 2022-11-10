@@ -60,7 +60,7 @@ export const ErrorTooltip = ({ error }: { error: string }) => {
           width: '100%',
         }}
       >
-        <div>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
           <InfoIcon fill='red' />
         </div>
         <Text

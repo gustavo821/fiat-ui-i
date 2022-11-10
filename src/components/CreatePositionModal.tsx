@@ -23,6 +23,7 @@ import {
   formatUnixTimestamp,
 } from '../utils';
 import { useModifyPositionFormDataStore } from '../stores/formStore';
+import {ErrorTooltip} from './ErrorTooltip';
 
 interface CreatePositionModalProps {
   buyCollateralAndModifyDebt: () => any;
@@ -55,6 +56,7 @@ export const CreatePositionModal = (props: CreatePositionModalProps) => {
 
 const CreatePositionModalBody = (props: CreatePositionModalProps) => {
   const formDataStore = useModifyPositionFormDataStore();
+  const [error, setError] = React.useState('');
 
   if (
     !props.contextData.user ||
@@ -305,11 +307,24 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
           // Next UI Switch `checked` type is wrong, this is necessary
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
-          checked={() => !formDataStore.underlier.isZero() && underlierAllowance?.gte(formDataStore.underlier)}
-          onChange={() =>
-            !formDataStore.underlier.isZero() && underlierAllowance?.gte(formDataStore.underlier)
-              ? props.unsetUnderlierAllowance(props.contextData.fiat)
-              : props.setUnderlierAllowance(props.contextData.fiat)
+          checked={() => underlierAllowance?.gte(formDataStore.underlier) ?? false}
+          onChange={async () => {
+            if (!formDataStore.underlier.isZero() && underlierAllowance?.gte(formDataStore.underlier)) {
+              try {
+                setError('');
+                await props.unsetUnderlierAllowance(props.contextData.fiat);
+              } catch (e: any) {
+                setError(e.message);
+              }
+            } else {
+              try {
+                setError('');
+                await props.setUnderlierAllowance(props.contextData.fiat);
+              } catch (e: any) {
+                setError(e.message);
+              }
+            }
+          }
           }
           color='primary'
           icon={
@@ -327,7 +342,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
           // Switch type is wrong, this is necessary
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
-          checked={() => monetaDelegate ?? false}
+          checked={() => !!monetaDelegate}
           onChange={() =>
             !!monetaDelegate
               ? props.unsetMonetaDelegate(props.contextData.fiat)
@@ -343,6 +358,15 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
           }
         />
         <Spacer y={3} />
+        { error === ''
+          ? null
+          :(
+            <>
+              <ErrorTooltip error={error} />
+              <Spacer y={0.5} />
+            </>
+          )
+        }
         <Button
           css={{ minWidth: '100%' }}
           disabled={
