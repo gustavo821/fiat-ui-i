@@ -92,7 +92,7 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
           <Table.Column>Asset</Table.Column>
           <Table.Column>Underlier</Table.Column>
           <Table.Column>Total Assets</Table.Column>
-          <Table.Column>& Gain</Table.Column>
+          <Table.Column>% Gain</Table.Column>
           <Table.Column allowsSorting>Maturity</Table.Column>
         </Table.Header>
         <Table.Body>
