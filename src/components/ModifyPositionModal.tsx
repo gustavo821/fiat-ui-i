@@ -445,13 +445,18 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               <Loading size='xs' />
             ) : null
           }
-          onPress={() => {
-            if (formDataStore.mode === 'deposit') {
-              props.buyCollateralAndModifyDebt();
-            } else if (formDataStore.mode === 'withdraw') {
-              props.sellCollateralAndModifyDebt();
-            } else if (formDataStore.mode === 'redeem') {
-              props.redeemCollateralAndModifyDebt();
+          onPress={async () => {
+            try {
+              setError('');
+              if (formDataStore.mode === 'deposit') {
+                await props.buyCollateralAndModifyDebt();
+              } else if (formDataStore.mode === 'withdraw') {
+                await props.sellCollateralAndModifyDebt();
+              } else if (formDataStore.mode === 'redeem') {
+                await props.redeemCollateralAndModifyDebt();
+              }
+            } catch (e: any) {
+              setError(e.message);
             }
           }}
         >

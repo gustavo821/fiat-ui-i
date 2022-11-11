@@ -396,7 +396,14 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
               <Loading size='xs' />
             ) : null
           }
-          onPress={() => props.buyCollateralAndModifyDebt()}
+          onPress={async () => {
+            try {
+              setError('');
+              await props.buyCollateralAndModifyDebt()
+            } catch (e: any) {
+              setError(e.message);
+            }
+          }}
         >
           Deposit
         </Button>
