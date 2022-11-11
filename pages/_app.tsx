@@ -8,16 +8,30 @@ import {
   lightTheme,
   RainbowKitProvider,
 } from '@rainbow-me/rainbowkit';
-import { argentWallet, ledgerWallet, trustWallet } from '@rainbow-me/rainbowkit/wallets';
-import { chain, configureChains, createClient, WagmiConfig } from 'wagmi';
+import {
+  argentWallet,
+  ledgerWallet,
+  trustWallet,
+} from '@rainbow-me/rainbowkit/wallets';
+import {
+  chain,
+  configureChains,
+  createClient,
+  WagmiConfig,
+} from 'wagmi';
 import { alchemyProvider } from 'wagmi/providers/alchemy';
 import { publicProvider } from 'wagmi/providers/public';
 import { createTheme, NextUIProvider } from '@nextui-org/react';
 import { ThemeProvider as NextThemesProvider } from 'next-themes';
 
 const { chains, provider, webSocketProvider } = configureChains(
-  [chain.mainnet, ...(process.env.NEXT_PUBLIC_ENABLE_TESTNETS === 'true' ? [chain.goerli] : [])],
-  [alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY }), publicProvider()]
+  [
+    chain.mainnet, ...(process.env.NEXT_PUBLIC_ENABLE_TESTNETS === 'true' ? [chain.goerli] : [])
+  ],
+  [
+    alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY }),
+    publicProvider(),
+  ]
 );
 
 const { wallets } = getDefaultWallets({
@@ -33,7 +47,11 @@ const connectors = connectorsForWallets([
   ...wallets,
   {
     groupName: 'Other',
-    wallets: [argentWallet({ chains }), trustWallet({ chains }), ledgerWallet({ chains })],
+    wallets: [
+      argentWallet({ chains }),
+      trustWallet({ chains }),
+      ledgerWallet({ chains }),
+    ],
   },
 ]);
 
@@ -50,27 +68,23 @@ const nextLightTheme = createTheme({
     colors: {
       connectButtonBackground: '#FFF',
       connectButtonColor: '#25292e',
-    },
-  },
-});
+    }
+  }
+})
 const nextDarkTheme = createTheme({
   type: 'dark',
   theme: {
     colors: {
-      connectButtonBackground: '#1a1b1f',
-    },
-  },
-});
+      connectButtonBackground: '#1a1b1f'
+    }
+  }
+})
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (
     <WagmiConfig client={wagmiClient}>
-      <RainbowKitProvider
-        appInfo={demoAppInfo}
-        chains={chains}
-        theme={{ lightMode: lightTheme(), darkMode: darkTheme() }}
-      >
-        <NextThemesProvider
+      <RainbowKitProvider appInfo={demoAppInfo} chains={chains} theme={{lightMode: lightTheme(), darkMode: darkTheme(),}}>
+       <NextThemesProvider 
           defaultTheme='system'
           attribute='class'
           value={{ light: nextLightTheme.className, dark: nextDarkTheme.className }}

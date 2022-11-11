@@ -34,7 +34,11 @@ export const ProxyCard = (props: ProxyCardProps) => {
               Proxy
             </Text>
             {props.proxies.length > 0 ? (
-              <Link target='_blank' href={`${props.explorerUrl}/address/${props.proxies[0]}`} isExternal={true}>
+              <Link
+                target='_blank'
+                href={`${props.explorerUrl}/address/${props.proxies[0]}`}
+                isExternal={true}
+              >
                 {props.proxies[0]}
               </Link>
             ) : (
@@ -51,7 +55,7 @@ export const ProxyCard = (props: ProxyCardProps) => {
                     } else {
                       try {
                         setError('');
-                        await props.createProxy(props.fiat, props.user);
+                        await props.createProxy(props.fiat, props.user)
                       } catch (e: any) {
                         setError(e.message);
                       }
@@ -61,12 +65,15 @@ export const ProxyCard = (props: ProxyCardProps) => {
                 >
                   {props.disableActions ? <Loading /> : 'Setup a new Proxy account'}
                 </Button>
-                {error === '' ? null : (
-                  <>
-                    <Spacer y={0.5} />
-                    <ErrorTooltip error={error} />
-                  </>
-                )}
+                { error === ''
+                  ? null
+                  :(
+                    <>
+                      <Spacer y={0.5} />
+                      <ErrorTooltip error={error} />
+                    </>
+                  )
+                }
               </>
             )}
           </>

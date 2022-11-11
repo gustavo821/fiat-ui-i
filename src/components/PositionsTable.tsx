@@ -42,34 +42,34 @@ const StyledBadge = styled('span', {
 });
 
 interface PositionsTableProps {
-  collateralTypesData: Array<any>;
-  positionsData: Array<any>;
-  onSelectPosition: (positionId: string) => void;
+  collateralTypesData: Array<any>,
+  positionsData: Array<any>,
+  onSelectPosition: (positionId: string) => void
 }
 
 export const PositionsTable = (props: PositionsTableProps) => {
   const [sortedData, setSortedData] = React.useState<any[]>([]);
   const [sortProps, setSortProps] = React.useState<SortDescriptor>({
     column: 'Maturity',
-    direction: 'descending',
+    direction: 'descending'
   });
 
   React.useEffect(() => {
-    const data = [...props.positionsData];
-    data.sort((a: any, b: any): number => {
+    const data = [...props.positionsData]
+    data.sort((a: any, b: any) : number => {
       if (!props.collateralTypesData || !a || !b) return 0;
       const { vault: vaultA, tokenId: tokenIdA } = a;
       const { vault: vaultB, tokenId: tokenIdB } = b;
       const dataA = getCollateralTypeData(props.collateralTypesData, vaultA, tokenIdA);
       const dataB = getCollateralTypeData(props.collateralTypesData, vaultB, tokenIdB);
       if (!dataA || !dataB) return 0;
-      if (sortProps.direction === 'descending') {
-        return dataA.properties.maturity.toNumber() < dataB.properties.maturity.toNumber() ? 1 : -1;
+      if (sortProps.direction === 'descending' ) {
+        return dataA.properties.maturity.toNumber() < dataB.properties.maturity.toNumber() ? 1 : -1
       }
-      return dataA.properties.maturity.toNumber() > dataB.properties.maturity.toNumber() ? 1 : -1;
+      return dataA.properties.maturity.toNumber() > dataB.properties.maturity.toNumber() ? 1 : -1
     });
     setSortedData(data);
-  }, [props.collateralTypesData, props.positionsData, sortProps.direction]);
+  }, [props.collateralTypesData, props.positionsData, sortProps.direction])
 
   if (props.positionsData === null || props.positionsData.length === 0 || props.collateralTypesData.length === 0) {
     // TODO
@@ -85,13 +85,15 @@ export const PositionsTable = (props: PositionsTableProps) => {
         css={{ height: 'auto', minWidth: '100%' }}
         selectionMode='single'
         selectedKeys={'1'}
-        onSelectionChange={(selected) => props.onSelectPosition(Object.values(selected)[0])}
+        onSelectionChange={(selected) =>
+          props.onSelectPosition(Object.values(selected)[0])
+        }
         sortDescriptor={sortProps as SortDescriptor}
         onSortChange={(data) => {
           setSortProps({
             direction: data.direction,
-            column: data.column,
-          });
+            column: data.column
+          })
         }}
       >
         <Table.Header>
@@ -102,58 +104,60 @@ export const PositionsTable = (props: PositionsTableProps) => {
           <Table.Column allowsSorting>Maturity</Table.Column>
         </Table.Header>
         <Table.Body>
-          {sortedData.map((position) => {
-            const { owner, vault, tokenId, collateral, normalDebt } = position;
-            const {
-              properties: { underlierSymbol, maturity },
-              metadata: { protocol, asset, icons, urls },
-              state,
-            } = getCollateralTypeData(props.collateralTypesData, vault, tokenId);
-            const maturityFormatted = new Date(Number(maturity.toString()) * 1000);
-            const debt = normalDebt.mul(state.codex.virtualRate).div(WAD);
-            return (
-              <Table.Row key={encodePositionId(vault, tokenId, owner)}>
-                <Table.Cell>
-                  <User
-                    src={icons.asset}
-                    name={asset}
-                    css={{
+          {
+            sortedData.map((position) => {
+              const { owner, vault, tokenId, collateral, normalDebt } = position;
+              const {
+                properties: { underlierSymbol, maturity },
+                metadata: { protocol, asset, icons, urls },
+                state
+              } = getCollateralTypeData(props.collateralTypesData, vault, tokenId);
+              const maturityFormatted = new Date(Number(maturity.toString()) * 1000);
+              const debt = normalDebt.mul(state.codex.virtualRate).div(WAD)
+              return (
+                <Table.Row key={encodePositionId(vault, tokenId, owner)}>
+                  <Table.Cell>
+                    <User src={icons.asset} name={asset} css={{
                       borderRadius: '0px',
                       '& span': {
                         '& .nextui-avatar-bg': {
-                          background: 'transparent !important',
+                          background: 'transparent !important'
                         },
                         borderRadius: '0px !important',
                         '& img': {
                           borderRadius: '0px !important',
                           background: 'transparent !important',
-                        },
+                        }
                       },
-                    }}
-                  >
-                    <User.Link href={urls.asset}>{protocol}</User.Link>
-                  </User>
-                </Table.Cell>
-                <Table.Cell>
-                  <User name={underlierSymbol} src={icons.underlier} size='sm' />
-                </Table.Cell>
-                <Table.Cell>
-                  <Col>
-                    <Row>{wadToDec(collateral)}</Row>
-                    <Row>
-                      {`$${parseFloat(wadToDec(state.collybus.fairPrice.mul(collateral).div(WAD))).toFixed(2)}`}
-                    </Row>
-                  </Col>
-                </Table.Cell>
-                <Table.Cell>{parseFloat(wadToDec(debt)).toFixed(2)}</Table.Cell>
-                <Table.Cell>
-                  <StyledBadge type={new Date() < maturityFormatted ? 'green' : 'red'}>
-                    {formatUnixTimestamp(maturity)}
-                  </StyledBadge>
-                </Table.Cell>
-              </Table.Row>
-            );
-          })}
+                    }}>
+                      <User.Link href={urls.asset}>{protocol}</User.Link>
+                    </User>
+                  </Table.Cell>
+                  <Table.Cell>
+                    <User name={underlierSymbol} src={icons.underlier} size='sm'/>
+                  </Table.Cell>
+                  <Table.Cell>
+                    <Col>
+                      <Row>
+                        {wadToDec(collateral)}
+                      </Row>
+                      <Row>
+                        {`$${parseFloat(wadToDec(state.collybus.fairPrice.mul(collateral).div(WAD))).toFixed(2)}`}
+                      </Row>
+                    </Col>
+                  </Table.Cell>
+                  <Table.Cell>{parseFloat(wadToDec(debt)).toFixed(2)}</Table.Cell>
+                  <Table.Cell>
+                    <StyledBadge
+                      type={new Date() < maturityFormatted ? 'green' : 'red'}
+                    >
+                      {formatUnixTimestamp(maturity)}
+                    </StyledBadge>
+                  </Table.Cell>
+                </Table.Row>
+              );
+            })
+          }
         </Table.Body>
       </Table>
     </>
