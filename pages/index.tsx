@@ -311,8 +311,9 @@ const Home: NextPage = () => {
       );
       setTransactionData(initialState.transactionData);
     } catch (e) {
-      console.error('Error: ', e);
+      console.error('Buy error: ', e);
       setTransactionData({ ...transactionData, status: 'error' });
+      throw e;
     }
   }
 
@@ -328,8 +329,9 @@ const Home: NextPage = () => {
       );
       setTransactionData(initialState.transactionData);
     } catch (e) {
-      console.error('Error: ', e);
+      console.error('Sell error: ', e);
       setTransactionData({ ...transactionData, status: 'error' });
+      throw e;
     }
   }
 
@@ -344,8 +346,9 @@ const Home: NextPage = () => {
       );
       setTransactionData(initialState.transactionData);
     } catch (e) {
-      console.error('Error: ', e);
+      console.error('Redeem error: ', e);
       setTransactionData({ ...transactionData, status: 'error' });
+      throw e;
     }
   }
 
