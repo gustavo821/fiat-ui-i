@@ -1,4 +1,5 @@
 import { Badge, Button, Link } from '@nextui-org/react';
+import { useState } from 'react';
 import Skeleton from 'react-loading-skeleton';
 
 interface ProxyCardProps {
@@ -11,11 +12,13 @@ interface ProxyCardProps {
 }
 
 export const ProxyButton = (props: ProxyCardProps) => {
-  if (!props.user|| !props.fiat) {
+  const [error, setError] = useState('');
+
+  if (props.user === null || !props.fiat) {
     return <Skeleton count={2} />
   }
+
   if (props.proxies.length > 0) {
-    
     return (
       <Badge
         style={{marginRight: '10px'}} 
@@ -46,9 +49,21 @@ export const ProxyButton = (props: ProxyCardProps) => {
 
     )
   }
+
   return (
     <Button
-      onPress={() => props.createProxy(props.fiat, props.user!)}
+      onPress={async () => {
+        if (props.user === null) {
+          console.warn('ProxyButton requires a user');
+        } else{
+          try {
+            setError('');
+            await props.createProxy(props.fiat, props.user);
+          } catch (e: any) {
+            setError(e.message);
+          }
+        }
+      }}
       disabled={props.disableActions}
       style={{marginRight: '10px'}} 
       css={{
@@ -64,7 +79,10 @@ export const ProxyButton = (props: ProxyCardProps) => {
         }
       }}
     >
-      Setup a new Proxy account
+      {error === '' ? 'Setup a new Proxy account'
+      : (
+        'Error, please try again'
+      )}
     </Button>
   );
 };
