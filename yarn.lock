@@ -2401,9 +2401,9 @@ chalk@^4.0.0, chalk@^4.1.1:
     ansi-styles "^4.1.0"
     supports-color "^7.1.0"
 
-"changelog@git+https://github.com/fiatdao/changelog.git":
+"changelog@https://github.com/fiatdao/changelog":
   version "0.0.0"
-  resolved "git+https://github.com/fiatdao/changelog.git#ef9c2702e8583245173e2ebeb3d4d65c594542c1"
+  resolved "https://github.com/fiatdao/changelog#854b0d826c5643033abe63c3c197a9f6b031bcf3"
 
 cipher-base@^1.0.0, cipher-base@^1.0.1, cipher-base@^1.0.3:
   version "1.0.4"
