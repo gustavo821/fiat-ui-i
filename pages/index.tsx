@@ -71,7 +71,6 @@ const Home: NextPage = () => {
   const [collateralTypesData, setCollateralTypesData] = React.useState(initialState.collateralTypesData);
   const [positionsData, setPositionsData] = React.useState(initialState.positionsData);
   const [modifyPositionData, setModifyPositionData] = React.useState(initialState.modifyPositionData);
-  const [modifyPositionFormData, setModifyPositionFormData] = React.useState(initialState.modifyPositionFormData);
   const [transactionData, setTransactionData] = React.useState(initialState.transactionData);
   const [selectedPositionId, setSelectedPositionId] = React.useState(initialState.selectedPositionId);
   const [selectedCollateralTypeId, setSelectedCollateralTypeId] = React.useState(initialState.selectedCollateralTypeId);
@@ -87,7 +86,6 @@ const Home: NextPage = () => {
     setCollateralTypesData(initialState.collateralTypesData);
     setPositionsData(initialState.positionsData);
     setModifyPositionData(initialState.modifyPositionData);
-    setModifyPositionFormData(initialState.modifyPositionFormData);
     setTransactionData(initialState.transactionData);
     setSelectedPositionId(initialState.selectedPositionId);
     setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
@@ -461,7 +459,6 @@ const Home: NextPage = () => {
         onClose={() => {
           setSelectedPositionId(initialState.selectedCollateralTypeId);
           setModifyPositionData(initialState.modifyPositionData);
-          setModifyPositionFormData(initialState.modifyPositionFormData);
           formDataStore.reset();
         }}
       />
