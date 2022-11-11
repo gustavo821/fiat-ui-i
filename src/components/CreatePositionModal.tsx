@@ -326,8 +326,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
                 setError(e.message);
               }
             }
-          }
-          }
+          }}
           color='primary'
           icon={
             ['setUnderlierAllowance', 'unsetUnderlierAllowance'].includes(
@@ -345,11 +344,23 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
           checked={() => !!monetaDelegate}
-          onChange={() =>
-            !!monetaDelegate
-              ? props.unsetMonetaDelegate(props.contextData.fiat)
-              : props.setMonetaDelegate(props.contextData.fiat)
-          }
+          onChange={async () => {
+            if (!!monetaDelegate) {
+              try {
+                setError('');
+                await props.unsetMonetaDelegate(props.contextData.fiat);
+              } catch (e: any) {
+                setError(e.message);
+              }
+            } else {
+              try {
+                setError('');
+                await props.setMonetaDelegate(props.contextData.fiat);
+              } catch (e: any) {
+                setError(e.message);
+              }
+            }
+          }}
           color='primary'
           icon={
             ['setMonetaDelegate', 'unsetMonetaDelegate'].includes(
