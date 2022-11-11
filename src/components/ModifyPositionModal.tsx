@@ -1,23 +1,12 @@
 import React from 'react';
-import {
-  Button,
-  Card,
-  Grid,
-  Input,
-  Loading,
-  Modal,
-  Navbar,
-  Spacer,
-  Switch,
-  Text,
-} from '@nextui-org/react';
+import { Button, Card, Grid, Input, Loading, Modal, Navbar, Spacer, Switch, Text } from '@nextui-org/react';
 import { ethers } from 'ethers';
 import { scaleToDec, wadToDec } from '@fiatdao/sdk';
 
 import { commifyToDecimalPlaces, floor2, floor4, formatUnixTimestamp } from '../utils';
 import { TransactionStatus } from '../../pages';
 import { useModifyPositionFormDataStore } from '../stores/formStore';
-import {ErrorTooltip} from './ErrorTooltip';
+import { ErrorTooltip } from './ErrorTooltip';
 
 interface ModifyPositionModalProps {
   buyCollateralAndModifyDebt: () => any;
@@ -40,13 +29,7 @@ interface ModifyPositionModalProps {
 
 export const ModifyPositionModal = (props: ModifyPositionModalProps) => {
   return (
-    <Modal
-      preventClose
-      closeButton={!props.disableActions}
-      blur
-      open={props.open}
-      onClose={() => props.onClose()}
-    >
+    <Modal preventClose closeButton={!props.disableActions} blur open={props.open} onClose={() => props.onClose()}>
       <ModifyPositionModalBody {...props} />
     </Modal>
   );
@@ -57,17 +40,23 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
   const [error, setError] = React.useState('');
 
   const matured = React.useMemo(() => {
-    return !(new Date() < new Date(Number(props.modifyPositionData.collateralType?.properties.maturity.toString()) * 1000));
-  }, [props.modifyPositionData.collateralType?.properties.maturity])
+    return !(
+      new Date() < new Date(Number(props.modifyPositionData.collateralType?.properties.maturity.toString()) * 1000)
+    );
+  }, [props.modifyPositionData.collateralType?.properties.maturity]);
 
   React.useEffect(() => {
     const mode = matured ? 'redeem' : 'deposit';
     if (formDataStore.mode !== mode) {
       formDataStore.setMode(mode);
     }
-  }, [formDataStore, matured, props.contextData.fiat, props.modifyPositionData])
+  }, [formDataStore, matured, props.contextData.fiat, props.modifyPositionData]);
 
-  if (!props.contextData.user || !props.modifyPositionData.collateralType || !props.modifyPositionData.collateralType.metadata ) {
+  if (
+    !props.contextData.user ||
+    !props.modifyPositionData.collateralType ||
+    !props.modifyPositionData.collateralType.metadata
+  ) {
     // TODO: add skeleton components instead of loading
     // return <Loading />;
     return null;
@@ -146,18 +135,19 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
             Wallet: {commifyToDecimalPlaces(underlierBalance, underlierScale, 2)} {underlierSymbol}
           </Text>
         )}
-        <Grid.Container
-          gap={0}
-          justify='space-between'
-          css={{ marginBottom: '1rem' }}
-        >
+        <Grid.Container gap={0} justify='space-between' css={{ marginBottom: '1rem' }}>
           <Grid>
             {formDataStore.mode === 'deposit' && (
               <Input
                 disabled={props.disableActions}
                 value={floor2(scaleToDec(formDataStore.underlier, underlierScale))}
                 onChange={(event) => {
-                  formDataStore.setUnderlier(props.contextData.fiat, event.target.value, props.modifyPositionData, null);
+                  formDataStore.setUnderlier(
+                    props.contextData.fiat,
+                    event.target.value,
+                    props.modifyPositionData,
+                    null
+                  );
                 }}
                 placeholder='0'
                 type='number'
@@ -173,7 +163,12 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
                 disabled={props.disableActions}
                 value={floor2(wadToDec(formDataStore.deltaCollateral))}
                 onChange={(event) => {
-                  formDataStore.setDeltaCollateral(props.contextData.fiat, event.target.value, props.modifyPositionData, null);
+                  formDataStore.setDeltaCollateral(
+                    props.contextData.fiat,
+                    event.target.value,
+                    props.modifyPositionData,
+                    null
+                  );
                 }}
                 placeholder='0'
                 type='number'
@@ -196,7 +191,12 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
                 disabled={props.disableActions}
                 value={floor2(Number(wadToDec(formDataStore.slippagePct)) * 100)}
                 onChange={(event) => {
-                  formDataStore.setSlippagePct(props.contextData.fiat, event.target.value, props.modifyPositionData, null);
+                  formDataStore.setSlippagePct(
+                    props.contextData.fiat,
+                    event.target.value,
+                    props.modifyPositionData,
+                    null
+                  );
                 }}
                 step='0.01'
                 placeholder='0'
@@ -317,7 +317,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               // @ts-ignore
               checked={() => underlierAllowance?.gte(0) && underlierAllowance?.gte(formDataStore.underlier)}
               onChange={async () => {
-                if(!formDataStore.underlier.isZero() && underlierAllowance.gte(formDataStore.underlier)) {
+                if (!formDataStore.underlier.isZero() && underlierAllowance.gte(formDataStore.underlier)) {
                   try {
                     setError('');
                     await props.unsetUnderlierAllowance(props.contextData.fiat);
@@ -327,7 +327,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
                 } else {
                   try {
                     setError('');
-                    await props.setUnderlierAllowance(props.contextData.fiat)
+                    await props.setUnderlierAllowance(props.contextData.fiat);
                   } catch (e: any) {
                     setError(e.message);
                   }
@@ -335,9 +335,8 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               }}
               color='primary'
               icon={
-                ['setUnderlierAllowance', 'unsetUnderlierAllowance'].includes(
-                  currentTxAction || ''
-                ) && props.disableActions ? (
+                ['setUnderlierAllowance', 'unsetUnderlierAllowance'].includes(currentTxAction || '') &&
+                props.disableActions ? (
                   <Loading size='xs' />
                 ) : null
               }
@@ -361,7 +360,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
                 } else {
                   try {
                     setError('');
-                    await props.setMonetaDelegate(props.contextData.fiat)
+                    await props.setMonetaDelegate(props.contextData.fiat);
                   } catch (e: any) {
                     setError(e.message);
                   }
@@ -369,9 +368,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               }}
               color='primary'
               icon={
-                ['setMonetaDelegate', 'unsetMonetaDelegate'].includes(
-                  currentTxAction || ''
-                ) && props.disableActions ? (
+                ['setMonetaDelegate', 'unsetMonetaDelegate'].includes(currentTxAction || '') && props.disableActions ? (
                   <Loading size='xs' />
                 ) : null
               }
@@ -386,7 +383,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               // Next UI Switch `checked` type is wrong, this is necessary
               // eslint-disable-next-line @typescript-eslint/ban-ts-comment
               // @ts-ignore
-              checked={() => fiatAllowance?.gt(0) && fiatAllowance?.gte(formDataStore.deltaDebt) ?? false}
+              checked={() => (fiatAllowance?.gt(0) && fiatAllowance?.gte(formDataStore.deltaDebt)) ?? false}
               onChange={async () => {
                 if (!formDataStore.deltaDebt.isZero() && fiatAllowance.gte(formDataStore.deltaDebt)) {
                   try {
@@ -406,9 +403,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               }}
               color='primary'
               icon={
-                ['setFIATAllowance', 'unsetFIATAllowance'].includes(
-                  currentTxAction || ''
-                ) && props.disableActions ? (
+                ['setFIATAllowance', 'unsetFIATAllowance'].includes(currentTxAction || '') && props.disableActions ? (
                   <Loading size='xs' />
                 ) : null
               }
@@ -416,15 +411,12 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
           </>
         )}
         <Spacer y={3} />
-        { error === ''
-          ? null
-          :(
-            <>
-              <ErrorTooltip error={error} />
-              <Spacer y={0.5} />
-            </>
-          )
-        }
+        {error === '' ? null : (
+          <>
+            <ErrorTooltip error={error} />
+            <Spacer y={0.5} />
+          </>
+        )}
         <Button
           css={{ minWidth: '100%' }}
           disabled={
@@ -437,11 +429,9 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               : fiatAllowance.lt(formDataStore.deltaDebt)
           }
           icon={
-            [
-              'buyCollateralAndModifyDebt',
-              'sellCollateralAndModifyDebt',
-              'redeemCollateralAndModifyDebt',
-            ].includes(currentTxAction || '') && props.disableActions ? (
+            ['buyCollateralAndModifyDebt', 'sellCollateralAndModifyDebt', 'redeemCollateralAndModifyDebt'].includes(
+              currentTxAction || ''
+            ) && props.disableActions ? (
               <Loading size='xs' />
             ) : null
           }

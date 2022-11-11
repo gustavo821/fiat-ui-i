@@ -1,29 +1,13 @@
 import React from 'react';
-import {
-  Button,
-  Card,
-  Grid,
-  Input,
-  Loading,
-  Modal,
-  Navbar,
-  Spacer,
-  Switch,
-  Text,
-} from '@nextui-org/react';
+import { Button, Card, Grid, Input, Loading, Modal, Navbar, Spacer, Switch, Text } from '@nextui-org/react';
 import { ethers } from 'ethers';
 import { Slider } from 'antd';
 import 'antd/dist/antd.css';
 import { scaleToDec, wadToDec } from '@fiatdao/sdk';
 
-import {
-  commifyToDecimalPlaces,
-  floor2,
-  floor4,
-  formatUnixTimestamp,
-} from '../utils';
+import { commifyToDecimalPlaces, floor2, floor4, formatUnixTimestamp } from '../utils';
 import { useModifyPositionFormDataStore } from '../stores/formStore';
-import {ErrorTooltip} from './ErrorTooltip';
+import { ErrorTooltip } from './ErrorTooltip';
 
 interface CreatePositionModalProps {
   buyCollateralAndModifyDebt: () => any;
@@ -42,12 +26,7 @@ interface CreatePositionModalProps {
 
 export const CreatePositionModal = (props: CreatePositionModalProps) => {
   return (
-    <Modal
-      preventClose
-      closeButton={!props.disableActions}
-      open={props.open}
-      onClose={() => props.onClose()}
-    >
+    <Modal preventClose closeButton={!props.disableActions} open={props.open} onClose={() => props.onClose()}>
       <CreatePositionModalBody {...props} />
     </Modal>
   );
@@ -84,10 +63,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
   return (
     <>
       <Modal.Header>
-        <Text
-          id='modal-title'
-          size={18}
-        >
+        <Text id='modal-title' size={18}>
           <Text b size={18}>
             Create Position
           </Text>
@@ -114,16 +90,10 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
         </Text>
         {underlierBalance && (
           <Text size={'$sm'}>
-            Wallet:{' '}
-            {commifyToDecimalPlaces(underlierBalance, underlierScale, 2)}{' '}
-            {underlierSymbol}
+            Wallet: {commifyToDecimalPlaces(underlierBalance, underlierScale, 2)} {underlierSymbol}
           </Text>
         )}
-        <Grid.Container
-          gap={0}
-          justify='space-between'
-          css={{ marginBottom: '1rem' }}
-        >
+        <Grid.Container gap={0} justify='space-between' css={{ marginBottom: '1rem' }}>
           <Grid>
             <Input
               disabled={props.disableActions}
@@ -133,7 +103,12 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
                   console.error('No selectedCollateralTypeId!');
                   return;
                 }
-                formDataStore.setUnderlier(props.contextData.fiat, event.target.value, props.modifyPositionData, props.selectedCollateralTypeId);
+                formDataStore.setUnderlier(
+                  props.contextData.fiat,
+                  event.target.value,
+                  props.modifyPositionData,
+                  props.selectedCollateralTypeId
+                );
               }}
               placeholder='0'
               type='number'
@@ -153,7 +128,12 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
                   console.error('No selectedCollateralTypeId!');
                   return;
                 }
-                formDataStore.setSlippagePct(props.contextData.fiat, event.target.value, props.modifyPositionData, props.selectedCollateralTypeId);
+                formDataStore.setSlippagePct(
+                  props.contextData.fiat,
+                  event.target.value,
+                  props.modifyPositionData,
+                  props.selectedCollateralTypeId
+                );
               }}
               step='0.01'
               placeholder='0'
@@ -167,16 +147,11 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
             />
           </Grid>
         </Grid.Container>
-        <Text
-          size={'0.75rem'}
-          style={{ paddingLeft: '0.25rem', marginBottom: '0.375rem' }}
-        >
+        <Text size={'0.75rem'} style={{ paddingLeft: '0.25rem', marginBottom: '0.375rem' }}>
           Targeted health factor ({Number(wadToDec(formDataStore.targetedHealthFactor))})
         </Text>
         <Card variant='bordered' borderWeight='light'>
-          <Card.Body
-            style={{ paddingLeft: '2.25rem', paddingRight: '2.25rem' }}
-          >
+          <Card.Body style={{ paddingLeft: '2.25rem', paddingRight: '2.25rem' }}>
             <Slider
               handleStyle={{ borderColor: '#0072F5' }}
               included={false}
@@ -187,7 +162,12 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
                   console.error('No selectedCollateralTypeId!');
                   return;
                 }
-                formDataStore.setTargetedHealthFactor(props.contextData.fiat, value, props.modifyPositionData, props.selectedCollateralTypeId);
+                formDataStore.setTargetedHealthFactor(
+                  props.contextData.fiat,
+                  value,
+                  props.modifyPositionData,
+                  props.selectedCollateralTypeId
+                );
               }}
               min={1.001}
               max={5.0}
@@ -309,7 +289,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
           // Next UI Switch `checked` type is wrong, this is necessary
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
-          checked={() => underlierAllowance?.gt(0) && underlierAllowance?.gte(formDataStore.underlier) ?? false}
+          checked={() => (underlierAllowance?.gt(0) && underlierAllowance?.gte(formDataStore.underlier)) ?? false}
           onChange={async () => {
             if (!formDataStore.underlier.isZero() && underlierAllowance?.gte(formDataStore.underlier)) {
               try {
@@ -329,9 +309,8 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
           }}
           color='primary'
           icon={
-            ['setUnderlierAllowance', 'unsetUnderlierAllowance'].includes(
-              currentTxAction || ''
-            ) && props.disableActions ? (
+            ['setUnderlierAllowance', 'unsetUnderlierAllowance'].includes(currentTxAction || '') &&
+            props.disableActions ? (
               <Loading size='xs' />
             ) : null
           }
@@ -363,23 +342,18 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
           }}
           color='primary'
           icon={
-            ['setMonetaDelegate', 'unsetMonetaDelegate'].includes(
-              currentTxAction || ''
-            ) && props.disableActions ? (
+            ['setMonetaDelegate', 'unsetMonetaDelegate'].includes(currentTxAction || '') && props.disableActions ? (
               <Loading size='xs' />
             ) : null
           }
         />
         <Spacer y={3} />
-        { error === ''
-          ? null
-          :(
-            <>
-              <ErrorTooltip error={error} />
-              <Spacer y={0.5} />
-            </>
-          )
-        }
+        {error === '' ? null : (
+          <>
+            <ErrorTooltip error={error} />
+            <Spacer y={0.5} />
+          </>
+        )}
         <Button
           css={{ minWidth: '100%' }}
           disabled={
@@ -390,16 +364,11 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
             underlierAllowance?.lt(formDataStore.underlier) ||
             monetaDelegate === false
           }
-          icon={
-            props.disableActions &&
-            currentTxAction === 'buyCollateralAndModifyDebt' ? (
-              <Loading size='xs' />
-            ) : null
-          }
+          icon={props.disableActions && currentTxAction === 'buyCollateralAndModifyDebt' ? <Loading size='xs' /> : null}
           onPress={async () => {
             try {
               setError('');
-              await props.buyCollateralAndModifyDebt()
+              await props.buyCollateralAndModifyDebt();
             } catch (e: any) {
               setError(e.message);
             }

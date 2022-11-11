@@ -12,7 +12,11 @@ import { PositionsTable } from '../src/components/PositionsTable';
 import { CreatePositionModal } from '../src/components/CreatePositionModal';
 import { ModifyPositionModal } from '../src/components/ModifyPositionModal';
 import {
-  decodeCollateralTypeId, decodePositionId, encodePositionId, getCollateralTypeData, getPositionData
+  decodeCollateralTypeId,
+  decodePositionId,
+  encodePositionId,
+  getCollateralTypeData,
+  getPositionData,
 } from '../src/utils';
 import * as userActions from '../src/actions';
 import { useModifyPositionFormDataStore } from '../src/stores/formStore';
@@ -24,45 +28,48 @@ const Home: NextPage = () => {
   const { connector } = useAccount({ onConnect: () => resetState(), onDisconnect: () => resetState() });
   const { chain } = useNetwork();
 
-  const initialState = React.useMemo(() => ({
-    setupListeners: false,
-    contextData: {
-      fiat: null as null | FIAT,
-      explorerUrl: null as null | string,
-      user: null as null | string,
-      proxies: [] as Array<string>
-    },
-    positionsData: [] as Array<any>,
-    collateralTypesData: [] as Array<any>,
-    selectedPositionId: null as null | string,
-    selectedCollateralTypeId: null as null | string,
-    modifyPositionData: {
-      outdated: false,
-      collateralType: null as undefined | null | any,
-      position: null as undefined | null | any,
-      underlierAllowance: null as null | ethers.BigNumber, // [underlierScale]
-      underlierBalance: null as null | ethers.BigNumber,
-      monetaDelegate: null as null | boolean,
-      fiatAllowance: null as null | ethers.BigNumber // [wad]
-    },
-    modifyPositionFormData: {
-      outdated: true,
-      mode: 'deposit', // [deposit, withdraw, redeem]
-      slippagePct: decToWad('0.001') as ethers.BigNumber, // [wad]
-      underlier: ZERO as ethers.BigNumber, // [underlierScale]
-      deltaCollateral: ZERO as ethers.BigNumber, // [wad]
-      deltaDebt: ZERO as ethers.BigNumber, // [wad]
-      targetedHealthFactor: decToWad('1.2') as ethers.BigNumber, // [wad]
-      collateral: ZERO as ethers.BigNumber, // [wad]
-      debt: ZERO as ethers.BigNumber, // [wad]
-      healthFactor: ZERO as ethers.BigNumber, // [wad] estimated new health factor
-      error: null as null | string
-    },
-    transactionData: {
-      action: null as null | string,
-      status: null as TransactionStatus,
-    }
-  }), []) 
+  const initialState = React.useMemo(
+    () => ({
+      setupListeners: false,
+      contextData: {
+        fiat: null as null | FIAT,
+        explorerUrl: null as null | string,
+        user: null as null | string,
+        proxies: [] as Array<string>,
+      },
+      positionsData: [] as Array<any>,
+      collateralTypesData: [] as Array<any>,
+      selectedPositionId: null as null | string,
+      selectedCollateralTypeId: null as null | string,
+      modifyPositionData: {
+        outdated: false,
+        collateralType: null as undefined | null | any,
+        position: null as undefined | null | any,
+        underlierAllowance: null as null | ethers.BigNumber, // [underlierScale]
+        underlierBalance: null as null | ethers.BigNumber,
+        monetaDelegate: null as null | boolean,
+        fiatAllowance: null as null | ethers.BigNumber, // [wad]
+      },
+      modifyPositionFormData: {
+        outdated: true,
+        mode: 'deposit', // [deposit, withdraw, redeem]
+        slippagePct: decToWad('0.001') as ethers.BigNumber, // [wad]
+        underlier: ZERO as ethers.BigNumber, // [underlierScale]
+        deltaCollateral: ZERO as ethers.BigNumber, // [wad]
+        deltaDebt: ZERO as ethers.BigNumber, // [wad]
+        targetedHealthFactor: decToWad('1.2') as ethers.BigNumber, // [wad]
+        collateral: ZERO as ethers.BigNumber, // [wad]
+        debt: ZERO as ethers.BigNumber, // [wad]
+        healthFactor: ZERO as ethers.BigNumber, // [wad] estimated new health factor
+        error: null as null | string,
+      },
+      transactionData: {
+        action: null as null | string,
+        status: null as TransactionStatus,
+      },
+    }),
+    []
+  );
 
   const formDataStore = useModifyPositionFormDataStore();
 
@@ -77,8 +84,7 @@ const Home: NextPage = () => {
   const [selectedCollateralTypeId, setSelectedCollateralTypeId] = React.useState(initialState.selectedCollateralTypeId);
   const [fiatBalance, setFiatBalance] = React.useState<string>('');
 
-
-  const disableActions = React.useMemo(() => transactionData.status === 'sent', [transactionData.status])
+  const disableActions = React.useMemo(() => transactionData.status === 'sent', [transactionData.status]);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   function resetState() {
@@ -109,24 +115,25 @@ const Home: NextPage = () => {
       const collateralTypesData_ = await fiat.fetchCollateralTypesAndPrices([]);
       const earnableRates = await userActions.getEarnableRate(fiat, collateralTypesData_);
 
-      setCollateralTypesData(collateralTypesData_
-        .filter((collateralType: any) => (collateralType.metadata != undefined))
-        .sort((a: any, b: any) => {
-          if (Number(a.properties.maturity) > Number(b.properties.maturity)) return -1;
-          if (Number(a.properties.maturity) < Number(b.properties.maturity)) return 1;
-          return 0;
-        })
-        .map((collateralType: any) => {
-          const earnableRate = earnableRates.find((item: any)  => item.vault === collateralType.properties.vault)
-          return {
-            ...collateralType,
-            earnableRate: earnableRate?.earnableRate
-          }
-        })
+      setCollateralTypesData(
+        collateralTypesData_
+          .filter((collateralType: any) => collateralType.metadata != undefined)
+          .sort((a: any, b: any) => {
+            if (Number(a.properties.maturity) > Number(b.properties.maturity)) return -1;
+            if (Number(a.properties.maturity) < Number(b.properties.maturity)) return 1;
+            return 0;
+          })
+          .map((collateralType: any) => {
+            const earnableRate = earnableRates.find((item: any) => item.vault === collateralType.properties.vault);
+            return {
+              ...collateralType,
+              earnableRate: earnableRate?.earnableRate,
+            };
+          })
       );
       setContextData((curContextData) => ({
         ...curContextData,
-        explorerUrl: chain?.blockExplorers?.etherscan?.url || ''
+        explorerUrl: chain?.blockExplorers?.etherscan?.url || '',
       }));
     })();
   }, [chain?.blockExplorers?.etherscan?.url, collateralTypesData.length, connector, provider]);
@@ -136,27 +143,27 @@ const Home: NextPage = () => {
       (async function () {
         if (!contextData.fiat) return;
         const { fiat } = contextData.fiat.getContracts();
-        const signer = (await connector.getSigner());
+        const signer = await connector.getSigner();
         const user = await signer.getAddress();
-        const fiatBalance = await fiat.balanceOf(user)
-        setFiatBalance(`${parseFloat(wadToDec(fiatBalance)).toFixed(2)} FIAT`)
+        const fiatBalance = await fiat.balanceOf(user);
+        setFiatBalance(`${parseFloat(wadToDec(fiatBalance)).toFixed(2)} FIAT`);
       })();
     }
-  }, [connector, contextData.fiat])
+  }, [connector, contextData.fiat]);
 
   // Fetch User and Vault data
   React.useEffect(() => {
     if (!connector) return;
-    
+
     (async function () {
-      const signer = (await connector.getSigner());
+      const signer = await connector.getSigner();
       if (!signer || !signer.provider) return;
       const user = await signer.getAddress();
       const fiat = await FIAT.fromSigner(signer, undefined);
       const userData = await fiat.fetchUserData(user.toLowerCase());
       const positionsData = userData.flatMap((user) => user.positions);
       setPositionsData(positionsData);
-      const proxies = userData.filter((user: any) => (user.isProxy === true)).map((user: any) => user.user);
+      const proxies = userData.filter((user: any) => user.isProxy === true).map((user: any) => user.user);
       setContextData((curContextData) => ({
         ...curContextData,
         fiat,
@@ -169,13 +176,14 @@ const Home: NextPage = () => {
   // Populate ModifyPosition data
   React.useEffect(() => {
     if (
-      !connector
-      || modifyPositionData.collateralType !== null
-      || (selectedCollateralTypeId == null && selectedPositionId == null)
-    ) return;
+      !connector ||
+      modifyPositionData.collateralType !== null ||
+      (selectedCollateralTypeId == null && selectedPositionId == null)
+    )
+      return;
 
-    const { vault, tokenId } = decodeCollateralTypeId((selectedCollateralTypeId || selectedPositionId as string));
-    const collateralType = getCollateralTypeData(collateralTypesData, vault, tokenId)
+    const { vault, tokenId } = decodeCollateralTypeId(selectedCollateralTypeId || (selectedPositionId as string));
+    const collateralType = getCollateralTypeData(collateralTypesData, vault, tokenId);
 
     let position;
     if (selectedPositionId) {
@@ -190,12 +198,13 @@ const Home: NextPage = () => {
     (async function () {
       // For positions with proxies, fetch underlier balance, allowance, fiat allowance, and moneta delegation enablement
       if (contextData.proxies.length === 0) return;
-      const { proxies: [proxy] } = contextData;
+      const {
+        proxies: [proxy],
+      } = contextData;
       if (
         !contextData.fiat ||
         data.collateralType == null ||
-        (data.position &&
-          data.position.owner.toLowerCase() !== proxy.toLowerCase())
+        (data.position && data.position.owner.toLowerCase() !== proxy.toLowerCase())
       ) {
         return;
       }
@@ -203,24 +212,38 @@ const Home: NextPage = () => {
       const { codex, moneta, fiat, vaultEPTActions } = contextData.fiat.getContracts();
       const underlier = contextData.fiat.getERC20Contract(data.collateralType.properties.underlierToken);
 
-      const signer = (await connector.getSigner());
+      const signer = await connector.getSigner();
       if (!signer || !signer.provider) return;
       const user = await signer.getAddress();
       const [underlierAllowance, underlierBalance, monetaDelegate, fiatAllowance] = await contextData.fiat.multicall([
         { contract: underlier, method: 'allowance', args: [user, proxy] },
         { contract: underlier, method: 'balanceOf', args: [user] },
         { contract: codex, method: 'delegates', args: [proxy, moneta.address] },
-        { contract: fiat, method: 'allowance', args: [user, proxy] }
+        { contract: fiat, method: 'allowance', args: [user, proxy] },
       ]);
 
       setModifyPositionData({
-        ...modifyPositionData, ...data, underlierAllowance, underlierBalance, monetaDelegate, fiatAllowance
+        ...modifyPositionData,
+        ...data,
+        underlierAllowance,
+        underlierBalance,
+        monetaDelegate,
+        fiatAllowance,
       });
     })();
 
     // Eslint thinks formDataStore is a dependency, but that will never change. The only true dependency is its the calculateNewPositionData method
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [connector, contextData, collateralTypesData, positionsData, selectedCollateralTypeId, selectedPositionId, modifyPositionData, formDataStore.calculateNewPositionData]);
+  }, [
+    connector,
+    contextData,
+    collateralTypesData,
+    positionsData,
+    selectedCollateralTypeId,
+    selectedPositionId,
+    modifyPositionData,
+    formDataStore.calculateNewPositionData,
+  ]);
 
   const dryRun = async (fiat: any, action: string, contract: ethers.Contract, method: string, ...args: any[]) => {
     try {
@@ -241,9 +264,9 @@ const Home: NextPage = () => {
       console.error('Dryrun error: ', e);
       setTransactionData({ ...transactionData, status: 'error' });
       // Should be caught by caller to set appropriate errors
-      throw e
+      throw e;
     }
-  }
+  };
 
   const sendAndWait = async (fiat: any, action: string, contract: ethers.Contract, method: string, ...args: any[]) => {
     try {
@@ -254,50 +277,50 @@ const Home: NextPage = () => {
       console.error('Error: ', e);
       setTransactionData({ ...transactionData, status: 'error' });
       // Should be caught by caller to set appropriate errors
-      throw e
+      throw e;
     }
-  }
+  };
 
   const createProxy = async (fiat: any, user: string) => {
     // await dryRun(fiat, 'createProxy', fiat.getContracts().proxyRegistry, 'deployFor', user);
     await sendAndWait(fiat, 'createProxy', fiat.getContracts().proxyRegistry, 'deployFor', user);
-  }
+  };
 
   const setUnderlierAllowance = async (fiat: any) => {
     const token = fiat.getERC20Contract(modifyPositionData.collateralType.properties.underlierToken);
     // await dryRun(fiat, 'setUnderlierAllowance', token, 'approve', contextData.proxies[0], formDataStore.underlier);
     await sendAndWait(fiat, 'setUnderlierAllowance', token, 'approve', contextData.proxies[0], formDataStore.underlier);
-  }
+  };
 
   const unsetUnderlierAllowance = async (fiat: any) => {
     const token = fiat.getERC20Contract(modifyPositionData.collateralType.properties.underlierToken);
     // await dryRun(fiat, 'unsetUnderlierAllowance', token, 'approve', contextData.proxies[0], 0);
     await sendAndWait(fiat, 'unsetUnderlierAllowance', token, 'approve', contextData.proxies[0], 0);
-  }
+  };
 
   const setFIATAllowance = async (fiat: any) => {
     const token = fiat.getContracts.fiat;
     // await dryRun(fiat, 'setFIATAllowance', token, 'approve', contextData.proxies[0], formDataStore.deltaDebt);
     await sendAndWait(fiat, 'setFIATAllowance', token, 'approve', contextData.proxies[0], formDataStore.debt);
-  }
+  };
 
   const unsetFIATAllowance = async (fiat: any) => {
     const token = fiat.getERC20Contract(modifyPositionData.collateralType.properties.underlierToken);
     // await dryRun(fiat, 'unsetFIATAllowance', token, 'approve', contextData.proxies[0], 0);
     await sendAndWait(fiat, 'unsetFIATAllowance', token, 'approve', contextData.proxies[0], 0);
-  }
+  };
 
   const setMonetaDelegate = async (fiat: any) => {
     const { codex, moneta } = fiat.getContracts();
     // await dryRun(fiat, 'setMonetaDelegate', codex, 'grantDelegate', moneta.address);
     await sendAndWait(fiat, 'setMonetaDelegate', codex, 'grantDelegate', moneta.address);
-  }
+  };
 
   const unsetMonetaDelegate = async (fiat: any) => {
     const { codex, moneta } = fiat.getContracts();
     // await dryRun(fiat, 'unsetMonetaDelegate', codex, 'revokeDelegate', moneta.address);
     await sendAndWait(fiat, 'unsetMonetaDelegate', codex, 'revokeDelegate', moneta.address);
-  }
+  };
 
   const buyCollateralAndModifyDebt = async () => {
     setTransactionData({ status: 'sent', action: 'buyCollateralAndModifyDebt' });
@@ -307,7 +330,7 @@ const Home: NextPage = () => {
         modifyPositionData.collateralType,
         formDataStore.deltaCollateral,
         formDataStore.deltaDebt,
-        formDataStore.underlier,
+        formDataStore.underlier
       );
       setTransactionData(initialState.transactionData);
     } catch (e) {
@@ -315,7 +338,7 @@ const Home: NextPage = () => {
       setTransactionData({ ...transactionData, status: 'error' });
       throw e;
     }
-  }
+  };
 
   const sellCollateralAndModifyDebt = async () => {
     setTransactionData({ status: 'sent', action: 'sellCollateralAndModifyDebt' });
@@ -325,7 +348,7 @@ const Home: NextPage = () => {
         modifyPositionData.collateralType,
         formDataStore.deltaCollateral,
         formDataStore.deltaDebt,
-        formDataStore.underlier,
+        formDataStore.underlier
       );
       setTransactionData(initialState.transactionData);
     } catch (e) {
@@ -333,7 +356,7 @@ const Home: NextPage = () => {
       setTransactionData({ ...transactionData, status: 'error' });
       throw e;
     }
-  }
+  };
 
   const redeemCollateralAndModifyDebt = async () => {
     setTransactionData({ status: 'sent', action: 'redeemCollateralAndModifyDebt' });
@@ -342,7 +365,7 @@ const Home: NextPage = () => {
         contextData,
         modifyPositionData.collateralType,
         formDataStore.deltaCollateral,
-        formDataStore.deltaDebt,
+        formDataStore.deltaDebt
       );
       setTransactionData(initialState.transactionData);
     } catch (e) {
@@ -350,21 +373,17 @@ const Home: NextPage = () => {
       setTransactionData({ ...transactionData, status: 'error' });
       throw e;
     }
-  }
+  };
 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', padding: 12 }}>
-        <h4 style={{ justifyContent: 'flex',  }}>(Experimental) FIAT UI</h4>
-        <div style={{ display: 'flex'}}>
-          <ProxyButton
-            {...contextData}
-            createProxy={createProxy}
-            disableActions={disableActions}
-          />
-          { fiatBalance && 
-            <Badge 
-              style={{marginRight: '10px'}} 
+        <h4 style={{ justifyContent: 'flex' }}>(Experimental) FIAT UI</h4>
+        <div style={{ display: 'flex' }}>
+          <ProxyButton {...contextData} createProxy={createProxy} disableActions={disableActions} />
+          {fiatBalance && (
+            <Badge
+              style={{ marginRight: '10px' }}
               css={{
                 fontFamily: 'var(--rk-fonts-body)',
                 fontWeight: 700,
@@ -374,13 +393,13 @@ const Home: NextPage = () => {
                 color: '$connectButtonColor',
                 boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
                 '&:hover': {
-                  transform: 'scale(1.03)'
-                }
+                  transform: 'scale(1.03)',
+                },
               }}
             >
               {fiatBalance}
             </Badge>
-          }
+          )}
           <ConnectButton showBalance={false} />
         </div>
       </div>
@@ -405,20 +424,16 @@ const Home: NextPage = () => {
       </Container>
       <Spacer y={2} />
       <Container>
-        {
-          positionsData === null || positionsData.length === 0
-            ? null
-            : (
-              <PositionsTable
-                collateralTypesData={collateralTypesData}
-                positionsData={positionsData}
-                onSelectPosition={(positionId) => {
-                  setSelectedPositionId(positionId);
-                  setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
-                }}
-              />
-            )
-        }
+        {positionsData === null || positionsData.length === 0 ? null : (
+          <PositionsTable
+            collateralTypesData={collateralTypesData}
+            positionsData={positionsData}
+            onSelectPosition={(positionId) => {
+              setSelectedPositionId(positionId);
+              setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
+            }}
+          />
+        )}
       </Container>
 
       <CreatePositionModal
@@ -432,7 +447,7 @@ const Home: NextPage = () => {
         transactionData={transactionData}
         unsetMonetaDelegate={unsetMonetaDelegate}
         unsetUnderlierAllowance={unsetUnderlierAllowance}
-        open={(!!selectedCollateralTypeId)}
+        open={!!selectedCollateralTypeId}
         onClose={() => {
           setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
           setModifyPositionData(initialState.modifyPositionData);
@@ -448,16 +463,14 @@ const Home: NextPage = () => {
         redeemCollateralAndModifyDebt={redeemCollateralAndModifyDebt}
         sellCollateralAndModifyDebt={sellCollateralAndModifyDebt}
         setFIATAllowance={setFIATAllowance}
-        setTransactionStatus={(status) =>
-          setTransactionData({ ...transactionData, status })
-        }
+        setTransactionStatus={(status) => setTransactionData({ ...transactionData, status })}
         setMonetaDelegate={setMonetaDelegate}
         setUnderlierAllowance={setUnderlierAllowance}
         transactionData={transactionData}
         unsetFIATAllowance={unsetFIATAllowance}
         unsetMonetaDelegate={unsetMonetaDelegate}
         unsetUnderlierAllowance={unsetUnderlierAllowance}
-        open={(!!selectedPositionId)}
+        open={!!selectedPositionId}
         onClose={() => {
           setSelectedPositionId(initialState.selectedCollateralTypeId);
           setModifyPositionData(initialState.modifyPositionData);

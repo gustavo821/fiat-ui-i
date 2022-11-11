@@ -15,13 +15,13 @@ export const ProxyButton = (props: ProxyCardProps) => {
   const [error, setError] = useState('');
 
   if (props.user === null || !props.fiat) {
-    return <Skeleton count={2} />
+    return <Skeleton count={2} />;
   }
 
   if (props.proxies.length > 0) {
     return (
       <Badge
-        style={{marginRight: '10px'}} 
+        style={{ marginRight: '10px' }}
         css={{
           fontFamily: 'var(--rk-fonts-body)',
           fontWeight: 700,
@@ -31,9 +31,9 @@ export const ProxyButton = (props: ProxyCardProps) => {
           color: '$connectButtonColor',
           boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
           '&:hover': {
-            transform: 'scale(1.03)'
-          }
-        }}      
+            transform: 'scale(1.03)',
+          },
+        }}
       >
         <Link
           target='_blank'
@@ -43,11 +43,10 @@ export const ProxyButton = (props: ProxyCardProps) => {
             color: '$connectButtonColor',
           }}
         >
-          {`${props.proxies[0].substring(0,4)}...${props.proxies[0].slice(-4)}`}&nbsp;
+          {`${props.proxies[0].substring(0, 4)}...${props.proxies[0].slice(-4)}`}&nbsp;
         </Link>
       </Badge>
-
-    )
+    );
   }
 
   return (
@@ -55,7 +54,7 @@ export const ProxyButton = (props: ProxyCardProps) => {
       onPress={async () => {
         if (props.user === null) {
           console.warn('ProxyButton requires a user');
-        } else{
+        } else {
           try {
             setError('');
             await props.createProxy(props.fiat, props.user);
@@ -65,7 +64,7 @@ export const ProxyButton = (props: ProxyCardProps) => {
         }
       }}
       disabled={props.disableActions}
-      style={{marginRight: '10px'}} 
+      style={{ marginRight: '10px' }}
       css={{
         fontFamily: 'var(--rk-fonts-body)',
         fontWeight: 700,
@@ -75,14 +74,11 @@ export const ProxyButton = (props: ProxyCardProps) => {
         color: '$connectButtonColor',
         boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
         '&:hover': {
-          transform: 'scale(1.03)'
-        }
+          transform: 'scale(1.03)',
+        },
       }}
     >
-      {error === '' ? 'Setup a new Proxy account'
-      : (
-        'Error, please try again'
-      )}
+      {error === '' ? 'Setup a new Proxy account' : 'Error, please try again'}
     </Button>
   );
 };
