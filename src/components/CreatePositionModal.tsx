@@ -326,8 +326,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
                 setError(e.message);
               }
             }
-          }
-          }
+          }}
           color='primary'
           icon={
             ['setUnderlierAllowance', 'unsetUnderlierAllowance'].includes(currentTxAction || '') && props.disableActions ? (
@@ -342,12 +341,24 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
           // Switch type is wrong, this is necessary
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
-          checked={() => !!monetaDelegate}
-          onChange={() =>
-            !!monetaDelegate
-              ? props.unsetMonetaDelegate(props.contextData.fiat)
-              : props.setMonetaDelegate(props.contextData.fiat)
-          }
+          checked={() => monetaDelegate !== null && monetaDelegate.gt(ethers.constants.Zero)}
+          onChange={async () => {
+            if (monetaDelegate !== null && monetaDelegate.gt(ethers.constants.Zero)) {
+              try {
+                setError('');
+                await props.unsetMonetaDelegate(props.contextData.fiat);
+              } catch (e: any) {
+                setError(e.message);
+              }
+            } else {
+              try {
+                setError('');
+                await props.setMonetaDelegate(props.contextData.fiat);
+              } catch (e: any) {
+                setError(e.message);
+              }
+            }
+          }}
           color='primary'
           icon={
             ['setMonetaDelegate', 'unsetMonetaDelegate'].includes(currentTxAction || '') && props.disableActions ? (
@@ -381,7 +392,14 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
               <Loading size='xs' />
             ) : null
           }
-          onPress={() => props.buyCollateralAndModifyDebt()}
+          onPress={async () => {
+            try {
+              setError('');
+              await props.buyCollateralAndModifyDebt()
+            } catch (e: any) {
+              setError(e.message);
+            }
+          }}
         >
           Deposit
         </Button>

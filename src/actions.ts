@@ -328,7 +328,6 @@ export const sellCollateralAndModifyDebt = async (contextData: any,
           contextData.user,
           contextData.user,
           tokenAmount,
-          normalDebt,
           [
             properties.eptData.balancerVault,
             properties.eptData.poolId,
@@ -336,7 +335,7 @@ export const sellCollateralAndModifyDebt = async (contextData: any,
             properties.underlierToken,
             underlier,
             deadline,
-            tokenAmount,
+            tokenAmount
           ]
         )
       );

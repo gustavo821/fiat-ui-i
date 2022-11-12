@@ -71,12 +71,10 @@ const Home: NextPage = () => {
   const [collateralTypesData, setCollateralTypesData] = React.useState(initialState.collateralTypesData);
   const [positionsData, setPositionsData] = React.useState(initialState.positionsData);
   const [modifyPositionData, setModifyPositionData] = React.useState(initialState.modifyPositionData);
-  const [modifyPositionFormData, setModifyPositionFormData] = React.useState(initialState.modifyPositionFormData);
   const [transactionData, setTransactionData] = React.useState(initialState.transactionData);
   const [selectedPositionId, setSelectedPositionId] = React.useState(initialState.selectedPositionId);
   const [selectedCollateralTypeId, setSelectedCollateralTypeId] = React.useState(initialState.selectedCollateralTypeId);
   const [fiatBalance, setFiatBalance] = React.useState<string>('');
-
 
   const disableActions = React.useMemo(() => transactionData.status === 'sent', [transactionData.status])
 
@@ -87,7 +85,6 @@ const Home: NextPage = () => {
     setCollateralTypesData(initialState.collateralTypesData);
     setPositionsData(initialState.positionsData);
     setModifyPositionData(initialState.modifyPositionData);
-    setModifyPositionFormData(initialState.modifyPositionFormData);
     setTransactionData(initialState.transactionData);
     setSelectedPositionId(initialState.selectedPositionId);
     setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
@@ -125,7 +122,7 @@ const Home: NextPage = () => {
         }));
       setContextData((curContextData) => ({
         ...curContextData,
-        explorerUrl: chain?.blockExplorers?.etherscan?.url || ''
+        explorerUrl: chain?.blockExplorers?.etherscan?.url || '',
       }));
     })();
   }, [chain?.blockExplorers?.etherscan?.url, collateralTypesData.length, connector, provider]);
@@ -153,9 +150,9 @@ const Home: NextPage = () => {
       const user = await signer.getAddress();
       const fiat = await FIAT.fromSigner(signer, undefined);
       const userData = await fiat.fetchUserData(user.toLowerCase());
+      const proxies = userData.filter((user: any) => (user.isProxy === true)).map((user: any) => user.user);
       const positionsData = userData.flatMap((user) => user.positions);
       setPositionsData(positionsData);
-      const proxies = userData.filter((user: any) => (user.isProxy === true)).map((user: any) => user.user);
       setContextData((curContextData) => ({
         ...curContextData,
         fiat,
@@ -230,12 +227,12 @@ const Home: NextPage = () => {
       // uncomment setTimeout(reject(...)) to simulate a txn error
       await new Promise((resolve: any, reject: any) => {
         setTimeout(resolve, 2000);
-        // setTimeout(reject({message: 'Mock dryrun error, Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut convallis luctus lectus vel tempor. Vestibulum porta odio et dui pretium, nec hendrerit ante efficitur. Duis cursus eleifend fringilla.'}), 20000);
+        // setTimeout(reject({message: 'Mock dryrun error, Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut convallis luctus lectus vel tempor. Vestibulum porta odio et dui pretium, nec hendrerit ante efficitur. Duis cursus eleifend fringilla.'}), 2000);
       });
 
       const resp = await fiat.dryrun(contract, method, ...args);
-      console.log('Dryrun resp: ', resp);
       setTransactionData(initialState.transactionData);
+      return resp;
     } catch (e) {
       console.error('Dryrun error: ', e);
       setTransactionData({ ...transactionData, status: 'error' });
@@ -247,8 +244,9 @@ const Home: NextPage = () => {
   const sendAndWait = async (fiat: any, action: string, contract: ethers.Contract, method: string, ...args: any[]) => {
     try {
       setTransactionData({ action, status: 'sent' });
-      await fiat.send(contract, method, ...args);
+      const resp = await fiat.sendAndWait(contract, method, ...args);
       setTransactionData(initialState.transactionData);
+      return resp;
     } catch (e) {
       console.error('Error: ', e);
       setTransactionData({ ...transactionData, status: 'error' });
@@ -258,87 +256,114 @@ const Home: NextPage = () => {
   }
 
   const createProxy = async (fiat: any, user: string) => {
-    // await dryRun(fiat, 'createProxy', fiat.getContracts().proxyRegistry, 'deployFor', user);
+    // return await dryRun(fiat, 'createProxy', fiat.getContracts().proxyRegistry, 'deployFor', user);
     await sendAndWait(fiat, 'createProxy', fiat.getContracts().proxyRegistry, 'deployFor', user);
+    // Querying chain directly after this to update as soon as possible
+    const { proxyRegistry } = fiat.getContracts();
+    const proxyAddress = await fiat.call(
+      proxyRegistry,
+      'getCurrentProxy',
+      user,
+    );
+    setContextData({ ...contextData, proxies: [proxyAddress] });
   }
 
   const setUnderlierAllowance = async (fiat: any) => {
     const token = fiat.getERC20Contract(modifyPositionData.collateralType.properties.underlierToken);
-    // await dryRun(fiat, 'setUnderlierAllowance', token, 'approve', contextData.proxies[0], formDataStore.underlier);
+    // return await dryRun(fiat, 'setUnderlierAllowance', token, 'approve', contextData.proxies[0], formDataStore.underlier);
     await sendAndWait(fiat, 'setUnderlierAllowance', token, 'approve', contextData.proxies[0], formDataStore.underlier);
+    const underlierAllowance = await token.allowance(contextData.user, contextData.proxies[0])
+    setModifyPositionData({ ...modifyPositionData, underlierAllowance });
   }
 
   const unsetUnderlierAllowance = async (fiat: any) => {
     const token = fiat.getERC20Contract(modifyPositionData.collateralType.properties.underlierToken);
-    // await dryRun(fiat, 'unsetUnderlierAllowance', token, 'approve', contextData.proxies[0], 0);
-    await sendAndWait(fiat, 'unsetUnderlierAllowance', token, 'approve', contextData.proxies[0], 0);
+    // return await dryRun(fiat, 'unsetUnderlierAllowance', token, 'approve', contextData.proxies[0], 0);
+    return await sendAndWait(fiat, 'unsetUnderlierAllowance', token, 'approve', contextData.proxies[0], 0);
   }
 
   const setFIATAllowance = async (fiat: any) => {
     const token = fiat.getContracts.fiat;
-    // await dryRun(fiat, 'setFIATAllowance', token, 'approve', contextData.proxies[0], formDataStore.deltaDebt);
-    await sendAndWait(fiat, 'setFIATAllowance', token, 'approve', contextData.proxies[0], formDataStore.debt);
+    // return await dryRun(fiat, 'setFIATAllowance', token, 'approve', contextData.proxies[0], formDataStore.deltaDebt);
+    return await sendAndWait(fiat, 'setFIATAllowance', token, 'approve', contextData.proxies[0], formDataStore.debt);
   }
 
   const unsetFIATAllowance = async (fiat: any) => {
     const token = fiat.getERC20Contract(modifyPositionData.collateralType.properties.underlierToken);
-    // await dryRun(fiat, 'unsetFIATAllowance', token, 'approve', contextData.proxies[0], 0);
-    await sendAndWait(fiat, 'unsetFIATAllowance', token, 'approve', contextData.proxies[0], 0);
+    // return await dryRun(fiat, 'unsetFIATAllowance', token, 'approve', contextData.proxies[0], 0);
+    return await sendAndWait(fiat, 'unsetFIATAllowance', token, 'approve', contextData.proxies[0], 0);
   }
 
   const setMonetaDelegate = async (fiat: any) => {
     const { codex, moneta } = fiat.getContracts();
-    // await dryRun(fiat, 'setMonetaDelegate', codex, 'grantDelegate', moneta.address);
+    // return await dryRun(fiat, 'setMonetaDelegate', codex, 'grantDelegate', moneta.address);
     await sendAndWait(fiat, 'setMonetaDelegate', codex, 'grantDelegate', moneta.address);
+
+    const monetaDelegate = await fiat.call(
+      codex,
+      'delegates',
+      contextData.proxies[0],
+      moneta.address,
+    );
+    setModifyPositionData({ ...modifyPositionData, monetaDelegate });
   }
 
   const unsetMonetaDelegate = async (fiat: any) => {
     const { codex, moneta } = fiat.getContracts();
-    // await dryRun(fiat, 'unsetMonetaDelegate', codex, 'revokeDelegate', moneta.address);
-    await sendAndWait(fiat, 'unsetMonetaDelegate', codex, 'revokeDelegate', moneta.address);
+    // return await dryRun(fiat, 'unsetMonetaDelegate', codex, 'revokeDelegate', moneta.address);
+    return await sendAndWait(fiat, 'unsetMonetaDelegate', codex, 'revokeDelegate', moneta.address);
   }
 
   const buyCollateralAndModifyDebt = async () => {
     setTransactionData({ status: 'sent', action: 'buyCollateralAndModifyDebt' });
     try {
-      await userActions.buyCollateralAndModifyDebt(contextData,
+      const resp = await userActions.buyCollateralAndModifyDebt(
+        contextData,
         modifyPositionData.collateralType,
         formDataStore.deltaCollateral,
         formDataStore.deltaDebt,
         formDataStore.underlier,);
       setTransactionData(initialState.transactionData);
+      return resp;
     } catch (e) {
-      console.error('Error: ', e);
+      console.error('Buy error: ', e);
       setTransactionData({ ...transactionData, status: 'error' });
+      throw e;
     }
   }
 
   const sellCollateralAndModifyDebt = async () => {
     setTransactionData({ status: 'sent', action: 'sellCollateralAndModifyDebt' });
     try {
-      await userActions.sellCollateralAndModifyDebt(contextData,
+      const resp = await userActions.sellCollateralAndModifyDebt(
+        contextData,
         modifyPositionData.collateralType,
         formDataStore.deltaCollateral,
         formDataStore.deltaDebt,
         formDataStore.underlier,);
       setTransactionData(initialState.transactionData);
+      return resp;
     } catch (e) {
-      console.error('Error: ', e);
+      console.error('Sell error: ', e);
       setTransactionData({ ...transactionData, status: 'error' });
+      throw e;
     }
   }
 
   const redeemCollateralAndModifyDebt = async () => {
     setTransactionData({ status: 'sent', action: 'redeemCollateralAndModifyDebt' });
     try {
-      await userActions.redeemCollateralAndModifyDebt(contextData,
+      const resp = await userActions.redeemCollateralAndModifyDebt(
+        contextData,
         modifyPositionData.collateralType,
         formDataStore.deltaCollateral,
         formDataStore.deltaDebt,);
       setTransactionData(initialState.transactionData);
+      return resp;
     } catch (e) {
-      console.error('Error: ', e);
+      console.error('Redeem error: ', e);
       setTransactionData({ ...transactionData, status: 'error' });
+      throw e;
     }
   }
 
@@ -351,6 +376,7 @@ const Home: NextPage = () => {
             {...contextData}
             createProxy={createProxy}
             disableActions={disableActions}
+            transactionData={transactionData}
           />
           { fiatBalance && 
             <Badge 
@@ -451,7 +477,6 @@ const Home: NextPage = () => {
         onClose={() => {
           setSelectedPositionId(initialState.selectedCollateralTypeId);
           setModifyPositionData(initialState.modifyPositionData);
-          setModifyPositionFormData(initialState.modifyPositionFormData);
           formDataStore.reset();
         }}
       />
