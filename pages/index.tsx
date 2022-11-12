@@ -298,7 +298,15 @@ const Home: NextPage = () => {
   const setMonetaDelegate = async (fiat: any) => {
     const { codex, moneta } = fiat.getContracts();
     // return await dryRun(fiat, 'setMonetaDelegate', codex, 'grantDelegate', moneta.address);
-    return await sendAndWait(fiat, 'setMonetaDelegate', codex, 'grantDelegate', moneta.address);
+    await sendAndWait(fiat, 'setMonetaDelegate', codex, 'grantDelegate', moneta.address);
+
+    const monetaDelegate = await fiat.call(
+      codex,
+      'delegates',
+      contextData.proxies[0],
+      moneta.address,
+    );
+    setModifyPositionData({ ...modifyPositionData, monetaDelegate });
   }
 
   const unsetMonetaDelegate = async (fiat: any) => {

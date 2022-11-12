@@ -343,9 +343,9 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
           // Switch type is wrong, this is necessary
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
-          checked={() => !!monetaDelegate !== null && monetaDelegate.gt(ethers.constants.Zero)}
+          checked={() => monetaDelegate !== null && monetaDelegate.gt(ethers.constants.Zero)}
           onChange={async () => {
-            if (!!monetaDelegate) {
+            if (monetaDelegate !== null && monetaDelegate.gt(ethers.constants.Zero)) {
               try {
                 setError('');
                 await props.unsetMonetaDelegate(props.contextData.fiat);
