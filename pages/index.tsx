@@ -258,13 +258,23 @@ const Home: NextPage = () => {
 
   const createProxy = async (fiat: any, user: string) => {
     // return await dryRun(fiat, 'createProxy', fiat.getContracts().proxyRegistry, 'deployFor', user);
-    return await sendAndWait(fiat, 'createProxy', fiat.getContracts().proxyRegistry, 'deployFor', user);
+    await sendAndWait(fiat, 'createProxy', fiat.getContracts().proxyRegistry, 'deployFor', user);
+    // Querying chain directly after this to update as soon as possible
+    const { proxyRegistry } = fiat.getContracts();
+    const proxyAddress = await fiat.call(
+      proxyRegistry,
+      'getCurrentProxy',
+      user,
+    );
+    setContextData({ ...contextData, proxies: [proxyAddress] });
   }
 
   const setUnderlierAllowance = async (fiat: any) => {
     const token = fiat.getERC20Contract(modifyPositionData.collateralType.properties.underlierToken);
     // return await dryRun(fiat, 'setUnderlierAllowance', token, 'approve', contextData.proxies[0], formDataStore.underlier);
-    return await sendAndWait(fiat, 'setUnderlierAllowance', token, 'approve', contextData.proxies[0], formDataStore.underlier);
+    await sendAndWait(fiat, 'setUnderlierAllowance', token, 'approve', contextData.proxies[0], formDataStore.underlier);
+    const underlierAllowance = await token.allowance(contextData.user, contextData.proxies[0])
+    setModifyPositionData({ ...modifyPositionData, underlierAllowance });
   }
 
   const unsetUnderlierAllowance = async (fiat: any) => {
@@ -363,8 +373,6 @@ const Home: NextPage = () => {
             createProxy={createProxy}
             disableActions={disableActions}
             transactionData={transactionData}
-            contextData={contextData}
-            setContextData={setContextData}
           />
           { fiatBalance && 
             <Badge 

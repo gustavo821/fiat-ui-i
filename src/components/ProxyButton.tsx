@@ -10,8 +10,6 @@ interface ProxyCardProps {
   user: null | string;
   disableActions: boolean;
   transactionData: any;
-  contextData: any;
-  setContextData: any;
 }
 
 export const ProxyButton = (props: ProxyCardProps) => {
@@ -62,14 +60,6 @@ export const ProxyButton = (props: ProxyCardProps) => {
           try {
             setError('');
             await props.createProxy(props.fiat, props.user);
-            // Querying chain directly after this to update as soon as possible
-            const { proxyRegistry } = props.fiat.getContracts();
-            const proxyAddress = await props.fiat.call(
-              proxyRegistry,
-              'getCurrentProxy',
-              props.user,
-            );
-            props.setContextData({ ...props.contextData, proxies: [proxyAddress] });
           } catch (e: any) {
             setError(e.message);
           }
