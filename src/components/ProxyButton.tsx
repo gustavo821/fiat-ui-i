@@ -1,4 +1,4 @@
-import { Badge, Button, Link } from '@nextui-org/react';
+import { Badge, Button, Link, Loading } from '@nextui-org/react';
 import { useState } from 'react';
 import Skeleton from 'react-loading-skeleton';
 
@@ -9,6 +9,9 @@ interface ProxyCardProps {
   fiat: any;
   user: null | string;
   disableActions: boolean;
+  transactionData: any;
+  contextData: any;
+  setContextData: any;
 }
 
 export const ProxyButton = (props: ProxyCardProps) => {
@@ -55,10 +58,18 @@ export const ProxyButton = (props: ProxyCardProps) => {
       onPress={async () => {
         if (props.user === null) {
           console.warn('ProxyButton requires a user');
-        } else{
+        } else {
           try {
             setError('');
             await props.createProxy(props.fiat, props.user);
+            // Querying chain directly after this to update as soon as possible
+            const { proxyRegistry } = props.fiat.getContracts();
+            const proxyAddress = await props.fiat.call(
+              proxyRegistry,
+              'getCurrentProxy',
+              props.user,
+            );
+            props.setContextData({ ...props.contextData, proxies: [proxyAddress] });
           } catch (e: any) {
             setError(e.message);
           }
@@ -66,6 +77,13 @@ export const ProxyButton = (props: ProxyCardProps) => {
       }}
       disabled={props.disableActions}
       style={{marginRight: '10px'}} 
+      icon={
+        [
+          'createProxy',
+        ].includes(props.transactionData.action || '') && props.disableActions ? (
+          <Loading size='xs' />
+        ) : null
+      }
       css={{
         fontFamily: 'var(--rk-fonts-body)',
         fontWeight: 700,
@@ -76,10 +94,11 @@ export const ProxyButton = (props: ProxyCardProps) => {
         boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
         '&:hover': {
           transform: 'scale(1.03)'
-        }
+        },
+        width: 'var(--nextui-space-60)',
       }}
     >
-      {error === '' ? 'Setup a new Proxy account'
+      {error === '' ? 'Create Proxy account'
       : (
         'Error, please try again'
       )}

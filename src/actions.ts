@@ -209,29 +209,28 @@ export const buyCollateralAndModifyDebt = async (
 
       const deadline = Math.round(+new Date() / 1000) + 3600;
 
-      console.log(
-        // await contextData.fiat.dryrunViaProxy(
-        await contextData.fiat.sendAndWaitViaProxy(
-          contextData.proxies[0],
-          vaultEPTActions,
-          'buyCollateralAndModifyDebt',
-          properties.vault,
-          contextData.proxies[0],
-          contextData.user,
-          contextData.user,
+      // const resp = await contextData.fiat.dryrunViaProxy(
+      const resp = await contextData.fiat.sendAndWaitViaProxy(
+        contextData.proxies[0],
+        vaultEPTActions,
+        'buyCollateralAndModifyDebt',
+        properties.vault,
+        contextData.proxies[0],
+        contextData.user,
+        contextData.user,
+        underlier,
+        normalDebt,
+        [
+          properties.eptData.balancerVault,
+          properties.eptData.poolId,
+          properties.underlierToken,
+          properties.token,
+          tokenAmount,
+          deadline,
           underlier,
-          normalDebt,
-          [
-            properties.eptData.balancerVault,
-            properties.eptData.poolId,
-            properties.underlierToken,
-            properties.token,
-            tokenAmount,
-            deadline,
-            underlier,
-          ]
-        )
-      );
+        ]
+      )
+      console.log(resp);
       break;
     }
 
@@ -254,24 +253,23 @@ export const buyCollateralAndModifyDebt = async (
         properties.tokenScale
       );
 
-      console.log(
-        // await contextData.fiat.dryrunViaProxy(
-        await contextData.fiat.sendAndWaitViaProxy(
-          contextData.proxies[0],
-          vaultFCActions,
-          'buyCollateralAndModifyDebt',
-          properties.vault,
-          properties.token,
-          properties.tokenId,
-          contextData.proxies[0],
-          contextData.user,
-          contextData.user,
-          tokenAmount,
-          normalDebt,
-          minLendRate,
-          underlier
-        )
-      );
+      // const resp = await contextData.fiat.dryrunViaProxy(
+      const resp = await contextData.fiat.sendAndWaitViaProxy(
+        contextData.proxies[0],
+        vaultFCActions,
+        'buyCollateralAndModifyDebt',
+        properties.vault,
+        properties.token,
+        properties.tokenId,
+        contextData.proxies[0],
+        contextData.user,
+        contextData.user,
+        tokenAmount,
+        normalDebt,
+        minLendRate,
+        underlier
+      )
+      console.log(resp);
       break;
     }
 
@@ -281,26 +279,25 @@ export const buyCollateralAndModifyDebt = async (
         return;
       }
 
-      console.log(
-        // await contextData.fiat.dryrunViaProxy(
-        await contextData.fiat.sendAndWaitViaProxy(
-          contextData.proxies[0],
-          vaultFYActions,
-          'buyCollateralAndModifyDebt',
-          properties.vault,
-          contextData.proxies[0],
-          contextData.user,
-          contextData.user,
-          tokenAmount,
-          normalDebt,
-          [
-            underlier,
-            properties.fyData.yieldSpacePool,
-            properties.token,
-            properties.underlierToken,
-          ]
-        )
+      // const resp = await contextData.fiat.dryrunViaProxy(
+      const resp = await contextData.fiat.sendAndWaitViaProxy(
+        contextData.proxies[0],
+        vaultFYActions,
+        'buyCollateralAndModifyDebt',
+        properties.vault,
+        contextData.proxies[0],
+        contextData.user,
+        contextData.user,
+        tokenAmount,
+        normalDebt,
+        [
+          underlier,
+          properties.fyData.yieldSpacePool,
+          properties.token,
+          properties.underlierToken,
+        ]
       );
+      console.log('resp: ', resp);
       break;
     }
 
@@ -342,29 +339,28 @@ export const sellCollateralAndModifyDebt = async (
 
       const deadline = Math.round(+new Date() / 1000) + 3600;
 
-      console.log(
-        // await contextData.fiat.dryrunViaProxy(
-        await contextData.fiat.sendAndWaitViaProxy(
-          contextData.proxies[0],
-          vaultEPTActions,
-          'sellCollateralAndModifyDebt',
-          properties.vault,
-          contextData.proxies[0],
-          contextData.user,
-          contextData.user,
+      // const resp = await contextData.fiat.dryrunViaProxy(
+      const resp = await contextData.fiat.sendAndWaitViaProxy(
+        contextData.proxies[0],
+        vaultEPTActions,
+        'sellCollateralAndModifyDebt',
+        properties.vault,
+        contextData.proxies[0],
+        contextData.user,
+        contextData.user,
+        tokenAmount,
+        normalDebt,
+        [
+          properties.eptData.balancerVault,
+          properties.eptData.poolId,
+          properties.token,
+          properties.underlierToken,
+          underlier,
+          deadline,
           tokenAmount,
-          normalDebt,
-          [
-            properties.eptData.balancerVault,
-            properties.eptData.poolId,
-            properties.token,
-            properties.underlierToken,
-            underlier,
-            deadline,
-            tokenAmount,
-          ]
-        )
+        ]
       );
+      console.log('resp: ', resp);
       break;
     }
 
@@ -388,23 +384,22 @@ export const sellCollateralAndModifyDebt = async (
         properties.tokenScale
       );
 
-      console.log(
-        // await contextData.fiat.dryrunViaProxy(
-        await contextData.fiat.sendAndWaitViaProxy(
-          contextData.proxies[0],
-          vaultFCActions,
-          'sellCollateralAndModifyDebt',
-          properties.vault,
-          properties.token,
-          properties.tokenId,
-          contextData.proxies[0],
-          contextData.user,
-          contextData.user,
-          tokenAmount,
-          normalDebt,
-          maxBorrowRate
-        )
+      // const resp = await contextData.fiat.dryrunViaProxy(
+      const resp = await contextData.fiat.sendAndWaitViaProxy(
+        contextData.proxies[0],
+        vaultFCActions,
+        'sellCollateralAndModifyDebt',
+        properties.vault,
+        properties.token,
+        properties.tokenId,
+        contextData.proxies[0],
+        contextData.user,
+        contextData.user,
+        tokenAmount,
+        normalDebt,
+        maxBorrowRate
       );
+      console.log('resp: ', resp);
       break;
     }
 
@@ -414,26 +409,25 @@ export const sellCollateralAndModifyDebt = async (
         return;
       }
 
-      console.log(
-        // await contextData.fiat.dryrunViaProxy(
-        await contextData.fiat.sendAndWaitViaProxy(
-          contextData.proxies[0],
-          vaultFYActions,
-          'sellCollateralAndModifyDebt',
-          properties.vault,
-          contextData.proxies[0],
-          contextData.user,
-          contextData.user,
-          tokenAmount,
-          normalDebt,
-          [
-            underlier,
-            properties.fyData.yieldSpacePool,
-            properties.token,
-            properties.underlierToken,
-          ]
-        )
+      // const resp = await contextData.fiat.dryrunViaProxy(
+      const resp = await contextData.fiat.sendAndWaitViaProxy(
+        contextData.proxies[0],
+        vaultFYActions,
+        'sellCollateralAndModifyDebt',
+        properties.vault,
+        contextData.proxies[0],
+        contextData.user,
+        contextData.user,
+        tokenAmount,
+        normalDebt,
+        [
+          underlier,
+          properties.fyData.yieldSpacePool,
+          properties.token,
+          properties.underlierToken,
+        ]
       );
+      console.log('resp: ', resp);
       break;
     }
 
@@ -472,21 +466,20 @@ export const redeemCollateralAndModifyDebt = async (
         return;
       }
 
-      console.log(
-        // await contextData.fiat.dryrunViaProxy(
-        await contextData.fiat.sendAndWaitViaProxy(
-          contextData.proxies[0],
-          vaultEPTActions,
-          'redeemCollateralAndModifyDebt',
-          properties.vault,
-          properties.token,
-          contextData.proxies[0],
-          contextData.user,
-          contextData.user,
-          tokenAmount,
-          normalDebt
-        )
+      // const resp = await contextData.fiat.dryrunViaProxy(
+      const resp = await contextData.fiat.sendAndWaitViaProxy(
+        contextData.proxies[0],
+        vaultEPTActions,
+        'redeemCollateralAndModifyDebt',
+        properties.vault,
+        properties.token,
+        contextData.proxies[0],
+        contextData.user,
+        contextData.user,
+        tokenAmount,
+        normalDebt
       );
+      console.log('resp: ', resp);
       break;
     }
 
@@ -496,22 +489,21 @@ export const redeemCollateralAndModifyDebt = async (
         return;
       }
 
-      console.log(
-        // await contextData.fiat.dryrunViaProxy(
-        await contextData.fiat.sendAndWaitViaProxy(
-          contextData.proxies[0],
-          vaultFCActions,
-          'redeemCollateralAndModifyDebt',
-          properties.vault,
-          properties.token,
-          properties.tokenId,
-          contextData.proxies[0],
-          contextData.user,
-          contextData.user,
-          tokenAmount,
-          normalDebt
-        )
+      // const resp = await contextData.fiat.dryrunViaProxy(
+      const resp = await contextData.fiat.sendAndWaitViaProxy(
+        contextData.proxies[0],
+        vaultFCActions,
+        'redeemCollateralAndModifyDebt',
+        properties.vault,
+        properties.token,
+        properties.tokenId,
+        contextData.proxies[0],
+        contextData.user,
+        contextData.user,
+        tokenAmount,
+        normalDebt
       );
+      console.log('resp: ', resp);
       break;
     }
 
@@ -521,21 +513,20 @@ export const redeemCollateralAndModifyDebt = async (
         return;
       }
 
-      console.log(
-        // await contextData.fiat.dryrunViaProxy(
-        await contextData.fiat.sendAndWaitViaProxy(
-          contextData.proxies[0],
-          vaultFYActions,
-          'redeemCollateralAndModifyDebt',
-          properties.vault,
-          properties.token,
-          contextData.proxies[0],
-          contextData.user,
-          contextData.user,
-          tokenAmount,
-          normalDebt
-        )
+      // const resp = await contextData.fiat.dryrunViaProxy(
+      const resp = await contextData.fiat.sendAndWaitViaProxy(
+        contextData.proxies[0],
+        vaultFYActions,
+        'redeemCollateralAndModifyDebt',
+        properties.vault,
+        properties.token,
+        contextData.proxies[0],
+        contextData.user,
+        contextData.user,
+        tokenAmount,
+        normalDebt
       );
+      console.log('resp: ', resp);
       break;
     }
 
