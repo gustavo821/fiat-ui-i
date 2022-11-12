@@ -322,9 +322,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               }
               color='primary'
               icon={
-                ['setUnderlierAllowance', 'unsetUnderlierAllowance'].includes(
-                  currentTxAction || ''
-                ) && props.disableActions ? (
+                ['setUnderlierAllowance', 'unsetUnderlierAllowance'].includes(currentTxAction || '') && props.disableActions ? (
                   <Loading size='xs' />
                 ) : null
               }
@@ -344,9 +342,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               }
               color='primary'
               icon={
-                ['setMonetaDelegate', 'unsetMonetaDelegate'].includes(
-                  currentTxAction || ''
-                ) && props.disableActions ? (
+                ['setMonetaDelegate', 'unsetMonetaDelegate'].includes(currentTxAction || '') && props.disableActions ? (
                   <Loading size='xs' />
                 ) : null
               }
@@ -369,9 +365,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               }
               color='primary'
               icon={
-                ['setFIATAllowance', 'unsetFIATAllowance'].includes(
-                  currentTxAction || ''
-                ) && props.disableActions ? (
+                ['setFIATAllowance', 'unsetFIATAllowance'].includes(currentTxAction || '') && props.disableActions ? (
                   <Loading size='xs' />
                 ) : null
               }

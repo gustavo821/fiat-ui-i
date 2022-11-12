@@ -122,8 +122,7 @@ const Home: NextPage = () => {
             ...collateralType,
             earnableRate: earnableRate?.earnableRate
           }
-        })
-      );
+        }));
       setContextData((curContextData) => ({
         ...curContextData,
         explorerUrl: chain?.blockExplorers?.etherscan?.url || ''
@@ -302,13 +301,11 @@ const Home: NextPage = () => {
   const buyCollateralAndModifyDebt = async () => {
     setTransactionData({ status: 'sent', action: 'buyCollateralAndModifyDebt' });
     try {
-      await userActions.buyCollateralAndModifyDebt(
-        contextData,
+      await userActions.buyCollateralAndModifyDebt(contextData,
         modifyPositionData.collateralType,
         formDataStore.deltaCollateral,
         formDataStore.deltaDebt,
-        formDataStore.underlier,
-      );
+        formDataStore.underlier,);
       setTransactionData(initialState.transactionData);
     } catch (e) {
       console.error('Error: ', e);
@@ -319,13 +316,11 @@ const Home: NextPage = () => {
   const sellCollateralAndModifyDebt = async () => {
     setTransactionData({ status: 'sent', action: 'sellCollateralAndModifyDebt' });
     try {
-      await userActions.sellCollateralAndModifyDebt(
-        contextData,
+      await userActions.sellCollateralAndModifyDebt(contextData,
         modifyPositionData.collateralType,
         formDataStore.deltaCollateral,
         formDataStore.deltaDebt,
-        formDataStore.underlier,
-      );
+        formDataStore.underlier,);
       setTransactionData(initialState.transactionData);
     } catch (e) {
       console.error('Error: ', e);
@@ -336,12 +331,10 @@ const Home: NextPage = () => {
   const redeemCollateralAndModifyDebt = async () => {
     setTransactionData({ status: 'sent', action: 'redeemCollateralAndModifyDebt' });
     try {
-      await userActions.redeemCollateralAndModifyDebt(
-        contextData,
+      await userActions.redeemCollateralAndModifyDebt(contextData,
         modifyPositionData.collateralType,
         formDataStore.deltaCollateral,
-        formDataStore.deltaDebt,
-      );
+        formDataStore.deltaDebt,);
       setTransactionData(initialState.transactionData);
     } catch (e) {
       console.error('Error: ', e);

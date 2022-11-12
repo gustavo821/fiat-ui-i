@@ -14,11 +14,9 @@ export function floor4(dec: any) {
   return Math.floor(Number(String(dec)) * 10000) / 10000;
 }
 
-export const commifyToDecimalPlaces = (
-  value: BigNumber,
+export const commifyToDecimalPlaces = (value: BigNumber,
   scale: number,
-  decimalPlaces: number
-): string => {
+  decimalPlaces: number): string => {
   const parts = ethers.utils
   .commify(scaleToDec(value, scale))
   .split('.');
@@ -43,17 +41,13 @@ export const decodePositionId = (positionId: string) => {
   return { vault, tokenId, owner };
 }
 
-export const getCollateralTypeData = (
-  collateralTypes: Array<any>, vault: string, tokenId: ethers.BigNumberish
-): undefined | any => {
+export const getCollateralTypeData = (collateralTypes: Array<any>, vault: string, tokenId: ethers.BigNumberish): undefined | any => {
   return collateralTypes.find(({properties: { vault: vault_, tokenId: tokenId_ }}) => (
     vault === vault_ && tokenId.toString() === tokenId_.toString()
   ));
 }
 
-export const getPositionData = (
-  positions: Array<any>, vault: string, tokenId: ethers.BigNumberish, owner: string
-): undefined | any => {
+export const getPositionData = (positions: Array<any>, vault: string, tokenId: ethers.BigNumberish, owner: string): undefined | any => {
   return positions.find(({ vault: vault_, tokenId: tokenId_, owner: owner_ }) => (
     vault === vault_ && tokenId.toString() === tokenId_.toString() && owner === owner_
   ));
@@ -63,8 +57,7 @@ export const getPositionData = (
 // version will only be executed after `delay` milliseconds have passed after it's last invocation
 export function debounce<F extends (...args: Parameters<F>) => ReturnType<F>>(
   func: F,
-  delay = 500,
-): (...args: Parameters<F>) => void {
+  delay = 500,): (...args: Parameters<F>) => void {
   let timeout: number | NodeJS.Timeout;
   return (...args: Parameters<F>): void => {
     clearTimeout(timeout as number); // this number cast is for browser support NodeJS.Timeout is for Node envs and so tsc stops whining

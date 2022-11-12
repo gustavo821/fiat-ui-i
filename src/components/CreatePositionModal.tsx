@@ -330,9 +330,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
           }
           color='primary'
           icon={
-            ['setUnderlierAllowance', 'unsetUnderlierAllowance'].includes(
-              currentTxAction || ''
-            ) && props.disableActions ? (
+            ['setUnderlierAllowance', 'unsetUnderlierAllowance'].includes(currentTxAction || '') && props.disableActions ? (
               <Loading size='xs' />
             ) : null
           }
@@ -352,9 +350,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
           }
           color='primary'
           icon={
-            ['setMonetaDelegate', 'unsetMonetaDelegate'].includes(
-              currentTxAction || ''
-            ) && props.disableActions ? (
+            ['setMonetaDelegate', 'unsetMonetaDelegate'].includes(currentTxAction || '') && props.disableActions ? (
               <Loading size='xs' />
             ) : null
           }

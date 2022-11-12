@@ -24,15 +24,13 @@ import { publicProvider } from 'wagmi/providers/public';
 import { createTheme, NextUIProvider } from '@nextui-org/react';
 import { ThemeProvider as NextThemesProvider } from 'next-themes';
 
-const { chains, provider, webSocketProvider } = configureChains(
-  [
+const { chains, provider, webSocketProvider } = configureChains([
     chain.mainnet, ...(process.env.NEXT_PUBLIC_ENABLE_TESTNETS === 'true' ? [chain.goerli] : [])
   ],
   [
     alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY }),
     publicProvider(),
-  ]
-);
+  ]);
 
 const { wallets } = getDefaultWallets({
   appName: 'Experimental FIAT UI',
