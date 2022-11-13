@@ -42,13 +42,13 @@ export const underlierToCollateralToken = async (fiat: any,
     }
     case 'ERC20:SPT': {
       if (collateralType.properties.sptData == undefined) throw new Error('Missing SPT data');
-      const { sptData: { spacePool, balancer } } = collateralType.properties;
+      const { sptData: { spacePool, balancerVault } } = collateralType.properties;
       return await fiat.call(
         vaultSPTActions,
         'underlierToPToken',
         vault,
-        balancer,
         spacePool,
+        balancerVault,
         underlier
       );
     }
@@ -99,12 +99,12 @@ export const collateralTokenToUnderlier = async (fiat: any,
     }
     case 'ERC20:SPT': {
       if (collateralType.properties.sptData == undefined) throw new Error('Missing SPT data');
-      const { sptData: { spacePool, balancer } } = collateralType.properties;
+      const { sptData: { spacePool, balancerVault } } = collateralType.properties;
       return await fiat.call(
         vaultSPTActions,
         'pTokenToUnderlier',
         spacePool,
-        balancer,
+        balancerVault,
         collateral
       );
     }
@@ -154,12 +154,12 @@ export const getEarnableRate = async (fiat: any, collateralTypesData: any) => {
       }
       case 'ERC20:SPT': {
         if (!properties.sptData) return console.error('Missing SPT data');
-        const { spacePool, balancerVault } = properties.fyData;
+        const { spacePool, balancerVault } = properties.sptData;
         return {
           vault,
           tokenScale,
           call: {
-            contract: vaultSPTActions, method: 'underlierToFYToken', args: [spacePool, balancerVault, underlierScale]
+            contract: vaultSPTActions, method: 'underlierToPToken', args: [spacePool, balancerVault, underlierScale]
           }
         };
       }
@@ -288,7 +288,8 @@ export const buyCollateralAndModifyDebt = async (contextData: any,
             tokenAmount,
             properties.sptData.maturity,
             properties.underlierToken,
-            properties.token
+            properties.token,
+            properties.underlier
           ]
         )
       );
@@ -407,7 +408,8 @@ export const sellCollateralAndModifyDebt = async (contextData: any,
             underlier,
             properties.sptData.maturity,
             properties.token,
-            properties.underlierToken
+            properties.underlierToken,
+            properties.tokenAmount,
           ]
         )
       );
