@@ -1,7 +1,7 @@
-import { SortDescriptor, styled, Table, Text, User } from '@nextui-org/react';
 import React from 'react';
+import { SortDescriptor, styled, Table, Text, User } from '@nextui-org/react';
 import { wadToDec, ZERO } from '@fiatdao/sdk';
-import { encodeCollateralTypeId, formatUnixTimestamp } from '../utils';
+import { encodeCollateralTypeId, floor2, formatUnixTimestamp, interestPerSecondToAPY } from '../utils';
 
 const StyledBadge = styled('span', {
   display: 'inline-block',
@@ -45,10 +45,7 @@ interface CollateralTypesTableProps {
 
 export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
   const [sortedData, setSortedData] = React.useState<any[]>([]);
-  const [sortProps, setSortProps] = React.useState<SortDescriptor>({
-    column: 'Maturity',
-    direction: 'descending'
-  });
+  const [sortProps, setSortProps] = React.useState<SortDescriptor>({ column: 'Maturity', direction: 'descending' });
   
   React.useEffect(() => {
     const data = [...props.collateralTypesData]
@@ -62,12 +59,7 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
     setSortedData(data);
   }, [props.collateralTypesData, sortProps.direction])
 
-
-  if (props.collateralTypesData.length === 0) {
-    // TODO
-    // return <Loading />;
-    return null;
-  }
+  if (props.collateralTypesData.length === 0) return null;
 
   return (
     <>
@@ -77,22 +69,16 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
         css={{ height: 'auto', minWidth: '100%' }}
         selectionMode='single'
         selectedKeys={'1'}
-        onSelectionChange={(selected) =>
-          props.onSelectCollateralType(Object.values(selected)[0])
-        }
+        onSelectionChange={(selected) => props.onSelectCollateralType(Object.values(selected)[0])}
         sortDescriptor={sortProps as SortDescriptor}
-        onSortChange={(data) => {
-          setSortProps({
-            direction: data.direction,
-            column: data.column
-          })
-        }}
+        onSortChange={(data) => { setSortProps({ direction: data.direction, column: data.column })}}
       >
         <Table.Header>
           <Table.Column>Asset</Table.Column>
           <Table.Column>Underlier</Table.Column>
+          <Table.Column>Gain Until Maturity</Table.Column>
+          <Table.Column>Interest Rate</Table.Column>
           <Table.Column>Total Assets</Table.Column>
-          <Table.Column>% Gain</Table.Column>
           <Table.Column allowsSorting>Maturity</Table.Column>
         </Table.Header>
         <Table.Body>
@@ -100,8 +86,9 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
             sortedData.map((collateralType: any) => {
               const { vault, tokenId, underlierSymbol, maturity } = collateralType.properties;
               const { protocol, asset, icons, urls, symbol } = collateralType.metadata;
-              const depositedCollateral = collateralType.state.codex.depositedCollateral;
+              const { publican: { interestPerSecond }, codex: { depositedCollateral } } = collateralType.state;
               const earnableRate = collateralType?.earnableRate?.mul(100);
+              const interestRate = floor2(interestPerSecondToAPY(interestPerSecond));
               const maturityFormatted = new Date(Number(maturity.toString()) * 1000);
               return (
                 <Table.Row key={encodeCollateralTypeId(vault, tokenId)}>
@@ -122,13 +109,10 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
                       <User.Link href={urls.asset}>{protocol}</User.Link>
                     </User>
                   </Table.Cell>
-                  <Table.Cell>
-                    <User name={underlierSymbol} src={icons.underlier} size='sm'/>
-                  </Table.Cell>
-                  <Table.Cell>{`${parseFloat(wadToDec(depositedCollateral)).toFixed(2)} ${symbol}`}</Table.Cell>
-                  <Table.Cell>
-                    {`${parseFloat(wadToDec(earnableRate ?? ZERO)).toFixed(2)}%`}
-                  </Table.Cell>
+                  <Table.Cell><User name={underlierSymbol} src={icons.underlier} size='sm'/></Table.Cell>
+                  <Table.Cell>{`${floor2(wadToDec(earnableRate ?? ZERO))}%`}</Table.Cell>
+                  <Table.Cell>{`${interestRate}%`}</Table.Cell>
+                  <Table.Cell>{`${floor2(wadToDec(depositedCollateral))} ${symbol}`}</Table.Cell>
                   <Table.Cell>
                     <StyledBadge type={new Date() < maturityFormatted ? 'green' : 'red'} >
                       {formatUnixTimestamp(maturity)}

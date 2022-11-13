@@ -1,10 +1,8 @@
 import React from 'react';
 import { Col, Row, SortDescriptor, styled, Table, Text, User } from '@nextui-org/react';
-
 import { WAD, wadToDec } from '@fiatdao/sdk';
 
-import { encodePositionId, getCollateralTypeData } from '../utils';
-import { formatUnixTimestamp } from '../utils';
+import { encodePositionId, floor2, formatUnixTimestamp, getCollateralTypeData, interestPerSecondToAPY } from '../utils';
 
 const StyledBadge = styled('span', {
   display: 'inline-block',
@@ -99,6 +97,7 @@ export const PositionsTable = (props: PositionsTableProps) => {
         <Table.Header>
           <Table.Column>Asset</Table.Column>
           <Table.Column>Underlier</Table.Column>
+          <Table.Column>Interest Rate</Table.Column>
           <Table.Column>Collateral</Table.Column>
           <Table.Column>Debt</Table.Column>
           <Table.Column allowsSorting>Maturity</Table.Column>
@@ -109,11 +108,12 @@ export const PositionsTable = (props: PositionsTableProps) => {
               const { owner, vault, tokenId, collateral, normalDebt } = position;
               const {
                 properties: { underlierSymbol, maturity },
-                metadata: { protocol, asset, icons, urls },
-                state
+                metadata: { protocol, asset, icons, urls, symbol },
+                state: { publican: { interestPerSecond }, codex: { virtualRate }, collybus: { fairPrice } }
               } = getCollateralTypeData(props.collateralTypesData, vault, tokenId);
+              const interestRate = floor2(interestPerSecondToAPY(interestPerSecond));
+              const debt = normalDebt.mul(virtualRate).div(WAD)
               const maturityFormatted = new Date(Number(maturity.toString()) * 1000);
-              const debt = normalDebt.mul(state.codex.virtualRate).div(WAD)
               return (
                 <Table.Row key={encodePositionId(vault, tokenId, owner)}>
                   <Table.Cell>
@@ -133,24 +133,17 @@ export const PositionsTable = (props: PositionsTableProps) => {
                       <User.Link href={urls.asset}>{protocol}</User.Link>
                     </User>
                   </Table.Cell>
-                  <Table.Cell>
-                    <User name={underlierSymbol} src={icons.underlier} size='sm'/>
-                  </Table.Cell>
+                  <Table.Cell><User name={underlierSymbol} src={icons.underlier} size='sm'/></Table.Cell>
+                  <Table.Cell>{`${interestRate}%`}</Table.Cell>
                   <Table.Cell>
                     <Col>
-                      <Row>
-                        {wadToDec(collateral)}
-                      </Row>
-                      <Row>
-                        {`$${parseFloat(wadToDec(state.collybus.fairPrice.mul(collateral).div(WAD))).toFixed(2)}`}
-                      </Row>
+                      <Row>{`${floor2(wadToDec(collateral))} ${symbol}`}</Row>
+                      <Row>{`($${floor2(wadToDec(fairPrice.mul(collateral).div(WAD)))})`}</Row>
                     </Col>
                   </Table.Cell>
-                  <Table.Cell>{parseFloat(wadToDec(debt)).toFixed(2)}</Table.Cell>
+                  <Table.Cell>{floor2(wadToDec(debt))} FIAT</Table.Cell>
                   <Table.Cell>
-                    <StyledBadge
-                      type={new Date() < maturityFormatted ? 'green' : 'red'}
-                    >
+                    <StyledBadge type={new Date() < maturityFormatted ? 'green' : 'red'} >
                       {formatUnixTimestamp(maturity)}
                     </StyledBadge>
                   </Table.Cell>
