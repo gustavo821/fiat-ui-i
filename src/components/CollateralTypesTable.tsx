@@ -1,5 +1,5 @@
 import React from 'react';
-import { Badge, SortDescriptor, styled, Table, Text, User } from '@nextui-org/react';
+import { Badge, SortDescriptor, Table, Text, User } from '@nextui-org/react';
 import { wadToDec, ZERO } from '@fiatdao/sdk';
 import {
   earnableRateToAPY, encodeCollateralTypeId, floor2, formatUnixTimestamp,
@@ -30,7 +30,7 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
 
   return (
     <>
-      <Text h1>Create Position</Text>
+      <Text h2>Create Position</Text>
       <Table
         aria-label='Collateral Types'
         css={{ height: 'auto', minWidth: '100%' }}
@@ -79,7 +79,21 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
                       <User.Link href={urls.asset}>{protocol}</User.Link>
                     </User>
                   </Table.Cell>
-                  <Table.Cell><User name={underlierSymbol} src={icons.underlier} size='sm'/></Table.Cell>
+                  <Table.Cell>
+                    <User name={underlierSymbol} src={icons.underlier} size='sm' css={{
+                      borderRadius: '0px',
+                      '& span': {
+                        '& .nextui-avatar-bg': {
+                          background: 'transparent !important'
+                        },
+                        borderRadius: '0px !important',
+                        '& img': {
+                          borderRadius: '0px !important',
+                          background: 'transparent !important',
+                        }
+                      }
+                    }}/>
+                  </Table.Cell>
                   <Table.Cell>{`${floor2(wadToDec(earnableRateAnnulized.mul(100)))}% (${floor2(wadToDec(earnableRate.mul(100)))}%)`}</Table.Cell>
                   <Table.Cell>{`${floor2(wadToDec(borrowRateAnnualized))}% (${floor2(wadToDec(borrowRate))}%)`}</Table.Cell>
                   <Table.Cell>{`${floor2(wadToDec(depositedCollateral))} ${symbol}`}</Table.Cell>

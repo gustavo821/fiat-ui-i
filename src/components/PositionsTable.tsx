@@ -1,5 +1,5 @@
 import React from 'react';
-import { Badge, Col, Row, SortDescriptor, styled, Table, Text, User } from '@nextui-org/react';
+import { Badge, Col, Row, SortDescriptor, Table, Text, User } from '@nextui-org/react';
 import { WAD, wadToDec } from '@fiatdao/sdk';
 
 import {
@@ -46,7 +46,7 @@ export const PositionsTable = (props: PositionsTableProps) => {
 
   return (
     <>
-      <Text h1>Positions</Text>
+      <Text h2>Positions</Text>
       <Table
         aria-label='Positions'
         css={{ height: 'auto', minWidth: '100%' }}
@@ -110,7 +110,21 @@ export const PositionsTable = (props: PositionsTableProps) => {
                       <User.Link href={urls.asset}>{protocol}</User.Link>
                     </User>
                   </Table.Cell>
-                  <Table.Cell><User name={underlierSymbol} src={icons.underlier} size='sm'/></Table.Cell>
+                  <Table.Cell>
+                  <User name={underlierSymbol} src={icons.underlier} size='sm' css={{
+                      borderRadius: '0px',
+                      '& span': {
+                        '& .nextui-avatar-bg': {
+                          background: 'transparent !important'
+                        },
+                        borderRadius: '0px !important',
+                        '& img': {
+                          borderRadius: '0px !important',
+                          background: 'transparent !important',
+                        }
+                      }
+                    }}/>
+                  </Table.Cell>
                   <Table.Cell>{`${floor2(wadToDec(borrowRateAnnualized))}% (${floor2(wadToDec(borrowRate))}% → ${floor2(wadToDec(dueAtMaturity))} FIAT)`}</Table.Cell>
                   <Table.Cell>
                     <Col>
