@@ -130,7 +130,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
                 formDataStore.setUnderlier(props.contextData.fiat, event.target.value, props.modifyPositionData, props.selectedCollateralTypeId);
               }}
               placeholder='0'
-              type='number'
+              inputMode='decimal'
               label='Underlier to swap'
               labelRight={underlierSymbol}
               bordered
@@ -151,7 +151,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
               }}
               step='0.01'
               placeholder='0'
-              type='number'
+              inputMode='decimal'
               label='Slippage'
               labelRight={'%'}
               bordered
