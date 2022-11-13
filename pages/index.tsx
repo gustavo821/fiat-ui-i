@@ -180,7 +180,7 @@ const Home: NextPage = () => {
     }
     const data = { ...modifyPositionData, collateralType, position };
     formDataStore.setFormDataLoading(true);
-    formDataStore.calculateNewPositionData(contextData.fiat, data, null);
+    formDataStore.calculateNewPositionData(contextData.fiat, data, selectedCollateralTypeId);
     setModifyPositionData(data);
 
     (async function () {
@@ -196,7 +196,7 @@ const Home: NextPage = () => {
         return;
       }
 
-      const { codex, moneta, fiat, vaultEPTActions } = contextData.fiat.getContracts();
+      const { codex, moneta, fiat } = contextData.fiat.getContracts();
       const underlier = contextData.fiat.getERC20Contract(data.collateralType.properties.underlierToken);
 
       const signer = (await connector.getSigner());

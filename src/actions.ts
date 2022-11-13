@@ -7,7 +7,6 @@ export const underlierToCollateralToken = async (fiat: any,
   if (!underlier.gt(ZERO)) return ZERO;
   const { vault, tokenId, vaultType } = collateralType.properties;
   const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = fiat.getContracts();
-
   switch (vaultType) {
     case 'ERC20:EPT': {
       if (collateralType.properties.eptData == undefined) throw new Error('Missing EPT data');
@@ -46,7 +45,6 @@ export const underlierToCollateralToken = async (fiat: any,
       return await fiat.call(
         vaultSPTActions,
         'underlierToPToken',
-        vault,
         spacePool,
         balancerVault,
         underlier
