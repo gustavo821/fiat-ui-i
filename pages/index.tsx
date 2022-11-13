@@ -406,6 +406,24 @@ const Home: NextPage = () => {
       </div>
       <Spacer y={2} />
       <Container>
+        {
+          positionsData === null || positionsData.length === 0
+            ? null
+            : (
+              <PositionsTable
+                contextData={contextData}
+                collateralTypesData={collateralTypesData}
+                positionsData={positionsData}
+                onSelectPosition={(positionId) => {
+                  setSelectedPositionId(positionId);
+                  setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
+                }}
+              />
+            )
+        }
+      </Container>
+      <Spacer y={2} />
+      <Container>
         <CollateralTypesTable
           collateralTypesData={collateralTypesData}
           onSelectCollateralType={(collateralTypeId) => {
@@ -422,24 +440,6 @@ const Home: NextPage = () => {
             }
           }}
         />
-      </Container>
-      <Spacer y={2} />
-      <Container>
-        {
-          positionsData === null || positionsData.length === 0
-            ? null
-            : (
-              <PositionsTable
-                contextData={contextData}
-                collateralTypesData={collateralTypesData}
-                positionsData={positionsData}
-                onSelectPosition={(positionId) => {
-                  setSelectedPositionId(positionId);
-                  setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
-                }}
-              />
-            )
-        }
       </Container>
 
       <CreatePositionModal
