@@ -382,7 +382,7 @@ const Home: NextPage = () => {
             disableActions={disableActions}
             transactionData={transactionData}
           />
-          { fiatBalance && 
+          {(fiatBalance) && 
             <Badge 
               style={{marginRight: '10px'}} 
               css={{
