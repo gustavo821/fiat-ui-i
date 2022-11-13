@@ -153,12 +153,12 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
       fiat: any, modifyPositionData: any, selectedCollateralTypeId: string | null
       ) {
       const { collateralType, position } = modifyPositionData;
-      const { underlierScale, tokenScale } = collateralType.properties;
+      const { tokenScale } = collateralType.properties;
       const { slippagePct, underlier, mode } = get();
       const { codex: { virtualRate: rate }, collybus: { liquidationPrice } } = collateralType.state;
       try {
         const tokensOut = await userActions.underlierToCollateralToken(fiat, underlier, collateralType);
-        const deltaCollateral = scaleToWad(tokensOut, underlierScale).mul(WAD.sub(slippagePct)).div(WAD);
+        const deltaCollateral = scaleToWad(tokensOut, tokenScale).mul(WAD.sub(slippagePct)).div(WAD);
 
         if (mode === 'deposit') {
           // Applies to manage & create position
