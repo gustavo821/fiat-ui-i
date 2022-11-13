@@ -21,7 +21,7 @@ export type TransactionStatus = null | 'error' | 'sent' | 'confirming' | 'confir
 
 const Home: NextPage = () => {
   const provider = useProvider();
-  const { connector } = useAccount({ onConnect: () => resetState(), onDisconnect: () => resetState() });
+  const { address, connector } = useAccount({ onConnect: () => resetState(), onDisconnect: () => resetState() });
   const { chain } = useNetwork();
 
   const initialState = React.useMemo(() => ({
@@ -140,7 +140,7 @@ const Home: NextPage = () => {
     }
   }, [connector, contextData.fiat])
 
-  // Fetch User and Vault data
+  // Fetch User data, Vault data, and set Fiat SDK in global state
   React.useEffect(() => {
     if (!connector) return;
     
@@ -160,7 +160,9 @@ const Home: NextPage = () => {
         proxies,
       }));
     })();
-  }, [connector]);
+    // Address and chain dependencies are needed to recreate FIAT sdk object on account or chain change,
+    // even though their values aren't used explicitly.
+  }, [connector, address, chain ]);
 
   // Populate ModifyPosition data
   React.useEffect(() => {
