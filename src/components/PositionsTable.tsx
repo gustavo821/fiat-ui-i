@@ -1,45 +1,14 @@
 import React from 'react';
-import { Col, Row, SortDescriptor, styled, Table, Text, User } from '@nextui-org/react';
+import { Badge, Col, Row, SortDescriptor, styled, Table, Text, User } from '@nextui-org/react';
 import { WAD, wadToDec } from '@fiatdao/sdk';
 
-import { encodePositionId, floor2, formatUnixTimestamp, getCollateralTypeData, interestPerSecondToAPY } from '../utils';
-
-const StyledBadge = styled('span', {
-  display: 'inline-block',
-  textTransform: 'uppercase',
-  padding: '$2 $3',
-  margin: '0 2px',
-  fontSize: '10px',
-  fontWeight: '$bold',
-  borderRadius: '14px',
-  letterSpacing: '0.6px',
-  lineHeight: 1,
-  boxShadow: '1px 2px 5px 0px rgb(0 0 0 / 5%)',
-  alignItems: 'center',
-  alignSelf: 'center',
-  color: '$white',
-  variants: {
-    type: {
-      green: {
-        bg: '$successLight',
-        color: '$successLightContrast',
-      },
-      red: {
-        bg: '$errorLight',
-        color: '$errorLightContrast',
-      },
-      orange: {
-        bg: '$warningLight',
-        color: '$warningLightContrast',
-      },
-    },
-  },
-  defaultVariants: {
-    type: 'active',
-  },
-});
+import {
+  encodePositionId, floor2, formatUnixTimestamp, getCollateralTypeData,
+  interestPerSecondToAPY, interestPerSecondToRateUntilMaturity
+} from '../utils';
 
 interface PositionsTableProps {
+  contextData: any,
   collateralTypesData: Array<any>,
   positionsData: Array<any>,
   onSelectPosition: (positionId: string) => void
@@ -97,10 +66,11 @@ export const PositionsTable = (props: PositionsTableProps) => {
         <Table.Header>
           <Table.Column>Asset</Table.Column>
           <Table.Column>Underlier</Table.Column>
-          <Table.Column>Interest Rate</Table.Column>
-          <Table.Column>Collateral</Table.Column>
-          <Table.Column>Debt</Table.Column>
-          <Table.Column allowsSorting>Maturity</Table.Column>
+          <Table.Column>Borrow Rate (Due At Maturity)</Table.Column>
+          <Table.Column>Collateral (Fair Value)</Table.Column>
+          <Table.Column>Debt (Implied Value)</Table.Column>
+          <Table.Column>Health Factor</Table.Column>
+          <Table.Column allowsSorting>Maturity (Days Until Maturity)</Table.Column>
         </Table.Header>
         <Table.Body>
           {
@@ -109,11 +79,16 @@ export const PositionsTable = (props: PositionsTableProps) => {
               const {
                 properties: { underlierSymbol, maturity },
                 metadata: { protocol, asset, icons, urls, symbol },
-                state: { publican: { interestPerSecond }, codex: { virtualRate }, collybus: { fairPrice } }
+                state: {
+                  publican: { interestPerSecond }, codex: { virtualRate }, collybus: { fairPrice, liquidationPrice }
+                }
               } = getCollateralTypeData(props.collateralTypesData, vault, tokenId);
-              const interestRate = floor2(interestPerSecondToAPY(interestPerSecond));
+              const borrowRate = interestPerSecondToRateUntilMaturity(interestPerSecond, maturity);
+              const borrowRateAnnualized = interestPerSecondToAPY(interestPerSecond);
               const debt = normalDebt.mul(virtualRate).div(WAD)
+              const healthFactor = props.contextData.fiat.computeHealthFactor(collateral, normalDebt, virtualRate, liquidationPrice);
               const maturityFormatted = new Date(Number(maturity.toString()) * 1000);
+              const daysUntilMaturity = Math.max(Math.floor((Number(maturity.toString()) - Math.floor(Date.now() / 1000)) / 86400), 0);
               return (
                 <Table.Row key={encodePositionId(vault, tokenId, owner)}>
                   <Table.Cell>
@@ -134,18 +109,22 @@ export const PositionsTable = (props: PositionsTableProps) => {
                     </User>
                   </Table.Cell>
                   <Table.Cell><User name={underlierSymbol} src={icons.underlier} size='sm'/></Table.Cell>
-                  <Table.Cell>{`${interestRate}%`}</Table.Cell>
+                  <Table.Cell>{`${floor2(wadToDec(borrowRateAnnualized))}% (${floor2(wadToDec(borrowRate))}%)`}</Table.Cell>
                   <Table.Cell>
                     <Col>
                       <Row>{`${floor2(wadToDec(collateral))} ${symbol}`}</Row>
                       <Row>{`($${floor2(wadToDec(fairPrice.mul(collateral).div(WAD)))})`}</Row>
                     </Col>
                   </Table.Cell>
-                  <Table.Cell>{floor2(wadToDec(debt))} FIAT</Table.Cell>
                   <Table.Cell>
-                    <StyledBadge type={new Date() < maturityFormatted ? 'green' : 'red'} >
-                      {formatUnixTimestamp(maturity)}
-                    </StyledBadge>
+                    <Row>{floor2(wadToDec(debt))} FIAT</Row>
+                    <Row>(${floor2(wadToDec(debt))})</Row>
+                  </Table.Cell>
+                  <Table.Cell>{`${floor2(wadToDec(healthFactor))}`}</Table.Cell>
+                  <Table.Cell>
+                    <Badge isSquared color={new Date() < maturityFormatted ? 'success' : 'error'} variant='flat' >
+                      {formatUnixTimestamp(maturity)}, ({daysUntilMaturity} days)
+                    </Badge>
                   </Table.Cell>
                 </Table.Row>
               );

@@ -141,7 +141,7 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
     // Debounced to prevent spamming RPC calls
     calculateNewPositionData: debounce(async function (
       fiat: any, modifyPositionData: any, selectedCollateralTypeId: string | null
-      ) {
+    ) {
       const { collateralType, position } = modifyPositionData;
       const { tokenScale } = collateralType.properties;
       const { slippagePct, underlier, mode } = get();

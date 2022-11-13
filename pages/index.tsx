@@ -428,6 +428,7 @@ const Home: NextPage = () => {
             ? null
             : (
               <PositionsTable
+                contextData={contextData}
                 collateralTypesData={collateralTypesData}
                 positionsData={positionsData}
                 onSelectPosition={(positionId) => {
