@@ -23,7 +23,6 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
       }
       return a.properties.maturity.toNumber() > b.properties.maturity.toNumber() ? 1 : -1
     });
-    console.log({data})
     setSortedData(data);
   }, [props.collateralTypesData, sortProps.direction])
 
