@@ -285,7 +285,9 @@ const Home: NextPage = () => {
   const setFIATAllowance = async (fiat: any) => {
     const token = fiat.getContracts.fiat;
     // return await dryRun(fiat, 'setFIATAllowance', token, 'approve', contextData.proxies[0], formDataStore.deltaDebt);
-    return await sendAndWait(fiat, 'setFIATAllowance', token, 'approve', contextData.proxies[0], formDataStore.debt);
+    await sendAndWait(fiat, 'setFIATAllowance', token, 'approve', contextData.proxies[0], formDataStore.debt);
+    const fiatAllowance = await token.allowance(contextData.user, contextData.proxies[0])
+    setModifyPositionData({ ...modifyPositionData, fiatAllowance });
   }
 
   const unsetFIATAllowance = async (fiat: any) => {
