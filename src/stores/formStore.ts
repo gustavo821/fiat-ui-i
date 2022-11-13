@@ -1,11 +1,4 @@
-import {
-  decToScale,
-  decToWad,
-  scaleToDec,
-  scaleToWad,
-  WAD,
-  wadToScale,
-} from '@fiatdao/sdk';
+import { decToScale, decToWad, scaleToDec, scaleToWad, WAD, wadToScale } from '@fiatdao/sdk';
 import * as userActions from '../actions';
 import 'antd/dist/antd.css';
 import { ethers } from 'ethers';
