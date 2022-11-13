@@ -16,14 +16,9 @@ import { Slider } from 'antd';
 import 'antd/dist/antd.css';
 import { scaleToDec, wadToDec } from '@fiatdao/sdk';
 
-import {
-  commifyToDecimalPlaces,
-  floor2,
-  floor4,
-  formatUnixTimestamp,
-} from '../utils';
+import { commifyToDecimalPlaces, floor2, floor4, formatUnixTimestamp } from '../utils';
 import { useModifyPositionFormDataStore } from '../stores/formStore';
-import {ErrorTooltip} from './ErrorTooltip';
+import { ErrorTooltip } from './ErrorTooltip';
 
 interface CreatePositionModalProps {
   buyCollateralAndModifyDebt: () => any;
@@ -63,7 +58,6 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
     !props.modifyPositionData.collateralType.metadata
   ) {
     // TODO: add skeleton components instead of loading
-    // return <Loading />;
     return null;
   }
 
