@@ -2,7 +2,6 @@ import React from 'react';
 import {
   Button,
   Card,
-  Grid,
   Input,
   Loading,
   Modal,
@@ -146,71 +145,60 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
             Wallet: {commifyToDecimalPlaces(underlierBalance, underlierScale, 2)} {underlierSymbol}
           </Text>
         )}
-        <Grid.Container
-          gap={0}
-          justify='space-between'
-          css={{ marginBottom: '1rem' }}
-        >
-          <Grid>
-            {formDataStore.mode === 'deposit' && (
-              <Input
-                disabled={props.disableActions}
-                value={floor2(scaleToDec(formDataStore.underlier, underlierScale))}
-                onChange={(event) => {
-                  formDataStore.setUnderlier(props.contextData.fiat, event.target.value, props.modifyPositionData, null);
-                }}
-                placeholder='0'
-                type='number'
-                label='Underlier to swap'
-                labelRight={underlierSymbol}
-                bordered
-                size='sm'
-                borderWeight='light'
-              />
-            )}
-            {(formDataStore.mode === 'withdraw' || formDataStore.mode === 'redeem') && (
-              <Input
-                disabled={props.disableActions}
-                value={floor2(wadToDec(formDataStore.deltaCollateral))}
-                onChange={(event) => {
-                  formDataStore.setDeltaCollateral(props.contextData.fiat, event.target.value, props.modifyPositionData, null);
-                }}
-                placeholder='0'
-                type='number'
-                label={
-                  formDataStore.mode === 'withdraw'
-                    ? 'Collateral to withdraw and swap'
-                    : 'Collateral to withdraw and redeem'
-                }
-                labelRight={symbol}
-                bordered
-                size='sm'
-                borderWeight='light'
-                width='13.35rem'
-              />
-            )}
-          </Grid>
-          <Grid>
-            {(formDataStore.mode === 'deposit' || formDataStore.mode === 'withdraw') && (
-              <Input
-                disabled={props.disableActions}
-                value={floor2(Number(wadToDec(formDataStore.slippagePct)) * 100)}
-                onChange={(event) => {
-                  formDataStore.setSlippagePct(props.contextData.fiat, event.target.value, props.modifyPositionData, null);
-                }}
-                step='0.01'
-                placeholder='0'
-                type='number'
-                label='Slippage'
-                labelRight={'%'}
-                bordered
-                size='sm'
-                borderWeight='light'
-                width='7.5rem'
-              />
-            )}
-          </Grid>
-        </Grid.Container>
+        {formDataStore.mode === 'deposit' && (
+          <Input
+            disabled={props.disableActions}
+            value={floor2(scaleToDec(formDataStore.underlier, underlierScale))}
+            onChange={(event) => {
+              formDataStore.setUnderlier(props.contextData.fiat, event.target.value, props.modifyPositionData, null);
+            }}
+            placeholder='0'
+            inputMode='decimal'
+            label='Underlier to swap'
+            labelRight={underlierSymbol}
+            bordered
+            size='sm'
+            borderWeight='light'
+          />
+        )}
+        {(formDataStore.mode === 'withdraw' || formDataStore.mode === 'redeem') && (
+          <Input
+            disabled={props.disableActions}
+            value={floor2(wadToDec(formDataStore.deltaCollateral))}
+            onChange={(event) => {
+              formDataStore.setDeltaCollateral(props.contextData.fiat, event.target.value, props.modifyPositionData, null);
+            }}
+            placeholder='0'
+            inputMode='decimal'
+            label={
+              formDataStore.mode === 'withdraw'
+                ? 'Collateral to withdraw and swap'
+                : 'Collateral to withdraw and redeem'
+            }
+            labelRight={symbol}
+            bordered
+            size='sm'
+            borderWeight='light'
+          />
+        )}
+        {(formDataStore.mode === 'deposit' || formDataStore.mode === 'withdraw') && (
+          <Input
+            disabled={props.disableActions}
+            value={floor2(Number(wadToDec(formDataStore.slippagePct)) * 100)}
+            onChange={(event) => {
+              formDataStore.setSlippagePct(props.contextData.fiat, event.target.value, props.modifyPositionData, null);
+            }}
+            step='0.01'
+            placeholder='0'
+            inputMode='decimal'
+            label='Slippage'
+            labelRight={'%'}
+            bordered
+            size='sm'
+            borderWeight='light'
+            width='7.5rem'
+          />
+        )}
         <Input
           disabled={props.disableActions}
           value={floor2(wadToDec(formDataStore.deltaDebt))}
@@ -218,7 +206,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
             formDataStore.setDeltaDebt(props.contextData.fiat, event.target.value, props.modifyPositionData, null);
           }}
           placeholder='0'
-          type='number'
+          inputMode='decimal'
           label={formDataStore.mode === 'deposit' ? 'FIAT to borrow' : 'FIAT to pay back'}
           labelRight={'FIAT'}
           bordered
