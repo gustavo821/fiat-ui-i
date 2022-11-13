@@ -19,6 +19,7 @@ import { scaleToDec, wadToDec } from '@fiatdao/sdk';
 import { commifyToDecimalPlaces, floor2, floor4, formatUnixTimestamp } from '../utils';
 import { useModifyPositionFormDataStore } from '../stores/formStore';
 import { ErrorTooltip } from './ErrorTooltip';
+import { MaxButton } from './MaxButton';
 
 interface CreatePositionModalProps {
   buyCollateralAndModifyDebt: () => any;
@@ -131,7 +132,25 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
               }}
               placeholder='0'
               inputMode='decimal'
-              label='Underlier to swap'
+              label={
+                <div style={{ display: 'flex' }}>
+                  <label
+                    style={{
+                      fontWeight: 'var(--nextui-fontWeights-normal)',
+                      color: 'var(--nextui--inputLabelColor)',
+                      padding: '0 0 0 var(--nextui-space-1)',
+                      fontSize: 'var(--nextui--inputFontSize)',
+                      lineHeight: 'var(--nextui-lineHeights-md)',
+                    }}
+                  >
+                    Underlier to swap <MaxButton
+                      onClick={()=>{ formDataStore.setUnderlier(props.contextData.fiat, underlierBalance, props.modifyPositionData, props.selectedCollateralTypeId) }}
+                    >
+                      (Max)
+                    </MaxButton>
+                  </label>
+                </div>
+              }
               labelRight={underlierSymbol}
               bordered
               size='sm'
