@@ -121,10 +121,7 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
       setUnderlier(fiat, underlierString, modifyPositionData, selectedCollateralTypeId);
     },
 
-    setDeltaCollateral: (fiat,
-      value,
-      modifyPositionData,
-      selectedCollateralTypeId) => {
+    setDeltaCollateral: (fiat, value, modifyPositionData, selectedCollateralTypeId) => {
       let newDeltaCollateral: ethers.BigNumber;
       if (value === null || value === '') newDeltaCollateral = initialState.deltaCollateral;
       newDeltaCollateral = decToWad(floor4(Number(value) < 0 ? 0 : Number(value)));
@@ -160,8 +157,9 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
         const tokensOut = await userActions.underlierToCollateralToken(fiat, underlier, collateralType);
         const deltaCollateral = scaleToWad(tokensOut, tokenScale).mul(WAD.sub(slippagePct)).div(WAD);
 
+        // 'deposit' mode used for CreatePosition and ModifyPosition
+        // 'withdraw' and 'redeem' modes are only used in ModifyPosition
         if (mode === 'deposit') {
-          // Applies to manage & create position
           if (selectedCollateralTypeId !== null) {
             // new position
             // calculate debt based off chosen health factor
@@ -219,7 +217,6 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
       } catch (error) {
         console.error('Error updating form data: ', error);
         if (mode === 'deposit') {
-          console.error('Error updating form data: ', error);
           set(() => ({
             deltaCollateral: ethers.constants.Zero,
             deltaDebt: ethers.constants.Zero,
