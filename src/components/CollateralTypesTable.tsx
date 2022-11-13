@@ -1,42 +1,10 @@
 import React from 'react';
-import { SortDescriptor, styled, Table, Text, User } from '@nextui-org/react';
+import { Badge, SortDescriptor, Table, Text, User } from '@nextui-org/react';
 import { wadToDec, ZERO } from '@fiatdao/sdk';
-import { encodeCollateralTypeId, floor2, formatUnixTimestamp, interestPerSecondToAPY } from '../utils';
-
-const StyledBadge = styled('span', {
-  display: 'inline-block',
-  textTransform: 'uppercase',
-  padding: '$2 $3',
-  margin: '0 2px',
-  fontSize: '10px',
-  fontWeight: '$bold',
-  borderRadius: '14px',
-  letterSpacing: '0.6px',
-  lineHeight: 1,
-  boxShadow: '1px 2px 5px 0px rgb(0 0 0 / 5%)',
-  alignItems: 'center',
-  alignSelf: 'center',
-  color: '$white',
-  variants: {
-    type: {
-      green: {
-        bg: '$successLight',
-        color: '$successLightContrast'
-      },
-      red: {
-        bg: '$errorLight',
-        color: '$errorLightContrast'
-      },
-      orange: {
-        bg: '$warningLight',
-        color: '$warningLightContrast'
-      }
-    }
-  },
-  defaultVariants: {
-    type: 'active'
-  }
-});
+import {
+  earnableRateToAPY, encodeCollateralTypeId, floor2, formatUnixTimestamp,
+  interestPerSecondToAPY, interestPerSecondToRateUntilMaturity
+} from '../utils';
 
 interface CollateralTypesTableProps {
   collateralTypesData: Array<any>,
@@ -55,7 +23,6 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
       }
       return a.properties.maturity.toNumber() > b.properties.maturity.toNumber() ? 1 : -1
     });
-    console.log({data})
     setSortedData(data);
   }, [props.collateralTypesData, sortProps.direction])
 
@@ -63,7 +30,7 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
 
   return (
     <>
-      <Text h1>Create Position</Text>
+      <Text h2>Create Position</Text>
       <Table
         aria-label='Collateral Types'
         css={{ height: 'auto', minWidth: '100%' }}
@@ -76,10 +43,10 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
         <Table.Header>
           <Table.Column>Asset</Table.Column>
           <Table.Column>Underlier</Table.Column>
-          <Table.Column>Gain Until Maturity</Table.Column>
-          <Table.Column>Interest Rate</Table.Column>
+          <Table.Column>APY (PNL At Maturty)</Table.Column>
+          <Table.Column>Borrow Rate (Due At Maturity)</Table.Column>
           <Table.Column>Total Assets</Table.Column>
-          <Table.Column allowsSorting>Maturity</Table.Column>
+          <Table.Column allowsSorting>Maturity (Days Until Maturity)</Table.Column>
         </Table.Header>
         <Table.Body>
           {
@@ -87,9 +54,12 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
               const { vault, tokenId, underlierSymbol, maturity } = collateralType.properties;
               const { protocol, asset, icons, urls, symbol } = collateralType.metadata;
               const { publican: { interestPerSecond }, codex: { depositedCollateral } } = collateralType.state;
-              const earnableRate = collateralType?.earnableRate?.mul(100);
-              const interestRate = floor2(interestPerSecondToAPY(interestPerSecond));
+              const earnableRate = collateralType?.earnableRate || ZERO;
+              const earnableRateAnnulized = earnableRateToAPY(earnableRate, maturity);
+              const borrowRate = interestPerSecondToRateUntilMaturity(interestPerSecond, maturity);
+              const borrowRateAnnualized = interestPerSecondToAPY(interestPerSecond);
               const maturityFormatted = new Date(Number(maturity.toString()) * 1000);
+              const daysUntilMaturity = Math.max(Math.floor((Number(maturity.toString()) - Math.floor(Date.now() / 1000)) / 86400), 0);
               return (
                 <Table.Row key={encodeCollateralTypeId(vault, tokenId)}>
                   <Table.Cell>
@@ -109,14 +79,28 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
                       <User.Link href={urls.asset}>{protocol}</User.Link>
                     </User>
                   </Table.Cell>
-                  <Table.Cell><User name={underlierSymbol} src={icons.underlier} size='sm'/></Table.Cell>
-                  <Table.Cell>{`${floor2(wadToDec(earnableRate ?? ZERO))}%`}</Table.Cell>
-                  <Table.Cell>{`${interestRate}%`}</Table.Cell>
+                  <Table.Cell>
+                    <User name={underlierSymbol} src={icons.underlier} size='sm' css={{
+                      borderRadius: '0px',
+                      '& span': {
+                        '& .nextui-avatar-bg': {
+                          background: 'transparent !important'
+                        },
+                        borderRadius: '0px !important',
+                        '& img': {
+                          borderRadius: '0px !important',
+                          background: 'transparent !important',
+                        }
+                      }
+                    }}/>
+                  </Table.Cell>
+                  <Table.Cell>{`${floor2(wadToDec(earnableRateAnnulized.mul(100)))}% (${floor2(wadToDec(earnableRate.mul(100)))}%)`}</Table.Cell>
+                  <Table.Cell>{`${floor2(wadToDec(borrowRateAnnualized))}% (${floor2(wadToDec(borrowRate))}%)`}</Table.Cell>
                   <Table.Cell>{`${floor2(wadToDec(depositedCollateral))} ${symbol}`}</Table.Cell>
                   <Table.Cell>
-                    <StyledBadge type={new Date() < maturityFormatted ? 'green' : 'red'} >
-                      {formatUnixTimestamp(maturity)}
-                    </StyledBadge>
+                    <Badge isSquared color={new Date() < maturityFormatted ? 'success' : 'error'} variant='flat' >
+                      {formatUnixTimestamp(maturity)}, ({daysUntilMaturity} days)
+                    </Badge>
                   </Table.Cell>
                 </Table.Row>
               );

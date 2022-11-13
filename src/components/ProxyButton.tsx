@@ -44,7 +44,7 @@ export const ProxyButton = (props: ProxyCardProps) => {
             color: '$connectButtonColor',
           }}
         >
-          {`${props.proxies[0].substring(0,4)}...${props.proxies[0].slice(-4)}`}&nbsp;
+          Proxy: {`${props.proxies[0].substring(0,4)}...${props.proxies[0].slice(-4)}`}&nbsp;
         </Link>
       </Badge>
 
@@ -88,7 +88,7 @@ export const ProxyButton = (props: ProxyCardProps) => {
         width: 'var(--nextui-space-60)',
       }}
     >
-      {error === '' ? 'Create Proxy account'
+      {error === '' ? 'Create Proxy Account'
       : (
         'Error, please try again'
       )}

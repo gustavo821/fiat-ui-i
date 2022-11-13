@@ -141,7 +141,7 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
     // Debounced to prevent spamming RPC calls
     calculateNewPositionData: debounce(async function (
       fiat: any, modifyPositionData: any, selectedCollateralTypeId: string | null
-      ) {
+    ) {
       const { collateralType, position } = modifyPositionData;
       const { tokenScale } = collateralType.properties;
       const { slippagePct, underlier, mode } = get();
@@ -171,9 +171,9 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
             // existing position (selectedCollateralTypeId will be null)
             // calculate debt based off chosen health factor, taking into account position's existing collateral
             const { deltaDebt } = get();
-            const normalDebt = fiat.debtToNormalDebt(deltaDebt, rate);
             const collateral = position.collateral.add(deltaCollateral);
             const debt = fiat.normalDebtToDebt(position.normalDebt, rate).add(deltaDebt);
+            const normalDebt = fiat.debtToNormalDebt(debt, rate);
             const healthFactor = fiat.computeHealthFactor(collateral, normalDebt, rate, liquidationPrice);
             if (debt.gt(0) && healthFactor.lte(WAD)) console.error('Health factor has to be greater than 1.0');
             // new est. health factor, not user's targetedHealthFactor
