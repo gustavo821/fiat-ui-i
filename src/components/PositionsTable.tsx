@@ -86,7 +86,9 @@ export const PositionsTable = (props: PositionsTableProps) => {
               const borrowRate = interestPerSecondToRateUntilMaturity(interestPerSecond, maturity);
               const borrowRateAnnualized = interestPerSecondToAPY(interestPerSecond);
               const debt = normalDebt.mul(virtualRate).div(WAD)
+              const dueAtMaturity = normalDebt.mul(borrowRate).div(WAD);
               const healthFactor = props.contextData.fiat.computeHealthFactor(collateral, normalDebt, virtualRate, liquidationPrice);
+              // const healthFactorAtMaturity = props.contextData.fiat.computeHealthFactor(collateral, normalDebt, virtualRate, liquidationPrice);
               const maturityFormatted = new Date(Number(maturity.toString()) * 1000);
               const daysUntilMaturity = Math.max(Math.floor((Number(maturity.toString()) - Math.floor(Date.now() / 1000)) / 86400), 0);
               return (
@@ -109,7 +111,7 @@ export const PositionsTable = (props: PositionsTableProps) => {
                     </User>
                   </Table.Cell>
                   <Table.Cell><User name={underlierSymbol} src={icons.underlier} size='sm'/></Table.Cell>
-                  <Table.Cell>{`${floor2(wadToDec(borrowRateAnnualized))}% (${floor2(wadToDec(borrowRate))}%)`}</Table.Cell>
+                  <Table.Cell>{`${floor2(wadToDec(borrowRateAnnualized))}% (${floor2(wadToDec(borrowRate))}% → ${floor2(wadToDec(dueAtMaturity))} FIAT)`}</Table.Cell>
                   <Table.Cell>
                     <Col>
                       <Row>{`${floor2(wadToDec(collateral))} ${symbol}`}</Row>

@@ -24,7 +24,6 @@ export const earnableRateToAPY = (earnableRate: BigNumber, maturity: ethers.BigN
   if (now >= Number(maturity.toString())) return ZERO;
   const secondsUntilMaturity = Number(maturity.toString()) - Math.floor(Date.now() / 1000);
   const yearFraction = secondsUntilMaturity / 31622400;
-  console.log(wadToDec(earnableRate), yearFraction);
   return ethers.BigNumber.from(
     decToWad((Math.pow((1 + Number(wadToDec(earnableRate))), (1 / yearFraction )) - 1).toFixed(10))
   );
