@@ -217,6 +217,7 @@ export const buyCollateralAndModifyDebt = async (contextData: any,
           ]
         )
       );
+      break;
     }
     case 'ERC1155:FC': {
       if (!properties.fcData) return console.error('Missing FC data');
@@ -243,6 +244,7 @@ export const buyCollateralAndModifyDebt = async (contextData: any,
           underlier
         )
       );
+      break;
     }
     case 'ERC20:FY': {
       if (!properties.fyData) return console.error('Missing FY data');
@@ -266,6 +268,7 @@ export const buyCollateralAndModifyDebt = async (contextData: any,
           ]
         )
       );
+      break;
     }
     case 'ERC20:SPT': {
       if (!properties.sptData) return console.error('Missing SPT data');
@@ -291,6 +294,7 @@ export const buyCollateralAndModifyDebt = async (contextData: any,
           ]
         )
       );
+      break;
     }
     default: {
       console.error('Unsupported vault: ', properties.vaultType);
@@ -338,6 +342,7 @@ export const sellCollateralAndModifyDebt = async (contextData: any,
           ]
         )
       );
+      break;
     }
 
     case 'ERC1155:FC': {
@@ -363,6 +368,7 @@ export const sellCollateralAndModifyDebt = async (contextData: any,
           maxBorrowRate
         )
       );
+      break;
     }
     case 'ERC20:FY': {
       if (!properties.fyData) return console.error('Missing FY data');
@@ -386,6 +392,7 @@ export const sellCollateralAndModifyDebt = async (contextData: any,
           ]
         )
       );
+      break;
     }
     case 'ERC20:SPT': {
       if (!properties.sptData) return console.error('Missing SPT data');
@@ -411,6 +418,7 @@ export const sellCollateralAndModifyDebt = async (contextData: any,
           ]
         )
       );
+      break;
     }
     default: {
       console.error('Unsupported vault: ', properties.vaultType);
@@ -449,6 +457,7 @@ export const redeemCollateralAndModifyDebt = async (contextData: any,
           normalDebt
         )
       );
+      break;
     }
     case 'ERC1155:FC': {
       if (!properties.fcData) return console.error('Missing FC data');
@@ -468,6 +477,7 @@ export const redeemCollateralAndModifyDebt = async (contextData: any,
           normalDebt
         )
       );
+      break;
     }
     case 'ERC20:FY': {
       if (!properties.fyData) return console.error('Missing FY data');
@@ -486,6 +496,7 @@ export const redeemCollateralAndModifyDebt = async (contextData: any,
           normalDebt
         )
       );
+      break;
     }
     case 'ERC20:SPT': {
       if (!properties.sptData) return console.error('Missing SPT data');
@@ -511,6 +522,7 @@ export const redeemCollateralAndModifyDebt = async (contextData: any,
           ]
         )
       );
+      break;
     }
     default: {
       console.error('Unsupported vault: ', properties.vaultType);
