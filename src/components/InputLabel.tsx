@@ -16,7 +16,7 @@ const MaxButton = styled('button', {
   },
 });
 
-export const InputLabel = (props: { onMaxClick?: () => void }) => {
+export const InputLabel = (props: { label: string, onMaxClick?: () => void }) => {
   return (
     <div style={{ display: 'flex' }}>
       <label
@@ -28,7 +28,7 @@ export const InputLabel = (props: { onMaxClick?: () => void }) => {
           lineHeight: 'var(--nextui-lineHeights-md)',
         }}
       >
-        Underlier to swap {props.onMaxClick ? <MaxButton onClick={props.onMaxClick}>(Max)</MaxButton> : null}
+        {props.label} {props.onMaxClick ? <MaxButton onClick={props.onMaxClick}>(Max)</MaxButton> : null}
       </label>
     </div>
   );

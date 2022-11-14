@@ -169,7 +169,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
               // eslint-disable-next-line @typescript-eslint/ban-ts-comment
               // @ts-ignore
               label={
-                <InputLabel onMaxClick={() => formDataStore.setUnderlier(props.contextData.fiat, underlierBalance, props.modifyPositionData, props.selectedCollateralTypeId)} />
+                <InputLabel label='Underlier to swap' onMaxClick={() => formDataStore.setUnderlier(props.contextData.fiat, underlierBalance, props.modifyPositionData, props.selectedCollateralTypeId)} />
               }
               labelRight={underlierSymbol}
               bordered

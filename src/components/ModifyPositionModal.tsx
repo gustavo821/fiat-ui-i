@@ -17,6 +17,7 @@ import { commifyToDecimalPlaces, floor2, floor4, formatUnixTimestamp } from '../
 import { TransactionStatus } from '../../pages';
 import { useModifyPositionFormDataStore } from '../stores/formStore';
 import { Alert } from './Alert';
+import { InputLabel } from './InputLabel';
 
 interface ModifyPositionModalProps {
   buyCollateralAndModifyDebt: () => any;
@@ -229,7 +230,14 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
           }}
           placeholder='0'
           inputMode='decimal'
-          label={formDataStore.mode === 'deposit' ? 'FIAT to borrow' : 'FIAT to pay back'}
+          // Bypass type warning from passing a custom component instead of a string
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          label={
+            formDataStore.mode === 'deposit'
+              ? 'FIAT to borrow'
+              : <InputLabel label='FIAT to pay back' onMaxClick={() => formDataStore.setDeltaDebt(props.contextData.fiat, wadToDec(formDataStore.debt), props.modifyPositionData, null)} />
+          }
           labelRight={'FIAT'}
           bordered
           size='sm'
