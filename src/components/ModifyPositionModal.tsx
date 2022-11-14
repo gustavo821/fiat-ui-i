@@ -56,7 +56,8 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
   const [rpcError, setRpcError] = React.useState('');
 
   const matured = React.useMemo(() => {
-    return !(new Date() < new Date(Number(props.modifyPositionData.collateralType?.properties.maturity.toString()) * 1000));
+    const maturity = props.modifyPositionData.collateralType?.properties.maturity.toString();
+    return (maturity !== undefined && !(new Date() < new Date(Number(maturity) * 1000)));
   }, [props.modifyPositionData.collateralType?.properties.maturity])
 
   React.useEffect(() => {
