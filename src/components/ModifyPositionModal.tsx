@@ -302,7 +302,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               // Next UI Switch `checked` type is wrong, this is necessary
               // eslint-disable-next-line @typescript-eslint/ban-ts-comment
               // @ts-ignore
-              checked={() => underlierAllowance?.gte(0) && underlierAllowance?.gte(formDataStore.underlier)}
+              checked={() => underlierAllowance?.gte(0) && underlierAllowance?.gte(formDataStore.underlier) ?? false}
               onChange={async () => {
                 if(!formDataStore.underlier.isZero() && underlierAllowance.gte(formDataStore.underlier)) {
                   try {
