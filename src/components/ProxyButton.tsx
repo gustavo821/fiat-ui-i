@@ -91,7 +91,7 @@ export const ProxyButton = (props: ProxyCardProps) => {
     >
       {error === '' ? 'Create Proxy Account'
       : (
-        'Error, please try again'
+        'Error, please refresh the page'
       )}
     </Button>
   );

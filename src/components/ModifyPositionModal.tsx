@@ -73,16 +73,18 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
     return null;
   }
 
-  const { proxies } = props.contextData;
+  const { proxies, fiat } = props.contextData;
   const {
     collateralType: {
       metadata: { symbol: symbol, protocol, asset },
       properties: { underlierScale, underlierSymbol, maturity },
+      state: { codex: { virtualRate }, collybus: { liquidationPrice }}
     },
     underlierAllowance,
     underlierBalance,
     monetaDelegate,
     fiatAllowance,
+    position
   } = props.modifyPositionData;
 
   const { action: currentTxAction } = props.transactionData;
@@ -309,7 +311,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
           value={formDataStore.formDataLoading ? ' ' : floor4(wadToDec(formDataStore.collateral))}
           placeholder='0'
           type='string'
-          label={'Collateral'}
+          label={`Collateral (before: ${floor2(wadToDec(position.collateral))} ${symbol})`}
           labelRight={symbol}
           contentLeft={formDataStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
@@ -320,7 +322,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
           value={formDataStore.formDataLoading ? ' ' : floor4(wadToDec(formDataStore.debt))}
           placeholder='0'
           type='string'
-          label='Debt'
+          label={`Debt (before: ${floor2(wadToDec(fiat.normalDebtToDebt(position.normalDebt, virtualRate)))} FIAT)`}
           labelRight={'FIAT'}
           contentLeft={formDataStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
@@ -337,7 +339,8 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
           }
           placeholder='0'
           type='string'
-          label='Health Factor'
+          // label='Health Factor'
+          label={`Health Factor (before: ${floor4(wadToDec(fiat.computeHealthFactor(position.collateral, position.normalDebt, virtualRate, liquidationPrice)))})`}
           labelRight={'🚦'}
           contentLeft={formDataStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
