@@ -394,8 +394,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
         <Button
           css={{ minWidth: '100%' }}
           disabled={
-            props.disableActions ||
-            !hasProxy ||
+            props.disableActions || !hasProxy ||
             formDataStore.underlier?.isZero() ||
             formDataStore.deltaCollateral?.isZero() ||
             underlierAllowance?.lt(formDataStore.underlier) ||

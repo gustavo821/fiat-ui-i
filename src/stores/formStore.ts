@@ -243,13 +243,23 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
             error: JSON.stringify(error),
           }));
         } else if (mode === 'withdraw' || mode === 'redeem') {
-          set(() => ({
-            underlier: ethers.constants.Zero,
-            collateral: ethers.constants.Zero,
-            debt: ethers.constants.Zero,
-            healthFactor: ethers.constants.Zero,
-            error: JSON.stringify(error),
-          }));
+          try {
+            set(() => ({
+              underlier: ethers.constants.Zero,
+              collateral: position.collateral,
+              debt: fiat.normalDebtToDebt(position.normalDebt, rate),
+              healthFactor: fiat.computeHealthFactor(position.collateral, position.normalDebt, rate, liquidationPrice),
+              error: JSON.stringify(error),
+            }));
+          } catch (error) {
+            set(() => ({
+              underlier: ethers.constants.Zero,
+              collateral: ethers.constants.Zero,
+              debt: ethers.constants.Zero,
+              healthFactor: ethers.constants.Zero,
+              error: JSON.stringify(error),
+            }));
+          }
         }
       }
 

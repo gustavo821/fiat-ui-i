@@ -423,15 +423,21 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
         <Spacer y={0.5} />
         <Button
           css={{ minWidth: '100%' }}
-          disabled={
-            props.disableActions || !hasProxy || formDataStore.mode === 'deposit'
-              ? formDataStore.underlier.isZero()
-              : formDataStore.deltaCollateral.isZero() || formDataStore.mode === 'deposit'
-              ? monetaDelegate === false
-              : true || formDataStore.mode === 'deposit'
-              ? underlierAllowance.lt(formDataStore.underlier)
-              : fiatAllowance.lt(formDataStore.deltaDebt)
-          }
+          disabled={(() => {
+            if (props.disableActions || !hasProxy) return true;
+            if (formDataStore.mode === 'deposit') {
+              if (monetaDelegate === false) return true;
+              if (formDataStore.underlier.isZero() && formDataStore.deltaDebt.isZero()) return true;
+              if (!formDataStore.underlier.isZero() && underlierAllowance.lt(formDataStore.underlier)) return true;
+            } else if (formDataStore.mode === 'withdraw') {
+              if (formDataStore.deltaCollateral.isZero() && formDataStore.deltaDebt.isZero()) return true;
+              if (!formDataStore.deltaDebt.isZero() && fiatAllowance.lt(formDataStore.deltaDebt)) return true;
+            } else if (formDataStore.mode === 'redeem') {
+              if (formDataStore.deltaCollateral.isZero() && formDataStore.deltaDebt.isZero()) return true;
+              if (!formDataStore.deltaDebt.isZero() && fiatAllowance.lt(formDataStore.deltaDebt)) return true;
+            }
+            return false;
+          })()}
           icon={
             [
               'buyCollateralAndModifyDebt',
