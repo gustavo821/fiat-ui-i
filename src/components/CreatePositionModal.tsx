@@ -84,7 +84,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
       formAlerts.push(
         <Alert
           severity='warning'
-          message={'Creating positions requires a Proxy. Please close this modal and click "Create Proxy Account" button in the top bar.'}
+          message={'Creating positions requires a Proxy. Please close this modal and click "Create Proxy Account" in the top bar.'}
           key={'warn-needsProxy'}
         />
       );
