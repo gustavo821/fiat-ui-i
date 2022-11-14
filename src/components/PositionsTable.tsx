@@ -125,7 +125,10 @@ export const PositionsTable = (props: PositionsTableProps) => {
                       }
                     }}/>
                   </Table.Cell>
-                  <Table.Cell>{`${floor2(wadToDec(borrowRateAnnualized.mul(100)))}% (${floor2(wadToDec(borrowRate.mul(100)))}% → ${floor2(wadToDec(dueAtMaturity))} FIAT)`}</Table.Cell>
+                  <Table.Cell>
+                    <Row>{`${floor2(wadToDec(borrowRateAnnualized.mul(100)))}%`}</Row>
+                    <Row>{`(${floor2(wadToDec(borrowRate.mul(100)))}% ≅ ${floor2(wadToDec(dueAtMaturity))} FIAT)`}</Row>
+                  </Table.Cell>
                   <Table.Cell>
                     <Col>
                       <Row>{`${floor2(wadToDec(collateral))} ${symbol}`}</Row>
