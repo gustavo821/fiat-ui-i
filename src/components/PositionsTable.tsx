@@ -1,6 +1,6 @@
 import React from 'react';
 import { Badge, Col, Row, SortDescriptor, Table, Text, User } from '@nextui-org/react';
-import { decToWad, WAD, wadToDec } from '@fiatdao/sdk';
+import { WAD, wadToDec } from '@fiatdao/sdk';
 
 import {
   encodePositionId, floor2, formatUnixTimestamp, getCollateralTypeData,

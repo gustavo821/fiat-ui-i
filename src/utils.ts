@@ -1,8 +1,6 @@
 import { BigNumber, ethers } from 'ethers';
 import { decToWad, scaleToDec, wadToDec, ZERO } from '@fiatdao/sdk';
 
-export const DUSTY = ethers.utils.parseUnits('1');
-
 export const formatUnixTimestamp = (unixTimestamp: ethers.BigNumberish): string => {
   const date = new Date(Number(unixTimestamp.toString()) * 1000);
   return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });

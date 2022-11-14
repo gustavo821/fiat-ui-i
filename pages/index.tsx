@@ -326,7 +326,7 @@ const Home: NextPage = () => {
           contextData,
           modifyPositionData.collateralType,
           formDataStore.deltaDebt, // increase (mint)
-          { collateral: modifyPositionData.position.collateral, normalDebt: modifyPositionData.position.normalDebt }
+          modifyPositionData.position,
         );
         setTransactionData(initialState.transactionData);
         return resp;
@@ -356,7 +356,7 @@ const Home: NextPage = () => {
           contextData,
           modifyPositionData.collateralType,
           formDataStore.deltaDebt.mul(-1), // decrease (pay back)
-          { collateral: modifyPositionData.position.collateral, normalDebt: modifyPositionData.position.normalDebt }
+          modifyPositionData.position,
         );
         setTransactionData(initialState.transactionData);
         return resp;
@@ -368,7 +368,7 @@ const Home: NextPage = () => {
           formDataStore.deltaCollateral,
           formDataStore.deltaDebt,
           formDataStore.underlier,
-          { collateral: modifyPositionData.position.collateral, normalDebt: modifyPositionData.position.normalDebt }
+          modifyPositionData.position,
         );
         setTransactionData(initialState.transactionData);
         return resp;
@@ -388,7 +388,7 @@ const Home: NextPage = () => {
         modifyPositionData.collateralType,
         formDataStore.deltaCollateral,
         formDataStore.deltaDebt,
-        { collateral: modifyPositionData.position.collateral, normalDebt: modifyPositionData.position.normalDebt }
+        modifyPositionData.position,
       );
       setTransactionData(initialState.transactionData);
       return resp;
