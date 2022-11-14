@@ -394,7 +394,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               // @ts-ignore
               checked={() => fiatAllowance?.gt(0) && fiatAllowance?.gte(formDataStore.deltaDebt) ?? false}
               onChange={async () => {
-                if (!formDataStore.deltaDebt.isZero() && fiatAllowance.gte(formDataStore.deltaDebt)) {
+                if (formDataStore.deltaDebt.gt(0) && fiatAllowance.gte(formDataStore.deltaDebt)) {
                   try {
                     setRpcError('');
                     await props.unsetFIATAllowance(props.contextData.fiat);
