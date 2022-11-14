@@ -87,6 +87,28 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
 
   const hasProxy = proxies.length > 0;
 
+  const renderFormAlerts = () => {
+    const formAlerts = [];
+
+    if (formDataStore.formWarnings.length !== 0) {
+      formDataStore.formWarnings.map((formWarning, idx) => {
+        formAlerts.push(<Alert severity='warning' message={formWarning} key={`warn-${idx}`} />);
+      });
+    }
+
+    if (formDataStore.formErrors.length !== 0) {
+      formDataStore.formErrors.forEach((formError, idx) => {
+        formAlerts.push(<Alert severity='error' message={formError} key={`err-${idx}`} />);
+      });
+    }
+
+    if (rpcError !== '') {
+      formAlerts.push(<Alert severity='error' message={rpcError} />);
+    }
+
+    return formAlerts;
+  }
+
   return (
     <>
       <Modal.Header>
@@ -397,15 +419,8 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
           </>
         )}
         <Spacer y={3} />
-        { rpcError === ''
-          ? null
-          :(
-            <>
-              <Alert severity='error' message={rpcError} />
-              <Spacer y={0.5} />
-            </>
-          )
-        }
+        { renderFormAlerts() }
+        <Spacer y={0.5} />
         <Button
           css={{ minWidth: '100%' }}
           disabled={
