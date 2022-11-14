@@ -369,7 +369,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
                 } else {
                   try {
                     setRpcError('');
-                    await props.setMonetaDelegate(props.contextData.fiat)
+                    await props.setMonetaDelegate(props.contextData.fiat);
                   } catch (e: any) {
                     setRpcError(e.message);
                   }
