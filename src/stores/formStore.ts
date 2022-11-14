@@ -153,6 +153,7 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
       const { slippagePct, underlier, mode } = get();
       const { codex: { virtualRate: rate }, collybus: { liquidationPrice } } = collateralType.state;
 
+      // Reset form errors and warnings on new import
       set(() => ({ formWarnings: [], formErrors: [] }));
 
       try {
@@ -179,7 +180,7 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
             const healthFactor = fiat.computeHealthFactor(collateral, deltaNormalDebt, rate, liquidationPrice);
 
             if (deltaDebt.gt(ethers.constants.Zero) && deltaDebt.lte(debtFloor) ) {
-              set(() => ({ formErrors: [`Below minimum borrow amount (${wadToDec(debtFloor)})`] }));
+              set(() => ({ formErrors: [...get().formErrors, `Insufficient debt - debt must be above debt floor: ${wadToDec(debtFloor)}`] }));
             }
             if (debt.gt(0) && healthFactor.lte(WAD)) console.error('Health factor has to be greater than 1.0');
 
@@ -193,7 +194,7 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
             const healthFactor = fiat.computeHealthFactor(collateral, normalDebt, rate, liquidationPrice);
 
             if (debt.gt(ethers.constants.Zero) && debt.lte(collateralType.settings.codex.debtFloor) ) {
-              set(() => ({ formErrors: [`Below minimum borrow amount (${wadToDec(collateralType.settings.codex.debtFloor)})`] }));
+              set(() => ({ formErrors: [...get().formErrors, `Insufficient debt - debt must be above debt floor: ${wadToDec(debtFloor)}`] }));
             }
 
             if (debt.gt(0) && healthFactor.lte(WAD)) console.error('Health factor has to be greater than 1.0');
@@ -218,7 +219,9 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
           // override normalDebt to position.normalDebt if normalDebt is less than 1 FIAT 
           if (normalDebt.lt(WAD)) normalDebt = ZERO;
           const debt = fiat.normalDebtToDebt(normalDebt, rate);
-          if (debt.gt(ZERO) && debt.lt(debtFloor)) throw new Error('Insufficient debt - Below debtFloor');
+          if (debt.gt(ZERO) && debt.lt(debtFloor)) {
+            set(() => ({ formErrors: [...get().formErrors, `Insufficient debt - debt must be above debt floor: ${wadToDec(debtFloor)}`] }));
+          }
           const healthFactor = fiat.computeHealthFactor(collateral, normalDebt, rate, liquidationPrice);
           if (healthFactor.lte(WAD)) throw new Error('Health factor has to be greater than 1.0');
 
@@ -235,7 +238,9 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
           // override normalDebt to position.normalDebt if normalDebt is less than 1 FIAT 
           if (normalDebt.lt(WAD)) normalDebt = ZERO;
           const debt = fiat.normalDebtToDebt(normalDebt, rate);
-          if (debt.gt(ZERO) && debt.lt(debtFloor)) throw new Error('Insufficient debt - Below debtFloor');
+          if (debt.gt(ZERO) && debt.lt(debtFloor)) {
+            set(() => ({ formErrors: [...get().formErrors, `Insufficient debt - debt must be above debt floor: ${wadToDec(debtFloor)}`] }));
+          }
           const healthFactor = fiat.computeHealthFactor(collateral, normalDebt, rate, liquidationPrice);
           if (healthFactor.lte(WAD)) throw new Error('Health factor has to be greater than 1.0');
 
