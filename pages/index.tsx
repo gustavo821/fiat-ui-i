@@ -325,7 +325,8 @@ const Home: NextPage = () => {
         const resp = await userActions.modifyCollateralAndDebt(
           contextData,
           modifyPositionData.collateralType,
-          formDataStore.deltaDebt // increase (mint)
+          formDataStore.deltaDebt, // increase (mint)
+          { collateral: modifyPositionData.position.collateral, normalDebt: modifyPositionData.position.normalDebt }
         );
         setTransactionData(initialState.transactionData);
         return resp;
@@ -354,7 +355,8 @@ const Home: NextPage = () => {
         const resp = await userActions.modifyCollateralAndDebt(
           contextData,
           modifyPositionData.collateralType,
-          formDataStore.deltaDebt.mul(-1) // decrease (pay back)
+          formDataStore.deltaDebt.mul(-1), // decrease (pay back)
+          { collateral: modifyPositionData.position.collateral, normalDebt: modifyPositionData.position.normalDebt }
         );
         setTransactionData(initialState.transactionData);
         return resp;
@@ -365,7 +367,9 @@ const Home: NextPage = () => {
           modifyPositionData.collateralType,
           formDataStore.deltaCollateral,
           formDataStore.deltaDebt,
-          formDataStore.underlier,);
+          formDataStore.underlier,
+          { collateral: modifyPositionData.position.collateral, normalDebt: modifyPositionData.position.normalDebt }
+        );
         setTransactionData(initialState.transactionData);
         return resp;
       }
@@ -383,7 +387,9 @@ const Home: NextPage = () => {
         contextData,
         modifyPositionData.collateralType,
         formDataStore.deltaCollateral,
-        formDataStore.deltaDebt,);
+        formDataStore.deltaDebt,
+        { collateral: modifyPositionData.position.collateral, normalDebt: modifyPositionData.position.normalDebt }
+      );
       setTransactionData(initialState.transactionData);
       return resp;
     } catch (e) {

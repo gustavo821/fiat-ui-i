@@ -4,7 +4,7 @@ import 'antd/dist/antd.css';
 import { decToScale, decToWad, scaleToDec, scaleToWad, WAD, wadToDec, wadToScale, ZERO } from '@fiatdao/sdk';
 
 import * as userActions from '../actions';
-import { debounce, DUSTY, floor4 } from '../utils';
+import { debounce, floor4 } from '../utils';
 
 /// A store for setting and getting form values to create and manage positions.
 interface FormState {
