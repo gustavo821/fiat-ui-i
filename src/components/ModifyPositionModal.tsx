@@ -61,7 +61,6 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
   }, [props.modifyPositionData.collateralType?.properties.maturity])
 
   React.useEffect(() => {
-    console.log(matured, formDataStore.mode);
     if (matured && formDataStore.mode !== 'redeem') {
       formDataStore.setMode('redeem');
     }  
