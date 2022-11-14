@@ -426,6 +426,7 @@ const Home: NextPage = () => {
       <Container>
         <CollateralTypesTable
           collateralTypesData={collateralTypesData}
+          positionsData={positionsData}
           onSelectCollateralType={(collateralTypeId) => {
             // If user has an existing position for the collateral type then open ModifyPositionModal instead
             const { vault, tokenId } = decodeCollateralTypeId(collateralTypeId);

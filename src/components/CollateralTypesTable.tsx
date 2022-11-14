@@ -1,6 +1,6 @@
 import React from 'react';
 import { Badge, SortDescriptor, Table, Text, User } from '@nextui-org/react';
-import { wadToDec, ZERO } from '@fiatdao/sdk';
+import { addressEq, wadToDec, ZERO } from '@fiatdao/sdk';
 import {
   earnableRateToAPY, encodeCollateralTypeId, floor2, formatUnixTimestamp,
   interestPerSecondToAPY, interestPerSecondToRateUntilMaturity
@@ -8,6 +8,7 @@ import {
 
 interface CollateralTypesTableProps {
   collateralTypesData: Array<any>,
+  positionsData: Array<any>,
   onSelectCollateralType: (collateralTypeId: string) => void
 }
 
@@ -16,7 +17,12 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
   const [sortProps, setSortProps] = React.useState<SortDescriptor>({ column: 'Maturity', direction: 'descending' });
   
   React.useEffect(() => {
-    const data = [...props.collateralTypesData]
+    const data = [...props.collateralTypesData].filter(({ properties: { vault, tokenId } }) => {
+      if (props.positionsData.find((position) => addressEq(position.vault, vault) && position.tokenId == tokenId)) {
+        return false;
+      }
+      return true;
+    });
     data.sort((a: any, b: any) : number => {
       if (sortProps.direction === 'descending' ) {
         return a.properties.maturity.toNumber() < b.properties.maturity.toNumber() ? 1 : -1
@@ -24,7 +30,7 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
       return a.properties.maturity.toNumber() > b.properties.maturity.toNumber() ? 1 : -1
     });
     setSortedData(data);
-  }, [props.collateralTypesData, sortProps.direction])
+  }, [props.collateralTypesData, props.positionsData, sortProps.direction])
 
   if (props.collateralTypesData.length === 0) return null;
 
