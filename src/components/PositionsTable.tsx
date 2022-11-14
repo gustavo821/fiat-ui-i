@@ -1,6 +1,6 @@
 import React from 'react';
 import { Badge, Col, Row, SortDescriptor, Table, Text, User } from '@nextui-org/react';
-import { WAD, wadToDec } from '@fiatdao/sdk';
+import { decToWad, WAD, wadToDec } from '@fiatdao/sdk';
 
 import {
   encodePositionId, floor2, formatUnixTimestamp, getCollateralTypeData,
@@ -69,7 +69,7 @@ export const PositionsTable = (props: PositionsTableProps) => {
           <Table.Column>Borrow Rate (Due At Maturity)</Table.Column>
           <Table.Column>Collateral (Fair Value)</Table.Column>
           <Table.Column>Debt (Implied Value)</Table.Column>
-          <Table.Column>Health Factor</Table.Column>
+          <Table.Column>Health Factor (At Maturity)</Table.Column>
           <Table.Column allowsSorting>Maturity (Days Until Maturity)</Table.Column>
         </Table.Header>
         <Table.Body>
@@ -85,10 +85,10 @@ export const PositionsTable = (props: PositionsTableProps) => {
               } = getCollateralTypeData(props.collateralTypesData, vault, tokenId);
               const borrowRate = interestPerSecondToRateUntilMaturity(interestPerSecond, maturity);
               const borrowRateAnnualized = interestPerSecondToAPY(interestPerSecond);
-              const debt = normalDebt.mul(virtualRate).div(WAD)
+              const debt = normalDebt.mul(virtualRate).div(WAD);
               const dueAtMaturity = normalDebt.mul(borrowRate).div(WAD);
               const healthFactor = props.contextData.fiat.computeHealthFactor(collateral, normalDebt, virtualRate, liquidationPrice);
-              // const healthFactorAtMaturity = props.contextData.fiat.computeHealthFactor(collateral, normalDebt, virtualRate, liquidationPrice);
+              const healthFactorAtMaturity = props.contextData.fiat.computeHealthFactor(collateral, normalDebt.add(dueAtMaturity), WAD, liquidationPrice);
               const maturityFormatted = new Date(Number(maturity.toString()) * 1000);
               const daysUntilMaturity = Math.max(Math.floor((Number(maturity.toString()) - Math.floor(Date.now() / 1000)) / 86400), 0);
               return (
@@ -125,7 +125,7 @@ export const PositionsTable = (props: PositionsTableProps) => {
                       }
                     }}/>
                   </Table.Cell>
-                  <Table.Cell>{`${floor2(wadToDec(borrowRateAnnualized))}% (${floor2(wadToDec(borrowRate))}% → ${floor2(wadToDec(dueAtMaturity))} FIAT)`}</Table.Cell>
+                  <Table.Cell>{`${floor2(wadToDec(borrowRateAnnualized.mul(100)))}% (${floor2(wadToDec(borrowRate.mul(100)))}% → ${floor2(wadToDec(dueAtMaturity))} FIAT)`}</Table.Cell>
                   <Table.Cell>
                     <Col>
                       <Row>{`${floor2(wadToDec(collateral))} ${symbol}`}</Row>
@@ -136,7 +136,7 @@ export const PositionsTable = (props: PositionsTableProps) => {
                     <Row>{floor2(wadToDec(debt))} FIAT</Row>
                     <Row>(${floor2(wadToDec(debt))})</Row>
                   </Table.Cell>
-                  <Table.Cell>{`${floor2(wadToDec(healthFactor))}`}</Table.Cell>
+                  <Table.Cell>{`${floor2(wadToDec(healthFactor))} (${floor2(wadToDec(healthFactorAtMaturity))})`}</Table.Cell>
                   <Table.Cell>
                     <Badge isSquared color={new Date() < maturityFormatted ? 'success' : 'error'} variant='flat' >
                       {formatUnixTimestamp(maturity)}, ({daysUntilMaturity} days)

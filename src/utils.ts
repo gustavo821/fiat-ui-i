@@ -36,13 +36,14 @@ export const interestPerSecondToRateUntilMaturity = (
   if (now >= Number(maturity.toString())) return ZERO;
   const secondsUntilMaturity = Number(maturity.toString()) - Math.floor(Date.now() / 1000);
   return decToWad(
-    (Math.pow(Number(wadToDec(ethers.BigNumber.from(interestPerSecond)).slice(0, 17)), secondsUntilMaturity) - 1) * 100
+    (Math.pow(Number(wadToDec(ethers.BigNumber.from(interestPerSecond)).slice(0, 17)), secondsUntilMaturity) - 1)
+      .toFixed(10)
   );
 }
 
 export const interestPerSecondToAPY = (interestPerSecond: ethers.BigNumberish): BigNumber => {
   return decToWad(
-    (Math.pow(Number(wadToDec(ethers.BigNumber.from(interestPerSecond)).slice(0, 17)), 31622400) - 1) * 100
+    (Math.pow(Number(wadToDec(ethers.BigNumber.from(interestPerSecond)).slice(0, 17)), 31622400) - 1).toFixed(10)
   );
 };
 
