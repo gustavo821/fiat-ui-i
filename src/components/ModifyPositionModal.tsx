@@ -177,7 +177,15 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
             }}
             placeholder='0'
             inputMode='decimal'
-            label='Underlier to swap'
+            // Bypass type warning from passing a custom component instead of a string
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
+            label={
+              <InputLabel
+                label='Underlier to swap'
+                onMaxClick={() => formDataStore.setMaxUnderlier(props.contextData.fiat, props.modifyPositionData, null)}
+              />
+            }
             labelRight={underlierSymbol}
             bordered
             size='sm'
@@ -193,10 +201,19 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
             }}
             placeholder='0'
             inputMode='decimal'
+            // Bypass type warning from passing a custom component instead of a string
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
             label={
               formDataStore.mode === 'withdraw'
-                ? 'Collateral to withdraw and swap'
-                : 'Collateral to withdraw and redeem'
+                ? <InputLabel
+                  label='Collateral to withdraw and swap'
+                  onMaxClick={() => formDataStore.setMaxDeltaCollateral(props.contextData.fiat, props.modifyPositionData, null)}
+                />
+                : <InputLabel
+                    label='Collateral to withdraw and redeem'
+                    onMaxClick={() => formDataStore.setMaxDeltaCollateral(props.contextData.fiat, props.modifyPositionData, null)}
+                  />
             }
             labelRight={symbol}
             bordered
@@ -236,7 +253,10 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
           label={
             formDataStore.mode === 'deposit'
               ? 'FIAT to borrow'
-              : <InputLabel label='FIAT to pay back' onMaxClick={() => formDataStore.setDeltaDebt(props.contextData.fiat, wadToDec(formDataStore.debt), props.modifyPositionData, null)} />
+              : <InputLabel
+                  label='FIAT to pay back'
+                  onMaxClick={() => formDataStore.setMaxDeltaDebt(props.contextData.fiat, props.modifyPositionData, null)}
+                />
           }
           labelRight={'FIAT'}
           bordered

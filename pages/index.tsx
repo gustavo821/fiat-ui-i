@@ -1,10 +1,10 @@
 import React from 'react';
+import type { NextPage } from 'next';
 import { useAccount, useNetwork, useProvider } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { ethers } from 'ethers';
-import { decToWad, FIAT, wadToDec, ZERO } from '@fiatdao/sdk';
 import { Badge, Container, Spacer } from '@nextui-org/react';
-import type { NextPage } from 'next';
+import { ethers } from 'ethers';
+import { decToWad, FIAT, WAD, wadToDec, ZERO } from '@fiatdao/sdk';
 
 import { ProxyButton } from '../src/components/ProxyButton';
 import { CollateralTypesTable } from '../src/components/CollateralTypesTable';
@@ -41,8 +41,8 @@ const Home: NextPage = () => {
       collateralType: null as undefined | null | any,
       position: null as undefined | null | any,
       underlierAllowance: null as null | ethers.BigNumber, // [underlierScale]
-      underlierBalance: null as null | ethers.BigNumber,
-      monetaDelegate: null as null | boolean,
+      underlierBalance: null as null | ethers.BigNumber, // [underlierScale]
+      monetaDelegate: null as null | boolean, // [boolean]
       fiatAllowance: null as null | ethers.BigNumber // [wad]
     },
     modifyPositionFormData: {
@@ -272,8 +272,10 @@ const Home: NextPage = () => {
 
   const setUnderlierAllowance = async (fiat: any) => {
     const token = fiat.getERC20Contract(modifyPositionData.collateralType.properties.underlierToken);
-    // return await dryRun(fiat, 'setUnderlierAllowance', token, 'approve', contextData.proxies[0], formDataStore.underlier);
-    await sendAndWait(fiat, 'setUnderlierAllowance', token, 'approve', contextData.proxies[0], formDataStore.underlier);
+    // add 1 unit has a buffer in case user refreshes the page and the value becomes outdated
+    const allowance = formDataStore.underlier.add(modifyPositionData.collateralType.properties.underlierScale);
+    // return await dryRun(fiat, 'setUnderlierAllowance', token, 'approve', contextData.proxies[0], allowance);
+    await sendAndWait(fiat, 'setUnderlierAllowance', token, 'approve', contextData.proxies[0], allowance);
     const underlierAllowance = await token.allowance(contextData.user, contextData.proxies[0])
     setModifyPositionData({ ...modifyPositionData, underlierAllowance });
   }
@@ -286,14 +288,16 @@ const Home: NextPage = () => {
 
   const setFIATAllowance = async (fiat: any) => {
     const token = fiat.getContracts().fiat;
-    // return await dryRun(fiat, 'setFIATAllowance', token, 'approve', contextData.proxies[0], formDataStore.deltaDebt);
-    await sendAndWait(fiat, 'setFIATAllowance', token, 'approve', contextData.proxies[0], formDataStore.deltaDebt);
+    // add 1 unit has a buffer in case user refreshes the page and the value becomes outdated
+    const allowance = formDataStore.deltaDebt.add(WAD);
+    // return await dryRun(fiat, 'setFIATAllowance', token, 'approve', contextData.proxies[0], allowance);
+    await sendAndWait(fiat, 'setFIATAllowance', token, 'approve', contextData.proxies[0], allowance);
     const fiatAllowance = await token.allowance(contextData.user, contextData.proxies[0])
     setModifyPositionData({ ...modifyPositionData, fiatAllowance });
   }
 
   const unsetFIATAllowance = async (fiat: any) => {
-    const token = fiat.getERC20Contract(modifyPositionData.collateralType.properties.underlierToken);
+    const token = fiat.getContracts().fiat;
     // return await dryRun(fiat, 'unsetFIATAllowance', token, 'approve', contextData.proxies[0], 0);
     return await sendAndWait(fiat, 'unsetFIATAllowance', token, 'approve', contextData.proxies[0], 0);
   }
