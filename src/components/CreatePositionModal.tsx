@@ -40,6 +40,7 @@ export const CreatePositionModal = (props: CreatePositionModalProps) => {
   return (
     <Modal
       preventClose
+      blur
       closeButton={!props.disableActions}
       open={props.open}
       onClose={() => props.onClose()}
@@ -119,7 +120,6 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
           variant='static'
           isCompact
           disableShadow
-          disableBlur
           containerCss={{ justifyContent: 'center', background: 'transparent' }}
         >
           <Navbar.Content enableCursorHighlight variant='highlight-rounded'>
