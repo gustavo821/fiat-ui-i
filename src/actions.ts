@@ -177,10 +177,17 @@ export const getEarnableRate = async (fiat: any, collateralTypesData: any) => {
 export const modifyCollateralAndDebt = async (
   contextData: any,
   collateralTypeData: any,
-  deltaDebt: ethers.BigNumber
+  deltaDebt: ethers.BigNumber,
+  position: { collateral: ethers.BigNumber, normalDebt: ethers.BigNumber }
 ) => {
   const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = contextData.fiat.getContracts();
   const { properties } = collateralTypeData;
+
+  let deltaNormalDebt = contextData.fiat
+    .debtToNormalDebt(deltaDebt, collateralTypeData.state.codex.virtualRate)
+    .mul(WAD.sub(decToWad(0.001)))
+    .div(WAD);
+  if (position.normalDebt.sub(deltaNormalDebt).lt(WAD)) deltaNormalDebt = position.normalDebt;
 
   // if deltaCollateral is zero use generic modifyCollateralAndDebt method since no swap is necessary
   let actions;
@@ -199,7 +206,7 @@ export const modifyCollateralAndDebt = async (
       contextData.user,
       contextData.user,
       ZERO,
-      deltaDebt
+      deltaNormalDebt
     )
   );
 }
@@ -215,7 +222,7 @@ export const buyCollateralAndModifyDebt = async (
   const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = contextData.fiat.getContracts();
   const { properties } = collateralTypeData;
 
-  const normalDebt = contextData.fiat
+  const deltaNormalDebt = contextData.fiat
     .debtToNormalDebt(deltaDebt, collateralTypeData.state.codex.virtualRate)
     .mul(WAD.sub(decToWad(0.001)))
     .div(WAD);
@@ -239,7 +246,7 @@ export const buyCollateralAndModifyDebt = async (
           contextData.user,
           contextData.user,
           underlier,
-          normalDebt,
+          deltaNormalDebt,
           [
             properties.eptData.balancerVault,
             properties.eptData.poolId,
@@ -273,7 +280,7 @@ export const buyCollateralAndModifyDebt = async (
           contextData.user,
           contextData.user,
           tokenAmount,
-          normalDebt,
+          deltaNormalDebt,
           minLendRate,
           underlier
         )
@@ -293,7 +300,7 @@ export const buyCollateralAndModifyDebt = async (
           contextData.user,
           contextData.user,
           underlier,
-          normalDebt,
+          deltaNormalDebt,
           [
             tokenAmount,
             properties.fyData.yieldSpacePool,
@@ -317,7 +324,7 @@ export const buyCollateralAndModifyDebt = async (
           contextData.user,
           contextData.user,
           underlier,
-          normalDebt,
+          deltaNormalDebt,
           [
             properties.sptData.adapter,
             tokenAmount,
@@ -336,18 +343,23 @@ export const buyCollateralAndModifyDebt = async (
   }
 };
 
-export const sellCollateralAndModifyDebt = async (contextData: any,
+export const sellCollateralAndModifyDebt = async (
+  contextData: any,
   collateralTypeData: any,
   deltaCollateral: ethers.BigNumber,
   deltaDebt: ethers.BigNumber,
-  underlier: ethers.BigNumber,) => {
+  underlier: ethers.BigNumber,
+  position: { collateral: ethers.BigNumber, normalDebt: ethers.BigNumber }
+) => {
   const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = contextData.fiat.getContracts();
   const { properties } = collateralTypeData;
 
-  const normalDebt = contextData.fiat
+  let deltaNormalDebt = contextData.fiat
     .debtToNormalDebt(deltaDebt, collateralTypeData.state.codex.virtualRate)
     .mul(WAD.sub(decToWad(0.001)))
     .div(WAD);
+  if (position.normalDebt.sub(deltaNormalDebt).lt(WAD)) deltaNormalDebt = position.normalDebt;
+
   const tokenAmount = wadToScale(deltaCollateral, properties.tokenScale);
 
   // if deltaCollateral is zero use generic modifyCollateralAndDebt method since no swap is necessary
@@ -368,6 +380,7 @@ export const sellCollateralAndModifyDebt = async (contextData: any,
           contextData.user,
           contextData.user,
           tokenAmount,
+          deltaNormalDebt,
           [
             properties.eptData.balancerVault,
             properties.eptData.poolId,
@@ -401,7 +414,7 @@ export const sellCollateralAndModifyDebt = async (contextData: any,
           contextData.user,
           contextData.user,
           tokenAmount,
-          normalDebt,
+          deltaNormalDebt,
           maxBorrowRate
         )
       );
@@ -420,7 +433,7 @@ export const sellCollateralAndModifyDebt = async (contextData: any,
           contextData.user,
           contextData.user,
           tokenAmount,
-          normalDebt,
+          deltaNormalDebt,
           [
             underlier,
             properties.fyData.yieldSpacePool,
@@ -444,7 +457,7 @@ export const sellCollateralAndModifyDebt = async (contextData: any,
           contextData.user,
           contextData.user,
           tokenAmount,
-          normalDebt,
+          deltaNormalDebt,
           [
             properties.sptData.adapter,
             underlier,
@@ -466,14 +479,18 @@ export const sellCollateralAndModifyDebt = async (contextData: any,
 export const redeemCollateralAndModifyDebt = async (contextData: any,
   collateralTypeData: any,
   deltaCollateral: ethers.BigNumber,
-  deltaDebt: ethers.BigNumber,) => {
+  deltaDebt: ethers.BigNumber,
+  position: { collateral: ethers.BigNumber, normalDebt: ethers.BigNumber }
+) => {
   const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = contextData.fiat.getContracts();
   const { properties } = collateralTypeData;
 
-  const normalDebt = contextData.fiat
+  let deltaNormalDebt = contextData.fiat
     .debtToNormalDebt(deltaDebt, collateralTypeData.state.codex.virtualRate)
     .mul(WAD.sub(decToWad(0.001)))
     .div(WAD);
+  if (position.normalDebt.sub(deltaNormalDebt).lt(WAD)) deltaNormalDebt = position.normalDebt;
+
   const tokenAmount = wadToScale(deltaCollateral, properties.tokenScale);
 
   switch (properties.vaultType) {
@@ -491,7 +508,7 @@ export const redeemCollateralAndModifyDebt = async (contextData: any,
           contextData.user,
           contextData.user,
           tokenAmount,
-          normalDebt
+          deltaNormalDebt
         )
       );
       break;
@@ -511,7 +528,7 @@ export const redeemCollateralAndModifyDebt = async (contextData: any,
           contextData.user,
           contextData.user,
           tokenAmount,
-          normalDebt
+          deltaNormalDebt
         )
       );
       break;
@@ -530,7 +547,7 @@ export const redeemCollateralAndModifyDebt = async (contextData: any,
           contextData.user,
           contextData.user,
           tokenAmount,
-          normalDebt
+          deltaNormalDebt
         )
       );
       break;
@@ -549,7 +566,7 @@ export const redeemCollateralAndModifyDebt = async (contextData: any,
           contextData.user,
           contextData.user,
           tokenAmount,
-          normalDebt,
+          deltaNormalDebt,
           [
             properties.sptData.adapter,
             properties.sptData.maturity,

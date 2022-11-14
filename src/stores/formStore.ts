@@ -149,6 +149,7 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
     ) {
       const { collateralType, position } = modifyPositionData;
       const { tokenScale } = collateralType.properties;
+      const { codex: { debtFloor } } = collateralType.settings;
       const { slippagePct, underlier, mode } = get();
       const { codex: { virtualRate: rate }, collybus: { liquidationPrice } } = collateralType.state;
       try {
@@ -174,8 +175,8 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
             const debt = deltaDebt;
             const healthFactor = fiat.computeHealthFactor(collateral, deltaNormalDebt, rate, liquidationPrice);
 
-            if (deltaDebt.gt(ethers.constants.Zero) && deltaDebt.lte(collateralType.settings.codex.debtFloor) ) {
-              set(() => ({ formErrors: [`Below minimum borrow amount (${wadToDec(collateralType.settings.codex.debtFloor)})`] }));
+            if (deltaDebt.gt(ethers.constants.Zero) && deltaDebt.lte(debtFloor) ) {
+              set(() => ({ formErrors: [`Below minimum borrow amount (${wadToDec(debtFloor)})`] }));
             }
             if (debt.gt(0) && healthFactor.lte(WAD)) console.error('Health factor has to be greater than 1.0');
 
@@ -207,9 +208,11 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
           if (position.normalDebt.lt(deltaNormalDebt)) throw new Error('Insufficient debt');
 
           const collateral = position.collateral.sub(deltaCollateral);
-          const normalDebt = position.normalDebt.sub(deltaNormalDebt);
+          let normalDebt = position.normalDebt.sub(deltaNormalDebt);
+          // override normalDebt to position.normalDebt if normalDebt is less than 1 FIAT 
+          if (normalDebt.lt(WAD)) normalDebt = ZERO;
           const debt = fiat.normalDebtToDebt(normalDebt, rate);
-          // TODO: error if debt greater than dusty value and less than collateralType's debt floor
+          if (debt.gt(ZERO) && debt.lt(debtFloor)) throw new Error('Insufficient debt - Below debtFloor');
           const healthFactor = fiat.computeHealthFactor(collateral, normalDebt, rate, liquidationPrice);
           if (healthFactor.lte(WAD)) throw new Error('Health factor has to be greater than 1.0');
 
@@ -222,9 +225,11 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
           if (position.normalDebt.lt(deltaNormalDebt)) throw new Error('Insufficient debt');
 
           const collateral = position.collateral.sub(deltaCollateral);
-          const normalDebt = position.normalDebt.sub(deltaNormalDebt);
+          let normalDebt = position.normalDebt.sub(deltaNormalDebt);
+          // override normalDebt to position.normalDebt if normalDebt is less than 1 FIAT 
+          if (normalDebt.lt(WAD)) normalDebt = ZERO;
           const debt = fiat.normalDebtToDebt(normalDebt, rate);
-          // TODO: error if debt greater than dusty value and less than collateralType's debt floor
+          if (debt.gt(ZERO) && debt.lt(debtFloor)) throw new Error('Insufficient debt - Below debtFloor');
           const healthFactor = fiat.computeHealthFactor(collateral, normalDebt, rate, liquidationPrice);
           if (healthFactor.lte(WAD)) throw new Error('Health factor has to be greater than 1.0');
 
