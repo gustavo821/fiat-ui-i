@@ -18,7 +18,7 @@ import { scaleToDec, wadToDec } from '@fiatdao/sdk';
 
 import { commifyToDecimalPlaces, floor2, floor4, formatUnixTimestamp } from '../utils';
 import { useModifyPositionFormDataStore } from '../stores/formStore';
-import { ErrorTooltip } from './ErrorTooltip';
+import { Alert } from './Alert';
 import { InputLabel } from './InputLabel';
 
 interface CreatePositionModalProps {
@@ -51,7 +51,7 @@ export const CreatePositionModal = (props: CreatePositionModalProps) => {
 
 const CreatePositionModalBody = (props: CreatePositionModalProps) => {
   const formDataStore = useModifyPositionFormDataStore();
-  const [error, setError] = React.useState('');
+  const [rpcError, setRpcError] = React.useState('');
 
   if (
     !props.contextData.user ||
@@ -313,17 +313,17 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
           onChange={async () => {
             if (!formDataStore.underlier.isZero() && underlierAllowance?.gte(formDataStore.underlier)) {
               try {
-                setError('');
+                setRpcError('');
                 await props.unsetUnderlierAllowance(props.contextData.fiat);
               } catch (e: any) {
-                setError(e.message);
+                setRpcError(e.message);
               }
             } else {
               try {
-                setError('');
+                setRpcError('');
                 await props.setUnderlierAllowance(props.contextData.fiat);
               } catch (e: any) {
-                setError(e.message);
+                setRpcError(e.message);
               }
             }
           }}
@@ -345,17 +345,17 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
           onChange={async () => {
             if (monetaDelegate !== null && monetaDelegate.gt(ethers.constants.Zero)) {
               try {
-                setError('');
+                setRpcError('');
                 await props.unsetMonetaDelegate(props.contextData.fiat);
               } catch (e: any) {
-                setError(e.message);
+                setRpcError(e.message);
               }
             } else {
               try {
-                setError('');
+                setRpcError('');
                 await props.setMonetaDelegate(props.contextData.fiat);
               } catch (e: any) {
-                setError(e.message);
+                setRpcError(e.message);
               }
             }
           }}
@@ -367,11 +367,11 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
           }
         />
         <Spacer y={3} />
-        { error === ''
+        { rpcError === ''
           ? null
           :(
             <>
-              <ErrorTooltip error={error} />
+              <Alert severity='error' message={rpcError} />
               <Spacer y={0.5} />
             </>
           )
@@ -394,10 +394,10 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
           }
           onPress={async () => {
             try {
-              setError('');
+              setRpcError('');
               await props.buyCollateralAndModifyDebt()
             } catch (e: any) {
-              setError(e.message);
+              setRpcError(e.message);
             }
           }}
         >
