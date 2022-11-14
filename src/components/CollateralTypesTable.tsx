@@ -102,7 +102,7 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
                   </Table.Cell>
                   <Table.Cell>{`${floor2(wadToDec(earnableRateAnnulized.mul(100)))}% (${floor2(wadToDec(earnableRate.mul(100)))}%)`}</Table.Cell>
                   <Table.Cell>{`${floor2(wadToDec(borrowRateAnnualized.mul(100)))}% (${floor2(wadToDec(borrowRate.mul(100)))}%)`}</Table.Cell>
-                  <Table.Cell>{`${floor2(wadToDec(depositedCollateral))} ${symbol}`}</Table.Cell>
+                  <Table.Cell>{`${floor2(Number(wadToDec(depositedCollateral))).toLocaleString()} ${symbol}`}</Table.Cell>
                   <Table.Cell>
                     <Badge isSquared color={new Date() < maturityFormatted ? 'success' : 'error'} variant='flat' >
                       {formatUnixTimestamp(maturity)}, ({daysUntilMaturity} days)

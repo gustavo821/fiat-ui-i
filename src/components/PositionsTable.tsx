@@ -131,13 +131,13 @@ export const PositionsTable = (props: PositionsTableProps) => {
                   </Table.Cell>
                   <Table.Cell>
                     <Col>
-                      <Row>{`${floor2(wadToDec(collateral))} ${symbol}`}</Row>
-                      <Row>{`($${floor2(wadToDec(fairPrice.mul(collateral).div(WAD)))})`}</Row>
+                      <Row>{`${floor2(wadToDec(collateral)).toLocaleString()} ${symbol}`}</Row>
+                      <Row>{`($${floor2(wadToDec(fairPrice.mul(collateral).div(WAD))).toLocaleString()})`}</Row>
                     </Col>
                   </Table.Cell>
                   <Table.Cell>
-                    <Row>{floor2(wadToDec(debt))} FIAT</Row>
-                    <Row>(${floor2(wadToDec(debt))})</Row>
+                    <Row>{floor2(wadToDec(debt)).toLocaleString()} FIAT</Row>
+                    <Row>(${floor2(wadToDec(debt)).toLocaleString()})</Row>
                   </Table.Cell>
                   <Table.Cell>{`${floor2(wadToDec(healthFactor))} (${floor2(wadToDec(healthFactorAtMaturity))})`}</Table.Cell>
                   <Table.Cell>
