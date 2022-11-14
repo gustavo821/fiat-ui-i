@@ -4,7 +4,7 @@ import 'antd/dist/antd.css';
 import { decToScale, decToWad, scaleToDec, scaleToWad, WAD, wadToDec, wadToScale, ZERO } from '@fiatdao/sdk';
 
 import * as userActions from '../actions';
-import { debounce, floor4 } from '../utils';
+import { debounce, DUSTY, floor4 } from '../utils';
 
 /// A store for setting and getting form values to create and manage positions.
 interface FormState {
@@ -152,6 +152,9 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
       const { codex: { debtFloor } } = collateralType.settings;
       const { slippagePct, underlier, mode } = get();
       const { codex: { virtualRate: rate }, collybus: { liquidationPrice } } = collateralType.state;
+
+      set(() => ({ formWarnings: [], formErrors: [] }));
+
       try {
         if (mode === 'deposit') {
           let deltaCollateral = ZERO;
@@ -189,7 +192,10 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
             const normalDebt = fiat.debtToNormalDebt(debt, rate);
             const healthFactor = fiat.computeHealthFactor(collateral, normalDebt, rate, liquidationPrice);
 
-            // TODO: error if debt greater than dusty value and less than collateralType's debt floor
+            if (debt.gt(ethers.constants.Zero) && debt.lte(collateralType.settings.codex.debtFloor) ) {
+              set(() => ({ formErrors: [`Below minimum borrow amount (${wadToDec(collateralType.settings.codex.debtFloor)})`] }));
+            }
+
             if (debt.gt(0) && healthFactor.lte(WAD)) console.error('Health factor has to be greater than 1.0');
 
             set(() => ({ healthFactor, collateral, debt, deltaCollateral }));

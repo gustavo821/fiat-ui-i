@@ -40,6 +40,7 @@ export const CreatePositionModal = (props: CreatePositionModalProps) => {
   return (
     <Modal
       preventClose
+      blur
       closeButton={!props.disableActions}
       open={props.open}
       onClose={() => props.onClose()}
@@ -78,6 +79,16 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
 
   const renderFormAlerts = () => {
     const formAlerts = [];
+
+    if (!hasProxy) {
+      formAlerts.push(
+        <Alert
+          severity='warning'
+          message={'Creating positions requires a Proxy. Please close this modal and click "Create Proxy Account" in the top bar.'}
+          key={'warn-needsProxy'}
+        />
+      );
+    }
 
     if (formDataStore.formWarnings.length !== 0) {
       formDataStore.formWarnings.map((formWarning, idx) => {
@@ -118,8 +129,8 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
         <Navbar
           variant='static'
           isCompact
-          disableShadow
           disableBlur
+          disableShadow
           containerCss={{ justifyContent: 'center', background: 'transparent' }}
         >
           <Navbar.Content enableCursorHighlight variant='highlight-rounded'>
