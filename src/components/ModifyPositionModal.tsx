@@ -127,6 +127,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
           variant='static'
           isCompact
           disableShadow
+          disableBlur
           containerCss={{ justifyContent: 'center', background: 'transparent' }}
         >
           <Navbar.Content enableCursorHighlight variant='highlight-rounded'>

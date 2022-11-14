@@ -119,6 +119,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
         <Navbar
           variant='static'
           isCompact
+          disableBlur
           disableShadow
           containerCss={{ justifyContent: 'center', background: 'transparent' }}
         >
