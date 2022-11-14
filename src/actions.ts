@@ -174,7 +174,38 @@ export const getEarnableRate = async (fiat: any, collateralTypesData: any) => {
   });
 };
 
-export const buyCollateralAndModifyDebt = async (contextData: any,
+export const modifyCollateralAndDebt = async (
+  contextData: any,
+  collateralTypeData: any,
+  deltaDebt: ethers.BigNumber
+) => {
+  const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = contextData.fiat.getContracts();
+  const { properties } = collateralTypeData;
+
+  // if deltaCollateral is zero use generic modifyCollateralAndDebt method since no swap is necessary
+  let actions;
+  if (properties.vaultType === 'EPT:20') actions = vaultEPTActions;
+  if (properties.vaultType === 'FC:1155') actions = vaultFCActions;
+  if (properties.vaultType === 'FY:20') actions = vaultFYActions;
+  if (properties.vaultType === 'SPT:20') actions = vaultSPTActions;
+  return console.log(
+    await contextData.fiat.sendAndWaitViaProxy(
+      contextData.proxies[0],
+      actions,
+      'modifyCollateralAndDebt',
+      properties.vault,
+      properties.tokenId,
+      contextData.proxies[0],
+      contextData.user,
+      contextData.user,
+      ZERO,
+      deltaDebt
+    )
+  );
+}
+
+export const buyCollateralAndModifyDebt = async (
+  contextData: any,
   // TODO avoid null checks on properties.<vaultName>Data with a typecheck here
   collateralTypeData: any,
   deltaCollateral: ethers.BigNumber,
@@ -189,6 +220,9 @@ export const buyCollateralAndModifyDebt = async (contextData: any,
     .mul(WAD.sub(decToWad(0.001)))
     .div(WAD);
   const tokenAmount = wadToScale(deltaCollateral, properties.tokenScale);
+
+  // if deltaCollateral is zero use generic modifyCollateralAndDebt method since no swap is necessary
+  if (deltaCollateral.isZero()) return console.error('Invalid value for `deltaCollateral` - Value has to be non-zero');
 
   switch (properties.vaultType) {
     case 'ERC20:EPT': {
@@ -315,6 +349,9 @@ export const sellCollateralAndModifyDebt = async (contextData: any,
     .mul(WAD.sub(decToWad(0.001)))
     .div(WAD);
   const tokenAmount = wadToScale(deltaCollateral, properties.tokenScale);
+
+  // if deltaCollateral is zero use generic modifyCollateralAndDebt method since no swap is necessary
+  if (deltaCollateral.isZero()) return console.error('Invalid value for `deltaCollateral` - Value has to be non-zero');
 
   switch (properties.vaultType) {
     case 'ERC20:EPT': {

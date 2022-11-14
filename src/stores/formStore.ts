@@ -1,8 +1,9 @@
-import { decToScale, decToWad, scaleToDec, scaleToWad, WAD, wadToDec, wadToScale } from '@fiatdao/sdk';
-import * as userActions from '../actions';
-import 'antd/dist/antd.css';
-import { ethers } from 'ethers';
 import create from 'zustand';
+import { ethers } from 'ethers';
+import 'antd/dist/antd.css';
+import { decToScale, decToWad, scaleToDec, scaleToWad, WAD, wadToDec, wadToScale, ZERO } from '@fiatdao/sdk';
+
+import * as userActions from '../actions';
 import { debounce, floor4 } from '../utils';
 
 /// A store for setting and getting form values to create and manage positions.
@@ -151,20 +152,17 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
       const { slippagePct, underlier, mode } = get();
       const { codex: { virtualRate: rate }, collybus: { liquidationPrice } } = collateralType.state;
       try {
-        const tokensOut = await userActions.underlierToCollateralToken(fiat, underlier, collateralType);
-        // Ideal exchange rate: 1:1, underlierAmt : tokenAmt
-        const idealTokenOut = underlier; // convert to tokenScale
-        // apply slippagePct to ideal exchange rate
-        const minTokenOut = scaleToWad(idealTokenOut, tokenScale)
-        .mul(WAD.sub(slippagePct))
-        .div(WAD);
-        if (tokensOut.lt(minTokenOut)) {
-          set(() => ({ formWarnings: ['Price impact warning - yield is negative'] }));
-        }
-
-        const deltaCollateral = scaleToWad(tokensOut, tokenScale).mul(WAD.sub(slippagePct)).div(WAD);
-
         if (mode === 'deposit') {
+          let deltaCollateral = ZERO;
+          if (!underlier.isZero()) {
+            const tokensOut = await userActions.underlierToCollateralToken(fiat, underlier, collateralType);
+            // Ideal exchange rate: 1:1, underlierAmt : tokenAmt
+            const idealTokenOut = underlier; // convert to tokenScale
+            // apply slippagePct to ideal exchange rate
+            const minTokenOut = scaleToWad(idealTokenOut, tokenScale).mul(WAD.sub(slippagePct)).div(WAD);
+            if (tokensOut.lt(minTokenOut)) set(() => ({ formWarnings: ['Large Price Impact (Negative Yield)'] }));
+            deltaCollateral = scaleToWad(tokensOut, tokenScale).mul(WAD.sub(slippagePct)).div(WAD);
+          }
           if (selectedCollateralTypeId !== null) {
             // Calculate deltaDebt for new position based on targetedHealthFactor
             const { targetedHealthFactor } = get();
@@ -198,8 +196,11 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
         } else if (mode === 'withdraw') {
           const { deltaCollateral, deltaDebt, slippagePct } = get();
           const tokenInScaled = wadToScale(deltaCollateral, tokenScale);
-          const underlierAmount = await userActions.collateralTokenToUnderlier(fiat, tokenInScaled, collateralType);
-          const underlier = underlierAmount.mul(WAD.sub(slippagePct)).div(WAD); // with slippage
+          let underlier = ZERO;
+          if (!tokenInScaled.isZero()) {
+            const underlierAmount = await userActions.collateralTokenToUnderlier(fiat, tokenInScaled, collateralType);
+            underlier = underlierAmount.mul(WAD.sub(slippagePct)).div(WAD); // with slippage
+          }
           const deltaNormalDebt = fiat.debtToNormalDebt(deltaDebt, rate);
 
           if (position.collateral.lt(deltaCollateral)) throw new Error('Insufficient collateral');
