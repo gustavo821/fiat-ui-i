@@ -60,10 +60,9 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
   }, [props.modifyPositionData.collateralType?.properties.maturity])
 
   React.useEffect(() => {
-    const mode = matured ? 'redeem' : 'deposit';
-    if (formDataStore.mode !== mode) {
-      formDataStore.setMode(mode);
-    }
+    if (matured && formDataStore.mode !== 'redeem') {
+      formDataStore.setMode('redeem');
+    }  
   }, [formDataStore, matured, props.contextData.fiat, props.modifyPositionData])
 
   if (!props.contextData.user || !props.modifyPositionData.collateralType || !props.modifyPositionData.collateralType.metadata ) {
