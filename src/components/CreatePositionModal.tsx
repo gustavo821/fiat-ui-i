@@ -19,7 +19,6 @@ import { scaleToDec, wadToDec } from '@fiatdao/sdk';
 import { commifyToDecimalPlaces, floor2, floor4, formatUnixTimestamp } from '../utils';
 import { useModifyPositionFormDataStore } from '../stores/formStore';
 import { Alert } from './Alert';
-import { InputLabel } from './InputLabel';
 
 interface CreatePositionModalProps {
   buyCollateralAndModifyDebt: () => any;
@@ -161,16 +160,13 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
                   console.error('No selectedCollateralTypeId!');
                   return;
                 }
-                formDataStore.setUnderlier(props.contextData.fiat, event.target.value, props.modifyPositionData, props.selectedCollateralTypeId);
+                formDataStore.setUnderlier(
+                  props.contextData.fiat, event.target.value, props.modifyPositionData, props.selectedCollateralTypeId
+                );
               }}
               placeholder='0'
               inputMode='decimal'
-              // Bypass type warning from passing a custom component instead of a string
-              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-              // @ts-ignore
-              label={
-                <InputLabel label='Underlier to swap' onMaxClick={() => formDataStore.setUnderlier(props.contextData.fiat, underlierBalance, props.modifyPositionData, props.selectedCollateralTypeId)} />
-              }
+              label={'Underlier to swap'}
               labelRight={underlierSymbol}
               bordered
               size='sm'
@@ -186,7 +182,9 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
                   console.error('No selectedCollateralTypeId!');
                   return;
                 }
-                formDataStore.setSlippagePct(props.contextData.fiat, event.target.value, props.modifyPositionData, props.selectedCollateralTypeId);
+                formDataStore.setSlippagePct(
+                  props.contextData.fiat, event.target.value, props.modifyPositionData, props.selectedCollateralTypeId
+                );
               }}
               step='0.01'
               placeholder='0'
@@ -220,7 +218,9 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
                   console.error('No selectedCollateralTypeId!');
                   return;
                 }
-                formDataStore.setTargetedHealthFactor(props.contextData.fiat, value, props.modifyPositionData, props.selectedCollateralTypeId);
+                formDataStore.setTargetedHealthFactor(
+                  props.contextData.fiat, value, props.modifyPositionData, props.selectedCollateralTypeId
+                );
               }}
               min={1.001}
               max={5.0}

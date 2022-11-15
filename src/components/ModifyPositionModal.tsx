@@ -17,7 +17,7 @@ import { commifyToDecimalPlaces, floor2, floor4, formatUnixTimestamp } from '../
 import { TransactionStatus } from '../../pages';
 import { useModifyPositionFormDataStore } from '../stores/formStore';
 import { Alert } from './Alert';
-import { InputLabel } from './InputLabel';
+import { InputWithMaxLabel } from './InputWithMaxLabel';
 
 interface ModifyPositionModalProps {
   buyCollateralAndModifyDebt: () => any;
@@ -73,16 +73,18 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
     return null;
   }
 
-  const { proxies } = props.contextData;
+  const { proxies, fiat } = props.contextData;
   const {
     collateralType: {
       metadata: { symbol: symbol, protocol, asset },
       properties: { underlierScale, underlierSymbol, maturity },
+      state: { codex: { virtualRate }, collybus: { liquidationPrice }}
     },
     underlierAllowance,
     underlierBalance,
     monetaDelegate,
     fiatAllowance,
+    position
   } = props.modifyPositionData;
 
   const { action: currentTxAction } = props.transactionData;
@@ -170,6 +172,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
         )}
         {formDataStore.mode === 'deposit' && (
           <Input
+            label={'Underlier to deposit'}
             disabled={props.disableActions}
             value={floor2(scaleToDec(formDataStore.underlier, underlierScale))}
             onChange={(event) => {
@@ -177,7 +180,6 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
             }}
             placeholder='0'
             inputMode='decimal'
-            label='Underlier to swap'
             labelRight={underlierSymbol}
             bordered
             size='sm'
@@ -193,10 +195,19 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
             }}
             placeholder='0'
             inputMode='decimal'
+            // Bypass type warning from passing a custom component instead of a string
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
             label={
               formDataStore.mode === 'withdraw'
-                ? 'Collateral to withdraw and swap'
-                : 'Collateral to withdraw and redeem'
+                ? <InputWithMaxLabel
+                  label='Collateral to withdraw and swap'
+                  onMaxClick={() => formDataStore.setMaxDeltaCollateral(props.contextData.fiat, props.modifyPositionData, null)}
+                />
+                : <InputWithMaxLabel
+                    label='Collateral to withdraw and redeem'
+                    onMaxClick={() => formDataStore.setMaxDeltaCollateral(props.contextData.fiat, props.modifyPositionData, null)}
+                  />
             }
             labelRight={symbol}
             bordered
@@ -236,7 +247,10 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
           label={
             formDataStore.mode === 'deposit'
               ? 'FIAT to borrow'
-              : <InputLabel label='FIAT to pay back' onMaxClick={() => formDataStore.setDeltaDebt(props.contextData.fiat, wadToDec(formDataStore.debt), props.modifyPositionData, null)} />
+              : <InputWithMaxLabel
+                  label='FIAT to pay back'
+                  onMaxClick={() => formDataStore.setMaxDeltaDebt(props.contextData.fiat, props.modifyPositionData, null)}
+                />
           }
           labelRight={'FIAT'}
           bordered
@@ -256,11 +270,11 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
             <Input
               readOnly
               value={
-                formDataStore.formDataLoading
+                (formDataStore.formDataLoading)
                   ? ' '
-                  : formDataStore.mode === 'deposit'
-                  ? floor4(wadToDec(formDataStore.deltaCollateral))
-                  : floor4(scaleToDec(formDataStore.underlier, underlierScale))
+                  : (formDataStore.mode === 'deposit')
+                    ? floor4(wadToDec(formDataStore.deltaCollateral))
+                    : floor4(scaleToDec(formDataStore.underlier, underlierScale))
               }
               placeholder='0'
               type='string'
@@ -289,7 +303,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
           value={formDataStore.formDataLoading ? ' ' : floor4(wadToDec(formDataStore.collateral))}
           placeholder='0'
           type='string'
-          label={'Collateral'}
+          label={`Collateral (before: ${floor2(wadToDec(position.collateral))} ${symbol})`}
           labelRight={symbol}
           contentLeft={formDataStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
@@ -300,7 +314,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
           value={formDataStore.formDataLoading ? ' ' : floor4(wadToDec(formDataStore.debt))}
           placeholder='0'
           type='string'
-          label='Debt'
+          label={`Debt (before: ${floor2(wadToDec(fiat.normalDebtToDebt(position.normalDebt, virtualRate)))} FIAT)`}
           labelRight={'FIAT'}
           contentLeft={formDataStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
@@ -317,7 +331,16 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
           }
           placeholder='0'
           type='string'
-          label='Health Factor'
+          label={
+            `Health Factor (before: ${(() => {
+              const healthFactor = fiat.computeHealthFactor(
+                position.collateral, position.normalDebt, virtualRate, liquidationPrice
+              );
+              if (healthFactor.eq(ethers.constants.MaxUint256)) return '∞'
+              return floor4(wadToDec(healthFactor));
+            })()
+          })`
+          }
           labelRight={'🚦'}
           contentLeft={formDataStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'

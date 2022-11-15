@@ -1,10 +1,13 @@
 import { decToWad, scaleToWad, WAD, wadToScale, ZERO } from '@fiatdao/sdk';
 import { ethers } from 'ethers';
 
-export const underlierToCollateralToken = async (fiat: any,
+export const underlierToCollateralToken = async (
+  fiat: any,
   underlier: ethers.BigNumber,
-  collateralType: any): Promise<ethers.BigNumber> => {
-  if (!underlier.gt(ZERO)) return ZERO;
+  collateralType: any
+): Promise<ethers.BigNumber> => {
+  if (underlier.isZero()) return ZERO;
+
   const { vault, tokenId, vaultType } = collateralType.properties;
   const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = fiat.getContracts();
   switch (vaultType) {
@@ -56,10 +59,12 @@ export const underlierToCollateralToken = async (fiat: any,
   }
 };
 
-export const collateralTokenToUnderlier = async (fiat: any,
+export const collateralTokenToUnderlier = async (
+  fiat: any,
   collateral: ethers.BigNumber,
-  collateralType: any): Promise<ethers.BigNumber> => {
-  if (collateral.gt(ZERO)) return ZERO;
+  collateralType: any
+): Promise<ethers.BigNumber> => {
+  if (collateral.isZero()) return ZERO;
   const { vault, tokenId, vaultType } = collateralType.properties;
   const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = fiat.getContracts();
 
@@ -187,20 +192,22 @@ export const modifyCollateralAndDebt = async (
     .debtToNormalDebt(deltaDebt, collateralTypeData.state.codex.virtualRate)
     .mul(WAD.sub(decToWad(0.001)))
     .div(WAD);
-  if (position.normalDebt.sub(deltaNormalDebt).lt(WAD)) deltaNormalDebt = position.normalDebt;
+  if (position.normalDebt.add(deltaNormalDebt).lt(WAD)) deltaNormalDebt = position.normalDebt;
 
   // if deltaCollateral is zero use generic modifyCollateralAndDebt method since no swap is necessary
   let actions;
-  if (properties.vaultType === 'EPT:20') actions = vaultEPTActions;
-  if (properties.vaultType === 'FC:1155') actions = vaultFCActions;
-  if (properties.vaultType === 'FY:20') actions = vaultFYActions;
-  if (properties.vaultType === 'SPT:20') actions = vaultSPTActions;
+  if (properties.vaultType === 'ERC20:EPT') actions = vaultEPTActions;
+  if (properties.vaultType === 'ERC1155:FC') actions = vaultFCActions;
+  if (properties.vaultType === 'ERC20:FY') actions = vaultFYActions;
+  if (properties.vaultType === 'ERC20:SPT') actions = vaultSPTActions;
+
   return console.log(
     await contextData.fiat.sendAndWaitViaProxy(
       contextData.proxies[0],
       actions,
       'modifyCollateralAndDebt',
       properties.vault,
+      properties.token,
       properties.tokenId,
       contextData.proxies[0],
       contextData.user,
@@ -331,7 +338,7 @@ export const buyCollateralAndModifyDebt = async (
             properties.sptData.maturity,
             properties.underlierToken,
             properties.token,
-            properties.underlier
+            underlier
           ]
         )
       );
@@ -349,7 +356,7 @@ export const sellCollateralAndModifyDebt = async (
   deltaCollateral: ethers.BigNumber,
   deltaDebt: ethers.BigNumber,
   underlier: ethers.BigNumber,
-  position: { collateral: ethers.BigNumber, normalDebt: ethers.BigNumber }
+  position: any
 ) => {
   const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = contextData.fiat.getContracts();
   const { properties } = collateralTypeData;
@@ -359,6 +366,7 @@ export const sellCollateralAndModifyDebt = async (
     .mul(WAD.sub(decToWad(0.001)))
     .div(WAD);
   if (position.normalDebt.sub(deltaNormalDebt).lt(WAD)) deltaNormalDebt = position.normalDebt;
+  deltaNormalDebt = deltaNormalDebt.mul(-1);
 
   const tokenAmount = wadToScale(deltaCollateral, properties.tokenScale);
 
@@ -446,6 +454,7 @@ export const sellCollateralAndModifyDebt = async (
     }
     case 'ERC20:SPT': {
       if (!properties.sptData) return console.error('Missing SPT data');
+      console.log(contextData.proxies[0]);
       console.log(
         // await contextData.fiat.dryrunViaProxy(
         await contextData.fiat.sendAndWaitViaProxy(
@@ -464,7 +473,7 @@ export const sellCollateralAndModifyDebt = async (
             properties.sptData.maturity,
             properties.token,
             properties.underlierToken,
-            properties.tokenAmount,
+            tokenAmount,
           ]
         )
       );
@@ -480,7 +489,7 @@ export const redeemCollateralAndModifyDebt = async (contextData: any,
   collateralTypeData: any,
   deltaCollateral: ethers.BigNumber,
   deltaDebt: ethers.BigNumber,
-  position: { collateral: ethers.BigNumber, normalDebt: ethers.BigNumber }
+  position: any
 ) => {
   const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = contextData.fiat.getContracts();
   const { properties } = collateralTypeData;
@@ -490,6 +499,7 @@ export const redeemCollateralAndModifyDebt = async (contextData: any,
     .mul(WAD.sub(decToWad(0.001)))
     .div(WAD);
   if (position.normalDebt.sub(deltaNormalDebt).lt(WAD)) deltaNormalDebt = position.normalDebt;
+  deltaNormalDebt = deltaNormalDebt.mul(-1);
 
   const tokenAmount = wadToScale(deltaCollateral, properties.tokenScale);
 
