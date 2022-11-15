@@ -239,7 +239,7 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
             const normalDebt = fiat.debtToNormalDebt(debt, rate);
             const healthFactor = fiat.computeHealthFactor(collateral, normalDebt, rate, liquidationPrice);
 
-            if (debt.gt(ethers.constants.Zero) && debt.lte(collateralType.settings.codex.debtFloor) ) set(() => ({formErrors: [...get().formErrors, `Insufficient debt - debt must be above debt floor: ${wadToDec(debtFloor)}`] }));
+            if (debt.gt(ethers.constants.Zero) && debt.lte(collateralType.settings.codex.debtFloor) ) set(() => ({ formErrors: [...get().formErrors, `Insufficient debt - debt must be above debt floor: ${wadToDec(debtFloor)}`] }));
             if (debt.gt(0) && healthFactor.lte(WAD)) set(() => ({ formErrors: [...get().formErrors, 'Health factor has to be greater than 1.0'] }));
 
             set(() => ({ healthFactor, collateral, debt, deltaCollateral }));
