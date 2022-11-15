@@ -43,6 +43,7 @@ export const CreatePositionModal = (props: CreatePositionModalProps) => {
       closeButton={!props.disableActions}
       open={props.open}
       onClose={() => props.onClose()}
+      width='27rem'
     >
       <CreatePositionModalBody {...props} />
     </Modal>
@@ -183,6 +184,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
               bordered
               size='sm'
               borderWeight='light'
+              width='15rem'
             />
           </Grid>
           <Grid>
