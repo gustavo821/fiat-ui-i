@@ -191,7 +191,7 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
       fiat: any, modifyPositionData: any, selectedCollateralTypeId: string | null
     ) {
       const { collateralType, position } = modifyPositionData;
-      const { tokenScale } = collateralType.properties;
+      const { tokenScale, underlierScale } = collateralType.properties;
       const { codex: { debtFloor } } = collateralType.settings;
       const { slippagePct, underlier, mode } = get();
       const { codex: { virtualRate: rate }, collybus: { liquidationPrice } } = collateralType.state;
@@ -203,12 +203,16 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
         if (mode === 'deposit') {
           let deltaCollateral = ZERO;
           if (!underlier.isZero()) {
+            // preview underlier to collateral token swap
             const tokensOut = await userActions.underlierToCollateralToken(fiat, underlier, collateralType);
-            // Ideal exchange rate: 1:1, underlierAmt : tokenAmt
-            const idealTokenOut = underlier; // convert to tokenScale
-            // apply slippagePct to ideal exchange rate
-            const minTokenOut = scaleToWad(idealTokenOut, tokenScale).mul(WAD.sub(slippagePct)).div(WAD);
-            if (tokensOut.lt(minTokenOut)) set(() => ({ formWarnings: ['Large Price Impact (Negative Yield)'] }));
+            // redemption price with a 1:1 exchange rate
+            const minTokensOut = underlier.mul(tokenScale).div(underlierScale);
+            // apply slippagePct to preview
+            const tokensOutWithSlippage = tokensOut.mul(WAD.sub(slippagePct)).div(WAD);
+            // assert: minTokensOut > idealTokenOut
+            if (tokensOutWithSlippage.lt(minTokensOut)) set(() => (
+              { formWarnings: ['Large Price Impact (Negative Yield)'] }
+            ));
             deltaCollateral = scaleToWad(tokensOut, tokenScale).mul(WAD.sub(slippagePct)).div(WAD);
           }
           if (selectedCollateralTypeId !== null) {
