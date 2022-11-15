@@ -477,6 +477,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
           css={{ minWidth: '100%' }}
           disabled={(() => {
             if (props.disableActions || !hasProxy) return true;
+            if (formDataStore.formErrors.length !== 0 || formDataStore.formWarnings.length !== 0) return true;
             if (formDataStore.mode === 'deposit') {
               if (monetaDelegate === false) return true;
               if (formDataStore.underlier.isZero() && formDataStore.deltaDebt.isZero()) return true;
