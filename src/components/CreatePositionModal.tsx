@@ -16,14 +16,9 @@ import { Slider } from 'antd';
 import 'antd/dist/antd.css';
 import { scaleToDec, wadToDec } from '@fiatdao/sdk';
 
-import {
-  commifyToDecimalPlaces,
-  floor2,
-  floor4,
-  formatUnixTimestamp,
-} from '../utils';
+import { commifyToDecimalPlaces, floor2, floor4, formatUnixTimestamp } from '../utils';
 import { useModifyPositionFormDataStore } from '../stores/formStore';
-import {ErrorTooltip} from './ErrorTooltip';
+import { Alert } from './Alert';
 
 interface CreatePositionModalProps {
   buyCollateralAndModifyDebt: () => any;
@@ -44,6 +39,7 @@ export const CreatePositionModal = (props: CreatePositionModalProps) => {
   return (
     <Modal
       preventClose
+      blur
       closeButton={!props.disableActions}
       open={props.open}
       onClose={() => props.onClose()}
@@ -55,7 +51,7 @@ export const CreatePositionModal = (props: CreatePositionModalProps) => {
 
 const CreatePositionModalBody = (props: CreatePositionModalProps) => {
   const formDataStore = useModifyPositionFormDataStore();
-  const [error, setError] = React.useState('');
+  const [rpcError, setRpcError] = React.useState('');
 
   if (
     !props.contextData.user ||
@@ -63,7 +59,6 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
     !props.modifyPositionData.collateralType.metadata
   ) {
     // TODO: add skeleton components instead of loading
-    // return <Loading />;
     return null;
   }
 
@@ -81,6 +76,38 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
 
   const hasProxy = proxies.length > 0;
 
+  const renderFormAlerts = () => {
+    const formAlerts = [];
+
+    if (!hasProxy) {
+      formAlerts.push(
+        <Alert
+          severity='warning'
+          message={'Creating positions requires a Proxy. Please close this modal and click "Create Proxy Account" in the top bar.'}
+          key={'warn-needsProxy'}
+        />
+      );
+    }
+
+    if (formDataStore.formWarnings.length !== 0) {
+      formDataStore.formWarnings.map((formWarning, idx) => {
+        formAlerts.push(<Alert severity='warning' message={formWarning} key={`warn-${idx}`} />);
+      });
+    }
+
+    if (formDataStore.formErrors.length !== 0) {
+      formDataStore.formErrors.forEach((formError, idx) => {
+        formAlerts.push(<Alert severity='error' message={formError} key={`err-${idx}`} />);
+      });
+    }
+
+    if (rpcError !== '') {
+      formAlerts.push(<Alert severity='error' message={rpcError} />);
+    }
+
+    return formAlerts;
+  }
+  
   return (
     <>
       <Modal.Header>
@@ -101,8 +128,8 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
         <Navbar
           variant='static'
           isCompact
-          disableShadow
           disableBlur
+          disableShadow
           containerCss={{ justifyContent: 'center', background: 'transparent' }}
         >
           <Navbar.Content enableCursorHighlight variant='highlight-rounded'>
@@ -133,11 +160,13 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
                   console.error('No selectedCollateralTypeId!');
                   return;
                 }
-                formDataStore.setUnderlier(props.contextData.fiat, event.target.value, props.modifyPositionData, props.selectedCollateralTypeId);
+                formDataStore.setUnderlier(
+                  props.contextData.fiat, event.target.value, props.modifyPositionData, props.selectedCollateralTypeId
+                );
               }}
               placeholder='0'
-              type='number'
-              label='Underlier to swap'
+              inputMode='decimal'
+              label={'Underlier to swap'}
               labelRight={underlierSymbol}
               bordered
               size='sm'
@@ -153,11 +182,13 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
                   console.error('No selectedCollateralTypeId!');
                   return;
                 }
-                formDataStore.setSlippagePct(props.contextData.fiat, event.target.value, props.modifyPositionData, props.selectedCollateralTypeId);
+                formDataStore.setSlippagePct(
+                  props.contextData.fiat, event.target.value, props.modifyPositionData, props.selectedCollateralTypeId
+                );
               }}
               step='0.01'
               placeholder='0'
-              type='number'
+              inputMode='decimal'
               label='Slippage'
               labelRight={'%'}
               bordered
@@ -187,7 +218,9 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
                   console.error('No selectedCollateralTypeId!');
                   return;
                 }
-                formDataStore.setTargetedHealthFactor(props.contextData.fiat, value, props.modifyPositionData, props.selectedCollateralTypeId);
+                formDataStore.setTargetedHealthFactor(
+                  props.contextData.fiat, value, props.modifyPositionData, props.selectedCollateralTypeId
+                );
               }}
               min={1.001}
               max={5.0}
@@ -313,26 +346,23 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
           onChange={async () => {
             if (!formDataStore.underlier.isZero() && underlierAllowance?.gte(formDataStore.underlier)) {
               try {
-                setError('');
+                setRpcError('');
                 await props.unsetUnderlierAllowance(props.contextData.fiat);
               } catch (e: any) {
-                setError(e.message);
+                setRpcError(e.message);
               }
             } else {
               try {
-                setError('');
+                setRpcError('');
                 await props.setUnderlierAllowance(props.contextData.fiat);
               } catch (e: any) {
-                setError(e.message);
+                setRpcError(e.message);
               }
             }
-          }
-          }
+          }}
           color='primary'
           icon={
-            ['setUnderlierAllowance', 'unsetUnderlierAllowance'].includes(
-              currentTxAction || ''
-            ) && props.disableActions ? (
+            ['setUnderlierAllowance', 'unsetUnderlierAllowance'].includes(currentTxAction || '') && props.disableActions ? (
               <Loading size='xs' />
             ) : null
           }
@@ -345,35 +375,37 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
           checked={() => !!monetaDelegate}
-          onChange={() =>
-            !!monetaDelegate
-              ? props.unsetMonetaDelegate(props.contextData.fiat)
-              : props.setMonetaDelegate(props.contextData.fiat)
-          }
+          onChange={async () => {
+            if (!!monetaDelegate) {
+              try {
+                setRpcError('');
+                await props.unsetMonetaDelegate(props.contextData.fiat);
+              } catch (e: any) {
+                setRpcError(e.message);
+              }
+            } else {
+              try {
+                setRpcError('');
+                await props.setMonetaDelegate(props.contextData.fiat);
+              } catch (e: any) {
+                setRpcError(e.message);
+              }
+            }
+          }}
           color='primary'
           icon={
-            ['setMonetaDelegate', 'unsetMonetaDelegate'].includes(
-              currentTxAction || ''
-            ) && props.disableActions ? (
+            ['setMonetaDelegate', 'unsetMonetaDelegate'].includes(currentTxAction || '') && props.disableActions ? (
               <Loading size='xs' />
             ) : null
           }
         />
         <Spacer y={3} />
-        { error === ''
-          ? null
-          :(
-            <>
-              <ErrorTooltip error={error} />
-              <Spacer y={0.5} />
-            </>
-          )
-        }
+        { renderFormAlerts() }
+        <Spacer y={0.5} />
         <Button
           css={{ minWidth: '100%' }}
           disabled={
-            props.disableActions ||
-            !hasProxy ||
+            props.disableActions || !hasProxy ||
             formDataStore.underlier?.isZero() ||
             formDataStore.deltaCollateral?.isZero() ||
             underlierAllowance?.lt(formDataStore.underlier) ||
@@ -385,7 +417,14 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
               <Loading size='xs' />
             ) : null
           }
-          onPress={() => props.buyCollateralAndModifyDebt()}
+          onPress={async () => {
+            try {
+              setRpcError('');
+              await props.buyCollateralAndModifyDebt()
+            } catch (e: any) {
+              setRpcError(e.message);
+            }
+          }}
         >
           Deposit
         </Button>

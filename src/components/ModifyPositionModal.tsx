@@ -2,7 +2,6 @@ import React from 'react';
 import {
   Button,
   Card,
-  Grid,
   Input,
   Loading,
   Modal,
@@ -17,6 +16,8 @@ import { scaleToDec, wadToDec } from '@fiatdao/sdk';
 import { commifyToDecimalPlaces, floor2, floor4, formatUnixTimestamp } from '../utils';
 import { TransactionStatus } from '../../pages';
 import { useModifyPositionFormDataStore } from '../stores/formStore';
+import { Alert } from './Alert';
+import { InputWithMaxLabel } from './InputWithMaxLabel';
 
 interface ModifyPositionModalProps {
   buyCollateralAndModifyDebt: () => any;
@@ -53,16 +54,17 @@ export const ModifyPositionModal = (props: ModifyPositionModalProps) => {
 
 const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
   const formDataStore = useModifyPositionFormDataStore();
+  const [rpcError, setRpcError] = React.useState('');
 
   const matured = React.useMemo(() => {
-    return !(new Date() < new Date(Number(props.modifyPositionData.collateralType?.properties.maturity.toString()) * 1000));
+    const maturity = props.modifyPositionData.collateralType?.properties.maturity.toString();
+    return (maturity !== undefined && !(new Date() < new Date(Number(maturity) * 1000)));
   }, [props.modifyPositionData.collateralType?.properties.maturity])
 
   React.useEffect(() => {
-    const mode = matured ? 'redeem' : 'deposit';
-    if (formDataStore.mode !== mode) {
-      formDataStore.setMode(mode);
-    }
+    if (matured && formDataStore.mode !== 'redeem') {
+      formDataStore.setMode('redeem');
+    }  
   }, [formDataStore, matured, props.contextData.fiat, props.modifyPositionData])
 
   if (!props.contextData.user || !props.modifyPositionData.collateralType || !props.modifyPositionData.collateralType.metadata ) {
@@ -71,21 +73,45 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
     return null;
   }
 
-  const { proxies } = props.contextData;
+  const { proxies, fiat } = props.contextData;
   const {
     collateralType: {
       metadata: { symbol: symbol, protocol, asset },
       properties: { underlierScale, underlierSymbol, maturity },
+      state: { codex: { virtualRate }, collybus: { liquidationPrice }}
     },
     underlierAllowance,
     underlierBalance,
     monetaDelegate,
     fiatAllowance,
+    position
   } = props.modifyPositionData;
 
   const { action: currentTxAction } = props.transactionData;
 
   const hasProxy = proxies.length > 0;
+
+  const renderFormAlerts = () => {
+    const formAlerts = [];
+
+    if (formDataStore.formWarnings.length !== 0) {
+      formDataStore.formWarnings.map((formWarning, idx) => {
+        formAlerts.push(<Alert severity='warning' message={formWarning} key={`warn-${idx}`} />);
+      });
+    }
+
+    if (formDataStore.formErrors.length !== 0) {
+      formDataStore.formErrors.forEach((formError, idx) => {
+        formAlerts.push(<Alert severity='error' message={formError} key={`err-${idx}`} />);
+      });
+    }
+
+    if (rpcError !== '') {
+      formAlerts.push(<Alert severity='error' message={rpcError} />);
+    }
+
+    return formAlerts;
+  }
 
   return (
     <>
@@ -144,71 +170,69 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
             Wallet: {commifyToDecimalPlaces(underlierBalance, underlierScale, 2)} {underlierSymbol}
           </Text>
         )}
-        <Grid.Container
-          gap={0}
-          justify='space-between'
-          css={{ marginBottom: '1rem' }}
-        >
-          <Grid>
-            {formDataStore.mode === 'deposit' && (
-              <Input
-                disabled={props.disableActions}
-                value={floor2(scaleToDec(formDataStore.underlier, underlierScale))}
-                onChange={(event) => {
-                  formDataStore.setUnderlier(props.contextData.fiat, event.target.value, props.modifyPositionData, null);
-                }}
-                placeholder='0'
-                type='number'
-                label='Underlier to swap'
-                labelRight={underlierSymbol}
-                bordered
-                size='sm'
-                borderWeight='light'
-              />
-            )}
-            {(formDataStore.mode === 'withdraw' || formDataStore.mode === 'redeem') && (
-              <Input
-                disabled={props.disableActions}
-                value={floor2(wadToDec(formDataStore.deltaCollateral))}
-                onChange={(event) => {
-                  formDataStore.setDeltaCollateral(props.contextData.fiat, event.target.value, props.modifyPositionData, null);
-                }}
-                placeholder='0'
-                type='number'
-                label={
-                  formDataStore.mode === 'withdraw'
-                    ? 'Collateral to withdraw and swap'
-                    : 'Collateral to withdraw and redeem'
-                }
-                labelRight={symbol}
-                bordered
-                size='sm'
-                borderWeight='light'
-                width='13.35rem'
-              />
-            )}
-          </Grid>
-          <Grid>
-            {(formDataStore.mode === 'deposit' || formDataStore.mode === 'withdraw') && (
-              <Input
-                disabled={props.disableActions}
-                value={floor2(Number(wadToDec(formDataStore.slippagePct)) * 100)}
-                onChange={(event) => {
-                  formDataStore.setSlippagePct(props.contextData.fiat, event.target.value, props.modifyPositionData, null);
-                }}
-                step='0.01'
-                placeholder='0'
-                type='number'
-                label='Slippage'
-                labelRight={'%'}
-                bordered
-                size='sm'
-                borderWeight='light'
-                width='7.5rem'
-              />
-            )}
-          </Grid>
-        </Grid.Container>
+        {formDataStore.mode === 'deposit' && (
+          <Input
+            label={'Underlier to deposit'}
+            disabled={props.disableActions}
+            value={floor2(scaleToDec(formDataStore.underlier, underlierScale))}
+            onChange={(event) => {
+              formDataStore.setUnderlier(props.contextData.fiat, event.target.value, props.modifyPositionData, null);
+            }}
+            placeholder='0'
+            inputMode='decimal'
+            labelRight={underlierSymbol}
+            bordered
+            size='sm'
+            borderWeight='light'
+          />
+        )}
+        {(formDataStore.mode === 'withdraw' || formDataStore.mode === 'redeem') && (
+          <Input
+            disabled={props.disableActions}
+            value={floor2(wadToDec(formDataStore.deltaCollateral))}
+            onChange={(event) => {
+              formDataStore.setDeltaCollateral(props.contextData.fiat, event.target.value, props.modifyPositionData, null);
+            }}
+            placeholder='0'
+            inputMode='decimal'
+            // Bypass type warning from passing a custom component instead of a string
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
+            label={
+              formDataStore.mode === 'withdraw'
+                ? <InputWithMaxLabel
+                  label='Collateral to withdraw and swap'
+                  onMaxClick={() => formDataStore.setMaxDeltaCollateral(props.contextData.fiat, props.modifyPositionData, null)}
+                />
+                : <InputWithMaxLabel
+                    label='Collateral to withdraw and redeem'
+                    onMaxClick={() => formDataStore.setMaxDeltaCollateral(props.contextData.fiat, props.modifyPositionData, null)}
+                  />
+            }
+            labelRight={symbol}
+            bordered
+            size='sm'
+            borderWeight='light'
+          />
+        )}
+        {(formDataStore.mode === 'deposit' || formDataStore.mode === 'withdraw') && (
+          <Input
+            disabled={props.disableActions}
+            value={floor2(Number(wadToDec(formDataStore.slippagePct)) * 100)}
+            onChange={(event) => {
+              formDataStore.setSlippagePct(props.contextData.fiat, event.target.value, props.modifyPositionData, null);
+            }}
+            step='0.01'
+            placeholder='0'
+            inputMode='decimal'
+            label='Slippage'
+            labelRight={'%'}
+            bordered
+            size='sm'
+            borderWeight='light'
+            width='7.5rem'
+          />
+        )}
         <Input
           disabled={props.disableActions}
           value={floor2(wadToDec(formDataStore.deltaDebt))}
@@ -216,8 +240,18 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
             formDataStore.setDeltaDebt(props.contextData.fiat, event.target.value, props.modifyPositionData, null);
           }}
           placeholder='0'
-          type='number'
-          label={formDataStore.mode === 'deposit' ? 'FIAT to borrow' : 'FIAT to pay back'}
+          inputMode='decimal'
+          // Bypass type warning from passing a custom component instead of a string
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          label={
+            formDataStore.mode === 'deposit'
+              ? 'FIAT to borrow'
+              : <InputWithMaxLabel
+                  label='FIAT to pay back'
+                  onMaxClick={() => formDataStore.setMaxDeltaDebt(props.contextData.fiat, props.modifyPositionData, null)}
+                />
+          }
           labelRight={'FIAT'}
           bordered
           size='sm'
@@ -236,11 +270,11 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
             <Input
               readOnly
               value={
-                formDataStore.formDataLoading
+                (formDataStore.formDataLoading)
                   ? ' '
-                  : formDataStore.mode === 'deposit'
-                  ? floor4(wadToDec(formDataStore.deltaCollateral))
-                  : floor4(scaleToDec(formDataStore.underlier, underlierScale))
+                  : (formDataStore.mode === 'deposit')
+                    ? floor4(wadToDec(formDataStore.deltaCollateral))
+                    : floor4(scaleToDec(formDataStore.underlier, underlierScale))
               }
               placeholder='0'
               type='string'
@@ -269,7 +303,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
           value={formDataStore.formDataLoading ? ' ' : floor4(wadToDec(formDataStore.collateral))}
           placeholder='0'
           type='string'
-          label={'Collateral'}
+          label={`Collateral (before: ${floor2(wadToDec(position.collateral))} ${symbol})`}
           labelRight={symbol}
           contentLeft={formDataStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
@@ -280,7 +314,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
           value={formDataStore.formDataLoading ? ' ' : floor4(wadToDec(formDataStore.debt))}
           placeholder='0'
           type='string'
-          label='Debt'
+          label={`Debt (before: ${floor2(wadToDec(fiat.normalDebtToDebt(position.normalDebt, virtualRate)))} FIAT)`}
           labelRight={'FIAT'}
           contentLeft={formDataStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
@@ -297,7 +331,8 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
           }
           placeholder='0'
           type='string'
-          label='Health Factor'
+          // label='Health Factor'
+          label={`Health Factor (before: ${floor4(wadToDec(fiat.computeHealthFactor(position.collateral, position.normalDebt, virtualRate, liquidationPrice)))})`}
           labelRight={'🚦'}
           contentLeft={formDataStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
@@ -313,18 +348,27 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               // Next UI Switch `checked` type is wrong, this is necessary
               // eslint-disable-next-line @typescript-eslint/ban-ts-comment
               // @ts-ignore
-              checked={() => underlierAllowance?.gte(0) && underlierAllowance?.gte(formDataStore.underlier)}
-              onChange={() => {
-                !formDataStore.underlier.isZero() && underlierAllowance.gte(formDataStore.underlier)
-                  ? props.unsetUnderlierAllowance(props.contextData.fiat)
-                  : props.setUnderlierAllowance(props.contextData.fiat)
-              }
-              }
+              checked={() => underlierAllowance?.gt(0) && underlierAllowance?.gte(formDataStore.underlier) ?? false}
+              onChange={async () => {
+                if(!formDataStore.underlier.isZero() && underlierAllowance.gte(formDataStore.underlier)) {
+                  try {
+                    setRpcError('');
+                    await props.unsetUnderlierAllowance(props.contextData.fiat);
+                  } catch (e: any) {
+                    setRpcError(e.message);
+                  }
+                } else {
+                  try {
+                    setRpcError('');
+                    await props.setUnderlierAllowance(props.contextData.fiat)
+                  } catch (e: any) {
+                    setRpcError(e.message);
+                  }
+                }
+              }}
               color='primary'
               icon={
-                ['setUnderlierAllowance', 'unsetUnderlierAllowance'].includes(
-                  currentTxAction || ''
-                ) && props.disableActions ? (
+                ['setUnderlierAllowance', 'unsetUnderlierAllowance'].includes(currentTxAction || '') && props.disableActions ? (
                   <Loading size='xs' />
                 ) : null
               }
@@ -337,16 +381,26 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               // eslint-disable-next-line @typescript-eslint/ban-ts-comment
               // @ts-ignore
               checked={() => !!monetaDelegate}
-              onChange={() =>
-                !!monetaDelegate
-                  ? props.unsetMonetaDelegate(props.contextData.fiat)
-                  : props.setMonetaDelegate(props.contextData.fiat)
-              }
+              onChange={async () => {
+                if (!!monetaDelegate) {
+                  try {
+                    setRpcError('');
+                    await props.unsetMonetaDelegate(props.contextData.fiat);
+                  } catch (e: any) {
+                    setRpcError(e.message);
+                  }
+                } else {
+                  try {
+                    setRpcError('');
+                    await props.setMonetaDelegate(props.contextData.fiat);
+                  } catch (e: any) {
+                    setRpcError(e.message);
+                  }
+                }
+              }}
               color='primary'
               icon={
-                ['setMonetaDelegate', 'unsetMonetaDelegate'].includes(
-                  currentTxAction || ''
-                ) && props.disableActions ? (
+                ['setMonetaDelegate', 'unsetMonetaDelegate'].includes(currentTxAction || '') && props.disableActions ? (
                   <Loading size='xs' />
                 ) : null
               }
@@ -362,16 +416,26 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               // eslint-disable-next-line @typescript-eslint/ban-ts-comment
               // @ts-ignore
               checked={() => fiatAllowance?.gt(0) && fiatAllowance?.gte(formDataStore.deltaDebt) ?? false}
-              onChange={() =>
-                !formDataStore.deltaDebt.isZero() && fiatAllowance.gte(formDataStore.deltaDebt)
-                  ? props.unsetFIATAllowance(props.contextData.fiat)
-                  : props.setFIATAllowance(props.contextData.fiat)
-              }
+              onChange={async () => {
+                if (formDataStore.deltaDebt.gt(0) && fiatAllowance.gte(formDataStore.deltaDebt)) {
+                  try {
+                    setRpcError('');
+                    await props.unsetFIATAllowance(props.contextData.fiat);
+                  } catch (e: any) {
+                    setRpcError(e.message);
+                  }
+                } else {
+                  try {
+                    setRpcError('');
+                    await props.setFIATAllowance(props.contextData.fiat);
+                  } catch (e: any) {
+                    setRpcError(e.message);
+                  }
+                }
+              }}
               color='primary'
               icon={
-                ['setFIATAllowance', 'unsetFIATAllowance'].includes(
-                  currentTxAction || ''
-                ) && props.disableActions ? (
+                ['setFIATAllowance', 'unsetFIATAllowance'].includes(currentTxAction || '') && props.disableActions ? (
                   <Loading size='xs' />
                 ) : null
               }
@@ -379,17 +443,25 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
           </>
         )}
         <Spacer y={3} />
+        { renderFormAlerts() }
+        <Spacer y={0.5} />
         <Button
           css={{ minWidth: '100%' }}
-          disabled={
-            props.disableActions || !hasProxy || formDataStore.mode === 'deposit'
-              ? formDataStore.underlier.isZero()
-              : formDataStore.deltaCollateral.isZero() || formDataStore.mode === 'deposit'
-              ? monetaDelegate === false
-              : true || formDataStore.mode === 'deposit'
-              ? underlierAllowance.lt(formDataStore.underlier)
-              : fiatAllowance.lt(formDataStore.deltaDebt)
-          }
+          disabled={(() => {
+            if (props.disableActions || !hasProxy) return true;
+            if (formDataStore.mode === 'deposit') {
+              if (monetaDelegate === false) return true;
+              if (formDataStore.underlier.isZero() && formDataStore.deltaDebt.isZero()) return true;
+              if (!formDataStore.underlier.isZero() && underlierAllowance.lt(formDataStore.underlier)) return true;
+            } else if (formDataStore.mode === 'withdraw') {
+              if (formDataStore.deltaCollateral.isZero() && formDataStore.deltaDebt.isZero()) return true;
+              if (!formDataStore.deltaDebt.isZero() && fiatAllowance.lt(formDataStore.deltaDebt)) return true;
+            } else if (formDataStore.mode === 'redeem') {
+              if (formDataStore.deltaCollateral.isZero() && formDataStore.deltaDebt.isZero()) return true;
+              if (!formDataStore.deltaDebt.isZero() && fiatAllowance.lt(formDataStore.deltaDebt)) return true;
+            }
+            return false;
+          })()}
           icon={
             [
               'buyCollateralAndModifyDebt',
@@ -399,13 +471,18 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               <Loading size='xs' />
             ) : null
           }
-          onPress={() => {
-            if (formDataStore.mode === 'deposit') {
-              props.buyCollateralAndModifyDebt();
-            } else if (formDataStore.mode === 'withdraw') {
-              props.sellCollateralAndModifyDebt();
-            } else if (formDataStore.mode === 'redeem') {
-              props.redeemCollateralAndModifyDebt();
+          onPress={async () => {
+            try {
+              setRpcError('');
+              if (formDataStore.mode === 'deposit') {
+                await props.buyCollateralAndModifyDebt();
+              } else if (formDataStore.mode === 'withdraw') {
+                await props.sellCollateralAndModifyDebt();
+              } else if (formDataStore.mode === 'redeem') {
+                await props.redeemCollateralAndModifyDebt();
+              }
+            } catch (e: any) {
+              setRpcError(e.message);
             }
           }}
         >

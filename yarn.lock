@@ -516,10 +516,10 @@
     "@ethersproject/properties" "^5.7.0"
     "@ethersproject/strings" "^5.7.0"
 
-"@fiatdao/sdk@^0.0.9":
-  version "0.0.9"
-  resolved "https://registry.yarnpkg.com/@fiatdao/sdk/-/sdk-0.0.9.tgz#60f612d27e0a1f9f4971ef206367fbe837e7cf2a"
-  integrity sha512-VlvshqDfRq/kJATPp9uQLnnfMm0ken6khoD/lLJkA5xKHTy7s7QOvYw4FPpWTWBGCD3S/oYCewpC2I9kCwwvKg==
+"@fiatdao/sdk@^0.0.15":
+  version "0.0.15"
+  resolved "https://registry.yarnpkg.com/@fiatdao/sdk/-/sdk-0.0.15.tgz#0b8fa250d22175a8dbbbb5e1b3d765aec72eee3f"
+  integrity sha512-peSINI4FhXHQn64uwniZ+yh2kM6x5qWRSuP73xP687o4oCwVo1GHc8agISVzhKh4MaUxjiAfrgl5c3zOAdIjdg==
   dependencies:
     changelog "https://github.com/fiatdao/changelog"
     ethers "^5.7.1"
@@ -2401,9 +2401,9 @@ chalk@^4.0.0, chalk@^4.1.1:
     ansi-styles "^4.1.0"
     supports-color "^7.1.0"
 
-"changelog@git+https://github.com/fiatdao/changelog.git":
+"changelog@https://github.com/fiatdao/changelog":
   version "0.0.0"
-  resolved "git+https://github.com/fiatdao/changelog.git#ef9c2702e8583245173e2ebeb3d4d65c594542c1"
+  resolved "https://github.com/fiatdao/changelog#acce23d1e1d1c2fadcf6e84b0b0c5ca14c2efe23"
 
 cipher-base@^1.0.0, cipher-base@^1.0.1, cipher-base@^1.0.3:
   version "1.0.4"
@@ -4433,6 +4433,11 @@ prelude-ls@^1.2.1:
   version "1.2.1"
   resolved "https://registry.yarnpkg.com/prelude-ls/-/prelude-ls-1.2.1.tgz#debc6489d7a6e6b0e7611888cec880337d316396"
   integrity sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g==
+
+prettier@^2.7.1:
+  version "2.7.1"
+  resolved "https://registry.yarnpkg.com/prettier/-/prettier-2.7.1.tgz#e235806850d057f97bb08368a4f7d899f7760c64"
+  integrity sha512-ujppO+MkdPqoVINuDFDRLClm7D78qbDt0/NR+wp5FqEZOoTNAjPHWj17QRhu7geIHJfcNhRk1XVQmF8Bp3ye+g==
 
 prop-types@^15.8.1:
   version "15.8.1"

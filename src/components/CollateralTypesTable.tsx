@@ -1,108 +1,70 @@
-import { SortDescriptor, styled, Table, Text, User } from '@nextui-org/react';
 import React from 'react';
-import { wadToDec, ZERO } from '@fiatdao/sdk';
-import { encodeCollateralTypeId, formatUnixTimestamp } from '../utils';
-
-const StyledBadge = styled('span', {
-  display: 'inline-block',
-  textTransform: 'uppercase',
-  padding: '$2 $3',
-  margin: '0 2px',
-  fontSize: '10px',
-  fontWeight: '$bold',
-  borderRadius: '14px',
-  letterSpacing: '0.6px',
-  lineHeight: 1,
-  boxShadow: '1px 2px 5px 0px rgb(0 0 0 / 5%)',
-  alignItems: 'center',
-  alignSelf: 'center',
-  color: '$white',
-  variants: {
-    type: {
-      green: {
-        bg: '$successLight',
-        color: '$successLightContrast'
-      },
-      red: {
-        bg: '$errorLight',
-        color: '$errorLightContrast'
-      },
-      orange: {
-        bg: '$warningLight',
-        color: '$warningLightContrast'
-      }
-    }
-  },
-  defaultVariants: {
-    type: 'active'
-  }
-});
+import { Badge, SortDescriptor, Table, Text, User } from '@nextui-org/react';
+import { addressEq, wadToDec, ZERO } from '@fiatdao/sdk';
+import {
+  earnableRateToAPY, encodeCollateralTypeId, floor2, formatUnixTimestamp,
+  interestPerSecondToAPY, interestPerSecondToRateUntilMaturity
+} from '../utils';
 
 interface CollateralTypesTableProps {
   collateralTypesData: Array<any>,
+  positionsData: Array<any>,
   onSelectCollateralType: (collateralTypeId: string) => void
 }
 
 export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
   const [sortedData, setSortedData] = React.useState<any[]>([]);
-  const [sortProps, setSortProps] = React.useState<SortDescriptor>({
-    column: 'Maturity',
-    direction: 'descending'
-  });
+  const [sortProps, setSortProps] = React.useState<SortDescriptor>({ column: 'Maturity', direction: 'descending' });
   
   React.useEffect(() => {
-    const data = [...props.collateralTypesData]
+    const data = [...props.collateralTypesData].filter(({ properties: { vault, tokenId } }) => {
+      if (props.positionsData.find((position) => addressEq(position.vault, vault) && position.tokenId == tokenId)) {
+        return false;
+      }
+      return true;
+    });
     data.sort((a: any, b: any) : number => {
       if (sortProps.direction === 'descending' ) {
         return a.properties.maturity.toNumber() < b.properties.maturity.toNumber() ? 1 : -1
       }
       return a.properties.maturity.toNumber() > b.properties.maturity.toNumber() ? 1 : -1
     });
-    console.log({data})
     setSortedData(data);
-  }, [props.collateralTypesData, sortProps.direction])
+  }, [props.collateralTypesData, props.positionsData, sortProps.direction])
 
-
-  if (props.collateralTypesData.length === 0) {
-    // TODO
-    // return <Loading />;
-    return null;
-  }
+  if (props.collateralTypesData.length === 0) return null;
 
   return (
     <>
-      <Text h1>Create Position</Text>
+      <Text h2>Create Position</Text>
       <Table
         aria-label='Collateral Types'
         css={{ height: 'auto', minWidth: '100%' }}
         selectionMode='single'
         selectedKeys={'1'}
-        onSelectionChange={(selected) =>
-          props.onSelectCollateralType(Object.values(selected)[0])
-        }
+        onSelectionChange={(selected) => props.onSelectCollateralType(Object.values(selected)[0])}
         sortDescriptor={sortProps as SortDescriptor}
-        onSortChange={(data) => {
-          setSortProps({
-            direction: data.direction,
-            column: data.column
-          })
-        }}
+        onSortChange={(data) => { setSortProps({ direction: data.direction, column: data.column })}}
       >
         <Table.Header>
           <Table.Column>Asset</Table.Column>
-          <Table.Column>Underlier</Table.Column>
+          <Table.Column>APY (PNL At Maturty)</Table.Column>
+          <Table.Column>Borrow Rate (Due At Maturity)</Table.Column>
           <Table.Column>Total Assets</Table.Column>
-          <Table.Column>% Gain</Table.Column>
-          <Table.Column allowsSorting>Maturity</Table.Column>
+          <Table.Column allowsSorting>Maturity (Days Until Maturity)</Table.Column>
         </Table.Header>
         <Table.Body>
           {
             sortedData.map((collateralType: any) => {
-              const { vault, tokenId, underlierSymbol, maturity } = collateralType.properties;
+              const { vault, tokenId, maturity } = collateralType.properties;
               const { protocol, asset, icons, urls, symbol } = collateralType.metadata;
-              const depositedCollateral = collateralType.state.codex.depositedCollateral;
-              const earnableRate = collateralType?.earnableRate?.mul(100);
+              const { publican: { interestPerSecond }, codex: { depositedCollateral } } = collateralType.state;
+              const earnableRate = collateralType?.earnableRate || ZERO;
+              const earnableRateAnnulized = earnableRateToAPY(earnableRate, maturity);
+              const borrowRate = interestPerSecondToRateUntilMaturity(interestPerSecond, maturity);
+              const borrowRateAnnualized = interestPerSecondToAPY(interestPerSecond);
               const maturityFormatted = new Date(Number(maturity.toString()) * 1000);
+              const daysUntilMaturity = Math.max(Math.floor((Number(maturity.toString()) - Math.floor(Date.now() / 1000)) / 86400), 0);
               return (
                 <Table.Row key={encodeCollateralTypeId(vault, tokenId)}>
                   <Table.Cell>
@@ -122,17 +84,13 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
                       <User.Link href={urls.asset}>{protocol}</User.Link>
                     </User>
                   </Table.Cell>
+                  <Table.Cell>{`${floor2(wadToDec(earnableRateAnnulized.mul(100)))}% (${floor2(wadToDec(earnableRate.mul(100)))}%)`}</Table.Cell>
+                  <Table.Cell>{`${floor2(wadToDec(borrowRateAnnualized.mul(100)))}% (${floor2(wadToDec(borrowRate.mul(100)))}%)`}</Table.Cell>
+                  <Table.Cell>{`${floor2(Number(wadToDec(depositedCollateral))).toLocaleString()} ${symbol}`}</Table.Cell>
                   <Table.Cell>
-                    <User name={underlierSymbol} src={icons.underlier} size='sm'/>
-                  </Table.Cell>
-                  <Table.Cell>{`${parseFloat(wadToDec(depositedCollateral)).toFixed(2)} ${symbol}`}</Table.Cell>
-                  <Table.Cell>
-                    {`${parseFloat(wadToDec(earnableRate ?? ZERO)).toFixed(2)}%`}
-                  </Table.Cell>
-                  <Table.Cell>
-                    <StyledBadge type={new Date() < maturityFormatted ? 'green' : 'red'} >
-                      {formatUnixTimestamp(maturity)}
-                    </StyledBadge>
+                    <Badge isSquared color={new Date() < maturityFormatted ? 'success' : 'error'} variant='flat' >
+                      {formatUnixTimestamp(maturity)}, ({daysUntilMaturity} days)
+                    </Badge>
                   </Table.Cell>
                 </Table.Row>
               );
