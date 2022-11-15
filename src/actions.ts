@@ -193,7 +193,7 @@ export const modifyCollateralAndDebt = async (
     .debtToNormalDebt(deltaDebt, collateralTypeData.state.codex.virtualRate)
     .mul(WAD.sub(decToWad(0.001)))
     .div(WAD);
-  if (position.normalDebt.add(deltaNormalDebt).lt(WAD)) deltaNormalDebt = position.normalDebt;
+  if (position.normalDebt.add(deltaNormalDebt).lt(WAD)) deltaNormalDebt = position.normalDebt.mul(-1);
 
   // if deltaCollateral is zero use generic modifyCollateralAndDebt method since no swap is necessary
   let actions;
