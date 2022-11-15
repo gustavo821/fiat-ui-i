@@ -421,6 +421,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
             try {
               setRpcError('');
               await props.buyCollateralAndModifyDebt()
+              props.onClose();
             } catch (e: any) {
               setRpcError(e.message);
             }

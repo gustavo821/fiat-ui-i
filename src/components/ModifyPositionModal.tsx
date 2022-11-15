@@ -466,6 +466,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               } else if (formDataStore.mode === 'redeem') {
                 await props.redeemCollateralAndModifyDebt();
               }
+              props.onClose();
             } catch (e: any) {
               setRpcError(e.message);
             }
