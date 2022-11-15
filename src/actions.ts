@@ -336,7 +336,7 @@ export const buyCollateralAndModifyDebt = async (
             properties.sptData.maturity,
             properties.underlierToken,
             properties.token,
-            properties.underlier
+            underlier
           ]
         )
       );
@@ -354,7 +354,7 @@ export const sellCollateralAndModifyDebt = async (
   deltaCollateral: ethers.BigNumber,
   deltaDebt: ethers.BigNumber,
   underlier: ethers.BigNumber,
-  position: { collateral: ethers.BigNumber, normalDebt: ethers.BigNumber }
+  position: any
 ) => {
   const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = contextData.fiat.getContracts();
   const { properties } = collateralTypeData;
@@ -452,6 +452,7 @@ export const sellCollateralAndModifyDebt = async (
     }
     case 'ERC20:SPT': {
       if (!properties.sptData) return console.error('Missing SPT data');
+      console.log(contextData.proxies[0]);
       console.log(
         // await contextData.fiat.dryrunViaProxy(
         await contextData.fiat.sendAndWaitViaProxy(
@@ -470,7 +471,7 @@ export const sellCollateralAndModifyDebt = async (
             properties.sptData.maturity,
             properties.token,
             properties.underlierToken,
-            properties.tokenAmount,
+            tokenAmount,
           ]
         )
       );
@@ -486,7 +487,7 @@ export const redeemCollateralAndModifyDebt = async (contextData: any,
   collateralTypeData: any,
   deltaCollateral: ethers.BigNumber,
   deltaDebt: ethers.BigNumber,
-  position: { collateral: ethers.BigNumber, normalDebt: ethers.BigNumber }
+  position: any
 ) => {
   const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = contextData.fiat.getContracts();
   const { properties } = collateralTypeData;

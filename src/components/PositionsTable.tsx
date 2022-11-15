@@ -65,7 +65,6 @@ export const PositionsTable = (props: PositionsTableProps) => {
       >
         <Table.Header>
           <Table.Column>Asset</Table.Column>
-          <Table.Column>Underlier</Table.Column>
           <Table.Column>Borrow Rate (Due At Maturity)</Table.Column>
           <Table.Column>Collateral (Fair Value)</Table.Column>
           <Table.Column>Debt (Implied Value)</Table.Column>
@@ -77,7 +76,7 @@ export const PositionsTable = (props: PositionsTableProps) => {
             sortedData.map((position) => {
               const { owner, vault, tokenId, collateral, normalDebt } = position;
               const {
-                properties: { underlierSymbol, maturity },
+                properties: { maturity },
                 metadata: { protocol, asset, icons, urls, symbol },
                 state: {
                   publican: { interestPerSecond }, codex: { virtualRate }, collybus: { fairPrice, liquidationPrice }
@@ -109,21 +108,6 @@ export const PositionsTable = (props: PositionsTableProps) => {
                     }}>
                       <User.Link href={urls.asset}>{protocol}</User.Link>
                     </User>
-                  </Table.Cell>
-                  <Table.Cell>
-                  <User name={underlierSymbol} src={icons.underlier} size='sm' css={{
-                      borderRadius: '0px',
-                      '& span': {
-                        '& .nextui-avatar-bg': {
-                          background: 'transparent !important'
-                        },
-                        borderRadius: '0px !important',
-                        '& img': {
-                          borderRadius: '0px !important',
-                          background: 'transparent !important',
-                        }
-                      }
-                    }}/>
                   </Table.Cell>
                   <Table.Cell>
                     <Row>{`${floor2(wadToDec(borrowRateAnnualized.mul(100)))}%`}</Row>

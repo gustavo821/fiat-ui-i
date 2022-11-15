@@ -48,7 +48,6 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
       >
         <Table.Header>
           <Table.Column>Asset</Table.Column>
-          <Table.Column>Underlier</Table.Column>
           <Table.Column>APY (PNL At Maturty)</Table.Column>
           <Table.Column>Borrow Rate (Due At Maturity)</Table.Column>
           <Table.Column>Total Assets</Table.Column>
@@ -57,7 +56,7 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
         <Table.Body>
           {
             sortedData.map((collateralType: any) => {
-              const { vault, tokenId, underlierSymbol, maturity } = collateralType.properties;
+              const { vault, tokenId, maturity } = collateralType.properties;
               const { protocol, asset, icons, urls, symbol } = collateralType.metadata;
               const { publican: { interestPerSecond }, codex: { depositedCollateral } } = collateralType.state;
               const earnableRate = collateralType?.earnableRate || ZERO;
@@ -84,21 +83,6 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
                     }}>
                       <User.Link href={urls.asset}>{protocol}</User.Link>
                     </User>
-                  </Table.Cell>
-                  <Table.Cell>
-                    <User name={underlierSymbol} src={icons.underlier} size='sm' css={{
-                      borderRadius: '0px',
-                      '& span': {
-                        '& .nextui-avatar-bg': {
-                          background: 'transparent !important'
-                        },
-                        borderRadius: '0px !important',
-                        '& img': {
-                          borderRadius: '0px !important',
-                          background: 'transparent !important',
-                        }
-                      }
-                    }}/>
                   </Table.Cell>
                   <Table.Cell>{`${floor2(wadToDec(earnableRateAnnulized.mul(100)))}% (${floor2(wadToDec(earnableRate.mul(100)))}%)`}</Table.Cell>
                   <Table.Cell>{`${floor2(wadToDec(borrowRateAnnualized.mul(100)))}% (${floor2(wadToDec(borrowRate.mul(100)))}%)`}</Table.Cell>
