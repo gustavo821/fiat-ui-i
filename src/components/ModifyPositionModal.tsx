@@ -142,6 +142,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
                 <Navbar.Link
                   isActive={formDataStore.mode === 'deposit'}
                   onClick={() => {
+                    formDataStore.resetCollateralAndDebtInputs(props.contextData.fiat, props.modifyPositionData);
                     formDataStore.setMode('deposit');
                   }}
                 >
@@ -150,6 +151,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
                 <Navbar.Link
                   isActive={formDataStore.mode === 'withdraw'}
                   onClick={() => {
+                    formDataStore.resetCollateralAndDebtInputs(props.contextData.fiat, props.modifyPositionData);
                     formDataStore.setMode('withdraw');
                   }}
                 >
@@ -162,6 +164,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
                 isDisabled={!matured}
                 isActive={formDataStore.mode === 'redeem'}
                 onClick={() => {
+                  formDataStore.resetCollateralAndDebtInputs(props.contextData.fiat, props.modifyPositionData);
                   formDataStore.setMode('redeem');
                 }}
               >

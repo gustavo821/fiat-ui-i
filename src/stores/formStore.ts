@@ -75,6 +75,7 @@ interface FormActions {
     modifyPositionData: any,
     selectedCollateralTypeId: string | null
   ) => void;
+  resetCollateralAndDebtInputs: (fiat: any, modifyPositionData: any) => void;
   reset: () => void;
 }
 
@@ -330,6 +331,13 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
 
       set(() => ({ formDataLoading: false }));
     }),
+
+    resetCollateralAndDebtInputs: (fiat, modifyPositionData) => {
+      const { deltaCollateral, deltaDebt, underlier } = initialState;
+      set(() => ({ deltaCollateral, deltaDebt, underlier }));
+      set(() => ({ formDataLoading: true }));
+      get().calculateNewPositionData(fiat, modifyPositionData, null);
+    },
 
     reset: () => {
       set(initialState);
