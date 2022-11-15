@@ -235,7 +235,7 @@ const Home: NextPage = () => {
       });
 
       const resp = await fiat.dryrun(contract, method, ...args);
-      setTransactionData(initialState.transactionData);
+      resetState();
       return resp;
     } catch (e) {
       console.error('Dryrun error: ', e);
@@ -334,7 +334,7 @@ const Home: NextPage = () => {
           formDataStore.deltaDebt, // increase (mint)
           modifyPositionData.position,
         );
-        setTransactionData(initialState.transactionData);
+        resetState();
         return resp;
       } else {
         const resp = await userActions.buyCollateralAndModifyDebt(
@@ -344,7 +344,7 @@ const Home: NextPage = () => {
           formDataStore.deltaDebt,
           formDataStore.underlier
         );
-        setTransactionData(initialState.transactionData);
+        resetState();
         return resp;
       }
     } catch (e) {
@@ -364,7 +364,7 @@ const Home: NextPage = () => {
           formDataStore.deltaDebt.mul(-1), // decrease (pay back)
           modifyPositionData.position,
         );
-        setTransactionData(initialState.transactionData);
+        resetState();
         return resp;
       }
       else {
@@ -376,7 +376,7 @@ const Home: NextPage = () => {
           formDataStore.underlier,
           modifyPositionData.position,
         );
-        setTransactionData(initialState.transactionData);
+        resetState();
         return resp;
       }
     } catch (e) {
@@ -396,7 +396,7 @@ const Home: NextPage = () => {
         formDataStore.deltaDebt,
         modifyPositionData.position,
       );
-      setTransactionData(initialState.transactionData);
+      resetState();
       return resp;
     } catch (e) {
       console.error('Redeem error: ', e);
