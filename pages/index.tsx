@@ -235,7 +235,7 @@ const Home: NextPage = () => {
       });
 
       const resp = await fiat.dryrun(contract, method, ...args);
-      resetState();
+      setTransactionData(initialState.transactionData);
       return resp;
     } catch (e) {
       console.error('Dryrun error: ', e);
