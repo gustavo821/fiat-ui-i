@@ -196,16 +196,18 @@ export const modifyCollateralAndDebt = async (
 
   // if deltaCollateral is zero use generic modifyCollateralAndDebt method since no swap is necessary
   let actions;
-  if (properties.vaultType === 'EPT:20') actions = vaultEPTActions;
-  if (properties.vaultType === 'FC:1155') actions = vaultFCActions;
-  if (properties.vaultType === 'FY:20') actions = vaultFYActions;
-  if (properties.vaultType === 'SPT:20') actions = vaultSPTActions;
+  if (properties.vaultType === 'ERC20:EPT') actions = vaultEPTActions;
+  if (properties.vaultType === 'ERC1155:FC') actions = vaultFCActions;
+  if (properties.vaultType === 'ERC20:FY') actions = vaultFYActions;
+  if (properties.vaultType === 'ERC20:SPT') actions = vaultSPTActions;
+
   return console.log(
     await contextData.fiat.sendAndWaitViaProxy(
       contextData.proxies[0],
       actions,
       'modifyCollateralAndDebt',
       properties.vault,
+      properties.token,
       properties.tokenId,
       contextData.proxies[0],
       contextData.user,

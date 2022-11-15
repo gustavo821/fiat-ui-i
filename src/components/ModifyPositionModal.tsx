@@ -331,8 +331,16 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
           }
           placeholder='0'
           type='string'
-          // label='Health Factor'
-          label={`Health Factor (before: ${floor4(wadToDec(fiat.computeHealthFactor(position.collateral, position.normalDebt, virtualRate, liquidationPrice)))})`}
+          label={
+            `Health Factor (before: ${(() => {
+              const healthFactor = fiat.computeHealthFactor(
+                position.collateral, position.normalDebt, virtualRate, liquidationPrice
+              );
+              if (healthFactor.eq(ethers.constants.MaxUint256)) return '∞'
+              return floor4(wadToDec(healthFactor));
+            })()
+          })`
+          }
           labelRight={'🚦'}
           contentLeft={formDataStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
