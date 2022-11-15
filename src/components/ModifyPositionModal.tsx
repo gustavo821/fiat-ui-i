@@ -2,6 +2,7 @@ import React from 'react';
 import {
   Button,
   Card,
+  Grid,
   Input,
   Loading,
   Modal,
@@ -17,7 +18,7 @@ import { commifyToDecimalPlaces, floor2, floor4, formatUnixTimestamp } from '../
 import { TransactionStatus } from '../../pages';
 import { useModifyPositionFormDataStore } from '../stores/formStore';
 import { Alert } from './Alert';
-import { InputWithMaxLabel } from './InputWithMaxLabel';
+import { InputLabelWithMax } from './InputLabelWithMax';
 
 interface ModifyPositionModalProps {
   buyCollateralAndModifyDebt: () => any;
@@ -46,6 +47,7 @@ export const ModifyPositionModal = (props: ModifyPositionModalProps) => {
       blur
       open={props.open}
       onClose={() => props.onClose()}
+      width='27rem'
     >
       <ModifyPositionModalBody {...props} />
     </Modal>
@@ -139,13 +141,19 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               <>
                 <Navbar.Link
                   isActive={formDataStore.mode === 'deposit'}
-                  onClick={() => formDataStore.setMode('deposit')}
+                  onClick={() => {
+                    formDataStore.reset();
+                    formDataStore.setMode('deposit');
+                  }}
                 >
                   Increase
                 </Navbar.Link>
                 <Navbar.Link
                   isActive={formDataStore.mode === 'withdraw'}
-                  onClick={() => formDataStore.setMode('withdraw')}
+                  onClick={() => {
+                    formDataStore.reset();
+                    formDataStore.setMode('withdraw');
+                  }}
                 >
                   Decrease
                 </Navbar.Link>
@@ -155,7 +163,10 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               <Navbar.Link
                 isDisabled={!matured}
                 isActive={formDataStore.mode === 'redeem'}
-                onClick={() => formDataStore.setMode('redeem')}
+                onClick={() => {
+                  formDataStore.reset();
+                  formDataStore.setMode('redeem');
+                }}
               >
                 Redeem
               </Navbar.Link>
@@ -170,69 +181,78 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
             Wallet: {commifyToDecimalPlaces(underlierBalance, underlierScale, 2)} {underlierSymbol}
           </Text>
         )}
-        {formDataStore.mode === 'deposit' && (
-          <Input
-            label={'Underlier to deposit'}
-            disabled={props.disableActions}
-            value={floor2(scaleToDec(formDataStore.underlier, underlierScale))}
-            onChange={(event) => {
-              formDataStore.setUnderlier(props.contextData.fiat, event.target.value, props.modifyPositionData, null);
-            }}
-            placeholder='0'
-            inputMode='decimal'
-            labelRight={underlierSymbol}
-            bordered
-            size='sm'
-            borderWeight='light'
-          />
-        )}
-        {(formDataStore.mode === 'withdraw' || formDataStore.mode === 'redeem') && (
-          <Input
-            disabled={props.disableActions}
-            value={floor2(wadToDec(formDataStore.deltaCollateral))}
-            onChange={(event) => {
-              formDataStore.setDeltaCollateral(props.contextData.fiat, event.target.value, props.modifyPositionData, null);
-            }}
-            placeholder='0'
-            inputMode='decimal'
-            // Bypass type warning from passing a custom component instead of a string
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-ignore
-            label={
-              formDataStore.mode === 'withdraw'
-                ? <InputWithMaxLabel
-                  label='Collateral to withdraw and swap'
-                  onMaxClick={() => formDataStore.setMaxDeltaCollateral(props.contextData.fiat, props.modifyPositionData, null)}
-                />
-                : <InputWithMaxLabel
+        <Grid.Container
+          gap={0}
+          justify='space-between'
+          wrap='wrap'
+          css={{ marginBottom: '1rem' }}
+        >
+          {formDataStore.mode === 'deposit' && (
+            <Input
+              label={'Underlier to deposit'}
+              disabled={props.disableActions}
+              value={floor2(scaleToDec(formDataStore.underlier, underlierScale))}
+              onChange={(event) => {
+                formDataStore.setUnderlier(props.contextData.fiat, event.target.value, props.modifyPositionData, null);
+              }}
+              placeholder='0'
+              inputMode='decimal'
+              labelRight={underlierSymbol}
+              bordered
+              size='sm'
+              borderWeight='light'
+              width='15rem'
+            />
+          )}
+          {(formDataStore.mode === 'withdraw' || formDataStore.mode === 'redeem') && (
+            <Input
+              disabled={props.disableActions}
+              value={floor2(wadToDec(formDataStore.deltaCollateral))}
+              onChange={(event) => {
+                formDataStore.setDeltaCollateral(props.contextData.fiat, event.target.value, props.modifyPositionData, null);
+              }}
+              placeholder='0'
+              inputMode='decimal'
+              // Bypass type warning from passing a custom component instead of a string
+              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+              // @ts-ignore
+              label={
+                formDataStore.mode === 'withdraw'
+                  ? <InputLabelWithMax
+                    label='Collateral to withdraw and swap'
+                    onMaxClick={() => formDataStore.setMaxDeltaCollateral(props.contextData.fiat, props.modifyPositionData, null)}
+                  />
+                  : <InputLabelWithMax
                     label='Collateral to withdraw and redeem'
                     onMaxClick={() => formDataStore.setMaxDeltaCollateral(props.contextData.fiat, props.modifyPositionData, null)}
                   />
-            }
-            labelRight={symbol}
-            bordered
-            size='sm'
-            borderWeight='light'
-          />
-        )}
-        {(formDataStore.mode === 'deposit' || formDataStore.mode === 'withdraw') && (
-          <Input
-            disabled={props.disableActions}
-            value={floor2(Number(wadToDec(formDataStore.slippagePct)) * 100)}
-            onChange={(event) => {
-              formDataStore.setSlippagePct(props.contextData.fiat, event.target.value, props.modifyPositionData, null);
-            }}
-            step='0.01'
-            placeholder='0'
-            inputMode='decimal'
-            label='Slippage'
-            labelRight={'%'}
-            bordered
-            size='sm'
-            borderWeight='light'
-            width='7.5rem'
-          />
-        )}
+              }
+              labelRight={symbol}
+              bordered
+              size='sm'
+              borderWeight='light'
+              width={formDataStore.mode === 'redeem' ? '100%' : '15rem'}
+            />
+          )}
+          {(formDataStore.mode === 'deposit' || formDataStore.mode === 'withdraw') && (
+            <Input
+              disabled={props.disableActions}
+              value={floor2(Number(wadToDec(formDataStore.slippagePct)) * 100)}
+              onChange={(event) => {
+                formDataStore.setSlippagePct(props.contextData.fiat, event.target.value, props.modifyPositionData, null);
+              }}
+              step='0.01'
+              placeholder='0'
+              inputMode='decimal'
+              label='Slippage'
+              labelRight={'%'}
+              bordered
+              size='sm'
+              borderWeight='light'
+              width='7.5rem'
+            />
+          )}
+        </Grid.Container>
         <Input
           disabled={props.disableActions}
           value={floor2(wadToDec(formDataStore.deltaDebt))}
@@ -247,7 +267,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
           label={
             formDataStore.mode === 'deposit'
               ? 'FIAT to borrow'
-              : <InputWithMaxLabel
+              : <InputLabelWithMax
                   label='FIAT to pay back'
                   onMaxClick={() => formDataStore.setMaxDeltaDebt(props.contextData.fiat, props.modifyPositionData, null)}
                 />
@@ -457,6 +477,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
           css={{ minWidth: '100%' }}
           disabled={(() => {
             if (props.disableActions || !hasProxy) return true;
+            if (formDataStore.formErrors.length !== 0 || formDataStore.formWarnings.length !== 0) return true;
             if (formDataStore.mode === 'deposit') {
               if (monetaDelegate === false) return true;
               if (formDataStore.underlier.isZero() && formDataStore.deltaDebt.isZero()) return true;
@@ -489,6 +510,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               } else if (formDataStore.mode === 'redeem') {
                 await props.redeemCollateralAndModifyDebt();
               }
+              props.onClose();
             } catch (e: any) {
               setRpcError(e.message);
             }

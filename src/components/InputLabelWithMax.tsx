@@ -16,7 +16,7 @@ const MaxButton = styled('button', {
   },
 });
 
-export const InputWithMaxLabel = (props: { label: string, onMaxClick?: () => void }) => {
+export const InputLabelWithMax = (props: { label: string, onMaxClick?: () => void }) => {
   return (
     <div style={{ display: 'flex' }}>
       <label

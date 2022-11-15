@@ -43,6 +43,7 @@ export const CreatePositionModal = (props: CreatePositionModalProps) => {
       closeButton={!props.disableActions}
       open={props.open}
       onClose={() => props.onClose()}
+      width='27rem'
     >
       <CreatePositionModalBody {...props} />
     </Modal>
@@ -72,6 +73,23 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
     underlierBalance,
     monetaDelegate,
   } = props.modifyPositionData;
+
+  if (Math.floor(Date.now() / 1000) > Number(maturity.toString())) {
+    return (
+      <>
+        <Modal.Header>
+          <Text id='modal-title' size={18}>
+            <Text b size={18}>Matured Asset</Text>
+            <br />
+            <Text b size={16}>{`${protocol} - ${asset}`}</Text>
+            <br />
+            <Text b size={14}>{`${formatUnixTimestamp(maturity)}`}</Text>
+          </Text>
+        </Modal.Header>
+      </>
+    );
+  }
+
   const { action: currentTxAction } = props.transactionData;
 
   const hasProxy = proxies.length > 0;
@@ -111,13 +129,8 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
   return (
     <>
       <Modal.Header>
-        <Text
-          id='modal-title'
-          size={18}
-        >
-          <Text b size={18}>
-            Create Position
-          </Text>
+        <Text id='modal-title' size={18}>
+          <Text b size={18}>Create Position</Text>
           <br />
           <Text b size={16}>{`${protocol} - ${asset}`}</Text>
           <br />
@@ -171,6 +184,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
               bordered
               size='sm'
               borderWeight='light'
+              width='15rem'
             />
           </Grid>
           <Grid>
@@ -405,7 +419,10 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
         <Button
           css={{ minWidth: '100%' }}
           disabled={
-            props.disableActions || !hasProxy ||
+            formDataStore.formErrors.length !== 0 ||
+            formDataStore.formWarnings.length !== 0 ||
+            props.disableActions ||
+            !hasProxy ||
             formDataStore.underlier?.isZero() ||
             formDataStore.deltaCollateral?.isZero() ||
             underlierAllowance?.lt(formDataStore.underlier) ||
@@ -421,6 +438,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
             try {
               setRpcError('');
               await props.buyCollateralAndModifyDebt()
+              props.onClose();
             } catch (e: any) {
               setRpcError(e.message);
             }
