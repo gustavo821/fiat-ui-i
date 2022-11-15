@@ -243,7 +243,7 @@ const Home: NextPage = () => {
     }
   }
 
-  const sendAndWait = async (fiat: any, action: string, contract: ethers.Contract, method: string, ...args: any[]) => {
+  const sendStatefulTransaction = async (fiat: any, action: string, contract: ethers.Contract, method: string, ...args: any[]) => {
     try {
       setTransactionData({ action, status: 'sent' });
       const resp = await fiat.sendAndWait(contract, method, ...args);
@@ -259,7 +259,7 @@ const Home: NextPage = () => {
 
   const createProxy = async (fiat: any, user: string) => {
     // return await dryRun(fiat, 'createProxy', fiat.getContracts().proxyRegistry, 'deployFor', user);
-    await sendAndWait(fiat, 'createProxy', fiat.getContracts().proxyRegistry, 'deployFor', user);
+    await sendStatefulTransaction(fiat, 'createProxy', fiat.getContracts().proxyRegistry, 'deployFor', user);
     // Querying chain directly after this to update as soon as possible
     const { proxyRegistry } = fiat.getContracts();
     const proxyAddress = await fiat.call(
@@ -275,7 +275,7 @@ const Home: NextPage = () => {
     // add 1 unit has a buffer in case user refreshes the page and the value becomes outdated
     const allowance = formDataStore.underlier.add(modifyPositionData.collateralType.properties.underlierScale);
     // return await dryRun(fiat, 'setUnderlierAllowance', token, 'approve', contextData.proxies[0], allowance);
-    await sendAndWait(fiat, 'setUnderlierAllowance', token, 'approve', contextData.proxies[0], allowance);
+    await sendStatefulTransaction(fiat, 'setUnderlierAllowance', token, 'approve', contextData.proxies[0], allowance);
     const underlierAllowance = await token.allowance(contextData.user, contextData.proxies[0])
     setModifyPositionData({ ...modifyPositionData, underlierAllowance });
   }
@@ -283,7 +283,7 @@ const Home: NextPage = () => {
   const unsetUnderlierAllowance = async (fiat: any) => {
     const token = fiat.getERC20Contract(modifyPositionData.collateralType.properties.underlierToken);
     // return await dryRun(fiat, 'unsetUnderlierAllowance', token, 'approve', contextData.proxies[0], 0);
-    return await sendAndWait(fiat, 'unsetUnderlierAllowance', token, 'approve', contextData.proxies[0], 0);
+    return await sendStatefulTransaction(fiat, 'unsetUnderlierAllowance', token, 'approve', contextData.proxies[0], 0);
   }
 
   const setFIATAllowance = async (fiat: any) => {
@@ -291,7 +291,7 @@ const Home: NextPage = () => {
     // add 1 unit has a buffer in case user refreshes the page and the value becomes outdated
     const allowance = formDataStore.deltaDebt.add(WAD);
     // return await dryRun(fiat, 'setFIATAllowance', token, 'approve', contextData.proxies[0], allowance);
-    await sendAndWait(fiat, 'setFIATAllowance', token, 'approve', contextData.proxies[0], allowance);
+    await sendStatefulTransaction(fiat, 'setFIATAllowance', token, 'approve', contextData.proxies[0], allowance);
     const fiatAllowance = await token.allowance(contextData.user, contextData.proxies[0])
     setModifyPositionData({ ...modifyPositionData, fiatAllowance });
   }
@@ -299,13 +299,13 @@ const Home: NextPage = () => {
   const unsetFIATAllowance = async (fiat: any) => {
     const token = fiat.getContracts().fiat;
     // return await dryRun(fiat, 'unsetFIATAllowance', token, 'approve', contextData.proxies[0], 0);
-    return await sendAndWait(fiat, 'unsetFIATAllowance', token, 'approve', contextData.proxies[0], 0);
+    return await sendStatefulTransaction(fiat, 'unsetFIATAllowance', token, 'approve', contextData.proxies[0], 0);
   }
 
   const setMonetaDelegate = async (fiat: any) => {
     const { codex, moneta } = fiat.getContracts();
     // return await dryRun(fiat, 'setMonetaDelegate', codex, 'grantDelegate', moneta.address);
-    await sendAndWait(fiat, 'setMonetaDelegate', codex, 'grantDelegate', moneta.address);
+    await sendStatefulTransaction(fiat, 'setMonetaDelegate', codex, 'grantDelegate', moneta.address);
 
     const monetaDelegate = await fiat.call(
       codex,
@@ -319,7 +319,7 @@ const Home: NextPage = () => {
   const unsetMonetaDelegate = async (fiat: any) => {
     const { codex, moneta } = fiat.getContracts();
     // return await dryRun(fiat, 'unsetMonetaDelegate', codex, 'revokeDelegate', moneta.address);
-    return await sendAndWait(fiat, 'unsetMonetaDelegate', codex, 'revokeDelegate', moneta.address);
+    return await sendStatefulTransaction(fiat, 'unsetMonetaDelegate', codex, 'revokeDelegate', moneta.address);
   }
 
   const buyCollateralAndModifyDebt = async () => {
