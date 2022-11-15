@@ -437,19 +437,35 @@ const Home: NextPage = () => {
   const redeemCollateralAndModifyDebt = async () => {
     setTransactionData({ status: 'sent', action: 'redeemCollateralAndModifyDebt' });
     try {
-      const resp = await userActions.redeemCollateralAndModifyDebt(
-        contextData,
-        modifyPositionData.collateralType,
-        formDataStore.deltaCollateral,
-        formDataStore.deltaDebt,
-        modifyPositionData.position,
-      ) as any;
-      addRecentTransaction({
-        hash: resp.transactionHash,
-        description: 'Redeem',
-      });
-      setTransactionData(initialState.transactionData);
-      return resp;
+      if (formDataStore.deltaCollateral.isZero()) {
+        const resp = await userActions.modifyCollateralAndDebt(
+          contextData,
+          modifyPositionData.collateralType,
+          formDataStore.deltaDebt.mul(-1), // decrease (pay back)
+          modifyPositionData.position,
+        ) as any;
+        addRecentTransaction({
+          hash: resp.transactionHash,
+          description: 'Modify Collateral and Debt',
+        });
+        setTransactionData(initialState.transactionData);
+        return resp;
+      }
+      else {
+        const resp = await userActions.redeemCollateralAndModifyDebt(
+          contextData,
+          modifyPositionData.collateralType,
+          formDataStore.deltaCollateral,
+          formDataStore.deltaDebt,
+          modifyPositionData.position,
+        ) as any;
+        addRecentTransaction({
+          hash: resp.transactionHash,
+          description: 'Redeem',
+        });
+        setTransactionData(initialState.transactionData);
+        return resp;
+      }
     } catch (e) {
       console.error('Redeem error: ', e);
       setTransactionData({ ...transactionData, status: 'error' });
