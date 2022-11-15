@@ -16,10 +16,11 @@ const MaxButton = styled('button', {
   },
 });
 
-export const InputLabel = (props: { label: string, onMaxClick?: () => void }) => {
+export const InputWithMaxLabel = (props: { label: string, onMaxClick?: () => void }) => {
   return (
     <div style={{ display: 'flex' }}>
       <label
+        aria-label={props.label}
         style={{
           fontWeight: 'var(--nextui-fontWeights-normal)',
           color: 'var(--nextui--inputLabelColor)',

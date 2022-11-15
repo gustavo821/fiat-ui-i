@@ -17,7 +17,7 @@ import { commifyToDecimalPlaces, floor2, floor4, formatUnixTimestamp } from '../
 import { TransactionStatus } from '../../pages';
 import { useModifyPositionFormDataStore } from '../stores/formStore';
 import { Alert } from './Alert';
-import { InputLabel } from './InputLabel';
+import { InputWithMaxLabel } from './InputWithMaxLabel';
 
 interface ModifyPositionModalProps {
   buyCollateralAndModifyDebt: () => any;
@@ -172,6 +172,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
         )}
         {formDataStore.mode === 'deposit' && (
           <Input
+            label={'Underlier to deposit'}
             disabled={props.disableActions}
             value={floor2(scaleToDec(formDataStore.underlier, underlierScale))}
             onChange={(event) => {
@@ -199,11 +200,11 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
             // @ts-ignore
             label={
               formDataStore.mode === 'withdraw'
-                ? <InputLabel
+                ? <InputWithMaxLabel
                   label='Collateral to withdraw and swap'
                   onMaxClick={() => formDataStore.setMaxDeltaCollateral(props.contextData.fiat, props.modifyPositionData, null)}
                 />
-                : <InputLabel
+                : <InputWithMaxLabel
                     label='Collateral to withdraw and redeem'
                     onMaxClick={() => formDataStore.setMaxDeltaCollateral(props.contextData.fiat, props.modifyPositionData, null)}
                   />
@@ -246,7 +247,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
           label={
             formDataStore.mode === 'deposit'
               ? 'FIAT to borrow'
-              : <InputLabel
+              : <InputWithMaxLabel
                   label='FIAT to pay back'
                   onMaxClick={() => formDataStore.setMaxDeltaDebt(props.contextData.fiat, props.modifyPositionData, null)}
                 />
