@@ -3,9 +3,10 @@ import { Badge, Col, Row, SortDescriptor, Table, Text, User } from '@nextui-org/
 import { WAD, wadToDec } from '@fiatdao/sdk';
 
 import {
-  encodePositionId, floor2, formatUnixTimestamp, getCollateralTypeData,
+  encodePositionId, floor2, floor4, formatUnixTimestamp, getCollateralTypeData,
   interestPerSecondToAPY, interestPerSecondToRateUntilMaturity
 } from '../utils';
+import { ethers } from 'ethers';
 
 interface PositionsTableProps {
   contextData: any,
@@ -123,7 +124,11 @@ export const PositionsTable = (props: PositionsTableProps) => {
                     <Row>{floor2(wadToDec(debt)).toLocaleString()} FIAT</Row>
                     <Row>(${floor2(wadToDec(debt)).toLocaleString()})</Row>
                   </Table.Cell>
-                  <Table.Cell>{`${floor2(wadToDec(healthFactor))} (${floor2(wadToDec(healthFactorAtMaturity))})`}</Table.Cell>
+                  <Table.Cell>
+                    {(healthFactor.eq(ethers.constants.MaxUint256))
+                      ? '∞' : `${floor4(wadToDec(healthFactor))} (${floor4(wadToDec(healthFactorAtMaturity))})`
+                    }
+                  </Table.Cell>
                   <Table.Cell>
                     <Badge isSquared color={new Date() < maturityFormatted ? 'success' : 'error'} variant='flat' >
                       {formatUnixTimestamp(maturity)}, ({daysUntilMaturity} days)
