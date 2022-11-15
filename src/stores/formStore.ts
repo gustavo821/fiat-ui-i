@@ -226,12 +226,8 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
             const debt = deltaDebt;
             const healthFactor = fiat.computeHealthFactor(collateral, deltaNormalDebt, rate, liquidationPrice);
 
-            if (deltaDebt.gt(ethers.constants.Zero) && deltaDebt.lte(debtFloor) ) {
-              set(() => ({ formErrors: [
-                ...get().formErrors, `Insufficient debt - debt must be above debt floor: ${wadToDec(debtFloor)}`
-              ] }));
-            }
-            if (debt.gt(0) && healthFactor.lte(WAD)) console.error('Health factor has to be greater than 1.0');
+            if (deltaDebt.gt(ethers.constants.Zero) && deltaDebt.lte(debtFloor) ) set(() => ({ formErrors: [...get().formErrors, `Insufficient debt - debt must be above debt floor: ${wadToDec(debtFloor)}`] }));
+            if (debt.gt(0) && healthFactor.lte(WAD)) set(() => ({ formErrors: [...get().formErrors, 'Health factor has to be greater than 1.0'] }));
 
             set(() => ({ healthFactor, collateral, debt, deltaCollateral }));
           } else {
@@ -242,13 +238,8 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
             const normalDebt = fiat.debtToNormalDebt(debt, rate);
             const healthFactor = fiat.computeHealthFactor(collateral, normalDebt, rate, liquidationPrice);
 
-            if (debt.gt(ethers.constants.Zero) && debt.lte(collateralType.settings.codex.debtFloor) ) {
-              set(() => ({formErrors: [
-                ...get().formErrors, `Insufficient debt - debt must be above debt floor: ${wadToDec(debtFloor)}`
-              ] }));
-            }
-
-            if (debt.gt(0) && healthFactor.lte(WAD)) console.error('Health factor has to be greater than 1.0');
+            if (debt.gt(ethers.constants.Zero) && debt.lte(collateralType.settings.codex.debtFloor) ) set(() => ({formErrors: [...get().formErrors, `Insufficient debt - debt must be above debt floor: ${wadToDec(debtFloor)}`] }));
+            if (debt.gt(0) && healthFactor.lte(WAD)) set(() => ({ formErrors: [...get().formErrors, 'Health factor has to be greater than 1.0'] }));
 
             set(() => ({ healthFactor, collateral, debt, deltaCollateral }));
           }
@@ -262,8 +253,8 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
           }
           const deltaNormalDebt = fiat.debtToNormalDebt(deltaDebt, rate);
 
-          if (position.collateral.lt(deltaCollateral)) throw new Error('Insufficient collateral');
-          if (position.normalDebt.lt(deltaNormalDebt)) throw new Error('Insufficient debt');
+          if (position.collateral.lt(deltaCollateral)) set(() => ({ formErrors: [...get().formErrors, 'Insufficient collateral'] }));
+          if (position.normalDebt.lt(deltaNormalDebt)) set(() => ({ formErrors: [...get().formErrors, 'Insufficient debt'] }));
 
           const collateral = position.collateral.sub(deltaCollateral);
           let normalDebt = position.normalDebt.sub(deltaNormalDebt);
@@ -277,15 +268,15 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
           }
           const healthFactor = fiat.computeHealthFactor(collateral, normalDebt, rate, liquidationPrice);
           if (!(collateral.isZero() && normalDebt.isZero()) && healthFactor.lte(WAD))
-            throw new Error('Health factor has to be greater than 1.0');
+            set(() => ({ formErrors: [...get().formErrors, 'Health factor has to be greater than 1.0'] }));
 
           set(() => ({ healthFactor, underlier, collateral, debt }));
         } else if (mode === 'redeem') {
           const { deltaCollateral, deltaDebt } = get();
           const deltaNormalDebt = fiat.debtToNormalDebt(deltaDebt, rate);
 
-          if (position.collateral.lt(deltaCollateral)) throw new Error('Insufficient collateral');
-          if (position.normalDebt.lt(deltaNormalDebt)) throw new Error('Insufficient debt');
+          if (position.collateral.lt(deltaCollateral)) set(() => ({ formErrors: [...get().formErrors, 'Insufficient collateral'] }));
+          if (position.normalDebt.lt(deltaNormalDebt)) set(() => ({ formErrors: [...get().formErrors, 'Insufficient debt'] }));
 
           const collateral = position.collateral.sub(deltaCollateral);
           let normalDebt = position.normalDebt.sub(deltaNormalDebt);
@@ -299,7 +290,7 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
           }
           const healthFactor = fiat.computeHealthFactor(collateral, normalDebt, rate, liquidationPrice);
           if (!(collateral.isZero() && normalDebt.isZero()) && healthFactor.lte(WAD))
-            throw new Error('Health factor has to be greater than 1.0');
+            set(() => ({ formErrors: [...get().formErrors, 'Health factor has to be greater than 1.0'] }));
 
           set(() => ({ healthFactor, collateral, debt }));
         } else {

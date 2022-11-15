@@ -142,7 +142,6 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
                 <Navbar.Link
                   isActive={formDataStore.mode === 'deposit'}
                   onClick={() => {
-                    formDataStore.reset();
                     formDataStore.setMode('deposit');
                   }}
                 >
@@ -151,7 +150,6 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
                 <Navbar.Link
                   isActive={formDataStore.mode === 'withdraw'}
                   onClick={() => {
-                    formDataStore.reset();
                     formDataStore.setMode('withdraw');
                   }}
                 >
@@ -164,7 +162,6 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
                 isDisabled={!matured}
                 isActive={formDataStore.mode === 'redeem'}
                 onClick={() => {
-                  formDataStore.reset();
                   formDataStore.setMode('redeem');
                 }}
               >
