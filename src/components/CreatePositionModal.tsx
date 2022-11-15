@@ -72,6 +72,23 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
     underlierBalance,
     monetaDelegate,
   } = props.modifyPositionData;
+
+  if (Math.floor(Date.now() / 1000) > Number(maturity.toString())) {
+    return (
+      <>
+        <Modal.Header>
+          <Text id='modal-title' size={18}>
+            <Text b size={18}>Matured Asset</Text>
+            <br />
+            <Text b size={16}>{`${protocol} - ${asset}`}</Text>
+            <br />
+            <Text b size={14}>{`${formatUnixTimestamp(maturity)}`}</Text>
+          </Text>
+        </Modal.Header>
+      </>
+    );
+  }
+
   const { action: currentTxAction } = props.transactionData;
 
   const hasProxy = proxies.length > 0;
@@ -111,13 +128,8 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
   return (
     <>
       <Modal.Header>
-        <Text
-          id='modal-title'
-          size={18}
-        >
-          <Text b size={18}>
-            Create Position
-          </Text>
+        <Text id='modal-title' size={18}>
+          <Text b size={18}>Create Position</Text>
           <br />
           <Text b size={16}>{`${protocol} - ${asset}`}</Text>
           <br />
