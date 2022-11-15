@@ -1,6 +1,5 @@
 import { decToWad, scaleToWad, WAD, wadToScale, ZERO } from '@fiatdao/sdk';
 import { ethers } from 'ethers';
-import { RESPONSE_LIMIT_DEFAULT } from 'next/dist/server/api-utils';
 
 export const underlierToCollateralToken = async (
   fiat: any,
