@@ -1,5 +1,6 @@
 import { decToWad, scaleToWad, WAD, wadToScale, ZERO } from '@fiatdao/sdk';
 import { ethers } from 'ethers';
+import { RESPONSE_LIMIT_DEFAULT } from 'next/dist/server/api-utils';
 
 export const underlierToCollateralToken = async (
   fiat: any,
@@ -201,21 +202,21 @@ export const modifyCollateralAndDebt = async (
   if (properties.vaultType === 'ERC20:FY') actions = vaultFYActions;
   if (properties.vaultType === 'ERC20:SPT') actions = vaultSPTActions;
 
-  return console.log(
-    await contextData.fiat.sendAndWaitViaProxy(
-      contextData.proxies[0],
-      actions,
-      'modifyCollateralAndDebt',
-      properties.vault,
-      properties.token,
-      properties.tokenId,
-      contextData.proxies[0],
-      contextData.user,
-      contextData.user,
-      ZERO,
-      deltaNormalDebt
-    )
+  const response = await contextData.fiat.sendAndWaitViaProxy(
+    contextData.proxies[0],
+    actions,
+    'modifyCollateralAndDebt',
+    properties.vault,
+    properties.token,
+    properties.tokenId,
+    contextData.proxies[0],
+    contextData.user,
+    contextData.user,
+    ZERO,
+    deltaNormalDebt
   );
+  console.log(response);
+  return response;
 }
 
 export const buyCollateralAndModifyDebt = async (
@@ -242,29 +243,29 @@ export const buyCollateralAndModifyDebt = async (
     case 'ERC20:EPT': {
       if (!properties.eptData) return console.error('Missing EPT data');
       const deadline = Math.round(+new Date() / 1000) + 3600;
-      console.log(
-        // await contextData.fiat.dryrunViaProxy(
-        await contextData.fiat.sendAndWaitViaProxy(
-          contextData.proxies[0],
-          vaultEPTActions,
-          'buyCollateralAndModifyDebt',
-          properties.vault,
-          contextData.proxies[0],
-          contextData.user,
-          contextData.user,
+      // await contextData.fiat.dryrunViaProxy(
+      const response = await contextData.fiat.sendAndWaitViaProxy(
+        contextData.proxies[0],
+        vaultEPTActions,
+        'buyCollateralAndModifyDebt',
+        properties.vault,
+        contextData.proxies[0],
+        contextData.user,
+        contextData.user,
+        underlier,
+        deltaNormalDebt,
+        [
+          properties.eptData.balancerVault,
+          properties.eptData.poolId,
+          properties.underlierToken,
+          properties.token,
+          tokenAmount,
+          deadline,
           underlier,
-          deltaNormalDebt,
-          [
-            properties.eptData.balancerVault,
-            properties.eptData.poolId,
-            properties.underlierToken,
-            properties.token,
-            tokenAmount,
-            deadline,
-            underlier,
-          ]
-        )
+        ]
       );
+      console.log(response);
+      return response;
       break;
     }
     case 'ERC1155:FC': {
@@ -274,74 +275,74 @@ export const buyCollateralAndModifyDebt = async (
         WAD.sub(scaleToWad(underlier, properties.underlierScale).mul(WAD).div(deltaCollateral)),
         properties.tokenScale
       );
-      console.log(
-        // await contextData.fiat.dryrunViaProxy(
-        await contextData.fiat.sendAndWaitViaProxy(
-          contextData.proxies[0],
-          vaultFCActions,
-          'buyCollateralAndModifyDebt',
-          properties.vault,
-          properties.token,
-          properties.tokenId,
-          contextData.proxies[0],
-          contextData.user,
-          contextData.user,
-          tokenAmount,
-          deltaNormalDebt,
-          minLendRate,
-          underlier
-        )
+      // await contextData.fiat.dryrunViaProxy(
+      const response = await contextData.fiat.sendAndWaitViaProxy(
+        contextData.proxies[0],
+        vaultFCActions,
+        'buyCollateralAndModifyDebt',
+        properties.vault,
+        properties.token,
+        properties.tokenId,
+        contextData.proxies[0],
+        contextData.user,
+        contextData.user,
+        tokenAmount,
+        deltaNormalDebt,
+        minLendRate,
+        underlier
       );
+      console.log(response);
+      return response;
       break;
     }
     case 'ERC20:FY': {
       if (!properties.fyData) return console.error('Missing FY data');
-      console.log(
-        // await contextData.fiat.dryrunViaProxy(
-        await contextData.fiat.sendAndWaitViaProxy(
-          contextData.proxies[0],
-          vaultFYActions,
-          'buyCollateralAndModifyDebt',
-          properties.vault,
-          contextData.proxies[0],
-          contextData.user,
-          contextData.user,
-          underlier,
-          deltaNormalDebt,
-          [
-            tokenAmount,
-            properties.fyData.yieldSpacePool,
-            properties.underlierToken,
-            properties.token
-          ]
-        )
+      // await contextData.fiat.dryrunViaProxy(
+      const response = await contextData.fiat.sendAndWaitViaProxy(
+        contextData.proxies[0],
+        vaultFYActions,
+        'buyCollateralAndModifyDebt',
+        properties.vault,
+        contextData.proxies[0],
+        contextData.user,
+        contextData.user,
+        underlier,
+        deltaNormalDebt,
+        [
+          tokenAmount,
+          properties.fyData.yieldSpacePool,
+          properties.underlierToken,
+          properties.token
+        ]
       );
+      console.log(response);
+      return response;
       break;
     }
     case 'ERC20:SPT': {
       if (!properties.sptData) return console.error('Missing SPT data');
-      console.log(
-        // await contextData.fiat.dryrunViaProxy(
-        await contextData.fiat.sendAndWaitViaProxy(
-          contextData.proxies[0],
-          vaultSPTActions,
-          'buyCollateralAndModifyDebt',
-          properties.vault,
-          contextData.proxies[0],
-          contextData.user,
-          contextData.user,
-          underlier,
-          deltaNormalDebt,
-          [
-            properties.sptData.adapter,
-            tokenAmount,
-            properties.sptData.maturity,
-            properties.underlierToken,
-            properties.token,
-            underlier
-          ]
-        )
+      // await contextData.fiat.dryrunViaProxy(
+      const response = await contextData.fiat.sendAndWaitViaProxy(
+        contextData.proxies[0],
+        vaultSPTActions,
+        'buyCollateralAndModifyDebt',
+        properties.vault,
+        contextData.proxies[0],
+        contextData.user,
+        contextData.user,
+        underlier,
+        deltaNormalDebt,
+        [
+          properties.sptData.adapter,
+          tokenAmount,
+          properties.sptData.maturity,
+          properties.underlierToken,
+          properties.token,
+          underlier
+        ]
       );
+      console.log(response)
+      return response;
       break;
     }
     default: {
@@ -377,29 +378,29 @@ export const sellCollateralAndModifyDebt = async (
     case 'ERC20:EPT': {
       if (!properties.eptData) return console.error('Missing EPT data');
       const deadline = Math.round(+new Date() / 1000) + 3600;
-      console.log(
-        // await contextData.fiat.dryrunViaProxy(
-        await contextData.fiat.sendAndWaitViaProxy(
-          contextData.proxies[0],
-          vaultEPTActions,
-          'sellCollateralAndModifyDebt',
-          properties.vault,
-          contextData.proxies[0],
-          contextData.user,
-          contextData.user,
-          tokenAmount,
-          deltaNormalDebt,
-          [
-            properties.eptData.balancerVault,
-            properties.eptData.poolId,
-            properties.token,
-            properties.underlierToken,
-            underlier,
-            deadline,
-            tokenAmount
-          ]
-        )
+      // await contextData.fiat.dryrunViaProxy(
+      const response = await contextData.fiat.sendAndWaitViaProxy(
+        contextData.proxies[0],
+        vaultEPTActions,
+        'sellCollateralAndModifyDebt',
+        properties.vault,
+        contextData.proxies[0],
+        contextData.user,
+        contextData.user,
+        tokenAmount,
+        deltaNormalDebt,
+        [
+          properties.eptData.balancerVault,
+          properties.eptData.poolId,
+          properties.token,
+          properties.underlierToken,
+          underlier,
+          deadline,
+          tokenAmount
+        ]
       );
+      console.log(response);
+      return response;
       break;
     }
 
@@ -409,74 +410,74 @@ export const sellCollateralAndModifyDebt = async (
         WAD.sub(deltaCollateral.mul(WAD).div(scaleToWad(underlier, properties.underlierScale))),
         properties.tokenScale
       );
-      console.log(
-        // await contextData.fiat.dryrunViaProxy(
-        await contextData.fiat.sendAndWaitViaProxy(
-          contextData.proxies[0],
-          vaultFCActions,
-          'sellCollateralAndModifyDebt',
-          properties.vault,
-          properties.token,
-          properties.tokenId,
-          contextData.proxies[0],
-          contextData.user,
-          contextData.user,
-          tokenAmount,
-          deltaNormalDebt,
-          maxBorrowRate
-        )
+      // await contextData.fiat.dryrunViaProxy(
+      const response = await contextData.fiat.sendAndWaitViaProxy(
+        contextData.proxies[0],
+        vaultFCActions,
+        'sellCollateralAndModifyDebt',
+        properties.vault,
+        properties.token,
+        properties.tokenId,
+        contextData.proxies[0],
+        contextData.user,
+        contextData.user,
+        tokenAmount,
+        deltaNormalDebt,
+        maxBorrowRate
       );
+      console.log(response)
+      return response;
       break;
     }
     case 'ERC20:FY': {
       if (!properties.fyData) return console.error('Missing FY data');
-      console.log(
-        // await contextData.fiat.dryrunViaProxy(
-        await contextData.fiat.sendAndWaitViaProxy(
-          contextData.proxies[0],
-          vaultFYActions,
-          'sellCollateralAndModifyDebt',
-          properties.vault,
-          contextData.proxies[0],
-          contextData.user,
-          contextData.user,
-          tokenAmount,
-          deltaNormalDebt,
-          [
-            underlier,
-            properties.fyData.yieldSpacePool,
-            properties.token,
-            properties.underlierToken,
-          ]
-        )
+      // await contextData.fiat.dryrunViaProxy(
+      const response = await contextData.fiat.sendAndWaitViaProxy(
+        contextData.proxies[0],
+        vaultFYActions,
+        'sellCollateralAndModifyDebt',
+        properties.vault,
+        contextData.proxies[0],
+        contextData.user,
+        contextData.user,
+        tokenAmount,
+        deltaNormalDebt,
+        [
+          underlier,
+          properties.fyData.yieldSpacePool,
+          properties.token,
+          properties.underlierToken,
+        ]
       );
+      console.log(response);
+      return response;
       break;
     }
     case 'ERC20:SPT': {
       if (!properties.sptData) return console.error('Missing SPT data');
       console.log(contextData.proxies[0]);
-      console.log(
-        // await contextData.fiat.dryrunViaProxy(
-        await contextData.fiat.sendAndWaitViaProxy(
-          contextData.proxies[0],
-          vaultSPTActions,
-          'sellCollateralAndModifyDebt',
-          properties.vault,
-          contextData.proxies[0],
-          contextData.user,
-          contextData.user,
+      // await contextData.fiat.dryrunViaProxy(
+      const response = await contextData.fiat.sendAndWaitViaProxy(
+        contextData.proxies[0],
+        vaultSPTActions,
+        'sellCollateralAndModifyDebt',
+        properties.vault,
+        contextData.proxies[0],
+        contextData.user,
+        contextData.user,
+        tokenAmount,
+        deltaNormalDebt,
+        [
+          properties.sptData.adapter,
+          underlier,
+          properties.sptData.maturity,
+          properties.token,
+          properties.underlierToken,
           tokenAmount,
-          deltaNormalDebt,
-          [
-            properties.sptData.adapter,
-            underlier,
-            properties.sptData.maturity,
-            properties.token,
-            properties.underlierToken,
-            tokenAmount,
-          ]
-        )
+        ]
       );
+      console.log(response);
+      return response;
       break;
     }
     default: {
@@ -506,86 +507,86 @@ export const redeemCollateralAndModifyDebt = async (contextData: any,
   switch (properties.vaultType) {
     case 'ERC20:EPT': {
       if (!properties.eptData) return console.error('Missing EPT data');
-      console.log(
-        // await contextData.fiat.dryrunViaProxy(
-        await contextData.fiat.sendAndWaitViaProxy(
-          contextData.proxies[0],
-          vaultEPTActions,
-          'redeemCollateralAndModifyDebt',
-          properties.vault,
-          properties.token,
-          contextData.proxies[0],
-          contextData.user,
-          contextData.user,
-          tokenAmount,
-          deltaNormalDebt
-        )
+      // await contextData.fiat.dryrunViaProxy(
+      const response = await contextData.fiat.sendAndWaitViaProxy(
+        contextData.proxies[0],
+        vaultEPTActions,
+        'redeemCollateralAndModifyDebt',
+        properties.vault,
+        properties.token,
+        contextData.proxies[0],
+        contextData.user,
+        contextData.user,
+        tokenAmount,
+        deltaNormalDebt
       );
+      console.log(response);
+      return response;
       break;
     }
     case 'ERC1155:FC': {
       if (!properties.fcData) return console.error('Missing FC data');
-      console.log(
-        // await contextData.fiat.dryrunViaProxy(
-        await contextData.fiat.sendAndWaitViaProxy(
-          contextData.proxies[0],
-          vaultFCActions,
-          'redeemCollateralAndModifyDebt',
-          properties.vault,
-          properties.token,
-          properties.tokenId,
-          contextData.proxies[0],
-          contextData.user,
-          contextData.user,
-          tokenAmount,
-          deltaNormalDebt
-        )
+      // await contextData.fiat.dryrunViaProxy(
+      const response = await contextData.fiat.sendAndWaitViaProxy(
+        contextData.proxies[0],
+        vaultFCActions,
+        'redeemCollateralAndModifyDebt',
+        properties.vault,
+        properties.token,
+        properties.tokenId,
+        contextData.proxies[0],
+        contextData.user,
+        contextData.user,
+        tokenAmount,
+        deltaNormalDebt
       );
+      console.log(response);
+      return response;
       break;
     }
     case 'ERC20:FY': {
       if (!properties.fyData) return console.error('Missing FY data');
-      console.log(
-        // await contextData.fiat.dryrunViaProxy(
-        await contextData.fiat.sendAndWaitViaProxy(
-          contextData.proxies[0],
-          vaultFYActions,
-          'redeemCollateralAndModifyDebt',
-          properties.vault,
-          properties.token,
-          contextData.proxies[0],
-          contextData.user,
-          contextData.user,
-          tokenAmount,
-          deltaNormalDebt
-        )
+      // await contextData.fiat.dryrunViaProxy(
+      const response = await contextData.fiat.sendAndWaitViaProxy(
+        contextData.proxies[0],
+        vaultFYActions,
+        'redeemCollateralAndModifyDebt',
+        properties.vault,
+        properties.token,
+        contextData.proxies[0],
+        contextData.user,
+        contextData.user,
+        tokenAmount,
+        deltaNormalDebt
       );
+      console.log(response);
+      return response;
       break;
     }
     case 'ERC20:SPT': {
       if (!properties.sptData) return console.error('Missing SPT data');
-      console.log(
-        // await contextData.fiat.dryrunViaProxy(
-        await contextData.fiat.sendAndWaitViaProxy(
-          contextData.proxies[0],
-          vaultSPTActions,
-          'redeemCollateralAndModifyDebt',
-          properties.vault,
-          properties.token,
-          contextData.proxies[0],
-          contextData.user,
-          contextData.user,
-          tokenAmount,
-          deltaNormalDebt,
-          [
-            properties.sptData.adapter,
-            properties.sptData.maturity,
-            properties.sptData.target,
-            properties.underlierToken,
-            tokenAmount
-          ]
-        )
+      // await contextData.fiat.dryrunViaProxy(
+      const response = await contextData.fiat.sendAndWaitViaProxy(
+        contextData.proxies[0],
+        vaultSPTActions,
+        'redeemCollateralAndModifyDebt',
+        properties.vault,
+        properties.token,
+        contextData.proxies[0],
+        contextData.user,
+        contextData.user,
+        tokenAmount,
+        deltaNormalDebt,
+        [
+          properties.sptData.adapter,
+          properties.sptData.maturity,
+          properties.sptData.target,
+          properties.underlierToken,
+          tokenAmount
+        ]
       );
+      console.log(response);
+      return response;
       break;
     }
     default: {
