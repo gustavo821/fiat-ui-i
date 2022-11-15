@@ -81,7 +81,12 @@ const nextDarkTheme = createTheme({
 function MyApp({ Component, pageProps }: AppProps) {
   return (
     <WagmiConfig client={wagmiClient}>
-      <RainbowKitProvider appInfo={demoAppInfo} chains={chains} theme={{lightMode: lightTheme(), darkMode: darkTheme(),}}>
+      <RainbowKitProvider 
+        appInfo={demoAppInfo} 
+        chains={chains} 
+        theme={{lightMode: lightTheme(), darkMode: darkTheme(),}}
+        showRecentTransactions={true}
+      >
        <NextThemesProvider 
           defaultTheme='system'
           attribute='class'

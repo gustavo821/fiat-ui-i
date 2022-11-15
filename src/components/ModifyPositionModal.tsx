@@ -2,6 +2,7 @@ import React from 'react';
 import {
   Button,
   Card,
+  Grid,
   Input,
   Loading,
   Modal,
@@ -46,6 +47,7 @@ export const ModifyPositionModal = (props: ModifyPositionModalProps) => {
       blur
       open={props.open}
       onClose={() => props.onClose()}
+      width='27rem'
     >
       <ModifyPositionModalBody {...props} />
     </Modal>
@@ -170,69 +172,78 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
             Wallet: {commifyToDecimalPlaces(underlierBalance, underlierScale, 2)} {underlierSymbol}
           </Text>
         )}
-        {formDataStore.mode === 'deposit' && (
-          <Input
-            label={'Underlier to deposit'}
-            disabled={props.disableActions}
-            value={floor2(scaleToDec(formDataStore.underlier, underlierScale))}
-            onChange={(event) => {
-              formDataStore.setUnderlier(props.contextData.fiat, event.target.value, props.modifyPositionData, null);
-            }}
-            placeholder='0'
-            inputMode='decimal'
-            labelRight={underlierSymbol}
-            bordered
-            size='sm'
-            borderWeight='light'
-          />
-        )}
-        {(formDataStore.mode === 'withdraw' || formDataStore.mode === 'redeem') && (
-          <Input
-            disabled={props.disableActions}
-            value={floor2(wadToDec(formDataStore.deltaCollateral))}
-            onChange={(event) => {
-              formDataStore.setDeltaCollateral(props.contextData.fiat, event.target.value, props.modifyPositionData, null);
-            }}
-            placeholder='0'
-            inputMode='decimal'
-            // Bypass type warning from passing a custom component instead of a string
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-ignore
-            label={
-              formDataStore.mode === 'withdraw'
-                ? <InputWithMaxLabel
-                  label='Collateral to withdraw and swap'
-                  onMaxClick={() => formDataStore.setMaxDeltaCollateral(props.contextData.fiat, props.modifyPositionData, null)}
-                />
-                : <InputWithMaxLabel
+        <Grid.Container
+          gap={0}
+          justify='space-between'
+          wrap='wrap'
+          css={{ marginBottom: '1rem' }}
+        >
+          {formDataStore.mode === 'deposit' && (
+            <Input
+              label={'Underlier to deposit'}
+              disabled={props.disableActions}
+              value={floor2(scaleToDec(formDataStore.underlier, underlierScale))}
+              onChange={(event) => {
+                formDataStore.setUnderlier(props.contextData.fiat, event.target.value, props.modifyPositionData, null);
+              }}
+              placeholder='0'
+              inputMode='decimal'
+              labelRight={underlierSymbol}
+              bordered
+              size='sm'
+              borderWeight='light'
+              width='15rem'
+            />
+          )}
+          {(formDataStore.mode === 'withdraw' || formDataStore.mode === 'redeem') && (
+            <Input
+              disabled={props.disableActions}
+              value={floor2(wadToDec(formDataStore.deltaCollateral))}
+              onChange={(event) => {
+                formDataStore.setDeltaCollateral(props.contextData.fiat, event.target.value, props.modifyPositionData, null);
+              }}
+              placeholder='0'
+              inputMode='decimal'
+              // Bypass type warning from passing a custom component instead of a string
+              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+              // @ts-ignore
+              label={
+                formDataStore.mode === 'withdraw'
+                  ? <InputWithMaxLabel
+                    label='Collateral to withdraw and swap'
+                    onMaxClick={() => formDataStore.setMaxDeltaCollateral(props.contextData.fiat, props.modifyPositionData, null)}
+                  />
+                  : <InputWithMaxLabel
                     label='Collateral to withdraw and redeem'
                     onMaxClick={() => formDataStore.setMaxDeltaCollateral(props.contextData.fiat, props.modifyPositionData, null)}
                   />
-            }
-            labelRight={symbol}
-            bordered
-            size='sm'
-            borderWeight='light'
-          />
-        )}
-        {(formDataStore.mode === 'deposit' || formDataStore.mode === 'withdraw') && (
-          <Input
-            disabled={props.disableActions}
-            value={floor2(Number(wadToDec(formDataStore.slippagePct)) * 100)}
-            onChange={(event) => {
-              formDataStore.setSlippagePct(props.contextData.fiat, event.target.value, props.modifyPositionData, null);
-            }}
-            step='0.01'
-            placeholder='0'
-            inputMode='decimal'
-            label='Slippage'
-            labelRight={'%'}
-            bordered
-            size='sm'
-            borderWeight='light'
-            width='7.5rem'
-          />
-        )}
+              }
+              labelRight={symbol}
+              bordered
+              size='sm'
+              borderWeight='light'
+              width={formDataStore.mode === 'redeem' ? '100%' : '15rem'}
+            />
+          )}
+          {(formDataStore.mode === 'deposit' || formDataStore.mode === 'withdraw') && (
+            <Input
+              disabled={props.disableActions}
+              value={floor2(Number(wadToDec(formDataStore.slippagePct)) * 100)}
+              onChange={(event) => {
+                formDataStore.setSlippagePct(props.contextData.fiat, event.target.value, props.modifyPositionData, null);
+              }}
+              step='0.01'
+              placeholder='0'
+              inputMode='decimal'
+              label='Slippage'
+              labelRight={'%'}
+              bordered
+              size='sm'
+              borderWeight='light'
+              width='7.5rem'
+            />
+          )}
+        </Grid.Container>
         <Input
           disabled={props.disableActions}
           value={floor2(wadToDec(formDataStore.deltaDebt))}
