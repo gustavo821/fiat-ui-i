@@ -62,7 +62,8 @@ const Home: NextPage = () => {
     transactionData: {
       action: null as null | string,
       status: null as TransactionStatus,
-    }
+    },
+    fiatBalance: '',
   }), []) 
 
   const formDataStore = useModifyPositionFormDataStore();
@@ -75,7 +76,7 @@ const Home: NextPage = () => {
   const [transactionData, setTransactionData] = React.useState(initialState.transactionData);
   const [selectedPositionId, setSelectedPositionId] = React.useState(initialState.selectedPositionId);
   const [selectedCollateralTypeId, setSelectedCollateralTypeId] = React.useState(initialState.selectedCollateralTypeId);
-  const [fiatBalance, setFiatBalance] = React.useState<string>('');
+  const [fiatBalance, setFiatBalance] = React.useState<string>(initialState.fiatBalance);
 
   const disableActions = React.useMemo(() => transactionData.status === 'sent', [transactionData.status])
 
@@ -89,7 +90,7 @@ const Home: NextPage = () => {
     setTransactionData(initialState.transactionData);
     setSelectedPositionId(initialState.selectedPositionId);
     setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
-    setFiatBalance('');
+    setFiatBalance(initialState.fiatBalance);
   }
 
   // Reset state if network or account changes
@@ -369,7 +370,7 @@ const Home: NextPage = () => {
           hash: resp.transactionHash,
           description: 'Modify Collateral and Debt',
         });
-        setTransactionData(initialState.transactionData);
+        resetState();
         return resp;
       } else {
         const resp = await userActions.buyCollateralAndModifyDebt(
@@ -384,7 +385,7 @@ const Home: NextPage = () => {
           description: 'Buy Collateral And Modify Debt',
         });
 
-        setTransactionData(initialState.transactionData);
+        resetState();
         return resp;
       }
     } catch (e) {
@@ -408,7 +409,7 @@ const Home: NextPage = () => {
           hash: resp.transactionHash,
           description: 'Modify Collateral and Debt',
         });
-        setTransactionData(initialState.transactionData);
+        resetState();
         return resp;
       }
       else {
@@ -424,7 +425,7 @@ const Home: NextPage = () => {
           hash: resp.transactionHash,
           description: 'Sell Collateral and Modify Debt',
         });
-        setTransactionData(initialState.transactionData);
+        resetState();
         return resp;
       }
     } catch (e) {
@@ -448,7 +449,7 @@ const Home: NextPage = () => {
           hash: resp.transactionHash,
           description: 'Modify Collateral and Debt',
         });
-        setTransactionData(initialState.transactionData);
+        resetState();
         return resp;
       }
       else {
@@ -463,7 +464,7 @@ const Home: NextPage = () => {
           hash: resp.transactionHash,
           description: 'Redeem',
         });
-        setTransactionData(initialState.transactionData);
+        resetState();
         return resp;
       }
     } catch (e) {
