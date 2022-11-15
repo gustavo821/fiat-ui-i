@@ -6,7 +6,8 @@ export const underlierToCollateralToken = async (
   underlier: ethers.BigNumber,
   collateralType: any
 ): Promise<ethers.BigNumber> => {
-  if (!underlier.gt(ZERO)) return ZERO;
+  if (underlier.isZero()) return ZERO;
+
   const { vault, tokenId, vaultType } = collateralType.properties;
   const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = fiat.getContracts();
   switch (vaultType) {
@@ -63,7 +64,7 @@ export const collateralTokenToUnderlier = async (
   collateral: ethers.BigNumber,
   collateralType: any
 ): Promise<ethers.BigNumber> => {
-  if (collateral.gt(ZERO)) return ZERO;
+  if (collateral.isZero()) return ZERO;
   const { vault, tokenId, vaultType } = collateralType.properties;
   const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = fiat.getContracts();
 

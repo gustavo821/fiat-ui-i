@@ -19,7 +19,6 @@ import { scaleToDec, wadToDec } from '@fiatdao/sdk';
 import { commifyToDecimalPlaces, floor2, floor4, formatUnixTimestamp } from '../utils';
 import { useModifyPositionFormDataStore } from '../stores/formStore';
 import { Alert } from './Alert';
-import { InputLabel } from './InputLabel';
 
 interface CreatePositionModalProps {
   buyCollateralAndModifyDebt: () => any;
@@ -167,17 +166,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
               }}
               placeholder='0'
               inputMode='decimal'
-              // Bypass type warning from passing a custom component instead of a string
-              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-              // @ts-ignore
-              label={
-                <InputLabel
-                  label='Underlier to swap'
-                  onMaxClick={() => formDataStore.setMaxUnderlier(
-                    props.contextData.fiat, props.modifyPositionData, props.selectedCollateralTypeId
-                  )}
-                />
-              }
+              label={'Underlier to swap'}
               labelRight={underlierSymbol}
               bordered
               size='sm'

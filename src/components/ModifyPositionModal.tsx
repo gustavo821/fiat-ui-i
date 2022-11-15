@@ -179,15 +179,6 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
             }}
             placeholder='0'
             inputMode='decimal'
-            // Bypass type warning from passing a custom component instead of a string
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-ignore
-            label={
-              <InputLabel
-                label='Underlier to swap'
-                onMaxClick={() => formDataStore.setMaxUnderlier(props.contextData.fiat, props.modifyPositionData, null)}
-              />
-            }
             labelRight={underlierSymbol}
             bordered
             size='sm'
@@ -278,11 +269,11 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
             <Input
               readOnly
               value={
-                formDataStore.formDataLoading
+                (formDataStore.formDataLoading)
                   ? ' '
-                  : formDataStore.mode === 'deposit'
-                  ? floor4(wadToDec(formDataStore.deltaCollateral))
-                  : floor4(scaleToDec(formDataStore.underlier, underlierScale))
+                  : (formDataStore.mode === 'deposit')
+                    ? floor4(wadToDec(formDataStore.deltaCollateral))
+                    : floor4(scaleToDec(formDataStore.underlier, underlierScale))
               }
               placeholder='0'
               type='string'
