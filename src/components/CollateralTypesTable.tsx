@@ -48,7 +48,7 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
       >
         <Table.Header>
           <Table.Column>Asset</Table.Column>
-          <Table.Column>APY (Yield At Maturity)</Table.Column>
+          <Table.Column>Fixed APY (Yield At Maturity)</Table.Column>
           <Table.Column>Borrow Rate (Due At Maturity)</Table.Column>
           <Table.Column>Total Assets</Table.Column>
           <Table.Column allowsSorting>Maturity (Days Until Maturity)</Table.Column>
