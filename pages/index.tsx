@@ -61,7 +61,8 @@ const Home: NextPage = () => {
     transactionData: {
       action: null as null | string,
       status: null as TransactionStatus,
-    }
+    },
+    fiatBalance: '',
   }), []) 
 
   const formDataStore = useModifyPositionFormDataStore();
@@ -74,7 +75,7 @@ const Home: NextPage = () => {
   const [transactionData, setTransactionData] = React.useState(initialState.transactionData);
   const [selectedPositionId, setSelectedPositionId] = React.useState(initialState.selectedPositionId);
   const [selectedCollateralTypeId, setSelectedCollateralTypeId] = React.useState(initialState.selectedCollateralTypeId);
-  const [fiatBalance, setFiatBalance] = React.useState<string>('');
+  const [fiatBalance, setFiatBalance] = React.useState<string>(initialState.fiatBalance);
 
   const disableActions = React.useMemo(() => transactionData.status === 'sent', [transactionData.status])
 
@@ -88,6 +89,7 @@ const Home: NextPage = () => {
     setTransactionData(initialState.transactionData);
     setSelectedPositionId(initialState.selectedPositionId);
     setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
+    setFiatBalance(initialState.fiatBalance);
   }
 
   // Reset state if network or account changes
