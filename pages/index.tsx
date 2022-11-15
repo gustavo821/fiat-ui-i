@@ -89,6 +89,7 @@ const Home: NextPage = () => {
     setTransactionData(initialState.transactionData);
     setSelectedPositionId(initialState.selectedPositionId);
     setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
+    setFiatBalance('');
   }
 
   // Reset state if network or account changes
@@ -139,7 +140,7 @@ const Home: NextPage = () => {
         setFiatBalance(`${parseFloat(wadToDec(fiatBalance)).toFixed(2)} FIAT`)
       })();
     }
-  }, [connector, contextData.fiat])
+  }, [connector, contextData.fiat, address, chain])
 
   // Fetch User data, Vault data, and set Fiat SDK in global state
   React.useEffect(() => {
@@ -163,7 +164,7 @@ const Home: NextPage = () => {
     })();
     // Address and chain dependencies are needed to recreate FIAT sdk object on account or chain change,
     // even though their values aren't used explicitly.
-  }, [connector, address, chain ]);
+  }, [connector, address, chain]);
 
   // Populate ModifyPosition data
   React.useEffect(() => {
