@@ -477,7 +477,7 @@ const Home: NextPage = () => {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', padding: 12 }}>
-        <h4 style={{ justifyContent: 'flex',  }}>(Experimental) FIAT UI</h4>
+        <h4 style={{ justifyContent: 'flex',  }}>(Experimental) FIAT I UI</h4>
         <div style={{ display: 'flex'}}>
           <ProxyButton
             {...contextData}
