@@ -1,6 +1,5 @@
 import create from 'zustand';
 import { ethers } from 'ethers';
-import 'antd/dist/antd.css';
 import { decToScale, decToWad, scaleToDec, scaleToWad, WAD, wadToDec, wadToScale, ZERO } from '@fiatdao/sdk';
 
 import * as userActions from '../actions';
