@@ -33,12 +33,12 @@ const { chains, provider, webSocketProvider } = configureChains([
   ]);
 
 const { wallets } = getDefaultWallets({
-  appName: 'Experimental FIAT UI',
+  appName: 'FIAT I UI',
   chains,
 });
 
 const demoAppInfo = {
-  appName: 'Experimental FIAT UI',
+  appName: 'FIAT I UI',
 };
 
 const connectors = connectorsForWallets([
@@ -87,7 +87,7 @@ function MyApp({ Component, pageProps }: AppProps) {
         theme={{lightMode: lightTheme(), darkMode: darkTheme(),}}
         showRecentTransactions={true}
       >
-       <NextThemesProvider 
+      <NextThemesProvider 
           defaultTheme='system'
           attribute='class'
           value={{ light: nextLightTheme.className, dark: nextDarkTheme.className }}
