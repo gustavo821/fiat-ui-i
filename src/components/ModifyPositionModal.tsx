@@ -142,7 +142,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
                 <Navbar.Link
                   isActive={formDataStore.mode === 'deposit'}
                   onClick={() => {
-                    formDataStore.reset();
+                    formDataStore.resetCollateralAndDebtInputs(props.contextData.fiat, props.modifyPositionData);
                     formDataStore.setMode('deposit');
                   }}
                 >
@@ -151,7 +151,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
                 <Navbar.Link
                   isActive={formDataStore.mode === 'withdraw'}
                   onClick={() => {
-                    formDataStore.reset();
+                    formDataStore.resetCollateralAndDebtInputs(props.contextData.fiat, props.modifyPositionData);
                     formDataStore.setMode('withdraw');
                   }}
                 >
@@ -164,7 +164,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
                 isDisabled={!matured}
                 isActive={formDataStore.mode === 'redeem'}
                 onClick={() => {
-                  formDataStore.reset();
+                  formDataStore.resetCollateralAndDebtInputs(props.contextData.fiat, props.modifyPositionData);
                   formDataStore.setMode('redeem');
                 }}
               >
@@ -320,7 +320,10 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
         </Text>
         <Input
           readOnly
-          value={formDataStore.formDataLoading ? ' ' : floor4(wadToDec(formDataStore.collateral))}
+          value={(formDataStore.formDataLoading)
+            ? ' '
+            : `${floor2(wadToDec(position.collateral))} → ${floor4(wadToDec(formDataStore.collateral))}`
+          }
           placeholder='0'
           type='string'
           label={`Collateral (before: ${floor2(wadToDec(position.collateral))} ${symbol})`}
@@ -331,7 +334,10 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
         />
         <Input
           readOnly
-          value={formDataStore.formDataLoading ? ' ' : floor4(wadToDec(formDataStore.debt))}
+          value={(formDataStore.formDataLoading)
+            ? ' '
+            : `${floor2(wadToDec(fiat.normalDebtToDebt(position.normalDebt, virtualRate)))} → ${floor4(wadToDec(formDataStore.debt))}`
+          }
           placeholder='0'
           type='string'
           label={`Debt (before: ${floor2(wadToDec(fiat.normalDebtToDebt(position.normalDebt, virtualRate)))} FIAT)`}
@@ -342,13 +348,17 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
         />
         <Input
           readOnly
-          value={
-            formDataStore.formDataLoading
-              ? ' '
-              : formDataStore.healthFactor.eq(ethers.constants.MaxUint256)
-              ? '∞'
-              : floor4(wadToDec(formDataStore.healthFactor))
-          }
+          value={(() => {
+            if (formDataStore.formDataLoading) return ' ';
+            let healthFactorBefore = fiat.computeHealthFactor(
+              position.collateral, position.normalDebt, virtualRate, liquidationPrice
+            );
+            healthFactorBefore = (healthFactorBefore.eq(ethers.constants.MaxUint256))
+              ? '∞' : floor4(wadToDec(healthFactorBefore));
+            const healthFactorAfter = (formDataStore.healthFactor.eq(ethers.constants.MaxUint256))
+              ? '∞' : floor4(wadToDec(formDataStore.healthFactor));
+            return `${healthFactorBefore} → ${healthFactorAfter}`;
+          })()}
           placeholder='0'
           type='string'
           label={

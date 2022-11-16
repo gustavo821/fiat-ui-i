@@ -93,6 +93,53 @@ const Home: NextPage = () => {
     setFiatBalance(initialState.fiatBalance);
   }
 
+  const handleFinishedTransaction = () => {
+    // Soft reset after a transaction
+    setModifyPositionData(initialState.modifyPositionData);
+    setTransactionData(initialState.transactionData);
+    setSelectedPositionId(initialState.selectedPositionId);
+    setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
+    // Refetch data after a reset
+    handleFiatBalance();
+    handleCollateralTypesData();
+    handlePositionsData();
+  }
+
+  const handleFiatBalance = React.useCallback(async () => {
+    if (!contextData.fiat || !contextData.user) return;
+    const { fiat } = contextData.fiat.getContracts();
+    const fiatBalance = await fiat.balanceOf(contextData.user)
+    setFiatBalance(`${parseFloat(wadToDec(fiatBalance)).toFixed(2)} FIAT`)
+  }, [contextData]);
+
+  const handleCollateralTypesData = React.useCallback(async () => {
+    const fiat = contextData.fiat ? contextData.fiat : await FIAT.fromProvider(provider, null);
+    const collateralTypesData_ = await fiat.fetchCollateralTypesAndPrices([]);
+    const earnableRates = await userActions.getEarnableRate(fiat, collateralTypesData_);
+
+    setCollateralTypesData(collateralTypesData_
+      .filter((collateralType: any) => (collateralType.metadata != undefined))
+      .sort((a: any, b: any) => {
+        if (Number(a.properties.maturity) > Number(b.properties.maturity)) return -1;
+        if (Number(a.properties.maturity) < Number(b.properties.maturity)) return 1;
+        return 0;
+      })
+      .map((collateralType: any) => {
+        const earnableRate = earnableRates.find((item: any)  => item.vault === collateralType.properties.vault)
+        return {
+          ...collateralType,
+          earnableRate: earnableRate?.earnableRate
+        }
+      }));
+  }, [provider, contextData.fiat]);
+
+  const handlePositionsData = React.useCallback(async () => {
+    if (!contextData || !contextData.fiat) return;
+    const userData = await contextData.fiat.fetchUserData(contextData.user);
+    const positionsData = userData.flatMap((user) => user.positions);
+    setPositionsData(positionsData);
+  }, [contextData]);
+
   // Reset state if network or account changes
   React.useEffect(() => {
     if (!connector || setupListeners) return;
@@ -100,48 +147,24 @@ const Home: NextPage = () => {
     setSetupListeners(true);
   }, [setupListeners, connector, resetState]);
 
-  // Fetch CollateralTypes and block explorer data
+  // Fetch Collateral Types Data
   React.useEffect(() => {
     if (collateralTypesData.length !== 0) return;
+    handleCollateralTypesData();
+  }, [collateralTypesData.length, provider, handleCollateralTypesData])
 
-    (async function () {
-      const fiat = await FIAT.fromProvider(provider, null);
-      const collateralTypesData_ = await fiat.fetchCollateralTypesAndPrices([]);
-      const earnableRates = await userActions.getEarnableRate(fiat, collateralTypesData_);
-
-      setCollateralTypesData(collateralTypesData_
-        .filter((collateralType: any) => (collateralType.metadata != undefined))
-        .sort((a: any, b: any) => {
-          if (Number(a.properties.maturity) > Number(b.properties.maturity)) return -1;
-          if (Number(a.properties.maturity) < Number(b.properties.maturity)) return 1;
-          return 0;
-        })
-        .map((collateralType: any) => {
-          const earnableRate = earnableRates.find((item: any)  => item.vault === collateralType.properties.vault)
-          return {
-            ...collateralType,
-            earnableRate: earnableRate?.earnableRate
-          }
-        }));
-      setContextData((curContextData) => ({
-        ...curContextData,
-        explorerUrl: chain?.blockExplorers?.etherscan?.url || '',
-      }));
-    })();
-  }, [chain?.blockExplorers?.etherscan?.url, collateralTypesData.length, connector, provider]);
-
+  // Fetch block explorer data
   React.useEffect(() => {
-    if (connector) {
-      (async function () {
-        if (!contextData.fiat) return;
-        const { fiat } = contextData.fiat.getContracts();
-        const signer = (await connector.getSigner());
-        const user = await signer.getAddress();
-        const fiatBalance = await fiat.balanceOf(user)
-        setFiatBalance(`${parseFloat(wadToDec(fiatBalance)).toFixed(2)} FIAT`)
-      })();
-    }
-  }, [connector, contextData.fiat, address, chain])
+    if (!chain?.blockExplorers?.etherscan?.url) return;
+    setContextData((curContextData) => ({
+      ...curContextData,
+      explorerUrl: chain?.blockExplorers?.etherscan?.url || '',
+    }));
+  }, [chain?.blockExplorers?.etherscan?.url]);
+  
+  React.useEffect(() => {
+    handleFiatBalance();
+  }, [contextData.fiat, handleFiatBalance])
 
   // Fetch User data, Vault data, and set Fiat SDK in global state
   React.useEffect(() => {
@@ -370,7 +393,7 @@ const Home: NextPage = () => {
           hash: resp.transactionHash,
           description: 'Modify Collateral and Debt',
         });
-        resetState();
+        handleFinishedTransaction();
         return resp;
       } else {
         const resp = await userActions.buyCollateralAndModifyDebt(
@@ -385,7 +408,7 @@ const Home: NextPage = () => {
           description: 'Buy Collateral And Modify Debt',
         });
 
-        resetState();
+        handleFinishedTransaction();
         return resp;
       }
     } catch (e) {
@@ -409,7 +432,7 @@ const Home: NextPage = () => {
           hash: resp.transactionHash,
           description: 'Modify Collateral and Debt',
         });
-        resetState();
+        handleFinishedTransaction();
         return resp;
       }
       else {
@@ -425,7 +448,7 @@ const Home: NextPage = () => {
           hash: resp.transactionHash,
           description: 'Sell Collateral and Modify Debt',
         });
-        resetState();
+        handleFinishedTransaction();
         return resp;
       }
     } catch (e) {
@@ -449,7 +472,7 @@ const Home: NextPage = () => {
           hash: resp.transactionHash,
           description: 'Modify Collateral and Debt',
         });
-        resetState();
+        handleFinishedTransaction();
         return resp;
       }
       else {
@@ -464,7 +487,7 @@ const Home: NextPage = () => {
           hash: resp.transactionHash,
           description: 'Redeem',
         });
-        resetState();
+        handleFinishedTransaction();
         return resp;
       }
     } catch (e) {
@@ -477,7 +500,7 @@ const Home: NextPage = () => {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', padding: 12 }}>
-        <h4 style={{ justifyContent: 'flex',  }}>(Experimental) FIAT UI</h4>
+        <h4 style={{ justifyContent: 'flex',  }}>(Experimental) FIAT I UI</h4>
         <div style={{ display: 'flex'}}>
           <ProxyButton
             {...contextData}

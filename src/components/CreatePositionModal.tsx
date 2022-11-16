@@ -218,9 +218,9 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
         >
           Targeted health factor ({Number(wadToDec(formDataStore.targetedHealthFactor))})
         </Text>
-        <Card variant='bordered' borderWeight='light'>
+        <Card variant='bordered' borderWeight='light' style={{height:'100%'}}>
           <Card.Body
-            style={{ paddingLeft: '2.25rem', paddingRight: '2.25rem' }}
+            style={{ paddingLeft: '2.25rem', paddingRight: '2.25rem', overflow: 'hidden' }}
           >
             <Slider
               handleStyle={{ borderColor: '#0072F5' }}
