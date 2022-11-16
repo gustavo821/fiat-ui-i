@@ -284,7 +284,7 @@ const Home: NextPage = () => {
   }
 
   const createProxy = async (fiat: any, user: string) => {
-    //await dryRun(fiat, 'createProxy', fiat.getContracts().proxyRegistry, 'deployFor', user);
+    // return await dryRun(fiat, 'createProxy', fiat.getContracts().proxyRegistry, 'deployFor', user);
     const response = await sendStatefulTransaction(fiat, 'createProxy', fiat.getContracts().proxyRegistry, 'deployFor', user);
     addRecentTransaction({
       hash: response.transactionHash,
