@@ -113,9 +113,9 @@ const Home: NextPage = () => {
   }, [contextData]);
 
   const handleCollateralTypesData = React.useCallback(async () => {
-    const fiat = contextData.fiat ? contextData.fiat : await FIAT.fromProvider(provider, null);
-    const collateralTypesData_ = await fiat.fetchCollateralTypesAndPrices([]);
-    const earnableRates = await userActions.getEarnableRate(fiat, collateralTypesData_);
+    if (!contextData.fiat) return;
+    const collateralTypesData_ = await contextData.fiat.fetchCollateralTypesAndPrices([]);
+    const earnableRates = await userActions.getEarnableRate(contextData.fiat, collateralTypesData_);
 
     setCollateralTypesData(collateralTypesData_
       .filter((collateralType: any) => (collateralType.metadata != undefined))
@@ -131,7 +131,7 @@ const Home: NextPage = () => {
           earnableRate: earnableRate?.earnableRate
         }
       }));
-  }, [provider, contextData.fiat]);
+  }, [contextData.fiat]);
 
   const handlePositionsData = React.useCallback(async () => {
     if (!contextData || !contextData.fiat) return;
@@ -149,9 +149,20 @@ const Home: NextPage = () => {
 
   // Fetch Collateral Types Data
   React.useEffect(() => {
-    if (collateralTypesData.length !== 0) return;
+    if (collateralTypesData.length !== 0 || !contextData.fiat) return;
     handleCollateralTypesData();
-  }, [collateralTypesData.length, provider, handleCollateralTypesData])
+  }, [collateralTypesData.length, provider, contextData.fiat, handleCollateralTypesData])
+
+  React.useEffect(() => {
+    if (!provider || contextData.fiat || connector) return;
+    (async function () {
+      const fiat = await FIAT.fromProvider(provider, null);
+      setContextData((curContextData) => ({
+        ...curContextData,
+        fiat,
+      }));
+    })();
+  }, [provider, connector, contextData.fiat])
 
   // Fetch block explorer data
   React.useEffect(() => {
@@ -193,11 +204,9 @@ const Home: NextPage = () => {
   // Populate ModifyPosition data
   React.useEffect(() => {
     if (
-      !connector
-      || modifyPositionData.collateralType !== null
+      modifyPositionData.collateralType !== null
       || (selectedCollateralTypeId == null && selectedPositionId == null)
     ) return;
-
     const { vault, tokenId } = decodeCollateralTypeId((selectedCollateralTypeId || selectedPositionId as string));
     const collateralType = getCollateralTypeData(collateralTypesData, vault, tokenId)
 
@@ -209,7 +218,8 @@ const Home: NextPage = () => {
     const data = { ...modifyPositionData, collateralType, position };
     formDataStore.setFormDataLoading(true);
     formDataStore.calculateNewPositionData(contextData.fiat, data, selectedCollateralTypeId);
-    setModifyPositionData(data);
+    console.log({data})
+    setModifyPositionData({...data});
 
     (async function () {
       // For positions with proxies, fetch underlier balance, allowance, fiat allowance, and moneta delegation enablement
@@ -581,7 +591,7 @@ const Home: NextPage = () => {
         transactionData={transactionData}
         unsetMonetaDelegate={unsetMonetaDelegate}
         unsetUnderlierAllowance={unsetUnderlierAllowance}
-        open={(!!selectedCollateralTypeId)}
+        open={(!!selectedCollateralTypeId && !!modifyPositionData)}
         onClose={() => {
           setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
           setModifyPositionData(initialState.modifyPositionData);
