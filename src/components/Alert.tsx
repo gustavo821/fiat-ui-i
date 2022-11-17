@@ -77,10 +77,8 @@ export const Alert = ({ severity, message }: { severity: 'error' | 'warning', me
         <Text
           color={severity}
           style={{
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
             maxWidth: '40ch',
+            textAlign: 'left',
             marginLeft: '0.5rem',
           }}
         >
