@@ -81,13 +81,13 @@ interface FormActions {
 const initialState = {
   mode: 'deposit', // [deposit, withdraw, redeem]
   slippagePct: decToWad('0.001'),
-  underlier: ethers.constants.Zero,
-  deltaCollateral: ethers.constants.Zero,
-  deltaDebt: ethers.constants.Zero, // [wad]
+  underlier: ZERO,
+  deltaCollateral: ZERO,
+  deltaDebt: ZERO, // [wad]
   targetedHealthFactor: decToWad('1.2'),
-  collateral: ethers.constants.Zero, // [wad]
-  debt: ethers.constants.Zero, // [wad]
-  healthFactor: ethers.constants.Zero, // [wad] estimated new health factor
+  collateral: ZERO, // [wad]
+  debt: ZERO, // [wad]
+  healthFactor: ZERO, // [wad] estimated new health factor
   formDataLoading: false,
   formWarnings: [],
   formErrors: [],
@@ -226,7 +226,7 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
             const debt = deltaDebt;
             const healthFactor = fiat.computeHealthFactor(collateral, deltaNormalDebt, rate, liquidationPrice);
 
-            if (deltaDebt.gt(ethers.constants.Zero) && deltaDebt.lte(debtFloor) ) set(() => ({ formErrors: [...get().formErrors, `This collateral type requires a minimum of ${wadToDec(debtFloor)} FIAT to be borrowed`] }));
+            if (deltaDebt.gt(ZERO) && deltaDebt.lte(debtFloor) ) set(() => ({ formErrors: [...get().formErrors, `This collateral type requires a minimum of ${wadToDec(debtFloor)} FIAT to be borrowed`] }));
             if (debt.gt(0) && healthFactor.lte(WAD)) set(() => ({ formErrors: [...get().formErrors, 'Health factor has to be greater than 1.0'] }));
 
             set(() => ({ healthFactor, collateral, debt, deltaCollateral }));
@@ -238,7 +238,7 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
             const normalDebt = fiat.debtToNormalDebt(debt, rate);
             const healthFactor = fiat.computeHealthFactor(collateral, normalDebt, rate, liquidationPrice);
 
-            if (debt.gt(ethers.constants.Zero) && debt.lte(collateralType.settings.codex.debtFloor) ) set(() => ({ formErrors: [...get().formErrors, `This collateral type requires a minimum of ${wadToDec(debtFloor)} FIAT to be borrowed`] }));
+            if (debt.gt(ZERO) && debt.lte(collateralType.settings.codex.debtFloor) ) set(() => ({ formErrors: [...get().formErrors, `This collateral type requires a minimum of ${wadToDec(debtFloor)} FIAT to be borrowed`] }));
             if (debt.gt(0) && healthFactor.lte(WAD)) set(() => ({ formErrors: [...get().formErrors, 'Health factor has to be greater than 1.0'] }));
 
             set(() => ({ healthFactor, collateral, debt, deltaCollateral }));
@@ -293,17 +293,17 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
         console.error('Error updating form data: ', error);
         if (mode === 'deposit') {
           set(() => ({
-            deltaCollateral: ethers.constants.Zero,
-            deltaDebt: ethers.constants.Zero,
-            collateral: ethers.constants.Zero,
-            debt: ethers.constants.Zero,
-            healthFactor: ethers.constants.Zero,
+            deltaCollateral: ZERO,
+            deltaDebt: ZERO,
+            collateral: ZERO,
+            debt: ZERO,
+            healthFactor: ZERO,
             error: JSON.stringify(error),
           }));
         } else if (mode === 'withdraw' || mode === 'redeem') {
           try {
             set(() => ({
-              underlier: ethers.constants.Zero,
+              underlier: ZERO,
               collateral: position.collateral,
               debt: fiat.normalDebtToDebt(position.normalDebt, rate),
               healthFactor: fiat.computeHealthFactor(position.collateral, position.normalDebt, rate, liquidationPrice),
@@ -311,10 +311,10 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
             }));
           } catch (error) {
             set(() => ({
-              underlier: ethers.constants.Zero,
-              collateral: ethers.constants.Zero,
-              debt: ethers.constants.Zero,
-              healthFactor: ethers.constants.Zero,
+              underlier: ZERO,
+              collateral: ZERO,
+              debt: ZERO,
+              healthFactor: ZERO,
               error: JSON.stringify(error),
             }));
           }
