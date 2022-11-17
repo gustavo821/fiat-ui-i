@@ -218,7 +218,6 @@ const Home: NextPage = () => {
     const data = { ...modifyPositionData, collateralType, position };
     formDataStore.setFormDataLoading(true);
     formDataStore.calculateNewPositionData(contextData.fiat, data, selectedCollateralTypeId);
-    console.log({data})
     setModifyPositionData({...data});
 
     (async function () {

@@ -36,7 +36,6 @@ interface CreatePositionModalProps {
 }
 
 export const CreatePositionModal = (props: CreatePositionModalProps) => {
-  console.log("parent", props)
   return (
     <Modal
       preventClose
@@ -54,18 +53,13 @@ export const CreatePositionModal = (props: CreatePositionModalProps) => {
 const CreatePositionModalBody = (props: CreatePositionModalProps) => {
   const formDataStore = useModifyPositionFormDataStore();
   const [rpcError, setRpcError] = React.useState('');
-  console.log("render modal body")
   if (
     !props.modifyPositionData.collateralType ||
     !props.modifyPositionData.collateralType.metadata
   ) {
     // TODO: add skeleton components instead of loading
-    console.log("return", props)
     return null;
   }
-
-  console.log("render modal", props)
-  //console.log(formDataStore)
 
   const { proxies } = props.contextData;
   const {
