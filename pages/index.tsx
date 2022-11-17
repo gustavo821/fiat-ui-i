@@ -236,7 +236,7 @@ const Home: NextPage = () => {
       const { codex, moneta, fiat } = contextData.fiat.getContracts();
       const underlier = contextData.fiat.getERC20Contract(data.collateralType.properties.underlierToken);
 
-      const signer = (await connector.getSigner());
+      const signer = (await connector?.getSigner());
       if (!signer || !signer.provider) return;
       const user = await signer.getAddress();
       const [underlierAllowance, underlierBalance, monetaDelegate, fiatAllowance] = await contextData.fiat.multicall([
