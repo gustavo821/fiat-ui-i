@@ -53,6 +53,7 @@ export const CreatePositionModal = (props: CreatePositionModalProps) => {
 const CreatePositionModalBody = (props: CreatePositionModalProps) => {
   const formDataStore = useModifyPositionFormDataStore();
   const [rpcError, setRpcError] = React.useState('');
+
   if (
     !props.modifyPositionData.collateralType ||
     !props.modifyPositionData.collateralType.metadata

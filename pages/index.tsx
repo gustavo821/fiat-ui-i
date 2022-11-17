@@ -207,6 +207,7 @@ const Home: NextPage = () => {
       modifyPositionData.collateralType !== null
       || (selectedCollateralTypeId == null && selectedPositionId == null)
     ) return;
+
     const { vault, tokenId } = decodeCollateralTypeId((selectedCollateralTypeId || selectedPositionId as string));
     const collateralType = getCollateralTypeData(collateralTypesData, vault, tokenId)
 
