@@ -80,6 +80,7 @@ export const Alert = ({ severity, message }: { severity: 'error' | 'warning', me
             maxWidth: '40ch',
             textAlign: 'left',
             marginLeft: '0.5rem',
+            fontSize: 'var(--nextui-fontSizes-sm)',
           }}
         >
           {message}
