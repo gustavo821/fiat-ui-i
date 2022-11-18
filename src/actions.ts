@@ -124,7 +124,7 @@ export const getEarnableRate = async (fiat: any, collateralTypesData: any) => {
     if (new Date() >= new Date(Number(maturity.toString()) * 1000)) return [];
     switch (vaultType) {
       case 'ERC20:EPT': {
-        if (!properties.eptData) return console.error('Missing EPT data');
+        if (!properties.eptData) throw new Error('Missing EPT data');
         const { balancerVault, poolId } = properties.eptData;
         return {
           vault,
@@ -135,7 +135,7 @@ export const getEarnableRate = async (fiat: any, collateralTypesData: any) => {
         };
       }
       case 'ERC1155:FC': {
-        if (!properties.fcData) return console.error('Missing FC data');
+        if (!properties.fcData) throw new Error('Missing FC data');
         return {
           vault,
           tokenScale,
@@ -145,7 +145,7 @@ export const getEarnableRate = async (fiat: any, collateralTypesData: any) => {
         };
       }
       case 'ERC20:FY': {
-        if (!properties.fyData) return console.error('Missing FY data');
+        if (!properties.fyData) throw new Error('Missing FY data');
         const { yieldSpacePool } = properties.fyData;
         return {
           vault,
@@ -156,7 +156,7 @@ export const getEarnableRate = async (fiat: any, collateralTypesData: any) => {
         };
       }
       case 'ERC20:SPT': {
-        if (!properties.sptData) return console.error('Missing SPT data');
+        if (!properties.sptData) throw new Error('Missing SPT data');
         const { spacePool, balancerVault } = properties.sptData;
         return {
           vault,
@@ -236,11 +236,12 @@ export const buyCollateralAndModifyDebt = async (
   const tokenAmount = wadToScale(deltaCollateral, properties.tokenScale);
 
   // if deltaCollateral is zero use generic modifyCollateralAndDebt method since no swap is necessary
-  if (deltaCollateral.isZero()) return console.error('Invalid value for `deltaCollateral` - Value has to be non-zero');
+  if (deltaCollateral.isZero()) throw new Error('Invalid value for `deltaCollateral` - Value has to be non-zero');
+
 
   switch (properties.vaultType) {
     case 'ERC20:EPT': {
-      if (!properties.eptData) return console.error('Missing EPT data');
+      if (!properties.eptData) throw new Error('Missing EPT data');
       const deadline = Math.round(+new Date() / 1000) + 3600;
       // await contextData.fiat.dryrunViaProxy(
       const response = await contextData.fiat.sendAndWaitViaProxy(
@@ -267,7 +268,7 @@ export const buyCollateralAndModifyDebt = async (
       return response;
     }
     case 'ERC1155:FC': {
-      if (!properties.fcData) return console.error('Missing FC data');
+      if (!properties.fcData) throw new Error('Missing FC data');
       // 1 - (underlier / deltaCollateral)
       const minLendRate = wadToScale(
         WAD.sub(scaleToWad(underlier, properties.underlierScale).mul(WAD).div(deltaCollateral)),
@@ -293,7 +294,7 @@ export const buyCollateralAndModifyDebt = async (
       return response;
     }
     case 'ERC20:FY': {
-      if (!properties.fyData) return console.error('Missing FY data');
+      if (!properties.fyData) throw new Error('Missing FY data');
       // await contextData.fiat.dryrunViaProxy(
       const response = await contextData.fiat.sendAndWaitViaProxy(
         contextData.proxies[0],
@@ -316,7 +317,7 @@ export const buyCollateralAndModifyDebt = async (
       return response;
     }
     case 'ERC20:SPT': {
-      if (!properties.sptData) return console.error('Missing SPT data');
+      if (!properties.sptData) throw new Error('Missing SPT data');
       // await contextData.fiat.dryrunViaProxy(
       const response = await contextData.fiat.sendAndWaitViaProxy(
         contextData.proxies[0],
@@ -367,11 +368,11 @@ export const sellCollateralAndModifyDebt = async (
   const tokenAmount = wadToScale(deltaCollateral, properties.tokenScale);
 
   // if deltaCollateral is zero use generic modifyCollateralAndDebt method since no swap is necessary
-  if (deltaCollateral.isZero()) return console.error('Invalid value for `deltaCollateral` - Value has to be non-zero');
+  if (deltaCollateral.isZero()) throw new Error('Invalid value for `deltaCollateral` - Value has to be non-zero');
 
   switch (properties.vaultType) {
     case 'ERC20:EPT': {
-      if (!properties.eptData) return console.error('Missing EPT data');
+      if (!properties.eptData) throw new Error('Missing EPT data');
       const deadline = Math.round(+new Date() / 1000) + 3600;
       // await contextData.fiat.dryrunViaProxy(
       const response = await contextData.fiat.sendAndWaitViaProxy(
@@ -399,7 +400,7 @@ export const sellCollateralAndModifyDebt = async (
     }
 
     case 'ERC1155:FC': {
-      if (!properties.fcData) return console.error('Missing FC data');
+      if (!properties.fcData) throw new Error('Missing FC data');
       const maxBorrowRate = wadToScale(
         WAD.sub(deltaCollateral.mul(WAD).div(scaleToWad(underlier, properties.underlierScale))),
         properties.tokenScale
@@ -423,7 +424,7 @@ export const sellCollateralAndModifyDebt = async (
       return response;
     }
     case 'ERC20:FY': {
-      if (!properties.fyData) return console.error('Missing FY data');
+      if (!properties.fyData) throw new Error('Missing FY data');
       // await contextData.fiat.dryrunViaProxy(
       const response = await contextData.fiat.sendAndWaitViaProxy(
         contextData.proxies[0],
@@ -446,7 +447,7 @@ export const sellCollateralAndModifyDebt = async (
       return response;
     }
     case 'ERC20:SPT': {
-      if (!properties.sptData) return console.error('Missing SPT data');
+      if (!properties.sptData) throw new Error('Missing SPT data');
       console.log(contextData.proxies[0]);
       // await contextData.fiat.dryrunViaProxy(
       const response = await contextData.fiat.sendAndWaitViaProxy(
@@ -497,7 +498,7 @@ export const redeemCollateralAndModifyDebt = async (contextData: any,
 
   switch (properties.vaultType) {
     case 'ERC20:EPT': {
-      if (!properties.eptData) return console.error('Missing EPT data');
+      if (!properties.eptData) throw new Error('Missing EPT data');
       // await contextData.fiat.dryrunViaProxy(
       const response = await contextData.fiat.sendAndWaitViaProxy(
         contextData.proxies[0],
@@ -515,7 +516,7 @@ export const redeemCollateralAndModifyDebt = async (contextData: any,
       return response;
     }
     case 'ERC1155:FC': {
-      if (!properties.fcData) return console.error('Missing FC data');
+      if (!properties.fcData) throw new Error('Missing FC data');
       // await contextData.fiat.dryrunViaProxy(
       const response = await contextData.fiat.sendAndWaitViaProxy(
         contextData.proxies[0],
@@ -534,7 +535,7 @@ export const redeemCollateralAndModifyDebt = async (contextData: any,
       return response;
     }
     case 'ERC20:FY': {
-      if (!properties.fyData) return console.error('Missing FY data');
+      if (!properties.fyData) throw new Error('Missing FY data');
       // await contextData.fiat.dryrunViaProxy(
       const response = await contextData.fiat.sendAndWaitViaProxy(
         contextData.proxies[0],
@@ -552,7 +553,7 @@ export const redeemCollateralAndModifyDebt = async (contextData: any,
       return response;
     }
     case 'ERC20:SPT': {
-      if (!properties.sptData) return console.error('Missing SPT data');
+      if (!properties.sptData) throw new Error('Missing SPT data');
       // await contextData.fiat.dryrunViaProxy(
       const response = await contextData.fiat.sendAndWaitViaProxy(
         contextData.proxies[0],

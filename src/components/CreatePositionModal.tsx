@@ -436,7 +436,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
           onPress={async () => {
             try {
               setRpcError('');
-              await props.buyCollateralAndModifyDebt()
+              await props.buyCollateralAndModifyDebt();
               props.onClose();
             } catch (e: any) {
               setRpcError(e.message);
