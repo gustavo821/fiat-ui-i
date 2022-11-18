@@ -516,7 +516,7 @@
     "@ethersproject/properties" "^5.7.0"
     "@ethersproject/strings" "^5.7.0"
 
-"@fiatdao/sdk@^0.0.17":
+"@fiatdao/sdk@0.0.17":
   version "0.0.17"
   resolved "https://registry.yarnpkg.com/@fiatdao/sdk/-/sdk-0.0.17.tgz#eb4cbc1656ab046519f4281dd3dd207f16283c42"
   integrity sha512-m7WeXeoRP0ukJaxFhDWa1KnZVvau4pnloEcFAwyrx3oWHKZbK9hHqEq02GvssHI78Vt7/G4SbQEeGqzxytTBYQ==
