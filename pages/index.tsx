@@ -274,11 +274,15 @@ const Home: NextPage = () => {
         : await fiat.sendAndWait(contract, method, ...args);
       setTransactionData(initialState.transactionData);
       return resp;
-    } catch (e) {
-      console.error('Error: ', e);
+    } catch (e: any) {
       setTransactionData({ ...transactionData, status: 'error' });
-      // Should be caught by caller to set appropriate errors
-      throw e
+      if (e && e.code && e.code === 'ACTION_REJECTED') {
+        // Special handling for Metamask errors
+        throw new Error('ACTION_REJECTED');
+      } else {
+        // Should be caught by caller to set appropriate errors
+        throw e;
+      }
     }
   }
 

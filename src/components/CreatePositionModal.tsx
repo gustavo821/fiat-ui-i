@@ -118,7 +118,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
       });
     }
 
-    if (rpcError !== '') {
+    if (rpcError !== '' && rpcError !== 'ACTION_REJECTED' ) {
       formAlerts.push(<Alert severity='error' message={rpcError} />);
     }
 
