@@ -55,7 +55,6 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
   const [rpcError, setRpcError] = React.useState('');
 
   if (
-    !props.contextData.user ||
     !props.modifyPositionData.collateralType ||
     !props.modifyPositionData.collateralType.metadata
   ) {

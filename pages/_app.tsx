@@ -29,7 +29,6 @@ const { chains, provider, webSocketProvider } = configureChains([
   ],
   [
     alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY }),
-    publicProvider(),
   ]);
 
 const { wallets } = getDefaultWallets({
