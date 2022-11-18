@@ -57,6 +57,9 @@ export const PositionsTable = (props: PositionsTableProps) => {
           props.onSelectPosition(Object.values(selected)[0])
         }
         sortDescriptor={sortProps as SortDescriptor}
+        disabledKeys={sortedData.filter(({ vault, tokenId }) => (
+          getCollateralTypeData(props.collateralTypesData, vault, tokenId) === undefined
+        )).map(({ vault, tokenId, owner }) => encodePositionId(vault, tokenId, owner))}
         onSortChange={(data) => {
           setSortProps({
             direction: data.direction,
@@ -76,13 +79,26 @@ export const PositionsTable = (props: PositionsTableProps) => {
           {
             sortedData.map((position) => {
               const { owner, vault, tokenId, collateral, normalDebt } = position;
+              const collateralTypeData = getCollateralTypeData(props.collateralTypesData, vault, tokenId);
+              if (collateralTypeData === undefined) {
+                return (
+                  <Table.Row key={encodePositionId(vault, tokenId, owner)}>
+                    <Table.Cell>&nbsp;&nbsp;&nbsp;{'Unknown Asset'}</Table.Cell>
+                    <Table.Cell>{''}</Table.Cell>
+                    <Table.Cell>{''}</Table.Cell>
+                    <Table.Cell>{''}</Table.Cell>
+                    <Table.Cell>{''}</Table.Cell>
+                    <Table.Cell>{''}</Table.Cell>
+                  </Table.Row>
+                );
+              }
               const {
                 properties: { maturity },
                 metadata: { protocol, asset, icons, urls, symbol },
                 state: {
                   publican: { interestPerSecond }, codex: { virtualRate }, collybus: { fairPrice, liquidationPrice }
                 }
-              } = getCollateralTypeData(props.collateralTypesData, vault, tokenId);
+              } = collateralTypeData;
               const borrowRate = interestPerSecondToRateUntilMaturity(interestPerSecond, maturity);
               const borrowRateAnnualized = interestPerSecondToAPY(interestPerSecond);
               const debt = normalDebt.mul(virtualRate).div(WAD);

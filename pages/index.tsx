@@ -538,7 +538,9 @@ const Home: NextPage = () => {
               {fiatBalance}
             </Badge>
           }
-          <ConnectButton showBalance={false} />
+          <div className='connectWrapper'>
+            <ConnectButton showBalance={false} />
+          </div>
         </div>
       </div>
       <Spacer y={2} />
