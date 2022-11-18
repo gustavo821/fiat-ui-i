@@ -2,7 +2,7 @@ import React from 'react';
 import type { NextPage } from 'next';
 import { useAccount, useNetwork, useProvider } from 'wagmi';
 import { ConnectButton, useAddRecentTransaction } from '@rainbow-me/rainbowkit';
-import { Badge, Container, Spacer } from '@nextui-org/react';
+import { Badge, Button, Container, Spacer } from '@nextui-org/react';
 import { ethers } from 'ethers';
 import { decToWad, FIAT, WAD, wadToDec, ZERO } from '@fiatdao/sdk';
 
@@ -11,11 +11,13 @@ import { CollateralTypesTable } from '../src/components/CollateralTypesTable';
 import { PositionsTable } from '../src/components/PositionsTable';
 import { CreatePositionModal } from '../src/components/CreatePositionModal';
 import { ModifyPositionModal } from '../src/components/ModifyPositionModal';
+import { InfoModal } from '../src/components/InfoModal';
 import {
   decodeCollateralTypeId, decodePositionId, encodePositionId, getCollateralTypeData, getPositionData
 } from '../src/utils';
 import * as userActions from '../src/actions';
 import { useModifyPositionFormDataStore } from '../src/stores/formStore';
+import { InfoIcon } from '../src/components/Icons/info'; 
 
 export type TransactionStatus = null | 'error' | 'sent' | 'confirming' | 'confirmed';
 
@@ -77,6 +79,7 @@ const Home: NextPage = () => {
   const [selectedPositionId, setSelectedPositionId] = React.useState(initialState.selectedPositionId);
   const [selectedCollateralTypeId, setSelectedCollateralTypeId] = React.useState(initialState.selectedCollateralTypeId);
   const [fiatBalance, setFiatBalance] = React.useState<string>(initialState.fiatBalance);
+  const [showInfoModal, setShowInfoModal] = React.useState<boolean>(false);
 
   const disableActions = React.useMemo(() => transactionData.status === 'sent', [transactionData.status])
 
@@ -113,9 +116,9 @@ const Home: NextPage = () => {
   }, [contextData]);
 
   const handleCollateralTypesData = React.useCallback(async () => {
-    const fiat = contextData.fiat ? contextData.fiat : await FIAT.fromProvider(provider, null);
-    const collateralTypesData_ = await fiat.fetchCollateralTypesAndPrices([]);
-    const earnableRates = await userActions.getEarnableRate(fiat, collateralTypesData_);
+    if (!contextData.fiat) return;
+    const collateralTypesData_ = await contextData.fiat.fetchCollateralTypesAndPrices([]);
+    const earnableRates = await userActions.getEarnableRate(contextData.fiat, collateralTypesData_);
 
     setCollateralTypesData(collateralTypesData_
       .filter((collateralType: any) => (collateralType.metadata != undefined))
@@ -131,7 +134,7 @@ const Home: NextPage = () => {
           earnableRate: earnableRate?.earnableRate
         }
       }));
-  }, [provider, contextData.fiat]);
+  }, [contextData.fiat]);
 
   const handlePositionsData = React.useCallback(async () => {
     if (!contextData || !contextData.fiat) return;
@@ -149,9 +152,20 @@ const Home: NextPage = () => {
 
   // Fetch Collateral Types Data
   React.useEffect(() => {
-    if (collateralTypesData.length !== 0) return;
+    if (collateralTypesData.length !== 0 || !contextData.fiat) return;
     handleCollateralTypesData();
-  }, [collateralTypesData.length, provider, handleCollateralTypesData])
+  }, [collateralTypesData.length, provider, contextData.fiat, handleCollateralTypesData])
+
+  React.useEffect(() => {
+    if (!provider || contextData.fiat || connector) return;
+    (async function () {
+      const fiat = await FIAT.fromProvider(provider, null);
+      setContextData((curContextData) => ({
+        ...curContextData,
+        fiat,
+      }));
+    })();
+  }, [provider, connector, contextData.fiat])
 
   // Fetch block explorer data
   React.useEffect(() => {
@@ -193,8 +207,7 @@ const Home: NextPage = () => {
   // Populate ModifyPosition data
   React.useEffect(() => {
     if (
-      !connector
-      || modifyPositionData.collateralType !== null
+      modifyPositionData.collateralType !== null
       || (selectedCollateralTypeId == null && selectedPositionId == null)
     ) return;
 
@@ -209,7 +222,7 @@ const Home: NextPage = () => {
     const data = { ...modifyPositionData, collateralType, position };
     formDataStore.setFormDataLoading(true);
     formDataStore.calculateNewPositionData(contextData.fiat, data, selectedCollateralTypeId);
-    setModifyPositionData(data);
+    setModifyPositionData({...data});
 
     (async function () {
       // For positions with proxies, fetch underlier balance, allowance, fiat allowance, and moneta delegation enablement
@@ -227,7 +240,7 @@ const Home: NextPage = () => {
       const { codex, moneta, fiat } = contextData.fiat.getContracts();
       const underlier = contextData.fiat.getERC20Contract(data.collateralType.properties.underlierToken);
 
-      const signer = (await connector.getSigner());
+      const signer = (await connector?.getSigner());
       if (!signer || !signer.provider) return;
       const user = await signer.getAddress();
       const [underlierAllowance, underlierBalance, monetaDelegate, fiatAllowance] = await contextData.fiat.multicall([
@@ -502,6 +515,25 @@ const Home: NextPage = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', padding: 12 }}>
         <h4 style={{ justifyContent: 'flex',  }}>(Experimental) FIAT I UI</h4>
         <div style={{ display: 'flex'}}>
+          <Button 
+            auto
+            icon={<InfoIcon fillColor='var(--rk-colors-connectButtonText)'/>}
+            css={{
+              fontFamily: 'var(--rk-fonts-body)',
+              fontWeight: 700,
+              fontSize: '100%',
+              borderRadius: '12px',
+              backgroundColor: '$connectButtonBackground',
+              color: '$connectButtonColor',
+              boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
+              '&:hover': {
+                transform: 'scale(1.03)'
+              },
+              border: 'none',
+              marginRight: '10px'
+            }}
+            onPress={()=>setShowInfoModal(true)}
+          />
           <ProxyButton
             {...contextData}
             createProxy={createProxy}
@@ -528,7 +560,9 @@ const Home: NextPage = () => {
               {fiatBalance}
             </Badge>
           }
-          <ConnectButton showBalance={false} />
+          <div className='connectWrapper'>
+            <ConnectButton showBalance={false} />
+          </div>
         </div>
       </div>
       <Spacer y={2} />
@@ -581,7 +615,7 @@ const Home: NextPage = () => {
         transactionData={transactionData}
         unsetMonetaDelegate={unsetMonetaDelegate}
         unsetUnderlierAllowance={unsetUnderlierAllowance}
-        open={(!!selectedCollateralTypeId)}
+        open={(!!selectedCollateralTypeId && !!modifyPositionData)}
         onClose={() => {
           setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
           setModifyPositionData(initialState.modifyPositionData);
@@ -612,6 +646,11 @@ const Home: NextPage = () => {
           setModifyPositionData(initialState.modifyPositionData);
           formDataStore.reset();
         }}
+      />
+
+      <InfoModal 
+        open={showInfoModal}
+        onClose={() => setShowInfoModal(false)}
       />
       <Spacer />
     </div>

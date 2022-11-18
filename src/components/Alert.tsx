@@ -1,5 +1,6 @@
 // Icons from: https://icons.radix-ui.com/
-import { Text, Tooltip } from '@nextui-org/react';
+import { Text } from '@nextui-org/react';
+import { ReactNode } from 'react';
 
 export const InfoIcon = (props: any) => {
   return (
@@ -28,41 +29,20 @@ export const WarningTriangle = (props: any) => {
 };
 
 // TODO: Copy message to clipboard on click (like aave), or guarantee human readable messages
-export const Alert = ({ severity, message }: { severity: 'error' | 'warning', message: string }) => {
+export const Alert = ({ severity, message }: { severity: 'error' | 'warning', message: ReactNode }) => {
   return (
-    <Tooltip
+    <div
       style={{
         width: '100%',
         border: `1px solid var(--nextui-colors-${severity})`,
         borderRadius: 'var(--nextui-radii-md)',
         padding: '.25rem 1rem .25rem 1rem',
       }}
-      trigger='hover'
-      css={{
-        zIndex: '999999 !important',
-      }}
-      content={
-        <div
-          style={{
-            maxWidth: '24rem',
-            wordWrap: 'break-word',
-          }}
-        >
-          <Text
-            style={{
-              wordWrap: 'break-word',
-            }}
-          >
-            {message}
-          </Text>
-        </div>
-      }
     >
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
-          cursor: 'pointer',
           width: '100%',
         }}
       >
@@ -77,16 +57,15 @@ export const Alert = ({ severity, message }: { severity: 'error' | 'warning', me
         <Text
           color={severity}
           style={{
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
             maxWidth: '40ch',
+            textAlign: 'left',
             marginLeft: '0.5rem',
+            fontSize: 'var(--nextui-fontSizes-sm)',
           }}
         >
           {message}
         </Text>
       </div>
-    </Tooltip>
+    </div>
   );
 };
