@@ -229,7 +229,7 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
             if (deltaDebt.gt(ZERO) && deltaDebt.lte(debtFloor) ) set(() => ({ formErrors: [...get().formErrors, `This collateral type requires a minimum of ${wadToDec(debtFloor)} FIAT to be borrowed`] }));
             if (debt.gt(0) && healthFactor.lte(WAD)) set(() => ({ formErrors: [...get().formErrors, 'Health factor has to be greater than 1.0'] }));
 
-            set(() => ({ healthFactor, collateral, debt, deltaCollateral }));
+            set(() => ({ healthFactor, collateral, debt, deltaDebt, deltaCollateral }));
           } else {
             // Calculate deltaNormalDebt based on targetedHealthFactor, taking into account an existing position's collateral
             const { deltaDebt } = get();
