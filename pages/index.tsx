@@ -2,7 +2,7 @@ import React from 'react';
 import type { NextPage } from 'next';
 import { useAccount, useNetwork, useProvider } from 'wagmi';
 import { ConnectButton, useAddRecentTransaction } from '@rainbow-me/rainbowkit';
-import { Badge, Container, Spacer } from '@nextui-org/react';
+import { Badge, Button, Container, Spacer } from '@nextui-org/react';
 import { ethers } from 'ethers';
 import { decToWad, FIAT, WAD, wadToDec, ZERO } from '@fiatdao/sdk';
 
@@ -11,11 +11,13 @@ import { CollateralTypesTable } from '../src/components/CollateralTypesTable';
 import { PositionsTable } from '../src/components/PositionsTable';
 import { CreatePositionModal } from '../src/components/CreatePositionModal';
 import { ModifyPositionModal } from '../src/components/ModifyPositionModal';
+import { InfoModal } from '../src/components/InfoModal';
 import {
   decodeCollateralTypeId, decodePositionId, encodePositionId, getCollateralTypeData, getPositionData
 } from '../src/utils';
 import * as userActions from '../src/actions';
 import { useModifyPositionFormDataStore } from '../src/stores/formStore';
+import { InfoIcon } from '../src/components/Icons/info'; 
 
 export type TransactionStatus = null | 'error' | 'sent' | 'confirming' | 'confirmed';
 
@@ -77,6 +79,7 @@ const Home: NextPage = () => {
   const [selectedPositionId, setSelectedPositionId] = React.useState(initialState.selectedPositionId);
   const [selectedCollateralTypeId, setSelectedCollateralTypeId] = React.useState(initialState.selectedCollateralTypeId);
   const [fiatBalance, setFiatBalance] = React.useState<string>(initialState.fiatBalance);
+  const [showInfoModal, setShowInfoModal] = React.useState<boolean>(false);
 
   const disableActions = React.useMemo(() => transactionData.status === 'sent', [transactionData.status])
 
@@ -502,6 +505,25 @@ const Home: NextPage = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', padding: 12 }}>
         <h4 style={{ justifyContent: 'flex',  }}>(Experimental) FIAT I UI</h4>
         <div style={{ display: 'flex'}}>
+          <Button 
+            auto
+            icon={<InfoIcon fillColor='var(--rk-colors-connectButtonText)'/>}
+            css={{
+              fontFamily: 'var(--rk-fonts-body)',
+              fontWeight: 700,
+              fontSize: '100%',
+              borderRadius: '12px',
+              backgroundColor: '$connectButtonBackground',
+              color: '$connectButtonColor',
+              boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
+              '&:hover': {
+                transform: 'scale(1.03)'
+              },
+              border: 'none',
+              marginRight: '10px'
+            }}
+            onPress={()=>setShowInfoModal(true)}
+          />
           <ProxyButton
             {...contextData}
             createProxy={createProxy}
@@ -614,6 +636,11 @@ const Home: NextPage = () => {
           setModifyPositionData(initialState.modifyPositionData);
           formDataStore.reset();
         }}
+      />
+
+      <InfoModal 
+        open={showInfoModal}
+        onClose={() => setShowInfoModal(false)}
       />
       <Spacer />
     </div>
