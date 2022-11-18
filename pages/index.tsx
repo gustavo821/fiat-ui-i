@@ -3,7 +3,7 @@ import type { NextPage } from 'next';
 import { useAccount, useNetwork, useProvider } from 'wagmi';
 import { ConnectButton, useAddRecentTransaction } from '@rainbow-me/rainbowkit';
 import { Badge, Button, Container, Spacer } from '@nextui-org/react';
-import { ethers } from 'ethers';
+import { ContractReceipt, ethers } from 'ethers';
 import { decToWad, FIAT, WAD, wadToDec, ZERO } from '@fiatdao/sdk';
 
 import { ProxyButton } from '../src/components/ProxyButton';
@@ -259,15 +259,15 @@ const Home: NextPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connector, contextData, collateralTypesData, positionsData, selectedCollateralTypeId, selectedPositionId, modifyPositionData, formDataStore.calculateNewPositionData]);
 
-  const sendStatefulTransaction = async (fiat: any, useProxy: boolean, action: string, contract: ethers.Contract, method: string, ...args: any[]) => {
+  const sendStatefulTransaction = async (fiat: any, useProxy: boolean, action: string, contract: ethers.Contract, method: string, ...args: any[]): Promise<ContractReceipt> => {
     try {
       setTransactionData({ action, status: 'sent' });
 
       // Dryrun every transaction first to catch and decode errors
-      const dryrunResp = useProxy
+      useProxy
         ? await fiat.dryrunViaProxy(contextData.proxies[0], contract, method, ...args)
         : await fiat.dryrun(contract, method, ...args);
-      console.log('Dryrun resp: ', dryrunResp);
+      // console.log('Dryrun resp: ', dryrunResp);
 
       const resp = useProxy
         ? await fiat.sendAndWaitViaProxy(contextData.proxies[0], contract, method, ...args)
@@ -379,7 +379,7 @@ const Home: NextPage = () => {
         formDataStore.deltaDebt, // increase (mint)
         modifyPositionData.position,
       );
-      const response = await sendStatefulTransaction(contextData.fiat, true, 'modifyCollateralAndDebt', args.contract, args.methodName, ...args.methodArgs) as any;
+      const response = await sendStatefulTransaction(contextData.fiat, true, 'modifyCollateralAndDebt', args.contract, args.methodName, ...args.methodArgs);
 
       addRecentTransaction({
         hash: response.transactionHash,
@@ -395,7 +395,7 @@ const Home: NextPage = () => {
         formDataStore.deltaDebt,
         formDataStore.underlier
       );
-      const response = await sendStatefulTransaction(contextData.fiat, true, 'buyCollateralAndModifyDebt', args.contract, args.methodName, ...args.methodArgs) as any;
+      const response = await sendStatefulTransaction(contextData.fiat, true, 'buyCollateralAndModifyDebt', args.contract, args.methodName, ...args.methodArgs);
 
       addRecentTransaction({
         hash: response.transactionHash,
@@ -414,7 +414,7 @@ const Home: NextPage = () => {
         formDataStore.deltaDebt, // increase (mint)
         modifyPositionData.position,
       );
-      const response = await sendStatefulTransaction(contextData.fiat, true, 'modifyCollateralAndDebt', args.contract, args.methodName, ...args.methodArgs) as any;
+      const response = await sendStatefulTransaction(contextData.fiat, true, 'modifyCollateralAndDebt', args.contract, args.methodName, ...args.methodArgs);
 
       addRecentTransaction({
         hash: response.transactionHash,
@@ -432,7 +432,7 @@ const Home: NextPage = () => {
         formDataStore.underlier,
         modifyPositionData.position,
       );
-      const response = await sendStatefulTransaction(contextData.fiat, true, 'sellCollateralAndModifyDebt', args.contract, args.methodName, ...args.methodArgs) as any;
+      const response = await sendStatefulTransaction(contextData.fiat, true, 'sellCollateralAndModifyDebt', args.contract, args.methodName, ...args.methodArgs);
 
       addRecentTransaction({
         hash: response.transactionHash,
@@ -451,7 +451,7 @@ const Home: NextPage = () => {
         formDataStore.deltaDebt, // increase (mint)
         modifyPositionData.position,
       );
-      const response = await sendStatefulTransaction(contextData.fiat, true, 'modifyCollateralAndDebt', args.contract, args.methodName, ...args.methodArgs) as any;
+      const response = await sendStatefulTransaction(contextData.fiat, true, 'modifyCollateralAndDebt', args.contract, args.methodName, ...args.methodArgs);
 
       addRecentTransaction({
         hash: response.transactionHash,
@@ -468,7 +468,7 @@ const Home: NextPage = () => {
         formDataStore.deltaDebt,
         modifyPositionData.position,
       )
-      const response = await sendStatefulTransaction(contextData.fiat, true, 'redeemCollateralAndModifyDebt', args.contract, args.methodName, ...args.methodArgs) as any;
+      const response = await sendStatefulTransaction(contextData.fiat, true, 'redeemCollateralAndModifyDebt', args.contract, args.methodName, ...args.methodArgs);
 
       addRecentTransaction({
         hash: response.transactionHash,
