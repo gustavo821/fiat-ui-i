@@ -179,6 +179,14 @@ export const getEarnableRate = async (fiat: any, collateralTypesData: any) => {
   });
 };
 
+// decreases deltaNormalDebt to compensate for the interest that has accrued
+// between when the tx is sent vs. when it is confirmed
+// insure that: debt_sent = normalDebt * rate_send <= debt_mined = normalDebt * rate_mined, otherwise:
+// avoids that user does not take out more debt than expected, that FIAT approval might not be sufficient for repayment
+const addDeltaNormalBuffer = (deltaNormalDebt: ethers.BigNumber): ethers.BigNumber => {
+  return deltaNormalDebt.mul(WAD.sub(decToWad(0.0001))).div(WAD);
+}
+
 export const buildModifyCollateralAndDebtArgs = (
   contextData: any,
   collateralTypeData: any,
@@ -188,10 +196,9 @@ export const buildModifyCollateralAndDebtArgs = (
   const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = contextData.fiat.getContracts();
   const { properties } = collateralTypeData;
 
-  let deltaNormalDebt = contextData.fiat
-    .debtToNormalDebt(deltaDebt, collateralTypeData.state.codex.virtualRate)
-    .mul(WAD.sub(decToWad(0.001)))
-    .div(WAD);
+  let deltaNormalDebt = addDeltaNormalBuffer(
+    contextData.fiat.debtToNormalDebt(deltaDebt, collateralTypeData.state.codex.virtualRate
+  ));
   if (position.normalDebt.add(deltaNormalDebt).lt(WAD)) deltaNormalDebt = position.normalDebt.mul(-1);
 
   // if deltaCollateral is zero use generic modifyCollateralAndDebt method since no swap is necessary
@@ -228,10 +235,9 @@ export const buildBuyCollateralAndModifyDebtArgs = (
   const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = contextData.fiat.getContracts();
   const { properties } = collateralTypeData;
 
-  const deltaNormalDebt = contextData.fiat
-    .debtToNormalDebt(deltaDebt, collateralTypeData.state.codex.virtualRate)
-    .mul(WAD.sub(decToWad(0.001)))
-    .div(WAD);
+  const deltaNormalDebt = addDeltaNormalBuffer(
+    contextData.fiat.debtToNormalDebt(deltaDebt, collateralTypeData.state.codex.virtualRate
+  ));
   const tokenAmount = wadToScale(deltaCollateral, properties.tokenScale);
 
   // if deltaCollateral is zero use generic modifyCollateralAndDebt method since no swap is necessary
@@ -354,10 +360,9 @@ export const buildSellCollateralAndModifyDebtArgs = (
   const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = contextData.fiat.getContracts();
   const { properties } = collateralTypeData;
 
-  let deltaNormalDebt = contextData.fiat
-    .debtToNormalDebt(deltaDebt, collateralTypeData.state.codex.virtualRate)
-    .mul(WAD.sub(decToWad(0.001)))
-    .div(WAD);
+  let deltaNormalDebt = addDeltaNormalBuffer(
+    contextData.fiat.debtToNormalDebt(deltaDebt, collateralTypeData.state.codex.virtualRate
+  ));
   if (position.normalDebt.sub(deltaNormalDebt).lt(WAD)) deltaNormalDebt = position.normalDebt;
   deltaNormalDebt = deltaNormalDebt.mul(-1);
 

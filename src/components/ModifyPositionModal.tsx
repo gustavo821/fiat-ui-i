@@ -80,7 +80,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
     collateralType: {
       metadata: { symbol: symbol, protocol, asset },
       properties: { underlierScale, underlierSymbol, maturity },
-      state: { codex: { virtualRate }, collybus: { liquidationPrice }}
+      state: { codex: { virtualRate }, collybus: { fairPrice }}
     },
     underlierAllowance,
     underlierBalance,
@@ -140,6 +140,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
             {!matured && (
               <>
                 <Navbar.Link
+                  isDisabled={props.disableActions}
                   isActive={formDataStore.mode === 'deposit'}
                   onClick={() => {
                     formDataStore.resetCollateralAndDebtInputs(props.contextData.fiat, props.modifyPositionData);
@@ -149,6 +150,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
                   Increase
                 </Navbar.Link>
                 <Navbar.Link
+                  isDisabled={props.disableActions}
                   isActive={formDataStore.mode === 'withdraw'}
                   onClick={() => {
                     formDataStore.resetCollateralAndDebtInputs(props.contextData.fiat, props.modifyPositionData);
@@ -161,7 +163,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
             )}
             {matured && (
               <Navbar.Link
-                isDisabled={!matured}
+                isDisabled={props.disableActions || !matured}
                 isActive={formDataStore.mode === 'redeem'}
                 onClick={() => {
                   formDataStore.resetCollateralAndDebtInputs(props.contextData.fiat, props.modifyPositionData);
@@ -350,26 +352,26 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
           readOnly
           value={(() => {
             if (formDataStore.formDataLoading) return ' ';
-            let healthFactorBefore = fiat.computeHealthFactor(
-              position.collateral, position.normalDebt, virtualRate, liquidationPrice
+            let collRatioBefore = fiat.computeCollateralizationRatio(
+              position.collateral, fairPrice, position.normalDebt, virtualRate
             );
-            healthFactorBefore = (healthFactorBefore.eq(ethers.constants.MaxUint256))
-              ? '∞' : floor4(wadToDec(healthFactorBefore));
-            const healthFactorAfter = (formDataStore.healthFactor.eq(ethers.constants.MaxUint256))
-              ? '∞' : floor4(wadToDec(formDataStore.healthFactor));
-            return `${healthFactorBefore} → ${healthFactorAfter}`;
+            collRatioBefore = (collRatioBefore.eq(ethers.constants.MaxUint256))
+              ? '∞' : `${floor2(wadToDec(collRatioBefore.mul(100)))}%`;
+            const collRatioAfter = (formDataStore.collRatio.eq(ethers.constants.MaxUint256))
+              ? '∞' : `${floor2(wadToDec(formDataStore.collRatio.mul(100)))}%`;
+            return `${collRatioBefore} → ${collRatioAfter}`;
           })()}
           placeholder='0'
           type='string'
           label={
-            `Health Factor (before: ${(() => {
-              const healthFactor = fiat.computeHealthFactor(
-                position.collateral, position.normalDebt, virtualRate, liquidationPrice
+            `Collateralization Ratio (before: ${(() => {
+              const collRatio = fiat.computeCollateralizationRatio(
+                position.collateral, fairPrice, position.normalDebt, virtualRate
               );
-              if (healthFactor.eq(ethers.constants.MaxUint256)) return '∞'
-              return floor4(wadToDec(healthFactor));
+              if (collRatio.eq(ethers.constants.MaxUint256)) return '∞'
+              return floor2(wadToDec(collRatio.mul(100)));
             })()
-          })`
+          }%)`
           }
           labelRight={'🚦'}
           contentLeft={formDataStore.formDataLoading ? <Loading size='xs' /> : null}

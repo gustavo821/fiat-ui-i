@@ -55,10 +55,10 @@ const Home: NextPage = () => {
       underlier: ZERO as ethers.BigNumber, // [underlierScale]
       deltaCollateral: ZERO as ethers.BigNumber, // [wad]
       deltaDebt: ZERO as ethers.BigNumber, // [wad]
-      targetedHealthFactor: decToWad('1.2') as ethers.BigNumber, // [wad]
+      targetedCollRatio: decToWad('1.2') as ethers.BigNumber, // [wad]
       collateral: ZERO as ethers.BigNumber, // [wad]
       debt: ZERO as ethers.BigNumber, // [wad]
-      healthFactor: ZERO as ethers.BigNumber, // [wad] estimated new health factor
+      collRatio: ZERO as ethers.BigNumber, // [wad] estimated new collateralization ratio
       error: null as null | string
     },
     transactionData: {
@@ -415,7 +415,7 @@ const Home: NextPage = () => {
       const args = userActions.buildModifyCollateralAndDebtArgs(
         contextData,
         modifyPositionData.collateralType,
-        formDataStore.deltaDebt, // increase (mint)
+        formDataStore.deltaDebt.mul(-1), // decrease (pay back)
         modifyPositionData.position,
       );
       const response = await sendStatefulTransaction(contextData.fiat, true, 'modifyCollateralAndDebt', args.contract, args.methodName, ...args.methodArgs);
@@ -452,7 +452,7 @@ const Home: NextPage = () => {
       const args = userActions.buildModifyCollateralAndDebtArgs(
         contextData,
         modifyPositionData.collateralType,
-        formDataStore.deltaDebt, // increase (mint)
+        formDataStore.deltaDebt.mul(-1), // decrease (pay back)
         modifyPositionData.position,
       );
       const response = await sendStatefulTransaction(contextData.fiat, true, 'modifyCollateralAndDebt', args.contract, args.methodName, ...args.methodArgs);
