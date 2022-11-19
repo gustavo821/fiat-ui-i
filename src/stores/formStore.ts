@@ -12,10 +12,10 @@ interface FormState {
   underlier: ethers.BigNumber; // [underlierScale]
   deltaCollateral: ethers.BigNumber; // [wad]
   deltaDebt: ethers.BigNumber; // [wad]
-  targetedHealthFactor: ethers.BigNumber; // [wad]
+  targetedCollRatio: ethers.BigNumber; // [wad]
   collateral: ethers.BigNumber; // [wad]
   debt: ethers.BigNumber; // [wad]
-  healthFactor: ethers.BigNumber; // [wad] estimated new health factor
+  collRatio: ethers.BigNumber; // [wad] estimated new collateralization ratio
   formDataLoading: boolean;
   formWarnings: string[];
   formErrors: string[];
@@ -40,7 +40,7 @@ interface FormActions {
     modifyPositionData: any,
     selectedCollateralTypeId: string | null
   ) => void;
-  setTargetedHealthFactor: (
+  setTargetedCollRatio: (
     fiat: any,
     value: number,
     modifyPositionData: any,
@@ -84,10 +84,10 @@ const initialState = {
   underlier: ZERO,
   deltaCollateral: ZERO,
   deltaDebt: ZERO, // [wad]
-  targetedHealthFactor: decToWad('1.2'),
+  targetedCollRatio: decToWad('1.2'),
   collateral: ZERO, // [wad]
   debt: ZERO, // [wad]
-  healthFactor: ZERO, // [wad] estimated new health factor
+  collRatio: ZERO, // [wad] estimated new collateralization ratio
   formDataLoading: false,
   formWarnings: [],
   formErrors: [],
@@ -135,9 +135,9 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
       setUnderlier(fiat, underlierString, modifyPositionData, selectedCollateralTypeId);
     },
 
-    setTargetedHealthFactor: (fiat, value, modifyPositionData, selectedCollateralTypeId) => {
-      set(() => ({ targetedHealthFactor: decToWad(String(value)) }));
-      // Call setUnderlier with previously stored value to re-estimate new health factor and debt
+    setTargetedCollRatio: (fiat, value, modifyPositionData, selectedCollateralTypeId) => {
+      set(() => ({ targetedCollRatio: decToWad(String(value)) }));
+      // Call setUnderlier with previously stored value to re-estimate new collateralization ratio and debt
       const { underlier, setUnderlier } = get();
       const underlierString = scaleToDec(underlier, modifyPositionData.collateralType.properties.underlierScale);
       setUnderlier(fiat, underlierString, modifyPositionData, selectedCollateralTypeId);
@@ -148,7 +148,7 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
       if (value === null || value === '') newDeltaCollateral = initialState.deltaCollateral;
       else newDeltaCollateral = decToWad(floor4(Number(value) < 0 ? 0 : Number(value)));
       set(() => ({ deltaCollateral: newDeltaCollateral }));
-      // Call setUnderlier with previously stored value to re-estimate new health factor and debt
+      // Call setUnderlier with previously stored value to re-estimate new collateralization ratio and debt
       const { underlier, setUnderlier } = get();
       const underlierString = scaleToDec(underlier, modifyPositionData.collateralType.properties.underlierScale);
       setUnderlier(fiat, underlierString, modifyPositionData, selectedCollateralTypeId);
@@ -157,7 +157,7 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
     setMaxDeltaCollateral: (fiat, modifyPositionData, selectedCollateralTypeId) => {
       const deltaCollateral = modifyPositionData.position.collateral;
       set(() => ({ deltaCollateral }));
-      // Call setUnderlier with previously stored value to re-estimate new health factor and debt
+      // Call setUnderlier with previously stored value to re-estimate new collateralization ratio and debt
       const { underlier, setUnderlier } = get();
       const underlierString = scaleToDec(underlier, modifyPositionData.collateralType.properties.underlierScale);
       setUnderlier(fiat, underlierString, modifyPositionData, selectedCollateralTypeId);
@@ -185,7 +185,7 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
 
     setFormDataLoading: (isLoading) => { set(() => ({ formDataLoading: isLoading })) },
 
-    // Calculates new health factor, collateral, debt, and deltaCollateral as needed
+    // Calculates new collateralizationRatio, collateral, debt, and deltaCollateral as needed
     // Debounced to prevent spamming RPC calls
     calculateNewPositionData: debounce(async function (
       fiat: any, modifyPositionData: any, selectedCollateralTypeId: string | null
@@ -194,7 +194,7 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
       const { tokenScale, underlierScale } = collateralType.properties;
       const { codex: { debtFloor } } = collateralType.settings;
       const { slippagePct, underlier, mode } = get();
-      const { codex: { virtualRate: rate }, collybus: { liquidationPrice } } = collateralType.state;
+      const { codex: { virtualRate: rate }, collybus: { fairPrice } } = collateralType.state;
 
       // Reset form errors and warnings on new input
       set(() => ({ formWarnings: [], formErrors: [] }));
@@ -222,36 +222,48 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
                 // https://dev.balancer.fi/references/error-codes
                 throw new Error('Insufficient liquidity to convert underlier to collateral');
               }
-              throw e
+              throw e;
             }
           }
           if (selectedCollateralTypeId !== null) {
-            // Calculate deltaDebt for new position based on targetedHealthFactor
-            const { targetedHealthFactor } = get();
-            const deltaNormalDebt = fiat.computeMaxNormalDebt(
-              deltaCollateral, targetedHealthFactor, rate, liquidationPrice
-            );
+            // Calculate deltaDebt for new position based on targetedCollRatio
+            const { targetedCollRatio } = get();
+            const deltaNormalDebt = fiat.computeMaxNormalDebt(deltaCollateral, rate, fairPrice, targetedCollRatio);
             const deltaDebt = fiat.normalDebtToDebt(deltaNormalDebt, rate);
             const collateral = deltaCollateral;
             const debt = deltaDebt;
-            const healthFactor = fiat.computeHealthFactor(collateral, deltaNormalDebt, rate, liquidationPrice);
+            const collRatio = fiat.computeCollateralizationRatio(collateral, fairPrice, deltaNormalDebt, rate);
 
-            if (deltaDebt.gt(ZERO) && deltaDebt.lte(debtFloor) ) set(() => ({ formErrors: [...get().formErrors, `This collateral type requires a minimum of ${wadToDec(debtFloor)} FIAT to be borrowed`] }));
-            if (debt.gt(0) && healthFactor.lte(WAD)) set(() => ({ formErrors: [...get().formErrors, 'Health factor has to be greater than 1.0'] }));
+            if (deltaDebt.gt(ZERO) && deltaDebt.lte(debtFloor)) set(() => ({
+              formErrors: [
+                ...get().formErrors,
+                `This collateral type requires a minimum of ${wadToDec(debtFloor)} FIAT to be borrowed`
+              ]
+            }));
+            if (debt.gt(0) && collRatio.lte(WAD)) set(() => ({
+              formErrors: [...get().formErrors, 'Collateralization Ratio has to be greater than 100%']
+            }));
 
-            set(() => ({ healthFactor, collateral, debt, deltaDebt, deltaCollateral }));
+            set(() => ({ collRatio, collateral, debt, deltaDebt, deltaCollateral }));
           } else {
-            // Calculate deltaNormalDebt based on targetedHealthFactor, taking into account an existing position's collateral
+            // Calculate deltaNormalDebt based on targetedCollRatio, taking into account an existing position's collateral
             const { deltaDebt } = get();
             const collateral = position.collateral.add(deltaCollateral);
             const debt = fiat.normalDebtToDebt(position.normalDebt, rate).add(deltaDebt);
             const normalDebt = fiat.debtToNormalDebt(debt, rate);
-            const healthFactor = fiat.computeHealthFactor(collateral, normalDebt, rate, liquidationPrice);
+            const collRatio = fiat.computeCollateralizationRatio(collateral, fairPrice, normalDebt, rate);
 
-            if (debt.gt(ZERO) && debt.lte(collateralType.settings.codex.debtFloor) ) set(() => ({ formErrors: [...get().formErrors, `This collateral type requires a minimum of ${wadToDec(debtFloor)} FIAT to be borrowed`] }));
-            if (debt.gt(0) && healthFactor.lte(WAD)) set(() => ({ formErrors: [...get().formErrors, 'Health factor has to be greater than 1.0'] }));
+            if (debt.gt(ZERO) && debt.lte(collateralType.settings.codex.debtFloor) ) set(() => ({
+              formErrors: [
+                ...get().formErrors,
+                `This collateral type requires a minimum of ${wadToDec(debtFloor)} FIAT to be borrowed`
+              ]
+            }));
+            if (debt.gt(0) && collRatio.lte(WAD)) set(() => ({
+              formErrors: [...get().formErrors, 'Collateralization Ratio has to be greater than 100%']
+            }));
 
-            set(() => ({ healthFactor, collateral, debt, deltaCollateral }));
+            set(() => ({ collRatio, collateral, debt, deltaCollateral }));
           }
         } else if (mode === 'withdraw') {
           const { deltaCollateral, deltaDebt, slippagePct } = get();
@@ -263,39 +275,57 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
           }
           const deltaNormalDebt = fiat.debtToNormalDebt(deltaDebt, rate);
 
-          if (position.collateral.lt(deltaCollateral)) set(() => ({ formErrors: [...get().formErrors, 'Insufficient collateral'] }));
-          if (position.normalDebt.lt(deltaNormalDebt)) set(() => ({ formErrors: [...get().formErrors, 'Insufficient debt'] }));
+          if (position.collateral.lt(deltaCollateral)) set(() => ({
+            formErrors: [...get().formErrors, 'Insufficient collateral']
+          }));
+          if (position.normalDebt.lt(deltaNormalDebt)) set(() => ({
+            formErrors: [...get().formErrors, 'Insufficient debt']
+          }));
 
           const collateral = position.collateral.sub(deltaCollateral);
           let normalDebt = position.normalDebt.sub(deltaNormalDebt);
           // override normalDebt to position.normalDebt if normalDebt is less than 1 FIAT 
           if (normalDebt.lt(WAD)) normalDebt = ZERO;
           const debt = fiat.normalDebtToDebt(normalDebt, rate);
-          if (debt.gt(ZERO) && debt.lt(debtFloor)) set(() => ({ formErrors: [...get().formErrors, `This collateral type requires a minimum of ${wadToDec(debtFloor)} FIAT to be borrowed`] }));
+          if (debt.gt(ZERO) && debt.lt(debtFloor)) set(() => ({
+            formErrors: [
+              ...get().formErrors,
+              `This collateral type requires a minimum of ${wadToDec(debtFloor)} FIAT to be borrowed`
+            ]
+          }));
 
-          const healthFactor = fiat.computeHealthFactor(collateral, normalDebt, rate, liquidationPrice);
-          if (!(collateral.isZero() && normalDebt.isZero()) && healthFactor.lte(WAD))
-            set(() => ({ formErrors: [...get().formErrors, 'Health factor has to be greater than 1.0'] }));
+          const collRatio = fiat.computeCollateralizationRatio(collateral, fairPrice, normalDebt, rate);
+          if (!(collateral.isZero() && normalDebt.isZero()) && collRatio.lte(WAD))
+            set(() => ({ formErrors: [...get().formErrors, 'Collateralization Ratio has to be greater than 100%'] }));
 
-          set(() => ({ healthFactor, underlier, collateral, debt }));
+          set(() => ({ collRatio, underlier, collateral, debt }));
         } else if (mode === 'redeem') {
           const { deltaCollateral, deltaDebt } = get();
           const deltaNormalDebt = fiat.debtToNormalDebt(deltaDebt, rate);
 
-          if (position.collateral.lt(deltaCollateral)) set(() => ({ formErrors: [...get().formErrors, 'Insufficient collateral'] }));
-          if (position.normalDebt.lt(deltaNormalDebt)) set(() => ({ formErrors: [...get().formErrors, 'Insufficient debt'] }));
+          if (position.collateral.lt(deltaCollateral)) set(() => ({
+            formErrors: [...get().formErrors, 'Insufficient collateral']
+          }));
+          if (position.normalDebt.lt(deltaNormalDebt)) set(() => ({
+            formErrors: [...get().formErrors, 'Insufficient debt']
+          }));
 
           const collateral = position.collateral.sub(deltaCollateral);
           let normalDebt = position.normalDebt.sub(deltaNormalDebt);
           // override normalDebt to position.normalDebt if normalDebt is less than 1 FIAT 
           if (normalDebt.lt(WAD)) normalDebt = ZERO;
           const debt = fiat.normalDebtToDebt(normalDebt, rate);
-          if (debt.gt(ZERO) && debt.lt(debtFloor)) set(() => ({ formErrors: [...get().formErrors, `This collateral type requires a minimum of ${wadToDec(debtFloor)} FIAT to be borrowed`] }));
-          const healthFactor = fiat.computeHealthFactor(collateral, normalDebt, rate, liquidationPrice);
-          if (!(collateral.isZero() && normalDebt.isZero()) && healthFactor.lte(WAD))
-            set(() => ({ formErrors: [...get().formErrors, 'Health factor has to be greater than 1.0'] }));
+          if (debt.gt(ZERO) && debt.lt(debtFloor)) set(() => ({
+            formErrors: [
+              ...get().formErrors,
+              `This collateral type requires a minimum of ${wadToDec(debtFloor)} FIAT to be borrowed`
+            ]
+          }));
+          const collRatio = fiat.computeCollateralizationRatio(collateral, fairPrice, normalDebt, rate);
+          if (!(collateral.isZero() && normalDebt.isZero()) && collRatio.lte(WAD))
+            set(() => ({ formErrors: [...get().formErrors, 'Collateralization Ratio has to be greater than 100%'] }));
 
-          set(() => ({ healthFactor, collateral, debt }));
+          set(() => ({ collRatio, collateral, debt }));
         } else {
           throw new Error('Invalid mode');
         }
@@ -306,7 +336,7 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
             deltaDebt: ZERO,
             collateral: ZERO,
             debt: ZERO,
-            healthFactor: ZERO,
+            collRatio: ZERO,
             formErrors: [...get().formErrors, error.message],
           }));
         } else if (mode === 'withdraw' || mode === 'redeem') {
@@ -315,7 +345,7 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
               underlier: ZERO,
               collateral: position.collateral,
               debt: fiat.normalDebtToDebt(position.normalDebt, rate),
-              healthFactor: fiat.computeHealthFactor(position.collateral, position.normalDebt, rate, liquidationPrice),
+              collRatio: fiat.computeCollateralizationRatio(position.collateral, fairPrice, position.normalDebt, rate),
               formErrors: [...get().formErrors, error.message],
             }));
           } catch (error: any) {
@@ -323,7 +353,7 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
               underlier: ZERO,
               collateral: ZERO,
               debt: ZERO,
-              healthFactor: ZERO,
+              collRatio: ZERO,
               formErrors: [...get().formErrors, error.message],
             }));
           }
