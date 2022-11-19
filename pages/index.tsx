@@ -6,7 +6,7 @@ import { Badge, Button, Container, Spacer } from '@nextui-org/react';
 import { ContractReceipt, ethers } from 'ethers';
 import { decToWad, FIAT, WAD, wadToDec, ZERO } from '@fiatdao/sdk';
 
-import { ProxyButton } from '../src/components/ProxyButton';
+import { connectButtonCSS, ProxyButton } from '../src/components/ProxyButton';
 import { CollateralTypesTable } from '../src/components/CollateralTypesTable';
 import { PositionsTable } from '../src/components/PositionsTable';
 import { CreatePositionModal } from '../src/components/CreatePositionModal';
@@ -485,25 +485,12 @@ const Home: NextPage = () => {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', padding: 12 }}>
-        <h4 style={{ justifyContent: 'flex',  }}>(Experimental) FIAT I UI</h4>
-        <div style={{ display: 'flex'}}>
+        <h3 style={{ justifyContent: 'flex',  }}>(Experimental) FIAT I UI</h3>
+        <div style={{ display: 'flex', height: '40px'}}>
           <Button 
             auto
             icon={<InfoIcon fillColor='var(--rk-colors-connectButtonText)'/>}
-            css={{
-              fontFamily: 'var(--rk-fonts-body)',
-              fontWeight: 700,
-              fontSize: '100%',
-              borderRadius: '12px',
-              backgroundColor: '$connectButtonBackground',
-              color: '$connectButtonColor',
-              boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
-              '&:hover': {
-                transform: 'scale(1.03)'
-              },
-              border: 'none',
-              marginRight: '10px'
-            }}
+            css={connectButtonCSS}
             onPress={()=>setShowInfoModal(true)}
           />
           <ProxyButton
@@ -514,20 +501,7 @@ const Home: NextPage = () => {
           />
           {(fiatBalance) && 
             <Badge 
-              style={{marginRight: '10px'}} 
-              css={{
-                fontFamily: 'var(--rk-fonts-body)',
-                fontWeight: 700,
-                fontSize: '100%',
-                borderRadius: '12px',
-                backgroundColor: '$connectButtonBackground',
-                color: '$connectButtonColor',
-                boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
-                '&:hover': {
-                  transform: 'scale(1.03)'
-                },
-                border: 'none',
-              }}
+              css={connectButtonCSS}
             >
               {fiatBalance}
             </Badge>
