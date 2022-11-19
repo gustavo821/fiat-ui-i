@@ -129,18 +129,18 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
         newSlippage = decToWad(floor4(ceiled / 100));
       }
       set(() => ({ slippagePct: newSlippage }));
-      // Call setUnderlier with previously stored value to re-estimate deltaCollateral
-      const { underlier, setUnderlier } = get();
-      const underlierString = scaleToDec(underlier, modifyPositionData.collateralType.properties.underlierScale);
-      setUnderlier(fiat, underlierString, modifyPositionData, selectedCollateralTypeId);
+      // Re-estimate deltaCollateral
+      const { calculateNewPositionData } = get();
+      set(() => ({ formDataLoading: true }));
+      calculateNewPositionData(fiat, modifyPositionData, selectedCollateralTypeId);
     },
 
     setTargetedCollRatio: (fiat, value, modifyPositionData, selectedCollateralTypeId) => {
       set(() => ({ targetedCollRatio: decToWad(String(value)) }));
-      // Call setUnderlier with previously stored value to re-estimate new collateralization ratio and debt
-      const { underlier, setUnderlier } = get();
-      const underlierString = scaleToDec(underlier, modifyPositionData.collateralType.properties.underlierScale);
-      setUnderlier(fiat, underlierString, modifyPositionData, selectedCollateralTypeId);
+      // Re-estimate new collateralization ratio and debt
+      const { calculateNewPositionData } = get();
+      set(() => ({ formDataLoading: true }));
+      calculateNewPositionData(fiat, modifyPositionData, selectedCollateralTypeId);
     },
 
     setDeltaCollateral: (fiat, value, modifyPositionData, selectedCollateralTypeId) => {
@@ -148,19 +148,19 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
       if (value === null || value === '') newDeltaCollateral = initialState.deltaCollateral;
       else newDeltaCollateral = decToWad(floor4(Number(value) < 0 ? 0 : Number(value)));
       set(() => ({ deltaCollateral: newDeltaCollateral }));
-      // Call setUnderlier with previously stored value to re-estimate new collateralization ratio and debt
-      const { underlier, setUnderlier } = get();
-      const underlierString = scaleToDec(underlier, modifyPositionData.collateralType.properties.underlierScale);
-      setUnderlier(fiat, underlierString, modifyPositionData, selectedCollateralTypeId);
+      // Re-estimate new collateralization ratio and debt
+      const { calculateNewPositionData } = get();
+      set(() => ({ formDataLoading: true }));
+      calculateNewPositionData(fiat, modifyPositionData, selectedCollateralTypeId);
     },
 
     setMaxDeltaCollateral: (fiat, modifyPositionData, selectedCollateralTypeId) => {
       const deltaCollateral = modifyPositionData.position.collateral;
       set(() => ({ deltaCollateral }));
-      // Call setUnderlier with previously stored value to re-estimate new collateralization ratio and debt
-      const { underlier, setUnderlier } = get();
-      const underlierString = scaleToDec(underlier, modifyPositionData.collateralType.properties.underlierScale);
-      setUnderlier(fiat, underlierString, modifyPositionData, selectedCollateralTypeId);
+      // Re-estimate new collateralization ratio and debt
+      const { calculateNewPositionData } = get();
+      set(() => ({ formDataLoading: true }));
+      calculateNewPositionData(fiat, modifyPositionData, selectedCollateralTypeId);
     },
 
     setDeltaDebt: (fiat, value, modifyPositionData, selectedCollateralTypeId) => {
@@ -168,9 +168,9 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
       if (value === null || value === '') newDeltaDebt = initialState.deltaDebt;
       else newDeltaDebt = decToWad(floor4(Number(value) < 0 ? 0 : Number(value)));
       set(() => ({ deltaDebt: newDeltaDebt }));
-      const { underlier, setUnderlier } = get();
-      const underlierString = scaleToDec(underlier, modifyPositionData.collateralType.properties.underlierScale);
-      setUnderlier(fiat, underlierString, modifyPositionData, selectedCollateralTypeId);
+      const { calculateNewPositionData } = get();
+      set(() => ({ formDataLoading: true }));
+      calculateNewPositionData(fiat, modifyPositionData, selectedCollateralTypeId);
     },
 
     setMaxDeltaDebt: (fiat, modifyPositionData, selectedCollateralTypeId) => {
@@ -178,9 +178,9 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
         modifyPositionData.position.normalDebt, modifyPositionData.collateralType.state.codex.virtualRate
       );
       set(() => ({ deltaDebt }));
-      const { underlier, setUnderlier } = get();
-      const underlierString = scaleToDec(underlier, modifyPositionData.collateralType.properties.underlierScale);
-      setUnderlier(fiat, underlierString, modifyPositionData, selectedCollateralTypeId);
+      const { calculateNewPositionData } = get();
+      set(() => ({ formDataLoading: true }));
+      calculateNewPositionData(fiat, modifyPositionData, selectedCollateralTypeId);
     },
 
     setFormDataLoading: (isLoading) => { set(() => ({ formDataLoading: isLoading })) },
