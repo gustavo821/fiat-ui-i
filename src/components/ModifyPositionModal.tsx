@@ -143,6 +143,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
                   isDisabled={props.disableActions}
                   isActive={formDataStore.mode === 'deposit'}
                   onClick={() => {
+                    if (props.disableActions) return;
                     formDataStore.resetCollateralAndDebtInputs(props.contextData.fiat, props.modifyPositionData);
                     formDataStore.setMode('deposit');
                   }}
@@ -153,6 +154,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
                   isDisabled={props.disableActions}
                   isActive={formDataStore.mode === 'withdraw'}
                   onClick={() => {
+                    if (props.disableActions) return;
                     formDataStore.resetCollateralAndDebtInputs(props.contextData.fiat, props.modifyPositionData);
                     formDataStore.setMode('withdraw');
                   }}

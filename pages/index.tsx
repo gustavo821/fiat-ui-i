@@ -290,7 +290,7 @@ const Home: NextPage = () => {
     const response = await sendStatefulTransaction(fiat, false, 'createProxy', fiat.getContracts().proxyRegistry, 'deployFor', user);
     addRecentTransaction({
       hash: response.transactionHash,
-      description: 'Create Proxy',
+      description: 'Create proxy account',
     });
     // Querying chain directly after this to update as soon as possible
     const { proxyRegistry } = fiat.getContracts();
@@ -309,7 +309,7 @@ const Home: NextPage = () => {
     const response = await sendStatefulTransaction(fiat, false, 'setUnderlierAllowance', token, 'approve', contextData.proxies[0], allowance);
     addRecentTransaction({
       hash: response.transactionHash,
-      description: 'Set Allowance',
+      description: 'Set underlier allowance',
     });
     const underlierAllowance = await token.allowance(contextData.user, contextData.proxies[0])
     setModifyPositionData({ ...modifyPositionData, underlierAllowance });
@@ -320,7 +320,7 @@ const Home: NextPage = () => {
     const response =  await sendStatefulTransaction(fiat, false, 'unsetUnderlierAllowance', token, 'approve', contextData.proxies[0], 0);
     addRecentTransaction({
       hash: response.transactionHash,
-      description: 'Set Allowance',
+      description: 'Reset underlier allowance',
     });
     return response;
   }
@@ -332,7 +332,7 @@ const Home: NextPage = () => {
     const response = await sendStatefulTransaction(fiat, false, 'setFIATAllowance', token, 'approve', contextData.proxies[0], allowance);
     addRecentTransaction({
       hash: response.transactionHash,
-      description: 'Set Allowance',
+      description: 'Set FIAT allowance',
     });
     const fiatAllowance = await token.allowance(contextData.user, contextData.proxies[0])
     setModifyPositionData({ ...modifyPositionData, fiatAllowance });
@@ -343,7 +343,7 @@ const Home: NextPage = () => {
     const response =  await sendStatefulTransaction(fiat, false, 'unsetFIATAllowance', token, 'approve', contextData.proxies[0], 0);
     addRecentTransaction({
       hash: response.transactionHash,
-      description: 'Set Allowance',
+      description: 'Reset FIAT allowance',
     });
     return response;
   }
@@ -353,7 +353,7 @@ const Home: NextPage = () => {
     const response = await sendStatefulTransaction(fiat, false, 'setMonetaDelegate', codex, 'grantDelegate', moneta.address);
     addRecentTransaction({
       hash: response.transactionHash,
-      description: 'Set Allowance',
+      description: 'Grant delegate to Moneta',
     });
 
     const monetaDelegate = await fiat.call(
@@ -370,7 +370,7 @@ const Home: NextPage = () => {
     const response = await sendStatefulTransaction(fiat, false, 'unsetMonetaDelegate', codex, 'revokeDelegate', moneta.address);
     addRecentTransaction({
       hash: response.transactionHash,
-      description: 'Set Allowance',
+      description: 'Revoke delegate from Moneta',
     });
     return response;
   }
@@ -387,7 +387,7 @@ const Home: NextPage = () => {
 
       addRecentTransaction({
         hash: response.transactionHash,
-        description: 'Modify Collateral and Debt',
+        description: 'Borrow FIAT',
       });
       handleFinishedTransaction();
       return response;
@@ -403,7 +403,7 @@ const Home: NextPage = () => {
 
       addRecentTransaction({
         hash: response.transactionHash,
-        description: 'Buy Collateral And Modify Debt',
+        description: 'Buy and deposit collateral and borrow FIAT',
       });
       handleFinishedTransaction();
       return response;
@@ -422,7 +422,7 @@ const Home: NextPage = () => {
 
       addRecentTransaction({
         hash: response.transactionHash,
-        description: 'Modify Collateral and Debt',
+        description: 'Repay borrowed FIAT',
       });
       handleFinishedTransaction();
       return response;
@@ -440,7 +440,7 @@ const Home: NextPage = () => {
 
       addRecentTransaction({
         hash: response.transactionHash,
-        description: 'Sell Collateral and Modify Debt',
+        description: 'Withdraw and sell collateral and repay borrowed FIAT',
       });
       handleFinishedTransaction();
       return response;
@@ -459,7 +459,7 @@ const Home: NextPage = () => {
 
       addRecentTransaction({
         hash: response.transactionHash,
-        description: 'Modify Collateral and Debt',
+        description: 'Repay borrowed FIAT',
       });
       handleFinishedTransaction();
       return response;
@@ -476,7 +476,7 @@ const Home: NextPage = () => {
 
       addRecentTransaction({
         hash: response.transactionHash,
-        description: 'Redeem',
+        description: 'Withdraw and redeem collateral and repay borrowed FIAT',
       });
       handleFinishedTransaction();
       return response;
