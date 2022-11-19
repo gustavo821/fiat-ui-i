@@ -196,24 +196,34 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
       const { slippagePct, underlier, mode } = get();
       const { codex: { virtualRate: rate }, collybus: { liquidationPrice } } = collateralType.state;
 
-      // Reset form errors and warnings on new import
+      // Reset form errors and warnings on new input
       set(() => ({ formWarnings: [], formErrors: [] }));
 
       try {
         if (mode === 'deposit') {
           let deltaCollateral = ZERO;
           if (!underlier.isZero()) {
-            // preview underlier to collateral token swap
-            const tokensOut = await userActions.underlierToCollateralToken(fiat, underlier, collateralType);
-            // redemption price with a 1:1 exchange rate
-            const minTokensOut = underlier.mul(tokenScale).div(underlierScale);
-            // apply slippagePct to preview
-            const tokensOutWithSlippage = tokensOut.mul(WAD.sub(slippagePct)).div(WAD);
-            // assert: minTokensOut > idealTokenOut
-            if (tokensOutWithSlippage.lt(minTokensOut)) set(() => (
-              { formWarnings: ['Large Price Impact (Negative Yield)'] }
-            ));
-            deltaCollateral = scaleToWad(tokensOut, tokenScale).mul(WAD.sub(slippagePct)).div(WAD);
+            try {
+              // Preview underlier to collateral token swap
+              const tokensOut = await userActions.underlierToCollateralToken(fiat, underlier, collateralType);
+              // redemption price with a 1:1 exchange rate
+              const minTokensOut = underlier.mul(tokenScale).div(underlierScale);
+              // apply slippagePct to preview
+              const tokensOutWithSlippage = tokensOut.mul(WAD.sub(slippagePct)).div(WAD);
+              // assert: minTokensOut > idealTokenOut
+              if (tokensOutWithSlippage.lt(minTokensOut)) set(() => (
+                { formWarnings: ['Large Price Impact (Negative Yield)'] }
+              ));
+              deltaCollateral = scaleToWad(tokensOut, tokenScale).mul(WAD.sub(slippagePct)).div(WAD);
+            } catch (e: any) {
+              // Catch underlierToCollateralToken errors, convert to something human-readable, and rethrow
+              if (e.reason && e.reason === 'BAL#001') {
+                // Catch balancer-specific underflow error
+                // https://dev.balancer.fi/references/error-codes
+                throw new Error('Insufficient liquidity to convert underlier to collateral');
+              }
+              throw e
+            }
           }
           if (selectedCollateralTypeId !== null) {
             // Calculate deltaDebt for new position based on targetedHealthFactor
@@ -289,8 +299,7 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
         } else {
           throw new Error('Invalid mode');
         }
-      } catch (error) {
-        console.error('Error updating form data: ', error);
+      } catch (error: any) {
         if (mode === 'deposit') {
           set(() => ({
             deltaCollateral: ZERO,
@@ -298,7 +307,7 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
             collateral: ZERO,
             debt: ZERO,
             healthFactor: ZERO,
-            error: JSON.stringify(error),
+            formErrors: [...get().formErrors, error.message],
           }));
         } else if (mode === 'withdraw' || mode === 'redeem') {
           try {
@@ -307,15 +316,15 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
               collateral: position.collateral,
               debt: fiat.normalDebtToDebt(position.normalDebt, rate),
               healthFactor: fiat.computeHealthFactor(position.collateral, position.normalDebt, rate, liquidationPrice),
-              error: JSON.stringify(error),
+              formErrors: [...get().formErrors, error.message],
             }));
-          } catch (error) {
+          } catch (error: any) {
             set(() => ({
               underlier: ZERO,
               collateral: ZERO,
               debt: ZERO,
               healthFactor: ZERO,
-              error: JSON.stringify(error),
+              formErrors: [...get().formErrors, error.message],
             }));
           }
         }
