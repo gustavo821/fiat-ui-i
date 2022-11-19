@@ -216,7 +216,6 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
               ));
               deltaCollateral = scaleToWad(tokensOut, tokenScale).mul(WAD.sub(slippagePct)).div(WAD);
             } catch (e: any) {
-              // Catch underlierToCollateralToken errors, convert to something human-readable, and rethrow
               if (e.reason && e.reason === 'BAL#001') {
                 // Catch balancer-specific underflow error
                 // https://dev.balancer.fi/references/error-codes
@@ -270,8 +269,17 @@ export const useModifyPositionFormDataStore = create<FormState & FormActions>()(
           const tokenInScaled = wadToScale(deltaCollateral, tokenScale);
           let underlier = ZERO;
           if (!tokenInScaled.isZero()) {
+            try {
             const underlierAmount = await userActions.collateralTokenToUnderlier(fiat, tokenInScaled, collateralType);
             underlier = underlierAmount.mul(WAD.sub(slippagePct)).div(WAD); // with slippage
+            } catch (e: any) {
+              if (e.reason && e.reason === 'BAL#001') {
+                // Catch balancer-specific underflow error
+                // https://dev.balancer.fi/references/error-codes
+                throw new Error('Insufficient liquidity to convert collateral to underlier');
+              }
+              throw e;
+            }
           }
           const deltaNormalDebt = fiat.debtToNormalDebt(deltaDebt, rate);
 
