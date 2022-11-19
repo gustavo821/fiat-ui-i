@@ -1,23 +1,20 @@
 import React from 'react';
 import type { NextPage } from 'next';
 import { useAccount, useNetwork, useProvider } from 'wagmi';
-import { ConnectButton, useAddRecentTransaction } from '@rainbow-me/rainbowkit';
-import { Badge, Button, Container, Spacer } from '@nextui-org/react';
+import { useAddRecentTransaction } from '@rainbow-me/rainbowkit';
+import { Container, Spacer } from '@nextui-org/react';
 import { ethers } from 'ethers';
 import { decToWad, FIAT, WAD, wadToDec, ZERO } from '@fiatdao/sdk';
-
-import { connectButtonCSS, ProxyButton } from '../src/components/ProxyButton';
+import { HeaderButtons } from '../src/components/HeaderButtons';
 import { CollateralTypesTable } from '../src/components/CollateralTypesTable';
 import { PositionsTable } from '../src/components/PositionsTable';
 import { CreatePositionModal } from '../src/components/CreatePositionModal';
 import { ModifyPositionModal } from '../src/components/ModifyPositionModal';
-import { InfoModal } from '../src/components/InfoModal';
 import {
   decodeCollateralTypeId, decodePositionId, encodePositionId, getCollateralTypeData, getPositionData
 } from '../src/utils';
 import * as userActions from '../src/actions';
 import { useModifyPositionFormDataStore } from '../src/stores/formStore';
-import { InfoIcon } from '../src/components/Icons/info'; 
 
 export type TransactionStatus = null | 'error' | 'sent' | 'confirming' | 'confirmed';
 
@@ -79,7 +76,6 @@ const Home: NextPage = () => {
   const [selectedPositionId, setSelectedPositionId] = React.useState(initialState.selectedPositionId);
   const [selectedCollateralTypeId, setSelectedCollateralTypeId] = React.useState(initialState.selectedCollateralTypeId);
   const [fiatBalance, setFiatBalance] = React.useState<string>(initialState.fiatBalance);
-  const [showInfoModal, setShowInfoModal] = React.useState<boolean>(false);
 
   const disableActions = React.useMemo(() => transactionData.status === 'sent', [transactionData.status])
 
@@ -514,30 +510,12 @@ const Home: NextPage = () => {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', padding: 12 }}>
         <h3 style={{ justifyContent: 'flex',  }}>(Experimental) FIAT I UI</h3>
-        <div style={{ display: 'flex', height: '40px'}}>
-          <Button 
-            auto
-            icon={<InfoIcon fillColor='var(--rk-colors-connectButtonText)'/>}
-            css={connectButtonCSS}
-            onPress={()=>setShowInfoModal(true)}
-          />
-          <ProxyButton
-            {...contextData}
-            createProxy={createProxy}
-            disableActions={disableActions}
-            transactionData={transactionData}
-          />
-          {(fiatBalance) && 
-            <Badge 
-              css={connectButtonCSS}
-            >
-              {fiatBalance}
-            </Badge>
-          }
-          <div className='connectWrapper'>
-            <ConnectButton showBalance={false} />
-          </div>
-        </div>
+        <HeaderButtons 
+          contextData={contextData} 
+          transactionData={transactionData} 
+          fiatBalance={fiatBalance}
+          disableActions={disableActions}
+        />
       </div>
       <Spacer y={2} />
       <Container>
@@ -620,11 +598,6 @@ const Home: NextPage = () => {
           setModifyPositionData(initialState.modifyPositionData);
           formDataStore.reset();
         }}
-      />
-
-      <InfoModal 
-        open={showInfoModal}
-        onClose={() => setShowInfoModal(false)}
       />
       <Spacer />
     </div>
