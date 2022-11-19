@@ -267,7 +267,6 @@ const Home: NextPage = () => {
       useProxy
         ? await fiat.dryrunViaProxy(contextData.proxies[0], contract, method, ...args)
         : await fiat.dryrun(contract, method, ...args);
-      // console.log('Dryrun resp: ', dryrunResp);
 
       const resp = useProxy
         ? await fiat.sendAndWaitViaProxy(contextData.proxies[0], contract, method, ...args)
