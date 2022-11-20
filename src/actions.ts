@@ -449,7 +449,6 @@ export const buildSellCollateralAndModifyDebtArgs = (
     }
     case 'ERC20:SPT': {
       if (!properties.sptData) throw new Error('Missing SPT data');
-      console.log(contextData.proxies[0]);
       // await contextData.fiat.dryrunViaProxy(
       const args = {
         contract: vaultSPTActions,
