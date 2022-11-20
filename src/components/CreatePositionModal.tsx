@@ -118,7 +118,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
       });
     }
 
-    if (rpcError !== '') {
+    if (rpcError !== '' && rpcError !== 'ACTION_REJECTED' ) {
       formAlerts.push(<Alert severity='error' message={rpcError} />);
     }
 
@@ -145,7 +145,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
           containerCss={{ justifyContent: 'center', background: 'transparent' }}
         >
           <Navbar.Content enableCursorHighlight variant='highlight-rounded'>
-            <Navbar.Link isActive>Deposit</Navbar.Link>
+            <Navbar.Link isDisabled={props.disableActions} isActive>Deposit</Navbar.Link>
           </Navbar.Content>
         </Navbar>
         <Text b size={'m'}>
@@ -215,7 +215,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
           size={'0.75rem'}
           style={{ paddingLeft: '0.25rem', marginBottom: '0.375rem' }}
         >
-          Targeted health factor ({Number(wadToDec(formDataStore.targetedHealthFactor))})
+          Targeted collateralization ratio ({floor2(wadToDec(formDataStore.targetedCollRatio.mul(100)))}%)
         </Text>
         <Card variant='bordered' borderWeight='light' style={{height:'100%'}}>
           <Card.Body
@@ -225,13 +225,13 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
               handleStyle={{ borderColor: '#0072F5' }}
               included={false}
               disabled={props.disableActions}
-              value={Number(wadToDec(formDataStore.targetedHealthFactor))}
+              value={Number(wadToDec(formDataStore.targetedCollRatio))}
               onChange={(value) => {
                 if (!props.selectedCollateralTypeId) {
                   console.error('No selectedCollateralTypeId!');
                   return;
                 }
-                formDataStore.setTargetedHealthFactor(
+                formDataStore.setTargetedCollRatio(
                   props.contextData.fiat, value, props.modifyPositionData, props.selectedCollateralTypeId
                 );
               }}
@@ -239,7 +239,6 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
               max={5.0}
               step={0.001}
               reverse
-              tooltip={{ getPopupContainer: (t) => t }}
               marks={{
                 5.0: {
                   style: { color: 'grey', fontSize: '0.75rem' },
@@ -247,15 +246,15 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
                 },
                 4.0: {
                   style: { color: 'grey', fontSize: '0.75rem' },
-                  label: '4.0',
+                  label: '400%',
                 },
                 3.0: {
                   style: { color: 'grey', fontSize: '0.75rem' },
-                  label: '3.0',
+                  label: '300%',
                 },
                 2.0: {
                   style: { color: 'grey', fontSize: '0.75rem' },
-                  label: '2.0',
+                  label: '200%',
                 },
                 1.001: {
                   style: {
@@ -323,13 +322,13 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
           value={
             formDataStore.formDataLoading
               ? ' '
-              : formDataStore.healthFactor.eq(ethers.constants.MaxUint256)
+              : formDataStore.collRatio.eq(ethers.constants.MaxUint256)
               ? '∞'
-              : floor4(wadToDec(formDataStore.healthFactor))
+              : `${floor2(wadToDec(formDataStore.collRatio.mul(100)))}%`
           }
           placeholder='0'
           type='string'
-          label='Health Factor'
+          label='Collateralization Ratio'
           labelRight={'🚦'}
           contentLeft={formDataStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'

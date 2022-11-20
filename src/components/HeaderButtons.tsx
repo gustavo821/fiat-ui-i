@@ -1,5 +1,5 @@
 import React from 'react';
-import { Badge, Button, Container, Spacer } from '@nextui-org/react';
+import { Badge, Button } from '@nextui-org/react';
 import { InfoIcon } from './Icons/info';
 import { connectButtonCSS, ProxyButton } from './ProxyButton';
 import { ConnectButton } from '@rainbow-me/rainbowkit';

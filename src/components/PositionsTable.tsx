@@ -72,7 +72,7 @@ export const PositionsTable = (props: PositionsTableProps) => {
           <Table.Column>Borrow Rate (Due At Maturity)</Table.Column>
           <Table.Column>Collateral (Fair Value)</Table.Column>
           <Table.Column>Debt (Implied Value)</Table.Column>
-          <Table.Column>Health Factor (At Maturity)</Table.Column>
+          <Table.Column>Collateralization Ratio</Table.Column>
           <Table.Column allowsSorting>Maturity (Days Until Maturity)</Table.Column>
         </Table.Header>
         <Table.Body>
@@ -96,15 +96,14 @@ export const PositionsTable = (props: PositionsTableProps) => {
                 properties: { maturity },
                 metadata: { protocol, asset, icons, urls, symbol },
                 state: {
-                  publican: { interestPerSecond }, codex: { virtualRate }, collybus: { fairPrice, liquidationPrice }
+                  publican: { interestPerSecond }, codex: { virtualRate }, collybus: { fairPrice }
                 }
               } = collateralTypeData;
               const borrowRate = interestPerSecondToRateUntilMaturity(interestPerSecond, maturity);
               const borrowRateAnnualized = interestPerSecondToAPY(interestPerSecond);
               const debt = normalDebt.mul(virtualRate).div(WAD);
               const dueAtMaturity = normalDebt.mul(borrowRate).div(WAD);
-              const healthFactor = props.contextData.fiat.computeHealthFactor(collateral, normalDebt, virtualRate, liquidationPrice);
-              const healthFactorAtMaturity = props.contextData.fiat.computeHealthFactor(collateral, normalDebt.add(dueAtMaturity), WAD, liquidationPrice);
+              const collRatio = props.contextData.fiat.computeCollateralizationRatio(collateral, fairPrice, normalDebt, virtualRate);
               const maturityFormatted = new Date(Number(maturity.toString()) * 1000);
               const daysUntilMaturity = Math.max(Math.floor((Number(maturity.toString()) - Math.floor(Date.now() / 1000)) / 86400), 0);
               return (
@@ -141,8 +140,8 @@ export const PositionsTable = (props: PositionsTableProps) => {
                     <Row>(${floor2(wadToDec(debt)).toLocaleString()})</Row>
                   </Table.Cell>
                   <Table.Cell>
-                    {(healthFactor.eq(ethers.constants.MaxUint256))
-                      ? '∞' : `${floor4(wadToDec(healthFactor))} (${floor4(wadToDec(healthFactorAtMaturity))})`
+                    {(collRatio.eq(ethers.constants.MaxUint256))
+                      ? '∞' : `${floor2(wadToDec(collRatio.mul(100)))}%`
                     }
                   </Table.Cell>
                   <Table.Cell>

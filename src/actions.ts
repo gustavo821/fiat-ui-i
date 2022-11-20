@@ -1,5 +1,5 @@
 import { decToWad, scaleToWad, WAD, wadToScale, ZERO } from '@fiatdao/sdk';
-import { ethers } from 'ethers';
+import { Contract, ethers } from 'ethers';
 
 export const underlierToCollateralToken = async (
   fiat: any,
@@ -179,93 +179,96 @@ export const getEarnableRate = async (fiat: any, collateralTypesData: any) => {
   });
 };
 
-export const modifyCollateralAndDebt = async (
+// decreases deltaNormalDebt to compensate for the interest that has accrued
+// between when the tx is sent vs. when it is confirmed
+// insure that: debt_sent = normalDebt * rate_send <= debt_mined = normalDebt * rate_mined, otherwise:
+// avoids that user does not take out more debt than expected, that FIAT approval might not be sufficient for repayment
+const addDeltaNormalBuffer = (deltaNormalDebt: ethers.BigNumber): ethers.BigNumber => {
+  return deltaNormalDebt.mul(WAD.sub(decToWad(0.0001))).div(WAD);
+}
+
+export const buildModifyCollateralAndDebtArgs = (
   contextData: any,
   collateralTypeData: any,
   deltaDebt: ethers.BigNumber,
   position: { collateral: ethers.BigNumber, normalDebt: ethers.BigNumber }
-) => {
+): { contract: Contract, methodName: string, methodArgs: any[] } => {
   const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = contextData.fiat.getContracts();
   const { properties } = collateralTypeData;
 
-  let deltaNormalDebt = contextData.fiat
-    .debtToNormalDebt(deltaDebt, collateralTypeData.state.codex.virtualRate)
-    .mul(WAD.sub(decToWad(0.001)))
-    .div(WAD);
+  let deltaNormalDebt = addDeltaNormalBuffer(
+    contextData.fiat.debtToNormalDebt(deltaDebt, collateralTypeData.state.codex.virtualRate
+  ));
   if (position.normalDebt.add(deltaNormalDebt).lt(WAD)) deltaNormalDebt = position.normalDebt.mul(-1);
 
   // if deltaCollateral is zero use generic modifyCollateralAndDebt method since no swap is necessary
-  let actions;
-  if (properties.vaultType === 'ERC20:EPT') actions = vaultEPTActions;
-  if (properties.vaultType === 'ERC1155:FC') actions = vaultFCActions;
-  if (properties.vaultType === 'ERC20:FY') actions = vaultFYActions;
-  if (properties.vaultType === 'ERC20:SPT') actions = vaultSPTActions;
+  let actionsContract;
+  if (properties.vaultType === 'ERC20:EPT') actionsContract = vaultEPTActions;
+  if (properties.vaultType === 'ERC1155:FC') actionsContract = vaultFCActions;
+  if (properties.vaultType === 'ERC20:FY') actionsContract = vaultFYActions;
+  if (properties.vaultType === 'ERC20:SPT') actionsContract = vaultSPTActions;
 
-  const response = await contextData.fiat.sendAndWaitViaProxy(
-    contextData.proxies[0],
-    actions,
-    'modifyCollateralAndDebt',
-    properties.vault,
-    properties.token,
-    properties.tokenId,
-    contextData.proxies[0],
-    contextData.user,
-    contextData.user,
-    ZERO,
-    deltaNormalDebt
-  );
-  console.log(response);
-  return response;
+  const args = {
+    contract: actionsContract,
+    methodName: 'modifyCollateralAndDebt',
+    methodArgs: [
+      properties.vault,
+      properties.token,
+      properties.tokenId,
+      contextData.proxies[0],
+      contextData.user,
+      contextData.user,
+      ZERO,
+      deltaNormalDebt,
+    ],
+  };
+  return args;
 }
 
-export const buyCollateralAndModifyDebt = async (
+export const buildBuyCollateralAndModifyDebtArgs = (
   contextData: any,
-  // TODO avoid null checks on properties.<vaultName>Data with a typecheck here
   collateralTypeData: any,
   deltaCollateral: ethers.BigNumber,
   deltaDebt: ethers.BigNumber,
   underlier: ethers.BigNumber
-) => {
+): { contract: Contract, methodName: string, methodArgs: any[] } => {
   const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = contextData.fiat.getContracts();
   const { properties } = collateralTypeData;
 
-  const deltaNormalDebt = contextData.fiat
-    .debtToNormalDebt(deltaDebt, collateralTypeData.state.codex.virtualRate)
-    .mul(WAD.sub(decToWad(0.001)))
-    .div(WAD);
+  const deltaNormalDebt = addDeltaNormalBuffer(
+    contextData.fiat.debtToNormalDebt(deltaDebt, collateralTypeData.state.codex.virtualRate
+  ));
   const tokenAmount = wadToScale(deltaCollateral, properties.tokenScale);
 
   // if deltaCollateral is zero use generic modifyCollateralAndDebt method since no swap is necessary
   if (deltaCollateral.isZero()) throw new Error('Invalid value for `deltaCollateral` - Value has to be non-zero');
 
-
   switch (properties.vaultType) {
     case 'ERC20:EPT': {
       if (!properties.eptData) throw new Error('Missing EPT data');
       const deadline = Math.round(+new Date() / 1000) + 3600;
-      // await contextData.fiat.dryrunViaProxy(
-      const response = await contextData.fiat.sendAndWaitViaProxy(
-        contextData.proxies[0],
-        vaultEPTActions,
-        'buyCollateralAndModifyDebt',
-        properties.vault,
-        contextData.proxies[0],
-        contextData.user,
-        contextData.user,
-        underlier,
-        deltaNormalDebt,
-        [
-          properties.eptData.balancerVault,
-          properties.eptData.poolId,
-          properties.underlierToken,
-          properties.token,
-          tokenAmount,
-          deadline,
+      const args = {
+        contract: vaultEPTActions,
+        methodName: 'buyCollateralAndModifyDebt',
+        methodArgs: [
+          properties.vault,
+          contextData.proxies[0],
+          contextData.user,
+          contextData.user,
           underlier,
-        ]
-      );
-      console.log(response);
-      return response;
+          deltaNormalDebt,
+          [
+            properties.eptData.balancerVault,
+            properties.eptData.poolId,
+            properties.underlierToken,
+            properties.token,
+            tokenAmount,
+            deadline,
+            underlier,
+          ]
+        ],
+      };
+      return args;
     }
     case 'ERC1155:FC': {
       if (!properties.fcData) throw new Error('Missing FC data');
@@ -274,94 +277,92 @@ export const buyCollateralAndModifyDebt = async (
         WAD.sub(scaleToWad(underlier, properties.underlierScale).mul(WAD).div(deltaCollateral)),
         properties.tokenScale
       );
-      // await contextData.fiat.dryrunViaProxy(
-      const response = await contextData.fiat.sendAndWaitViaProxy(
-        contextData.proxies[0],
-        vaultFCActions,
-        'buyCollateralAndModifyDebt',
-        properties.vault,
-        properties.token,
-        properties.tokenId,
-        contextData.proxies[0],
-        contextData.user,
-        contextData.user,
-        tokenAmount,
-        deltaNormalDebt,
-        minLendRate,
-        underlier
-      );
-      console.log(response);
-      return response;
+      const args = {
+        contract: vaultFCActions,
+        methodName: 'buyCollateralAndModifyDebt',
+        methodArgs: [
+          properties.vault,
+          properties.token,
+          properties.tokenId,
+          contextData.proxies[0],
+          contextData.user,
+          contextData.user,
+          tokenAmount,
+          deltaNormalDebt,
+          minLendRate,
+          underlier
+        ],
+      };
+      return args;
     }
     case 'ERC20:FY': {
       if (!properties.fyData) throw new Error('Missing FY data');
-      // await contextData.fiat.dryrunViaProxy(
-      const response = await contextData.fiat.sendAndWaitViaProxy(
-        contextData.proxies[0],
-        vaultFYActions,
-        'buyCollateralAndModifyDebt',
-        properties.vault,
-        contextData.proxies[0],
-        contextData.user,
-        contextData.user,
-        underlier,
-        deltaNormalDebt,
-        [
-          tokenAmount,
-          properties.fyData.yieldSpacePool,
-          properties.underlierToken,
-          properties.token
-        ]
-      );
-      console.log(response);
-      return response;
+      const args = {
+        contract: contextData,
+        methodName: vaultFYActions,
+        methodArgs: [
+          'buyCollateralAndModifyDebt',
+          properties.vault,
+          contextData.proxies[0],
+          contextData.user,
+          contextData.user,
+          underlier,
+          deltaNormalDebt,
+          [
+            tokenAmount,
+            properties.fyData.yieldSpacePool,
+            properties.underlierToken,
+            properties.token
+          ]
+        ],
+      };
+      return args;
     }
     case 'ERC20:SPT': {
       if (!properties.sptData) throw new Error('Missing SPT data');
-      // await contextData.fiat.dryrunViaProxy(
-      const response = await contextData.fiat.sendAndWaitViaProxy(
-        contextData.proxies[0],
-        vaultSPTActions,
-        'buyCollateralAndModifyDebt',
-        properties.vault,
-        contextData.proxies[0],
-        contextData.user,
-        contextData.user,
-        underlier,
-        deltaNormalDebt,
-        [
-          properties.sptData.adapter,
-          tokenAmount,
-          properties.sptData.maturity,
-          properties.underlierToken,
-          properties.token,
-          underlier
-        ]
-      );
-      console.log(response)
-      return response;
+      const args = {
+        contract: contextData,
+        methodName: vaultSPTActions,
+        methodArgs: [
+          'buyCollateralAndModifyDebt',
+          properties.vault,
+          contextData.proxies[0],
+          contextData.user,
+          contextData.user,
+          underlier,
+          deltaNormalDebt,
+          [
+            properties.sptData.adapter,
+            tokenAmount,
+            properties.sptData.maturity,
+            properties.underlierToken,
+            properties.token,
+            underlier
+          ]
+        ],
+      };
+      return args;
     }
     default: {
-      console.error('Unsupported vault: ', properties.vaultType);
+      throw new Error('Unsupported vault: ', properties.vaultType);
     }
   }
 };
 
-export const sellCollateralAndModifyDebt = async (
+export const buildSellCollateralAndModifyDebtArgs = (
   contextData: any,
   collateralTypeData: any,
   deltaCollateral: ethers.BigNumber,
   deltaDebt: ethers.BigNumber,
   underlier: ethers.BigNumber,
   position: any
-) => {
+): { contract: Contract, methodName: string, methodArgs: any[] } => {
   const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = contextData.fiat.getContracts();
   const { properties } = collateralTypeData;
 
-  let deltaNormalDebt = contextData.fiat
-    .debtToNormalDebt(deltaDebt, collateralTypeData.state.codex.virtualRate)
-    .mul(WAD.sub(decToWad(0.001)))
-    .div(WAD);
+  let deltaNormalDebt = addDeltaNormalBuffer(
+    contextData.fiat.debtToNormalDebt(deltaDebt, collateralTypeData.state.codex.virtualRate
+  ));
   if (position.normalDebt.sub(deltaNormalDebt).lt(WAD)) deltaNormalDebt = position.normalDebt;
   deltaNormalDebt = deltaNormalDebt.mul(-1);
 
@@ -375,28 +376,28 @@ export const sellCollateralAndModifyDebt = async (
       if (!properties.eptData) throw new Error('Missing EPT data');
       const deadline = Math.round(+new Date() / 1000) + 3600;
       // await contextData.fiat.dryrunViaProxy(
-      const response = await contextData.fiat.sendAndWaitViaProxy(
-        contextData.proxies[0],
-        vaultEPTActions,
-        'sellCollateralAndModifyDebt',
-        properties.vault,
-        contextData.proxies[0],
-        contextData.user,
-        contextData.user,
-        tokenAmount,
-        deltaNormalDebt,
-        [
-          properties.eptData.balancerVault,
-          properties.eptData.poolId,
-          properties.token,
-          properties.underlierToken,
-          underlier,
-          deadline,
-          tokenAmount
+      const args = {
+        contract: vaultEPTActions,
+        methodName: 'sellCollateralAndModifyDebt',
+        methodArgs: [
+          properties.vault,
+          contextData.proxies[0],
+          contextData.user,
+          contextData.user,
+          tokenAmount,
+          deltaNormalDebt,
+          [
+            properties.eptData.balancerVault,
+            properties.eptData.poolId,
+            properties.token,
+            properties.underlierToken,
+            underlier,
+            deadline,
+            tokenAmount
+          ]
         ]
-      );
-      console.log(response);
-      return response;
+      };
+      return args;
     }
 
     case 'ERC1155:FC': {
@@ -406,84 +407,84 @@ export const sellCollateralAndModifyDebt = async (
         properties.tokenScale
       );
       // await contextData.fiat.dryrunViaProxy(
-      const response = await contextData.fiat.sendAndWaitViaProxy(
-        contextData.proxies[0],
-        vaultFCActions,
-        'sellCollateralAndModifyDebt',
-        properties.vault,
-        properties.token,
-        properties.tokenId,
-        contextData.proxies[0],
-        contextData.user,
-        contextData.user,
-        tokenAmount,
-        deltaNormalDebt,
-        maxBorrowRate
-      );
-      console.log(response)
-      return response;
+      const args = {
+        contract: vaultFCActions,
+        methodName: 'sellCollateralAndModifyDebt',
+        methodArgs: [
+          properties.vault,
+          properties.token,
+          properties.tokenId,
+          contextData.proxies[0],
+          contextData.user,
+          contextData.user,
+          tokenAmount,
+          deltaNormalDebt,
+          maxBorrowRate
+        ]
+      };
+      return args;
     }
     case 'ERC20:FY': {
       if (!properties.fyData) throw new Error('Missing FY data');
       // await contextData.fiat.dryrunViaProxy(
-      const response = await contextData.fiat.sendAndWaitViaProxy(
-        contextData.proxies[0],
-        vaultFYActions,
-        'sellCollateralAndModifyDebt',
-        properties.vault,
-        contextData.proxies[0],
-        contextData.user,
-        contextData.user,
-        tokenAmount,
-        deltaNormalDebt,
-        [
-          underlier,
-          properties.fyData.yieldSpacePool,
-          properties.token,
-          properties.underlierToken,
+      const args = {
+        contract: vaultFYActions,
+        methodName: 'sellCollateralAndModifyDebt',
+        methodArgs: [
+          properties.vault,
+          contextData.proxies[0],
+          contextData.user,
+          contextData.user,
+          tokenAmount,
+          deltaNormalDebt,
+          [
+            underlier,
+            properties.fyData.yieldSpacePool,
+            properties.token,
+            properties.underlierToken,
+          ]
         ]
-      );
-      console.log(response);
-      return response;
+      };
+      return args;
     }
     case 'ERC20:SPT': {
       if (!properties.sptData) throw new Error('Missing SPT data');
       console.log(contextData.proxies[0]);
       // await contextData.fiat.dryrunViaProxy(
-      const response = await contextData.fiat.sendAndWaitViaProxy(
-        contextData.proxies[0],
-        vaultSPTActions,
-        'sellCollateralAndModifyDebt',
-        properties.vault,
-        contextData.proxies[0],
-        contextData.user,
-        contextData.user,
-        tokenAmount,
-        deltaNormalDebt,
-        [
-          properties.sptData.adapter,
-          underlier,
-          properties.sptData.maturity,
-          properties.token,
-          properties.underlierToken,
+      const args = {
+        contract: vaultSPTActions,
+        methodName: 'sellCollateralAndModifyDebt',
+        methodArgs: [
+          properties.vault,
+          contextData.proxies[0],
+          contextData.user,
+          contextData.user,
           tokenAmount,
+          deltaNormalDebt,
+          [
+            properties.sptData.adapter,
+            underlier,
+            properties.sptData.maturity,
+            properties.token,
+            properties.underlierToken,
+            tokenAmount,
+          ]
         ]
-      );
-      console.log(response);
-      return response;
+      };
+      return args;
     }
     default: {
-      console.error('Unsupported vault: ', properties.vaultType);
+      throw new Error('Unsupported vault: ', properties.vaultType);
     }
   }
 };
 
-export const redeemCollateralAndModifyDebt = async (contextData: any,
+export const buildRedeemCollateralAndModifyDebtArgs = (contextData: any,
   collateralTypeData: any,
   deltaCollateral: ethers.BigNumber,
   deltaDebt: ethers.BigNumber,
   position: any
-) => {
+): { contract: Contract, methodName: string, methodArgs: any[] } => {
   const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = contextData.fiat.getContracts();
   const { properties } = collateralTypeData;
 
@@ -499,86 +500,84 @@ export const redeemCollateralAndModifyDebt = async (contextData: any,
   switch (properties.vaultType) {
     case 'ERC20:EPT': {
       if (!properties.eptData) throw new Error('Missing EPT data');
-      // await contextData.fiat.dryrunViaProxy(
-      const response = await contextData.fiat.sendAndWaitViaProxy(
-        contextData.proxies[0],
-        vaultEPTActions,
-        'redeemCollateralAndModifyDebt',
-        properties.vault,
-        properties.token,
-        contextData.proxies[0],
-        contextData.user,
-        contextData.user,
-        tokenAmount,
-        deltaNormalDebt
-      );
-      console.log(response);
-      return response;
+      const args = {
+        contract: vaultEPTActions,
+        methodName: 'redeemCollateralAndModifyDebt',
+        methodArgs: [
+          properties.vault,
+          properties.token,
+          contextData.proxies[0],
+          contextData.user,
+          contextData.user,
+          tokenAmount,
+          deltaNormalDebt
+        ]
+      };
+      return args;
     }
     case 'ERC1155:FC': {
       if (!properties.fcData) throw new Error('Missing FC data');
-      // await contextData.fiat.dryrunViaProxy(
-      const response = await contextData.fiat.sendAndWaitViaProxy(
-        contextData.proxies[0],
-        vaultFCActions,
-        'redeemCollateralAndModifyDebt',
-        properties.vault,
-        properties.token,
-        properties.tokenId,
-        contextData.proxies[0],
-        contextData.user,
-        contextData.user,
-        tokenAmount,
-        deltaNormalDebt
-      );
-      console.log(response);
-      return response;
+      const args = {
+        contract: vaultFCActions,
+        methodName: 'redeemCollateralAndModifyDebt',
+        methodArgs: [
+          properties.vault,
+          properties.token,
+          properties.tokenId,
+          contextData.proxies[0],
+          contextData.user,
+          contextData.user,
+          tokenAmount,
+          deltaNormalDebt
+        ]
+      };
+      return args;
     }
     case 'ERC20:FY': {
       if (!properties.fyData) throw new Error('Missing FY data');
       // await contextData.fiat.dryrunViaProxy(
-      const response = await contextData.fiat.sendAndWaitViaProxy(
-        contextData.proxies[0],
-        vaultFYActions,
-        'redeemCollateralAndModifyDebt',
-        properties.vault,
-        properties.token,
-        contextData.proxies[0],
-        contextData.user,
-        contextData.user,
-        tokenAmount,
-        deltaNormalDebt
-      );
-      console.log(response);
-      return response;
+      const args = {
+        contract: vaultFYActions,
+        methodName: 'redeemCollateralAndModifyDebt',
+        methodArgs: [
+          properties.vault,
+          properties.token,
+          contextData.proxies[0],
+          contextData.user,
+          contextData.user,
+          tokenAmount,
+          deltaNormalDebt
+        ]
+      };
+      return args;
     }
     case 'ERC20:SPT': {
       if (!properties.sptData) throw new Error('Missing SPT data');
       // await contextData.fiat.dryrunViaProxy(
-      const response = await contextData.fiat.sendAndWaitViaProxy(
-        contextData.proxies[0],
-        vaultSPTActions,
-        'redeemCollateralAndModifyDebt',
-        properties.vault,
-        properties.token,
-        contextData.proxies[0],
-        contextData.user,
-        contextData.user,
-        tokenAmount,
-        deltaNormalDebt,
-        [
-          properties.sptData.adapter,
-          properties.sptData.maturity,
-          properties.sptData.target,
-          properties.underlierToken,
-          tokenAmount
+      const args = {
+        contract: vaultSPTActions,
+        methodName: 'redeemCollateralAndModifyDebt',
+        methodArgs: [
+          properties.vault,
+          properties.token,
+          contextData.proxies[0],
+          contextData.user,
+          contextData.user,
+          tokenAmount,
+          deltaNormalDebt,
+          [
+            properties.sptData.adapter,
+            properties.sptData.maturity,
+            properties.sptData.target,
+            properties.underlierToken,
+            tokenAmount
+          ]
         ]
-      );
-      console.log(response);
-      return response;
+      };
+      return args;
     }
     default: {
-      console.error('Unsupported vault: ', properties.vaultType);
+      throw new Error('Unsupported vault: ', properties.vaultType);
     }
   }
 };

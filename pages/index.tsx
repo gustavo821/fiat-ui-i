@@ -3,7 +3,7 @@ import type { NextPage } from 'next';
 import { useAccount, useNetwork, useProvider } from 'wagmi';
 import { useAddRecentTransaction } from '@rainbow-me/rainbowkit';
 import { Container, Spacer } from '@nextui-org/react';
-import { ethers } from 'ethers';
+import { ContractReceipt, ethers } from 'ethers';
 import { decToWad, FIAT, WAD, wadToDec, ZERO } from '@fiatdao/sdk';
 import { HeaderButtons } from '../src/components/HeaderButtons';
 import { CollateralTypesTable } from '../src/components/CollateralTypesTable';
@@ -52,10 +52,10 @@ const Home: NextPage = () => {
       underlier: ZERO as ethers.BigNumber, // [underlierScale]
       deltaCollateral: ZERO as ethers.BigNumber, // [wad]
       deltaDebt: ZERO as ethers.BigNumber, // [wad]
-      targetedHealthFactor: decToWad('1.2') as ethers.BigNumber, // [wad]
+      targetedCollRatio: decToWad('1.2') as ethers.BigNumber, // [wad]
       collateral: ZERO as ethers.BigNumber, // [wad]
       debt: ZERO as ethers.BigNumber, // [wad]
-      healthFactor: ZERO as ethers.BigNumber, // [wad] estimated new health factor
+      collRatio: ZERO as ethers.BigNumber, // [wad] estimated new collateralization ratio
       error: null as null | string
     },
     transactionData: {
@@ -255,49 +255,37 @@ const Home: NextPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connector, contextData, collateralTypesData, positionsData, selectedCollateralTypeId, selectedPositionId, modifyPositionData, formDataStore.calculateNewPositionData]);
 
-  const dryRun = async (fiat: any, action: string, contract: ethers.Contract, method: string, ...args: any[]) => {
+  const sendStatefulTransaction = async (fiat: any, useProxy: boolean, action: string, contract: ethers.Contract, method: string, ...args: any[]): Promise<ContractReceipt> => {
     try {
       setTransactionData({ action, status: 'sent' });
 
-      // OPTIONAL:
-      // uncomment setTimeout(resolve(...)) simulate loading state of a real txn
-      // uncomment setTimeout(reject(...)) to simulate a txn error
-      await new Promise((resolve: any, reject: any) => {
-        setTimeout(resolve, 2000);
-        // setTimeout(reject({message: 'Mock dryrun error, Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut convallis luctus lectus vel tempor. Vestibulum porta odio et dui pretium, nec hendrerit ante efficitur. Duis cursus eleifend fringilla.'}), 2000);
-      });
+      // Dryrun every transaction first to catch and decode errors
+      useProxy
+        ? await fiat.dryrunViaProxy(contextData.proxies[0], contract, method, ...args)
+        : await fiat.dryrun(contract, method, ...args);
 
-      const resp = await fiat.dryrun(contract, method, ...args);
+      const resp = useProxy
+        ? await fiat.sendAndWaitViaProxy(contextData.proxies[0], contract, method, ...args)
+        : await fiat.sendAndWait(contract, method, ...args);
       setTransactionData(initialState.transactionData);
       return resp;
-    } catch (e) {
-      console.error('Dryrun error: ', e);
+    } catch (e: any) {
       setTransactionData({ ...transactionData, status: 'error' });
-      // Should be caught by caller to set appropriate errors
-      throw e
-    }
-  }
-
-  const sendStatefulTransaction = async (fiat: any, action: string, contract: ethers.Contract, method: string, ...args: any[]) => {
-    try {
-      setTransactionData({ action, status: 'sent' });
-      const resp = await fiat.sendAndWait(contract, method, ...args);
-      setTransactionData(initialState.transactionData);
-      return resp;
-    } catch (e) {
-      console.error('Error: ', e);
-      setTransactionData({ ...transactionData, status: 'error' });
-      // Should be caught by caller to set appropriate errors
-      throw e
+      if (e && e.code && e.code === 'ACTION_REJECTED') {
+        // Special handling for Metamask errors
+        throw new Error('ACTION_REJECTED');
+      } else {
+        // Should be caught by caller to set appropriate errors
+        throw e;
+      }
     }
   }
 
   const createProxy = async (fiat: any, user: string) => {
-    // return await dryRun(fiat, 'createProxy', fiat.getContracts().proxyRegistry, 'deployFor', user);
-    const response = await sendStatefulTransaction(fiat, 'createProxy', fiat.getContracts().proxyRegistry, 'deployFor', user);
+    const response = await sendStatefulTransaction(fiat, false, 'createProxy', fiat.getContracts().proxyRegistry, 'deployFor', user);
     addRecentTransaction({
       hash: response.transactionHash,
-      description: 'Create Proxy',
+      description: 'Create proxy account',
     });
     // Querying chain directly after this to update as soon as possible
     const { proxyRegistry } = fiat.getContracts();
@@ -313,11 +301,10 @@ const Home: NextPage = () => {
     const token = fiat.getERC20Contract(modifyPositionData.collateralType.properties.underlierToken);
     // add 1 unit has a buffer in case user refreshes the page and the value becomes outdated
     const allowance = formDataStore.underlier.add(modifyPositionData.collateralType.properties.underlierScale);
-    // return await dryRun(fiat, 'setUnderlierAllowance', token, 'approve', contextData.proxies[0], allowance);
-    const response = await sendStatefulTransaction(fiat, 'setUnderlierAllowance', token, 'approve', contextData.proxies[0], allowance);
+    const response = await sendStatefulTransaction(fiat, false, 'setUnderlierAllowance', token, 'approve', contextData.proxies[0], allowance);
     addRecentTransaction({
       hash: response.transactionHash,
-      description: 'Set Allowance',
+      description: 'Set underlier allowance',
     });
     const underlierAllowance = await token.allowance(contextData.user, contextData.proxies[0])
     setModifyPositionData({ ...modifyPositionData, underlierAllowance });
@@ -325,11 +312,10 @@ const Home: NextPage = () => {
 
   const unsetUnderlierAllowance = async (fiat: any) => {
     const token = fiat.getERC20Contract(modifyPositionData.collateralType.properties.underlierToken);
-    // return await dryRun(fiat, 'unsetUnderlierAllowance', token, 'approve', contextData.proxies[0], 0);
-    const response =  await sendStatefulTransaction(fiat, 'unsetUnderlierAllowance', token, 'approve', contextData.proxies[0], 0);
+    const response =  await sendStatefulTransaction(fiat, false, 'unsetUnderlierAllowance', token, 'approve', contextData.proxies[0], 0);
     addRecentTransaction({
       hash: response.transactionHash,
-      description: 'Set Allowance',
+      description: 'Reset underlier allowance',
     });
     return response;
   }
@@ -338,11 +324,10 @@ const Home: NextPage = () => {
     const token = fiat.getContracts().fiat;
     // add 1 unit has a buffer in case user refreshes the page and the value becomes outdated
     const allowance = formDataStore.deltaDebt.add(WAD);
-    // return await dryRun(fiat, 'setFIATAllowance', token, 'approve', contextData.proxies[0], allowance);
-    const response = await sendStatefulTransaction(fiat, 'setFIATAllowance', token, 'approve', contextData.proxies[0], allowance);
+    const response = await sendStatefulTransaction(fiat, false, 'setFIATAllowance', token, 'approve', contextData.proxies[0], allowance);
     addRecentTransaction({
       hash: response.transactionHash,
-      description: 'Set Allowance',
+      description: 'Set FIAT allowance',
     });
     const fiatAllowance = await token.allowance(contextData.user, contextData.proxies[0])
     setModifyPositionData({ ...modifyPositionData, fiatAllowance });
@@ -350,22 +335,20 @@ const Home: NextPage = () => {
 
   const unsetFIATAllowance = async (fiat: any) => {
     const token = fiat.getContracts().fiat;
-    // return await dryRun(fiat, 'unsetFIATAllowance', token, 'approve', contextData.proxies[0], 0);
-    const response =  await sendStatefulTransaction(fiat, 'unsetFIATAllowance', token, 'approve', contextData.proxies[0], 0);
+    const response =  await sendStatefulTransaction(fiat, false, 'unsetFIATAllowance', token, 'approve', contextData.proxies[0], 0);
     addRecentTransaction({
       hash: response.transactionHash,
-      description: 'Set Allowance',
+      description: 'Reset FIAT allowance',
     });
     return response;
   }
 
   const setMonetaDelegate = async (fiat: any) => {
     const { codex, moneta } = fiat.getContracts();
-    // return await dryRun(fiat, 'setMonetaDelegate', codex, 'grantDelegate', moneta.address);
-    const response = await sendStatefulTransaction(fiat, 'setMonetaDelegate', codex, 'grantDelegate', moneta.address);
+    const response = await sendStatefulTransaction(fiat, false, 'setMonetaDelegate', codex, 'grantDelegate', moneta.address);
     addRecentTransaction({
       hash: response.transactionHash,
-      description: 'Set Allowance',
+      description: 'Grant delegate to Moneta',
     });
 
     const monetaDelegate = await fiat.call(
@@ -379,130 +362,119 @@ const Home: NextPage = () => {
 
   const unsetMonetaDelegate = async (fiat: any) => {
     const { codex, moneta } = fiat.getContracts();
-    // return await dryRun(fiat, 'unsetMonetaDelegate', codex, 'revokeDelegate', moneta.address);
-    const response = await sendStatefulTransaction(fiat, 'unsetMonetaDelegate', codex, 'revokeDelegate', moneta.address);
+    const response = await sendStatefulTransaction(fiat, false, 'unsetMonetaDelegate', codex, 'revokeDelegate', moneta.address);
     addRecentTransaction({
       hash: response.transactionHash,
-      description: 'Set Allowance',
+      description: 'Revoke delegate from Moneta',
     });
     return response;
   }
 
   const buyCollateralAndModifyDebt = async () => {
-    setTransactionData({ status: 'sent', action: 'buyCollateralAndModifyDebt' });
-    try {
-      if (formDataStore.deltaCollateral.isZero()) {
-        const resp = await userActions.modifyCollateralAndDebt(
-          contextData,
-          modifyPositionData.collateralType,
-          formDataStore.deltaDebt, // increase (mint)
-          modifyPositionData.position,
-        ) as any;
-        addRecentTransaction({
-          hash: resp.transactionHash,
-          description: 'Modify Collateral and Debt',
-        });
-        handleFinishedTransaction();
-        return resp;
-      } else {
-        const resp = await userActions.buyCollateralAndModifyDebt(
-          contextData,
-          modifyPositionData.collateralType,
-          formDataStore.deltaCollateral,
-          formDataStore.deltaDebt,
-          formDataStore.underlier
-        ) as any;
-        addRecentTransaction({
-          hash: resp.transactionHash,
-          description: 'Buy Collateral And Modify Debt',
-        });
+    if (formDataStore.deltaCollateral.isZero()) {
+      const args = userActions.buildModifyCollateralAndDebtArgs(
+        contextData,
+        modifyPositionData.collateralType,
+        formDataStore.deltaDebt, // increase (mint)
+        modifyPositionData.position,
+      );
+      const response = await sendStatefulTransaction(contextData.fiat, true, 'modifyCollateralAndDebt', args.contract, args.methodName, ...args.methodArgs);
 
-        handleFinishedTransaction();
-        return resp;
-      }
-    } catch (e) {
-      console.error('Buy error: ', e);
-      setTransactionData({ ...transactionData, status: 'error' });
-      throw e;
+      addRecentTransaction({
+        hash: response.transactionHash,
+        description: 'Borrow FIAT',
+      });
+      handleFinishedTransaction();
+      return response;
+    } else {
+      const args = userActions.buildBuyCollateralAndModifyDebtArgs(
+        contextData,
+        modifyPositionData.collateralType,
+        formDataStore.deltaCollateral,
+        formDataStore.deltaDebt,
+        formDataStore.underlier
+      );
+      const response = await sendStatefulTransaction(contextData.fiat, true, 'buyCollateralAndModifyDebt', args.contract, args.methodName, ...args.methodArgs);
+
+      addRecentTransaction({
+        hash: response.transactionHash,
+        description: 'Buy and deposit collateral and borrow FIAT',
+      });
+      handleFinishedTransaction();
+      return response;
     }
   }
 
   const sellCollateralAndModifyDebt = async () => {
-    setTransactionData({ status: 'sent', action: 'sellCollateralAndModifyDebt' });
-    try {
-      if (formDataStore.deltaCollateral.isZero()) {
-        const resp = await userActions.modifyCollateralAndDebt(
-          contextData,
-          modifyPositionData.collateralType,
-          formDataStore.deltaDebt.mul(-1), // decrease (pay back)
-          modifyPositionData.position,
-        ) as any;
-        addRecentTransaction({
-          hash: resp.transactionHash,
-          description: 'Modify Collateral and Debt',
-        });
-        handleFinishedTransaction();
-        return resp;
-      }
-      else {
-        const resp = await userActions.sellCollateralAndModifyDebt(
-          contextData,
-          modifyPositionData.collateralType,
-          formDataStore.deltaCollateral,
-          formDataStore.deltaDebt,
-          formDataStore.underlier,
-          modifyPositionData.position,
-        ) as any;
-        addRecentTransaction({
-          hash: resp.transactionHash,
-          description: 'Sell Collateral and Modify Debt',
-        });
-        handleFinishedTransaction();
-        return resp;
-      }
-    } catch (e) {
-      console.error('Sell error: ', e);
-      setTransactionData({ ...transactionData, status: 'error' });
-      throw e;
+    if (formDataStore.deltaCollateral.isZero()) {
+      const args = userActions.buildModifyCollateralAndDebtArgs(
+        contextData,
+        modifyPositionData.collateralType,
+        formDataStore.deltaDebt.mul(-1), // decrease (pay back)
+        modifyPositionData.position,
+      );
+      const response = await sendStatefulTransaction(contextData.fiat, true, 'modifyCollateralAndDebt', args.contract, args.methodName, ...args.methodArgs);
+
+      addRecentTransaction({
+        hash: response.transactionHash,
+        description: 'Repay borrowed FIAT',
+      });
+      handleFinishedTransaction();
+      return response;
+    }
+    else {
+      const args = userActions.buildSellCollateralAndModifyDebtArgs(
+        contextData,
+        modifyPositionData.collateralType,
+        formDataStore.deltaCollateral,
+        formDataStore.deltaDebt,
+        formDataStore.underlier,
+        modifyPositionData.position,
+      );
+      const response = await sendStatefulTransaction(contextData.fiat, true, 'sellCollateralAndModifyDebt', args.contract, args.methodName, ...args.methodArgs);
+
+      addRecentTransaction({
+        hash: response.transactionHash,
+        description: 'Withdraw and sell collateral and repay borrowed FIAT',
+      });
+      handleFinishedTransaction();
+      return response;
     }
   }
 
   const redeemCollateralAndModifyDebt = async () => {
-    setTransactionData({ status: 'sent', action: 'redeemCollateralAndModifyDebt' });
-    try {
-      if (formDataStore.deltaCollateral.isZero()) {
-        const resp = await userActions.modifyCollateralAndDebt(
-          contextData,
-          modifyPositionData.collateralType,
-          formDataStore.deltaDebt.mul(-1), // decrease (pay back)
-          modifyPositionData.position,
-        ) as any;
-        addRecentTransaction({
-          hash: resp.transactionHash,
-          description: 'Modify Collateral and Debt',
-        });
-        handleFinishedTransaction();
-        return resp;
-      }
-      else {
-        const resp = await userActions.redeemCollateralAndModifyDebt(
-          contextData,
-          modifyPositionData.collateralType,
-          formDataStore.deltaCollateral,
-          formDataStore.deltaDebt,
-          modifyPositionData.position,
-        ) as any;
-        addRecentTransaction({
-          hash: resp.transactionHash,
-          description: 'Redeem',
-        });
-        handleFinishedTransaction();
-        return resp;
-      }
-    } catch (e) {
-      console.error('Redeem error: ', e);
-      setTransactionData({ ...transactionData, status: 'error' });
-      throw e;
+    if (formDataStore.deltaCollateral.isZero()) {
+      const args = userActions.buildModifyCollateralAndDebtArgs(
+        contextData,
+        modifyPositionData.collateralType,
+        formDataStore.deltaDebt.mul(-1), // decrease (pay back)
+        modifyPositionData.position,
+      );
+      const response = await sendStatefulTransaction(contextData.fiat, true, 'modifyCollateralAndDebt', args.contract, args.methodName, ...args.methodArgs);
+
+      addRecentTransaction({
+        hash: response.transactionHash,
+        description: 'Repay borrowed FIAT',
+      });
+      handleFinishedTransaction();
+      return response;
+    }
+    else {
+      const args = userActions.buildRedeemCollateralAndModifyDebtArgs(
+        contextData,
+        modifyPositionData.collateralType,
+        formDataStore.deltaCollateral,
+        formDataStore.deltaDebt,
+        modifyPositionData.position,
+      )
+      const response = await sendStatefulTransaction(contextData.fiat, true, 'redeemCollateralAndModifyDebt', args.contract, args.methodName, ...args.methodArgs);
+
+      addRecentTransaction({
+        hash: response.transactionHash,
+        description: 'Withdraw and redeem collateral and repay borrowed FIAT',
+      });
+      handleFinishedTransaction();
+      return response;
     }
   }
 
@@ -515,6 +487,7 @@ const Home: NextPage = () => {
           transactionData={transactionData} 
           fiatBalance={fiatBalance}
           disableActions={disableActions}
+          createProxy={createProxy}
         />
       </div>
       <Spacer y={2} />

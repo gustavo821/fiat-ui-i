@@ -516,10 +516,10 @@
     "@ethersproject/properties" "^5.7.0"
     "@ethersproject/strings" "^5.7.0"
 
-"@fiatdao/sdk@^0.0.17":
-  version "0.0.17"
-  resolved "https://registry.yarnpkg.com/@fiatdao/sdk/-/sdk-0.0.17.tgz#eb4cbc1656ab046519f4281dd3dd207f16283c42"
-  integrity sha512-m7WeXeoRP0ukJaxFhDWa1KnZVvau4pnloEcFAwyrx3oWHKZbK9hHqEq02GvssHI78Vt7/G4SbQEeGqzxytTBYQ==
+"@fiatdao/sdk@0.0.20":
+  version "0.0.20"
+  resolved "https://registry.yarnpkg.com/@fiatdao/sdk/-/sdk-0.0.20.tgz#a832dc978a47cd19196e5f8daebc898d8831066b"
+  integrity sha512-peTYQlTrBwzQxS82CaI2kDKUrXj5la+34hjRtXBCmvnQOFymrCGTTuMJBcgklGLAHp+ZHJQDFvEFBLMn290OGw==
   dependencies:
     changelog "https://github.com/fiatdao/changelog"
     ethers "^5.7.1"
@@ -2622,9 +2622,9 @@ deep-is@^0.1.3:
   integrity sha512-oIPzksmTg4/MriiaYGO+okXDT7ztn/w3Eptv/+gSIdMdKsJo0u4CfYNFJPy+4SKMuCqGw2wxnA+URMg3t8a/bQ==
 
 deep-object-diff@^1.1.0:
-  version "1.1.7"
-  resolved "https://registry.yarnpkg.com/deep-object-diff/-/deep-object-diff-1.1.7.tgz#348b3246f426427dd633eaa50e1ed1fc2eafc7e4"
-  integrity sha512-QkgBca0mL08P6HiOjoqvmm6xOAl2W6CT2+34Ljhg0OeFan8cwlcdq8jrLKsBBuUFAZLsN5b6y491KdKEoSo9lg==
+  version "1.1.9"
+  resolved "https://registry.yarnpkg.com/deep-object-diff/-/deep-object-diff-1.1.9.tgz#6df7ef035ad6a0caa44479c536ed7b02570f4595"
+  integrity sha512-Rn+RuwkmkDwCi2/oXOFS9Gsr5lJZu/yTGpK7wAaAIE75CC+LCGEZHpY6VQJa/RoJcrmaA/docWJZvYohlNkWPA==
 
 deepmerge@^4.2.2:
   version "4.2.2"
