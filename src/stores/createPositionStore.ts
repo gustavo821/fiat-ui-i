@@ -145,46 +145,29 @@ export const createDepositSlice = create<DepositSliceState & DepositSliceActions
           }
         }
 
-        if (selectedCollateralTypeId !== null) {
-          // For new position, calculate deltaDebt based on targetedCollRatio
-          const { targetedCollRatio } = get();
-          const deltaNormalDebt = fiat.computeMaxNormalDebt(deltaCollateral, rate, fairPrice, targetedCollRatio);
-          const deltaDebt = fiat.normalDebtToDebt(deltaNormalDebt, rate);
-          const collateral = deltaCollateral;
-          const debt = deltaDebt;
-          const collRatio = fiat.computeCollateralizationRatio(collateral, fairPrice, deltaNormalDebt, rate);
-
-          if (deltaDebt.gt(ZERO) && deltaDebt.lte(debtFloor)) set(() => ({
-            formErrors: [
-              ...get().formErrors,
-              `This collateral type requires a minimum of ${wadToDec(debtFloor)} FIAT to be borrowed`
-            ]
-          }));
-          if (debt.gt(0) && collRatio.lte(WAD)) set(() => ({
-            formErrors: [...get().formErrors, 'Collateralization Ratio has to be greater than 100%']
-          }));
-
-          set(() => ({ collRatio, collateral, debt, deltaDebt, deltaCollateral }));
-        } else {
-          // For exsiting position, calculate deltaNormalDebt based on targetedCollRatio, taking into account the position's collateral
-          const { deltaDebt } = get();
-          const collateral = position.collateral.add(deltaCollateral);
-          const debt = fiat.normalDebtToDebt(position.normalDebt, rate).add(deltaDebt);
-          const normalDebt = fiat.debtToNormalDebt(debt, rate);
-          const collRatio = fiat.computeCollateralizationRatio(collateral, fairPrice, normalDebt, rate);
-
-          if (debt.gt(ZERO) && debt.lte(collateralType.settings.codex.debtFloor) ) set(() => ({
-            formErrors: [
-              ...get().formErrors,
-              `This collateral type requires a minimum of ${wadToDec(debtFloor)} FIAT to be borrowed`
-            ]
-          }));
-          if (debt.gt(0) && collRatio.lte(WAD)) set(() => ({
-            formErrors: [...get().formErrors, 'Collateralization Ratio has to be greater than 100%']
-          }));
-
-          set(() => ({ collRatio, collateral, debt, deltaCollateral }));
+        if (selectedCollateralTypeId === null) {
+          throw new Error(`Expected selectedCollateralTypeId to be null for new position. Actual value: ${selectedCollateralTypeId}`);
         }
+
+        // For new position, calculate deltaDebt based on targetedCollRatio
+        const { targetedCollRatio } = get();
+        const deltaNormalDebt = fiat.computeMaxNormalDebt(deltaCollateral, rate, fairPrice, targetedCollRatio);
+        const deltaDebt = fiat.normalDebtToDebt(deltaNormalDebt, rate);
+        const collateral = deltaCollateral;
+        const debt = deltaDebt;
+        const collRatio = fiat.computeCollateralizationRatio(collateral, fairPrice, deltaNormalDebt, rate);
+
+        if (deltaDebt.gt(ZERO) && deltaDebt.lte(debtFloor)) set(() => ({
+          formErrors: [
+            ...get().formErrors,
+            `This collateral type requires a minimum of ${wadToDec(debtFloor)} FIAT to be borrowed`
+          ]
+        }));
+        if (debt.gt(0) && collRatio.lte(WAD)) set(() => ({
+          formErrors: [...get().formErrors, 'Collateralization Ratio has to be greater than 100%']
+        }));
+
+        set(() => ({ collRatio, collateral, debt, deltaDebt, deltaCollateral }));
       } catch (error: any) {
         set(() => ({
           deltaCollateral: ZERO,
