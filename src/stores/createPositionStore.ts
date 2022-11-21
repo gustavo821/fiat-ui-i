@@ -5,8 +5,9 @@ import { decToScale, decToWad, scaleToDec, scaleToWad, WAD, wadToDec, wadToScale
 import * as userActions from '../actions';
 import { debounce, floor4 } from '../utils';
 
-interface DepositSliceState {
+interface CreatePositionStoreState {
   collateral: ethers.BigNumber; // [wad]
+  deltaCollateral: ethers.BigNumber; // [wad]
   deltaDebt: ethers.BigNumber; // [wad]
   underlier: ethers.BigNumber; // [underlierScale]
   targetedCollRatio: ethers.BigNumber; // [wad]
@@ -16,7 +17,7 @@ interface DepositSliceState {
   formErrors: string[];
 }
 
-interface DepositSliceActions {
+interface CreatePositionStoreActions {
   setUnderlier: (
     fiat: any,
     value: string,
@@ -52,15 +53,18 @@ interface DepositSliceActions {
 const initialState = {
   slippagePct: decToWad('0.001'),
   collateral: ZERO, // [wad]
+  debt: ZERO, // [wad]
+  deltaCollateral: ZERO,
   underlier: ZERO,
   deltaDebt: ZERO, // [wad]
   targetedCollRatio: decToWad('1.2'),
+  collRatio: ZERO, // [wad] estimated new collateralization ratio
   formDataLoading: false,
   formWarnings: [],
   formErrors: [],
 };
 
-export const createDepositSlice = create<DepositSliceState & DepositSliceActions>()((set,get) => ({
+export const useCreatePositionStore = create<CreatePositionStoreState & CreatePositionStoreActions>()((set,get) => ({
     ...initialState,
 
     setUnderlier: async (fiat, value, modifyPositionData, selectedCollateralTypeId) => {

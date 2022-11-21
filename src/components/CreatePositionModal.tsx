@@ -17,8 +17,8 @@ import 'antd/dist/antd.css';
 import { scaleToDec, wadToDec } from '@fiatdao/sdk';
 
 import { commifyToDecimalPlaces, floor2, floor4, formatUnixTimestamp } from '../utils';
-import { useModifyPositionFormDataStore } from '../stores/formStore';
 import { Alert } from './Alert';
+import { useCreatePositionStore } from '../stores/createPositionStore';
 
 interface CreatePositionModalProps {
   buyCollateralAndModifyDebt: () => any;
@@ -51,7 +51,7 @@ export const CreatePositionModal = (props: CreatePositionModalProps) => {
 };
 
 const CreatePositionModalBody = (props: CreatePositionModalProps) => {
-  const formDataStore = useModifyPositionFormDataStore();
+  const formDataStore = useCreatePositionStore();
   const [rpcError, setRpcError] = React.useState('');
 
   if (
