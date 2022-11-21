@@ -21,7 +21,7 @@ import { Alert } from './Alert';
 import { useCreatePositionStore } from '../stores/createPositionStore';
 
 interface CreatePositionModalProps {
-  buyCollateralAndModifyDebt: () => any;
+  createPosition: () => any;
   contextData: any;
   disableActions: boolean;
   modifyPositionData: any;
@@ -428,14 +428,14 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
           }
           icon={
             props.disableActions &&
-            currentTxAction === 'buyCollateralAndModifyDebt' ? (
+            currentTxAction === 'createPosition' ? (
               <Loading size='xs' />
             ) : null
           }
           onPress={async () => {
             try {
               setRpcError('');
-              await props.buyCollateralAndModifyDebt();
+              await props.createPosition();
               props.onClose();
             } catch (e: any) {
               setRpcError(e.message);

@@ -18,6 +18,7 @@ import {
 import * as userActions from '../src/actions';
 import { useModifyPositionFormDataStore } from '../src/stores/formStore';
 import { InfoIcon } from '../src/components/Icons/info'; 
+import {useCreatePositionStore} from '../src/stores/createPositionStore';
 
 export type TransactionStatus = null | 'error' | 'sent' | 'confirming' | 'confirmed';
 
@@ -68,6 +69,7 @@ const Home: NextPage = () => {
     fiatBalance: '',
   }), []) 
 
+  const createPositionStore = useCreatePositionStore();
   const formDataStore = useModifyPositionFormDataStore();
 
   const [setupListeners, setSetupListeners] = React.useState(false);
@@ -374,6 +376,24 @@ const Home: NextPage = () => {
     return response;
   }
 
+  const createPosition = async () => {
+    const args = userActions.buildBuyCollateralAndModifyDebtArgs(
+      contextData,
+      modifyPositionData.collateralType,
+      createPositionStore.deltaCollateral,
+      createPositionStore.deltaDebt,
+      createPositionStore.underlier
+    );
+    const response = await sendStatefulTransaction(contextData.fiat, true, 'createPosition', args.contract, args.methodName, ...args.methodArgs);
+
+    addRecentTransaction({
+      hash: response.transactionHash,
+      description: 'Buy and deposit collateral and borrow FIAT',
+    });
+    handleFinishedTransaction();
+    return response;
+  }
+
   const buyCollateralAndModifyDebt = async () => {
     if (formDataStore.deltaCollateral.isZero()) {
       const args = userActions.buildModifyCollateralAndDebtArgs(
@@ -577,7 +597,7 @@ const Home: NextPage = () => {
       </Container>
 
       <CreatePositionModal
-        buyCollateralAndModifyDebt={buyCollateralAndModifyDebt}
+        createPosition={createPosition}
         contextData={contextData}
         disableActions={disableActions}
         modifyPositionData={modifyPositionData}

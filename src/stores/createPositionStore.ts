@@ -5,7 +5,7 @@ import { decToScale, decToWad, scaleToDec, scaleToWad, WAD, wadToDec, wadToScale
 import * as userActions from '../actions';
 import { debounce, floor4 } from '../utils';
 
-interface CreatePositionStoreState {
+interface CreatePositionState {
   collateral: ethers.BigNumber; // [wad]
   deltaCollateral: ethers.BigNumber; // [wad]
   deltaDebt: ethers.BigNumber; // [wad]
@@ -17,7 +17,7 @@ interface CreatePositionStoreState {
   formErrors: string[];
 }
 
-interface CreatePositionStoreActions {
+interface CreatePositionActions {
   setUnderlier: (
     fiat: any,
     value: string,
@@ -64,7 +64,7 @@ const initialState = {
   formErrors: [],
 };
 
-export const useCreatePositionStore = create<CreatePositionStoreState & CreatePositionStoreActions>()((set,get) => ({
+export const useCreatePositionStore = create<CreatePositionState & CreatePositionActions>()((set,get) => ({
     ...initialState,
 
     setUnderlier: async (fiat, value, modifyPositionData, selectedCollateralTypeId) => {
