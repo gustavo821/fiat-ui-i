@@ -1,6 +1,6 @@
 import create from 'zustand';
 import { ethers } from 'ethers';
-import { decToScale, decToWad, scaleToDec, scaleToWad, WAD, wadToDec, wadToScale, ZERO } from '@fiatdao/sdk';
+import { decToScale, decToWad, scaleToWad, WAD, wadToDec, ZERO } from '@fiatdao/sdk';
 
 import * as userActions from '../actions';
 import { debounce, floor4 } from '../utils';
@@ -8,13 +8,16 @@ import { debounce, floor4 } from '../utils';
 interface CreatePositionState {
   collateral: ethers.BigNumber; // [wad]
   deltaCollateral: ethers.BigNumber; // [wad]
+  debt: ethers.BigNumber; // [wad]
   deltaDebt: ethers.BigNumber; // [wad]
   underlier: ethers.BigNumber; // [underlierScale]
+  collRatio: ethers.BigNumber; // [wad]
   targetedCollRatio: ethers.BigNumber; // [wad]
   slippagePct: ethers.BigNumber; // [wad]
   formDataLoading: boolean;
   formWarnings: string[];
   formErrors: string[];
+  reset: () => void;
 }
 
 interface CreatePositionActions {
@@ -115,7 +118,7 @@ export const useCreatePositionStore = create<CreatePositionState & CreatePositio
     calculateNewPositionData: debounce(async function (
       fiat: any, modifyPositionData: any, selectedCollateralTypeId: string | null
     ) {
-      const { collateralType, position } = modifyPositionData;
+      const { collateralType } = modifyPositionData;
       const { tokenScale, underlierScale } = collateralType.properties;
       const { codex: { debtFloor } } = collateralType.settings;
       const { slippagePct, underlier } = get();
@@ -187,4 +190,8 @@ export const useCreatePositionStore = create<CreatePositionState & CreatePositio
     }),
 
     setFormDataLoading: (isLoading) => { set(() => ({ formDataLoading: isLoading })) },
+
+    reset: () => {
+      set(initialState);
+    },
 }));

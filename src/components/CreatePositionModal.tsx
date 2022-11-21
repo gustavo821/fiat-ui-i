@@ -11,7 +11,7 @@ import {
   Switch,
   Text,
 } from '@nextui-org/react';
-import { ethers } from 'ethers';
+import { BigNumber, ethers } from 'ethers';
 import { Slider } from 'antd';
 import 'antd/dist/antd.css';
 import { scaleToDec, wadToDec } from '@fiatdao/sdk';
@@ -27,7 +27,7 @@ interface CreatePositionModalProps {
   modifyPositionData: any;
   selectedCollateralTypeId: string | null;
   setMonetaDelegate: (fiat: any) => any;
-  setUnderlierAllowance: (fiat: any) => any;
+  setUnderlierAllowance: (fiat: any, amount: BigNumber) => any;
   transactionData: any;
   unsetMonetaDelegate: (fiat: any) => any;
   unsetUnderlierAllowance: (fiat: any) => any;
@@ -366,7 +366,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
             } else {
               try {
                 setRpcError('');
-                await props.setUnderlierAllowance(props.contextData.fiat);
+                await props.setUnderlierAllowance(props.contextData.fiat, formDataStore.underlier);
               } catch (e: any) {
                 setRpcError(e.message);
               }

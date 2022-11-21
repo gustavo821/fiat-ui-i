@@ -11,12 +11,12 @@ import {
   Switch,
   Text,
 } from '@nextui-org/react';
-import { ethers } from 'ethers';
+import { BigNumber, ethers } from 'ethers';
 import { scaleToDec, wadToDec } from '@fiatdao/sdk';
 
 import { commifyToDecimalPlaces, floor2, floor4, formatUnixTimestamp } from '../utils';
 import { TransactionStatus } from '../../pages';
-import { useModifyPositionFormDataStore } from '../stores/formStore';
+import { useModifyPositionStore } from '../stores/modifyPositionStore';
 import { Alert } from './Alert';
 import { InputLabelWithMax } from './InputLabelWithMax';
 
@@ -27,10 +27,10 @@ interface ModifyPositionModalProps {
   modifyPositionData: any;
   redeemCollateralAndModifyDebt: () => any;
   sellCollateralAndModifyDebt: () => any;
-  setFIATAllowance: (fiat: any) => any;
+  setFIATAllowance: (fiat: any, amount: BigNumber) => any;
   setTransactionStatus: (status: TransactionStatus) => void;
   setMonetaDelegate: (fiat: any) => any;
-  setUnderlierAllowance: (fiat: any) => any;
+  setUnderlierAllowance: (fiat: any, amount: BigNumber) => any;
   transactionData: any;
   unsetFIATAllowance: (fiat: any) => any;
   unsetMonetaDelegate: (fiat: any) => any;
@@ -55,7 +55,8 @@ export const ModifyPositionModal = (props: ModifyPositionModalProps) => {
 };
 
 const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
-  const formDataStore = useModifyPositionFormDataStore();
+  // const formDataStore = useModifyPositionFormDataStore();
+  const formDataStore = useModifyPositionStore();
   const [rpcError, setRpcError] = React.useState('');
 
   const matured = React.useMemo(() => {
@@ -197,7 +198,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               disabled={props.disableActions}
               value={floor2(scaleToDec(formDataStore.underlier, underlierScale))}
               onChange={(event) => {
-                formDataStore.setUnderlier(props.contextData.fiat, event.target.value, props.modifyPositionData, null);
+                formDataStore.setUnderlier(props.contextData.fiat, event.target.value, props.modifyPositionData);
               }}
               placeholder='0'
               inputMode='decimal'
@@ -213,7 +214,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               disabled={props.disableActions}
               value={floor2(wadToDec(formDataStore.deltaCollateral))}
               onChange={(event) => {
-                formDataStore.setDeltaCollateral(props.contextData.fiat, event.target.value, props.modifyPositionData, null);
+                formDataStore.setDeltaCollateral(props.contextData.fiat, event.target.value, props.modifyPositionData);
               }}
               placeholder='0'
               inputMode='decimal'
@@ -224,11 +225,11 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
                 formDataStore.mode === 'withdraw'
                   ? <InputLabelWithMax
                     label='Collateral to withdraw and swap'
-                    onMaxClick={() => formDataStore.setMaxDeltaCollateral(props.contextData.fiat, props.modifyPositionData, null)}
+                    onMaxClick={() => formDataStore.setMaxDeltaCollateral(props.contextData.fiat, props.modifyPositionData)}
                   />
                   : <InputLabelWithMax
                     label='Collateral to withdraw and redeem'
-                    onMaxClick={() => formDataStore.setMaxDeltaCollateral(props.contextData.fiat, props.modifyPositionData, null)}
+                    onMaxClick={() => formDataStore.setMaxDeltaCollateral(props.contextData.fiat, props.modifyPositionData)}
                   />
               }
               labelRight={symbol}
@@ -243,7 +244,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               disabled={props.disableActions}
               value={floor2(Number(wadToDec(formDataStore.slippagePct)) * 100)}
               onChange={(event) => {
-                formDataStore.setSlippagePct(props.contextData.fiat, event.target.value, props.modifyPositionData, null);
+                formDataStore.setSlippagePct(props.contextData.fiat, event.target.value, props.modifyPositionData);
               }}
               step='0.01'
               placeholder='0'
@@ -261,7 +262,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
           disabled={props.disableActions}
           value={floor2(wadToDec(formDataStore.deltaDebt))}
           onChange={(event) => {
-            formDataStore.setDeltaDebt(props.contextData.fiat, event.target.value, props.modifyPositionData, null);
+            formDataStore.setDeltaDebt(props.contextData.fiat, event.target.value, props.modifyPositionData);
           }}
           placeholder='0'
           inputMode='decimal'
@@ -273,7 +274,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               ? 'FIAT to borrow'
               : <InputLabelWithMax
                   label='FIAT to pay back'
-                  onMaxClick={() => formDataStore.setMaxDeltaDebt(props.contextData.fiat, props.modifyPositionData, null)}
+                  onMaxClick={() => formDataStore.setMaxDeltaDebt(props.contextData.fiat, props.modifyPositionData)}
                 />
           }
           labelRight={'FIAT'}
@@ -402,7 +403,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
                 } else {
                   try {
                     setRpcError('');
-                    await props.setUnderlierAllowance(props.contextData.fiat)
+                    await props.setUnderlierAllowance(props.contextData.fiat, formDataStore.underlier)
                   } catch (e: any) {
                     setRpcError(e.message);
                   }
@@ -469,7 +470,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
                 } else {
                   try {
                     setRpcError('');
-                    await props.setFIATAllowance(props.contextData.fiat);
+                    await props.setFIATAllowance(props.contextData.fiat, formDataStore.deltaDebt);
                   } catch (e: any) {
                     setRpcError(e.message);
                   }
