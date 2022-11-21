@@ -388,7 +388,7 @@ const Home: NextPage = () => {
 
     addRecentTransaction({
       hash: response.transactionHash,
-      description: 'Buy and deposit collateral and borrow FIAT',
+      description: 'Create position',
     });
     handleFinishedTransaction();
     return response;
