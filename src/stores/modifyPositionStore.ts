@@ -59,6 +59,18 @@ interface ModifyPositionActions {
     fiat: any,
     modifyPositionData: any,
   ) => void;
+  calculatePositionValuesAfterDeposit: (
+    fiat: any,
+    modifyPositionData: any,
+  ) => Promise<void>;
+  calculatePositionValuesAfterWithdraw: (
+    fiat: any,
+    modifyPositionData: any,
+  ) => Promise<void>;
+  calculatePositionValuesAfterRedeem: (
+    fiat: any,
+    modifyPositionData: any,
+  ) => Promise<void>;
   resetCollateralAndDebtInputs: (fiat: any, modifyPositionData: any) => void;
   reset: () => void;
 }
@@ -164,166 +176,189 @@ export const useModifyPositionStore = create<ModifyPositionState & ModifyPositio
     // Calculates new collateralizationRatio, collateral, debt, and deltaCollateral as needed
     // Debounced to prevent spamming RPC calls
     calculateNewPositionData: debounce(async function (fiat: any, modifyPositionData: any) {
-      const { collateralType, position } = modifyPositionData;
-      const { tokenScale, underlierScale } = collateralType.properties;
-      const { codex: { debtFloor } } = collateralType.settings;
-      const { slippagePct, underlier, mode } = get();
-      const { codex: { virtualRate: rate }, collybus: { fairPrice } } = collateralType.state;
+      const { mode, calculatePositionValuesAfterDeposit, calculatePositionValuesAfterWithdraw, calculatePositionValuesAfterRedeem } = get();
 
       // Reset form errors and warnings on new input
       set(() => ({ formWarnings: [], formErrors: [] }));
 
-      try {
-        if (mode === 'deposit') {
-          let deltaCollateral = ZERO;
-          if (!underlier.isZero()) {
-            try {
-              // Preview underlier to collateral token swap
-              const tokensOut = await userActions.underlierToCollateralToken(fiat, underlier, collateralType);
-              // redemption price with a 1:1 exchange rate
-              const minTokensOut = underlier.mul(tokenScale).div(underlierScale);
-              // apply slippagePct to preview
-              const tokensOutWithSlippage = tokensOut.mul(WAD.sub(slippagePct)).div(WAD);
-              // assert: minTokensOut > idealTokenOut
-              if (tokensOutWithSlippage.lt(minTokensOut)) set(() => (
-                { formWarnings: ['Large Price Impact (Negative Yield)'] }
-              ));
-              deltaCollateral = scaleToWad(tokensOut, tokenScale).mul(WAD.sub(slippagePct)).div(WAD);
-            } catch (e: any) {
-              if (e.reason && e.reason === 'BAL#001') {
-                // Catch balancer-specific underflow error
-                // https://dev.balancer.fi/references/error-codes
-                throw new Error('Insufficient liquidity to convert underlier to collateral');
-              }
-              throw e;
-            }
-          }
-
-          // Calculate new position values based on deltaDebt, taking into account an existing position's collateral
-          const { deltaDebt } = get();
-          const collateral = position.collateral.add(deltaCollateral);
-          const debt = fiat.normalDebtToDebt(position.normalDebt, rate).add(deltaDebt);
-          const normalDebt = fiat.debtToNormalDebt(debt, rate);
-          const collRatio = fiat.computeCollateralizationRatio(collateral, fairPrice, normalDebt, rate);
-
-          if (debt.gt(ZERO) && debt.lte(collateralType.settings.codex.debtFloor) ) set(() => ({
-            formErrors: [
-              ...get().formErrors,
-              `This collateral type requires a minimum of ${wadToDec(debtFloor)} FIAT to be borrowed`
-            ]
-          }));
-
-          if (debt.gt(0) && collRatio.lte(WAD)) set(() => ({
-            formErrors: [...get().formErrors, 'Collateralization Ratio has to be greater than 100%']
-          }));
-
-          set(() => ({ collRatio, collateral, debt, deltaCollateral }));
-        } else if (mode === 'withdraw') {
-          const { deltaCollateral, deltaDebt, slippagePct } = get();
-          const tokenInScaled = wadToScale(deltaCollateral, tokenScale);
-          let underlier = ZERO;
-          if (!tokenInScaled.isZero()) {
-            try {
-            const underlierAmount = await userActions.collateralTokenToUnderlier(fiat, tokenInScaled, collateralType);
-            underlier = underlierAmount.mul(WAD.sub(slippagePct)).div(WAD); // with slippage
-            } catch (e: any) {
-              if (e.reason && e.reason === 'BAL#001') {
-                // Catch balancer-specific underflow error
-                // https://dev.balancer.fi/references/error-codes
-                throw new Error('Insufficient liquidity to convert collateral to underlier');
-              }
-              throw e;
-            }
-          }
-          const deltaNormalDebt = fiat.debtToNormalDebt(deltaDebt, rate);
-
-          if (position.collateral.lt(deltaCollateral)) set(() => ({
-            formErrors: [...get().formErrors, 'Insufficient collateral']
-          }));
-          if (position.normalDebt.lt(deltaNormalDebt)) set(() => ({
-            formErrors: [...get().formErrors, 'Insufficient debt']
-          }));
-
-          const collateral = position.collateral.sub(deltaCollateral);
-          let normalDebt = position.normalDebt.sub(deltaNormalDebt);
-          // override normalDebt to position.normalDebt if normalDebt is less than 1 FIAT 
-          if (normalDebt.lt(WAD)) normalDebt = ZERO;
-          const debt = fiat.normalDebtToDebt(normalDebt, rate);
-          if (debt.gt(ZERO) && debt.lt(debtFloor)) set(() => ({
-            formErrors: [
-              ...get().formErrors,
-              `This collateral type requires a minimum of ${wadToDec(debtFloor)} FIAT to be borrowed`
-            ]
-          }));
-
-          const collRatio = fiat.computeCollateralizationRatio(collateral, fairPrice, normalDebt, rate);
-          if (!(collateral.isZero() && normalDebt.isZero()) && collRatio.lte(WAD))
-            set(() => ({ formErrors: [...get().formErrors, 'Collateralization Ratio has to be greater than 100%'] }));
-
-          set(() => ({ collRatio, underlier, collateral, debt }));
-        } else if (mode === 'redeem') {
-          const { deltaCollateral, deltaDebt } = get();
-          const deltaNormalDebt = fiat.debtToNormalDebt(deltaDebt, rate);
-
-          if (position.collateral.lt(deltaCollateral)) set(() => ({
-            formErrors: [...get().formErrors, 'Insufficient collateral']
-          }));
-          if (position.normalDebt.lt(deltaNormalDebt)) set(() => ({
-            formErrors: [...get().formErrors, 'Insufficient debt']
-          }));
-
-          const collateral = position.collateral.sub(deltaCollateral);
-          let normalDebt = position.normalDebt.sub(deltaNormalDebt);
-          // override normalDebt to position.normalDebt if normalDebt is less than 1 FIAT 
-          if (normalDebt.lt(WAD)) normalDebt = ZERO;
-          const debt = fiat.normalDebtToDebt(normalDebt, rate);
-          if (debt.gt(ZERO) && debt.lt(debtFloor)) set(() => ({
-            formErrors: [
-              ...get().formErrors,
-              `This collateral type requires a minimum of ${wadToDec(debtFloor)} FIAT to be borrowed`
-            ]
-          }));
-          const collRatio = fiat.computeCollateralizationRatio(collateral, fairPrice, normalDebt, rate);
-          if (!(collateral.isZero() && normalDebt.isZero()) && collRatio.lte(WAD))
-            set(() => ({ formErrors: [...get().formErrors, 'Collateralization Ratio has to be greater than 100%'] }));
-
-          set(() => ({ collRatio, collateral, debt }));
-        } else {
-          throw new Error('Invalid mode');
-        }
-      } catch (error: any) {
-        if (mode === 'deposit') {
-          set(() => ({
-            deltaCollateral: ZERO,
-            deltaDebt: ZERO,
-            collateral: ZERO,
-            debt: ZERO,
-            collRatio: ZERO,
-            formErrors: [...get().formErrors, error.message],
-          }));
-        } else if (mode === 'withdraw' || mode === 'redeem') {
-          try {
-            set(() => ({
-              underlier: ZERO,
-              collateral: position.collateral,
-              debt: fiat.normalDebtToDebt(position.normalDebt, rate),
-              collRatio: fiat.computeCollateralizationRatio(position.collateral, fairPrice, position.normalDebt, rate),
-              formErrors: [...get().formErrors, error.message],
-            }));
-          } catch (error: any) {
-            set(() => ({
-              underlier: ZERO,
-              collateral: ZERO,
-              debt: ZERO,
-              collRatio: ZERO,
-              formErrors: [...get().formErrors, error.message],
-            }));
-          }
-        }
+      if (mode === 'deposit') {
+        await calculatePositionValuesAfterDeposit(fiat, modifyPositionData);
+      } else if (mode === 'withdraw') {
+        await calculatePositionValuesAfterWithdraw(fiat, modifyPositionData);
+      } else if (mode === 'redeem') {
+        await calculatePositionValuesAfterRedeem(fiat, modifyPositionData);
+      } else {
+        console.error('Invalid mode');
       }
 
       set(() => ({ formDataLoading: false }));
     }),
+
+    calculatePositionValuesAfterDeposit: async function (fiat: any, modifyPositionData: any) {
+      const { collateralType, position } = modifyPositionData;
+      const { tokenScale, underlierScale } = collateralType.properties;
+      const { codex: { debtFloor } } = collateralType.settings;
+      const { slippagePct, underlier } = get();
+      const { codex: { virtualRate: rate }, collybus: { fairPrice } } = collateralType.state;
+
+      try {
+        let deltaCollateral = ZERO;
+        if (!underlier.isZero()) {
+          try {
+            // Preview underlier to collateral token swap
+            const tokensOut = await userActions.underlierToCollateralToken(fiat, underlier, collateralType);
+            // redemption price with a 1:1 exchange rate
+            const minTokensOut = underlier.mul(tokenScale).div(underlierScale);
+            // apply slippagePct to preview
+            const tokensOutWithSlippage = tokensOut.mul(WAD.sub(slippagePct)).div(WAD);
+            // assert: minTokensOut > idealTokenOut
+            if (tokensOutWithSlippage.lt(minTokensOut)) set(() => (
+              { formWarnings: ['Large Price Impact (Negative Yield)'] }
+            ));
+            deltaCollateral = scaleToWad(tokensOut, tokenScale).mul(WAD.sub(slippagePct)).div(WAD);
+          } catch (e: any) {
+            if (e.reason && e.reason === 'BAL#001') {
+              // Catch balancer-specific underflow error
+              // https://dev.balancer.fi/references/error-codes
+              throw new Error('Insufficient liquidity to convert underlier to collateral');
+            }
+            throw e;
+          }
+        }
+
+        // Estimate new position values based on deltaDebt, taking into account an existing position's collateral
+        const { deltaDebt } = get();
+        const collateral = position.collateral.add(deltaCollateral);
+        const debt = fiat.normalDebtToDebt(position.normalDebt, rate).add(deltaDebt);
+        const normalDebt = fiat.debtToNormalDebt(debt, rate);
+        const collRatio = fiat.computeCollateralizationRatio(collateral, fairPrice, normalDebt, rate);
+
+        if (debt.gt(ZERO) && debt.lte(collateralType.settings.codex.debtFloor) ) set(() => ({
+          formErrors: [
+            ...get().formErrors,
+            `This collateral type requires a minimum of ${wadToDec(debtFloor)} FIAT to be borrowed`
+          ]
+        }));
+
+        if (debt.gt(0) && collRatio.lte(WAD)) set(() => ({
+          formErrors: [...get().formErrors, 'Collateralization Ratio has to be greater than 100%']
+        }));
+
+        set(() => ({ collRatio, collateral, debt, deltaCollateral }));
+      } catch (e: any) {
+        set(() => ({
+          deltaCollateral: ZERO,
+          deltaDebt: ZERO,
+          collateral: ZERO,
+          debt: ZERO,
+          collRatio: ZERO,
+          formErrors: [...get().formErrors, e.message],
+        }));
+      }
+    },
+
+    calculatePositionValuesAfterWithdraw: async function (fiat: any, modifyPositionData: any) {
+      const { collateralType, position } = modifyPositionData;
+      const { tokenScale } = collateralType.properties;
+      const { codex: { debtFloor } } = collateralType.settings;
+      const { codex: { virtualRate: rate }, collybus: { fairPrice } } = collateralType.state;
+
+      try {
+        const { deltaCollateral, deltaDebt, slippagePct } = get();
+        const tokenInScaled = wadToScale(deltaCollateral, tokenScale);
+        let underlier = ZERO;
+        if (!tokenInScaled.isZero()) {
+          try {
+            const underlierAmount = await userActions.collateralTokenToUnderlier(fiat, tokenInScaled, collateralType);
+            underlier = underlierAmount.mul(WAD.sub(slippagePct)).div(WAD); // with slippage
+          } catch (e: any) {
+            if (e.reason && e.reason === 'BAL#001') {
+              // Catch balancer-specific underflow error
+              // https://dev.balancer.fi/references/error-codes
+              throw new Error('Insufficient liquidity to convert collateral to underlier');
+            }
+            throw e;
+          }
+        }
+        const deltaNormalDebt = fiat.debtToNormalDebt(deltaDebt, rate);
+
+        if (position.collateral.lt(deltaCollateral)) set(() => ({
+          formErrors: [...get().formErrors, 'Insufficient collateral']
+        }));
+        if (position.normalDebt.lt(deltaNormalDebt)) set(() => ({
+          formErrors: [...get().formErrors, 'Insufficient debt']
+        }));
+
+        const collateral = position.collateral.sub(deltaCollateral);
+        let normalDebt = position.normalDebt.sub(deltaNormalDebt);
+        // override normalDebt to position.normalDebt if normalDebt is less than 1 FIAT 
+        if (normalDebt.lt(WAD)) normalDebt = ZERO;
+        const debt = fiat.normalDebtToDebt(normalDebt, rate);
+        if (debt.gt(ZERO) && debt.lt(debtFloor)) set(() => ({
+          formErrors: [
+            ...get().formErrors,
+            `This collateral type requires a minimum of ${wadToDec(debtFloor)} FIAT to be borrowed`
+          ]
+        }));
+
+        const collRatio = fiat.computeCollateralizationRatio(collateral, fairPrice, normalDebt, rate);
+        if (!(collateral.isZero() && normalDebt.isZero()) && collRatio.lte(WAD))
+          set(() => ({ formErrors: [...get().formErrors, 'Collateralization Ratio has to be greater than 100%'] }));
+
+        set(() => ({ collRatio, underlier, collateral, debt }));
+      } catch(e: any) {
+        set(() => ({
+          underlier: ZERO,
+          collateral: position.collateral,
+          debt: fiat.normalDebtToDebt(position.normalDebt, rate),
+          collRatio: fiat.computeCollateralizationRatio(position.collateral, fairPrice, position.normalDebt, rate),
+          formErrors: [...get().formErrors, e.message],
+        }));
+      }
+    },
+
+    calculatePositionValuesAfterRedeem: async function (fiat: any, modifyPositionData: any) {
+      const { collateralType, position } = modifyPositionData;
+      const { codex: { debtFloor } } = collateralType.settings;
+      const { codex: { virtualRate: rate }, collybus: { fairPrice } } = collateralType.state;
+
+      try {
+        const { deltaCollateral, deltaDebt } = get();
+        const deltaNormalDebt = fiat.debtToNormalDebt(deltaDebt, rate);
+
+        if (position.collateral.lt(deltaCollateral)) set(() => ({
+          formErrors: [...get().formErrors, 'Insufficient collateral']
+        }));
+        if (position.normalDebt.lt(deltaNormalDebt)) set(() => ({
+          formErrors: [...get().formErrors, 'Insufficient debt']
+        }));
+
+        const collateral = position.collateral.sub(deltaCollateral);
+        let normalDebt = position.normalDebt.sub(deltaNormalDebt);
+        // override normalDebt to position.normalDebt if normalDebt is less than 1 FIAT 
+        if (normalDebt.lt(WAD)) normalDebt = ZERO;
+        const debt = fiat.normalDebtToDebt(normalDebt, rate);
+        if (debt.gt(ZERO) && debt.lt(debtFloor)) set(() => ({
+          formErrors: [
+            ...get().formErrors,
+            `This collateral type requires a minimum of ${wadToDec(debtFloor)} FIAT to be borrowed`
+          ]
+        }));
+        const collRatio = fiat.computeCollateralizationRatio(collateral, fairPrice, normalDebt, rate);
+        if (!(collateral.isZero() && normalDebt.isZero()) && collRatio.lte(WAD))
+          set(() => ({ formErrors: [...get().formErrors, 'Collateralization Ratio has to be greater than 100%'] }));
+
+        set(() => ({ collRatio, collateral, debt }));
+      } catch (e: any) {
+        set(() => ({
+          underlier: ZERO,
+          collateral: position.collateral,
+          debt: fiat.normalDebtToDebt(position.normalDebt, rate),
+          collRatio: fiat.computeCollateralizationRatio(position.collateral, fairPrice, position.normalDebt, rate),
+          formErrors: [...get().formErrors, e.message],
+        }));
+      }
+    },
 
     resetCollateralAndDebtInputs: (fiat, modifyPositionData) => {
       const { deltaCollateral, deltaDebt, underlier } = initialState;
