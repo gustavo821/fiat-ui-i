@@ -16,7 +16,7 @@ import { Slider } from 'antd';
 import 'antd/dist/antd.css';
 import { scaleToDec, wadToDec } from '@fiatdao/sdk';
 
-import { commifyToDecimalPlaces, floor2, floor4, formatUnixTimestamp } from '../utils';
+import { commifyToDecimalPlaces, floor2, formatUnixTimestamp } from '../utils';
 import { Alert } from './Alert';
 import { useCreatePositionStore } from '../stores/createPositionStore';
 
@@ -278,7 +278,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
         </Text>
         <Input
           readOnly
-          value={createPositionStore.formDataLoading ? ' ' : floor4(wadToDec(createPositionStore.deltaCollateral))}
+          value={createPositionStore.formDataLoading ? ' ' : floor2(wadToDec(createPositionStore.deltaCollateral))}
           placeholder='0'
           type='string'
           label={'Collateral to deposit (incl. slippage)'}
@@ -297,7 +297,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
         </Text>
         <Input
           readOnly
-          value={createPositionStore.formDataLoading ? ' ' : floor4(wadToDec(createPositionStore.collateral))}
+          value={createPositionStore.formDataLoading ? ' ' : floor2(wadToDec(createPositionStore.collateral))}
           placeholder='0'
           type='string'
           label={'Collateral'}
@@ -308,7 +308,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
         />
         <Input
           readOnly
-          value={createPositionStore.formDataLoading ? ' ' : floor4(wadToDec(createPositionStore.debt))}
+          value={createPositionStore.formDataLoading ? ' ' : floor2(wadToDec(createPositionStore.debt))}
           placeholder='0'
           type='string'
           label='Debt'

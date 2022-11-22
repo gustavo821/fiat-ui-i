@@ -14,7 +14,7 @@ import {
 import { BigNumber, ethers } from 'ethers';
 import { scaleToDec, wadToDec } from '@fiatdao/sdk';
 
-import { commifyToDecimalPlaces, floor2, floor4, formatUnixTimestamp } from '../utils';
+import { commifyToDecimalPlaces, floor2, formatUnixTimestamp } from '../utils';
 import { TransactionStatus } from '../../pages';
 import { useModifyPositionStore } from '../stores/modifyPositionStore';
 import { Alert } from './Alert';
@@ -297,8 +297,8 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
                 (modifyPositionStore.formDataLoading)
                   ? ' '
                   : (modifyPositionStore.mode === 'deposit')
-                    ? floor4(wadToDec(modifyPositionStore.deltaCollateral))
-                    : floor4(scaleToDec(modifyPositionStore.underlier, underlierScale))
+                    ? floor2(wadToDec(modifyPositionStore.deltaCollateral))
+                    : floor2(scaleToDec(modifyPositionStore.underlier, underlierScale))
               }
               placeholder='0'
               type='string'
@@ -326,7 +326,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
           readOnly
           value={(modifyPositionStore.formDataLoading)
             ? ' '
-            : `${floor2(wadToDec(position.collateral))} → ${floor4(wadToDec(modifyPositionStore.collateral))}`
+            : `${floor2(wadToDec(position.collateral))} → ${floor2(wadToDec(modifyPositionStore.collateral))}`
           }
           placeholder='0'
           type='string'
@@ -340,7 +340,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
           readOnly
           value={(modifyPositionStore.formDataLoading)
             ? ' '
-            : `${floor2(wadToDec(fiat.normalDebtToDebt(position.normalDebt, virtualRate)))} → ${floor4(wadToDec(modifyPositionStore.debt))}`
+            : `${floor2(wadToDec(fiat.normalDebtToDebt(position.normalDebt, virtualRate)))} → ${floor2(wadToDec(modifyPositionStore.debt))}`
           }
           placeholder='0'
           type='string'
