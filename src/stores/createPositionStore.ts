@@ -1,19 +1,19 @@
 import create from 'zustand';
-import { ethers } from 'ethers';
+import { BigNumber } from 'ethers';
 import { decToScale, decToWad, scaleToWad, WAD, wadToDec, ZERO } from '@fiatdao/sdk';
 
 import * as userActions from '../actions';
 import { debounce, floor4 } from '../utils';
 
 interface CreatePositionState {
-  collateral: ethers.BigNumber; // [wad]
-  deltaCollateral: ethers.BigNumber; // [wad]
-  debt: ethers.BigNumber; // [wad]
-  deltaDebt: ethers.BigNumber; // [wad]
-  underlier: ethers.BigNumber; // [underlierScale]
-  collRatio: ethers.BigNumber; // [wad]
-  targetedCollRatio: ethers.BigNumber; // [wad]
-  slippagePct: ethers.BigNumber; // [wad]
+  collateral: BigNumber; // [wad]
+  deltaCollateral: BigNumber; // [wad]
+  debt: BigNumber; // [wad]
+  deltaDebt: BigNumber; // [wad]
+  underlier: BigNumber; // [underlierScale]
+  collRatio: BigNumber; // [wad]
+  targetedCollRatio: BigNumber; // [wad]
+  slippagePct: BigNumber; // [wad]
   formDataLoading: boolean;
   formWarnings: string[];
   formErrors: string[];
@@ -83,7 +83,7 @@ export const useCreatePositionStore = create<CreatePositionState & CreatePositio
     },
 
     setSlippagePct: (fiat, value, modifyPositionData, selectedCollateralTypeId) => {
-      let newSlippage: ethers.BigNumber;
+      let newSlippage: BigNumber;
       if (value === null || value === '') {
         newSlippage = initialState.slippagePct;
       } else {
@@ -106,7 +106,7 @@ export const useCreatePositionStore = create<CreatePositionState & CreatePositio
     },
 
     setDeltaDebt: (fiat, value, modifyPositionData, selectedCollateralTypeId) => {
-      let newDeltaDebt: ethers.BigNumber;
+      let newDeltaDebt: BigNumber;
       if (value === null || value === '') newDeltaDebt = initialState.deltaDebt;
       else newDeltaDebt = decToWad(floor4(Number(value) < 0 ? 0 : Number(value)));
       set(() => ({ deltaDebt: newDeltaDebt }));

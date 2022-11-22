@@ -4,7 +4,7 @@ import { useAccount, useNetwork, useProvider } from 'wagmi';
 import shallow from 'zustand/shallow'
 import { ConnectButton, useAddRecentTransaction } from '@rainbow-me/rainbowkit';
 import { Badge, Button, Container, Spacer } from '@nextui-org/react';
-import { ContractReceipt, ethers } from 'ethers';
+import { BigNumber, ContractReceipt, ethers } from 'ethers';
 import { decToWad, FIAT, WAD, wadToDec, ZERO } from '@fiatdao/sdk';
 
 import { connectButtonCSS, ProxyButton } from '../src/components/ProxyButton';
@@ -45,22 +45,22 @@ const Home: NextPage = () => {
       outdated: false,
       collateralType: null as undefined | null | any,
       position: null as undefined | null | any,
-      underlierAllowance: null as null | ethers.BigNumber, // [underlierScale]
-      underlierBalance: null as null | ethers.BigNumber, // [underlierScale]
+      underlierAllowance: null as null | BigNumber, // [underlierScale]
+      underlierBalance: null as null | BigNumber, // [underlierScale]
       monetaDelegate: null as null | boolean, // [boolean]
-      fiatAllowance: null as null | ethers.BigNumber // [wad]
+      fiatAllowance: null as null | BigNumber // [wad]
     },
     modifyPositionFormData: {
       outdated: true,
       mode: 'deposit', // [deposit, withdraw, redeem]
-      slippagePct: decToWad('0.001') as ethers.BigNumber, // [wad]
-      underlier: ZERO as ethers.BigNumber, // [underlierScale]
-      deltaCollateral: ZERO as ethers.BigNumber, // [wad]
-      deltaDebt: ZERO as ethers.BigNumber, // [wad]
-      targetedCollRatio: decToWad('1.2') as ethers.BigNumber, // [wad]
-      collateral: ZERO as ethers.BigNumber, // [wad]
-      debt: ZERO as ethers.BigNumber, // [wad]
-      collRatio: ZERO as ethers.BigNumber, // [wad] estimated new collateralization ratio
+      slippagePct: decToWad('0.001') as BigNumber, // [wad]
+      underlier: ZERO as BigNumber, // [underlierScale]
+      deltaCollateral: ZERO as BigNumber, // [wad]
+      deltaDebt: ZERO as BigNumber, // [wad]
+      targetedCollRatio: decToWad('1.2') as BigNumber, // [wad]
+      collateral: ZERO as BigNumber, // [wad]
+      debt: ZERO as BigNumber, // [wad]
+      collRatio: ZERO as BigNumber, // [wad] estimated new collateralization ratio
       error: null as null | string
     },
     transactionData: {
@@ -329,7 +329,7 @@ const Home: NextPage = () => {
     setContextData({ ...contextData, proxies: [proxyAddress] });
   }
 
-  const setUnderlierAllowance = async (fiat: any, amount: ethers.BigNumber) => {
+  const setUnderlierAllowance = async (fiat: any, amount: BigNumber) => {
     const token = fiat.getERC20Contract(modifyPositionData.collateralType.properties.underlierToken);
     // add 1 unit has a buffer in case user refreshes the page and the value becomes outdated
     const allowance = amount.add(modifyPositionData.collateralType.properties.underlierScale);
@@ -352,7 +352,7 @@ const Home: NextPage = () => {
     return response;
   }
 
-  const setFIATAllowance = async (fiat: any, amount: ethers.BigNumber) => {
+  const setFIATAllowance = async (fiat: any, amount: BigNumber) => {
     const token = fiat.getContracts().fiat;
     // add 1 unit has a buffer in case user refreshes the page and the value becomes outdated
     const allowance = amount.add(WAD);
@@ -402,7 +402,7 @@ const Home: NextPage = () => {
     return response;
   }
 
-  const createPosition = async (deltaCollateral: ethers.BigNumber, deltaDebt: ethers.BigNumber, underlier: ethers.BigNumber) => {
+  const createPosition = async (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => {
     const args = userActions.buildBuyCollateralAndModifyDebtArgs(
       contextData,
       modifyPositionData.collateralType,
@@ -420,7 +420,7 @@ const Home: NextPage = () => {
     return response;
   }
 
-  const buyCollateralAndModifyDebt = async (deltaCollateral: ethers.BigNumber, deltaDebt: ethers.BigNumber, underlier: ethers.BigNumber) => {
+  const buyCollateralAndModifyDebt = async (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => {
     if (deltaCollateral.isZero()) {
       const args = userActions.buildModifyCollateralAndDebtArgs(
         contextData,
@@ -455,7 +455,7 @@ const Home: NextPage = () => {
     }
   }
 
-  const sellCollateralAndModifyDebt = async (deltaCollateral: ethers.BigNumber, deltaDebt: ethers.BigNumber, underlier: ethers.BigNumber) => {
+  const sellCollateralAndModifyDebt = async (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => {
     if (deltaCollateral.isZero()) {
       const args = userActions.buildModifyCollateralAndDebtArgs(
         contextData,
@@ -492,7 +492,7 @@ const Home: NextPage = () => {
     }
   }
 
-  const redeemCollateralAndModifyDebt = async (deltaCollateral: ethers.BigNumber, deltaDebt: ethers.BigNumber) => {
+  const redeemCollateralAndModifyDebt = async (deltaCollateral: BigNumber, deltaDebt: BigNumber) => {
     if (deltaCollateral.isZero()) {
       const args = userActions.buildModifyCollateralAndDebtArgs(
         contextData,

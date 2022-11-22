@@ -21,7 +21,7 @@ import { Alert } from './Alert';
 import { useCreatePositionStore } from '../stores/createPositionStore';
 
 interface CreatePositionModalProps {
-  createPosition: (deltaCollateral: ethers.BigNumber, deltaDebt: ethers.BigNumber, underlier: ethers.BigNumber) => any;
+  createPosition: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
   contextData: any;
   disableActions: boolean;
   modifyPositionData: any;

@@ -1,11 +1,11 @@
 import { decToWad, scaleToWad, WAD, wadToScale, ZERO } from '@fiatdao/sdk';
-import { Contract, ethers } from 'ethers';
+import { BigNumber, Contract } from 'ethers';
 
 export const underlierToCollateralToken = async (
   fiat: any,
-  underlier: ethers.BigNumber,
+  underlier: BigNumber,
   collateralType: any
-): Promise<ethers.BigNumber> => {
+): Promise<BigNumber> => {
   if (underlier.isZero()) return ZERO;
 
   const { vault, tokenId, vaultType } = collateralType.properties;
@@ -61,9 +61,9 @@ export const underlierToCollateralToken = async (
 
 export const collateralTokenToUnderlier = async (
   fiat: any,
-  collateral: ethers.BigNumber,
+  collateral: BigNumber,
   collateralType: any
-): Promise<ethers.BigNumber> => {
+): Promise<BigNumber> => {
   if (collateral.isZero()) return ZERO;
   const { vault, tokenId, vaultType } = collateralType.properties;
   const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = fiat.getContracts();
@@ -183,15 +183,15 @@ export const getEarnableRate = async (fiat: any, collateralTypesData: any) => {
 // between when the tx is sent vs. when it is confirmed
 // insure that: debt_sent = normalDebt * rate_send <= debt_mined = normalDebt * rate_mined, otherwise:
 // avoids that user does not take out more debt than expected, that FIAT approval might not be sufficient for repayment
-const addDeltaNormalBuffer = (deltaNormalDebt: ethers.BigNumber): ethers.BigNumber => {
+const addDeltaNormalBuffer = (deltaNormalDebt: BigNumber): BigNumber => {
   return deltaNormalDebt.mul(WAD.sub(decToWad(0.0001))).div(WAD);
 }
 
 export const buildModifyCollateralAndDebtArgs = (
   contextData: any,
   collateralTypeData: any,
-  deltaDebt: ethers.BigNumber,
-  position: { collateral: ethers.BigNumber, normalDebt: ethers.BigNumber }
+  deltaDebt: BigNumber,
+  position: { collateral: BigNumber, normalDebt: BigNumber }
 ): { contract: Contract, methodName: string, methodArgs: any[] } => {
   const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = contextData.fiat.getContracts();
   const { properties } = collateralTypeData;
@@ -228,9 +228,9 @@ export const buildModifyCollateralAndDebtArgs = (
 export const buildBuyCollateralAndModifyDebtArgs = (
   contextData: any,
   collateralTypeData: any,
-  deltaCollateral: ethers.BigNumber,
-  deltaDebt: ethers.BigNumber,
-  underlier: ethers.BigNumber
+  deltaCollateral: BigNumber,
+  deltaDebt: BigNumber,
+  underlier: BigNumber
 ): { contract: Contract, methodName: string, methodArgs: any[] } => {
   const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = contextData.fiat.getContracts();
   const { properties } = collateralTypeData;
@@ -352,9 +352,9 @@ export const buildBuyCollateralAndModifyDebtArgs = (
 export const buildSellCollateralAndModifyDebtArgs = (
   contextData: any,
   collateralTypeData: any,
-  deltaCollateral: ethers.BigNumber,
-  deltaDebt: ethers.BigNumber,
-  underlier: ethers.BigNumber,
+  deltaCollateral: BigNumber,
+  deltaDebt: BigNumber,
+  underlier: BigNumber,
   position: any
 ): { contract: Contract, methodName: string, methodArgs: any[] } => {
   const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = contextData.fiat.getContracts();
@@ -481,8 +481,8 @@ export const buildSellCollateralAndModifyDebtArgs = (
 
 export const buildRedeemCollateralAndModifyDebtArgs = (contextData: any,
   collateralTypeData: any,
-  deltaCollateral: ethers.BigNumber,
-  deltaDebt: ethers.BigNumber,
+  deltaCollateral: BigNumber,
+  deltaDebt: BigNumber,
   position: any
 ): { contract: Contract, methodName: string, methodArgs: any[] } => {
   const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = contextData.fiat.getContracts();

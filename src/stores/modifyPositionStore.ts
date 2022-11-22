@@ -1,5 +1,5 @@
 import create from 'zustand';
-import { ethers } from 'ethers';
+import { BigNumber } from 'ethers';
 import { decToScale, decToWad, scaleToWad, WAD, wadToDec, wadToScale, ZERO } from '@fiatdao/sdk';
 
 import * as userActions from '../actions';
@@ -8,13 +8,13 @@ import { debounce, floor4 } from '../utils';
 /// A store for setting and getting form values to create and manage positions.
 interface ModifyPositionState {
   mode: string; // [deposit, withdraw, redeem]
-  slippagePct: ethers.BigNumber; // [wad]
-  underlier: ethers.BigNumber; // [underlierScale]
-  deltaCollateral: ethers.BigNumber; // [wad]
-  deltaDebt: ethers.BigNumber; // [wad]
-  collateral: ethers.BigNumber; // [wad]
-  debt: ethers.BigNumber; // [wad]
-  collRatio: ethers.BigNumber; // [wad] estimated new collateralization ratio
+  slippagePct: BigNumber; // [wad]
+  underlier: BigNumber; // [underlierScale]
+  deltaCollateral: BigNumber; // [wad]
+  deltaDebt: BigNumber; // [wad]
+  collateral: BigNumber; // [wad]
+  debt: BigNumber; // [wad]
+  collRatio: BigNumber; // [wad] estimated new collateralization ratio
   formDataLoading: boolean;
   formWarnings: string[];
   formErrors: string[];
@@ -105,7 +105,7 @@ export const useModifyPositionStore = create<ModifyPositionState & ModifyPositio
     },
 
     setSlippagePct: (fiat, value, modifyPositionData) => {
-      let newSlippage: ethers.BigNumber;
+      let newSlippage: BigNumber;
       if (value === null || value === '') {
         newSlippage = initialState.slippagePct;
       } else {
@@ -120,7 +120,7 @@ export const useModifyPositionStore = create<ModifyPositionState & ModifyPositio
     },
 
     setDeltaCollateral: (fiat, value, modifyPositionData) => {
-      let newDeltaCollateral: ethers.BigNumber;
+      let newDeltaCollateral: BigNumber;
       if (value === null || value === '') newDeltaCollateral = initialState.deltaCollateral;
       else newDeltaCollateral = decToWad(floor4(Number(value) < 0 ? 0 : Number(value)));
       set(() => ({ deltaCollateral: newDeltaCollateral }));
@@ -140,7 +140,7 @@ export const useModifyPositionStore = create<ModifyPositionState & ModifyPositio
     },
 
     setDeltaDebt: (fiat, value, modifyPositionData) => {
-      let newDeltaDebt: ethers.BigNumber;
+      let newDeltaDebt: BigNumber;
       if (value === null || value === '') newDeltaDebt = initialState.deltaDebt;
       else newDeltaDebt = decToWad(floor4(Number(value) < 0 ? 0 : Number(value)));
       set(() => ({ deltaDebt: newDeltaDebt }));

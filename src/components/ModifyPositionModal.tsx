@@ -21,12 +21,12 @@ import { Alert } from './Alert';
 import { InputLabelWithMax } from './InputLabelWithMax';
 
 interface ModifyPositionModalProps {
-  buyCollateralAndModifyDebt: (deltaCollateral: ethers.BigNumber, deltaDebt: ethers.BigNumber, underlier: ethers.BigNumber) => any;
+  buyCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
   contextData: any;
   disableActions: boolean;
   modifyPositionData: any;
-  redeemCollateralAndModifyDebt: (deltaCollateral: ethers.BigNumber, deltaDebt: ethers.BigNumber) => any;
-  sellCollateralAndModifyDebt: (deltaCollateral: ethers.BigNumber, deltaDebt: ethers.BigNumber, underlier: ethers.BigNumber) => any;
+  redeemCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber) => any;
+  sellCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
   setFIATAllowance: (fiat: any, amount: BigNumber) => any;
   setTransactionStatus: (status: TransactionStatus) => void;
   setMonetaDelegate: (fiat: any) => any;
