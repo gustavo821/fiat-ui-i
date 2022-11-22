@@ -1,6 +1,7 @@
 import React from 'react';
 import type { NextPage } from 'next';
 import { useAccount, useNetwork, useProvider } from 'wagmi';
+import shallow from 'zustand/shallow'
 import { ConnectButton, useAddRecentTransaction } from '@rainbow-me/rainbowkit';
 import { Badge, Button, Container, Spacer } from '@nextui-org/react';
 import { ContractReceipt, ethers } from 'ethers';
@@ -16,8 +17,9 @@ import {
   decodeCollateralTypeId, decodePositionId, encodePositionId, getCollateralTypeData, getPositionData
 } from '../src/utils';
 import * as userActions from '../src/actions';
-import { useModifyPositionFormDataStore } from '../src/stores/formStore';
 import { InfoIcon } from '../src/components/Icons/info'; 
+import { useCreatePositionStore } from '../src/stores/createPositionStore';
+import { useModifyPositionStore } from '../src/stores/modifyPositionStore';
 
 export type TransactionStatus = null | 'error' | 'sent' | 'confirming' | 'confirmed';
 
@@ -68,7 +70,28 @@ const Home: NextPage = () => {
     fiatBalance: '',
   }), []) 
 
-  const formDataStore = useModifyPositionFormDataStore();
+  // Only select necessary actions off of the stores to minimize re-renders
+  const createPositionStore = useCreatePositionStore(
+    React.useCallback(
+      (state) => ({
+        setFormDataLoading: state.setFormDataLoading,
+        calculateNewPositionData: state.calculateNewPositionData,
+        reset: state.reset,
+      }),
+      []
+    ), shallow
+  );
+
+  const modifyPositionStore = useModifyPositionStore(
+    React.useCallback(
+      (state) => ({
+        setFormDataLoading: state.setFormDataLoading,
+        calculateNewPositionData: state.calculateNewPositionData,
+        reset: state.reset,
+      }),
+      []
+    ), shallow
+  );
 
   const [setupListeners, setSetupListeners] = React.useState(false);
   const [contextData, setContextData] = React.useState(initialState.contextData);
@@ -220,8 +243,15 @@ const Home: NextPage = () => {
       position = getPositionData(positionsData, vault, tokenId, owner);
     }
     const data = { ...modifyPositionData, collateralType, position };
-    formDataStore.setFormDataLoading(true);
-    formDataStore.calculateNewPositionData(contextData.fiat, data, selectedCollateralTypeId);
+
+    if (selectedCollateralTypeId != null) {
+      createPositionStore.setFormDataLoading(true);
+      createPositionStore.calculateNewPositionData(contextData.fiat, data, selectedCollateralTypeId);
+    } else {
+      modifyPositionStore.setFormDataLoading(true);
+      modifyPositionStore.calculateNewPositionData(contextData.fiat, data);
+    }
+
     setModifyPositionData({...data});
 
     (async function () {
@@ -255,9 +285,7 @@ const Home: NextPage = () => {
       });
     })();
 
-    // Eslint thinks formDataStore is a dependency, but that will never change. The only true dependency is its the calculateNewPositionData method
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [connector, contextData, collateralTypesData, positionsData, selectedCollateralTypeId, selectedPositionId, modifyPositionData, formDataStore.calculateNewPositionData]);
+  }, [connector, contextData, collateralTypesData, positionsData, selectedCollateralTypeId, selectedPositionId, modifyPositionData, createPositionStore, modifyPositionStore]);
 
   const sendStatefulTransaction = async (fiat: any, useProxy: boolean, action: string, contract: ethers.Contract, method: string, ...args: any[]): Promise<ContractReceipt> => {
     try {
@@ -301,10 +329,10 @@ const Home: NextPage = () => {
     setContextData({ ...contextData, proxies: [proxyAddress] });
   }
 
-  const setUnderlierAllowance = async (fiat: any) => {
+  const setUnderlierAllowance = async (fiat: any, amount: ethers.BigNumber) => {
     const token = fiat.getERC20Contract(modifyPositionData.collateralType.properties.underlierToken);
     // add 1 unit has a buffer in case user refreshes the page and the value becomes outdated
-    const allowance = formDataStore.underlier.add(modifyPositionData.collateralType.properties.underlierScale);
+    const allowance = amount.add(modifyPositionData.collateralType.properties.underlierScale);
     const response = await sendStatefulTransaction(fiat, false, 'setUnderlierAllowance', token, 'approve', contextData.proxies[0], allowance);
     addRecentTransaction({
       hash: response.transactionHash,
@@ -324,10 +352,10 @@ const Home: NextPage = () => {
     return response;
   }
 
-  const setFIATAllowance = async (fiat: any) => {
+  const setFIATAllowance = async (fiat: any, amount: ethers.BigNumber) => {
     const token = fiat.getContracts().fiat;
     // add 1 unit has a buffer in case user refreshes the page and the value becomes outdated
-    const allowance = formDataStore.deltaDebt.add(WAD);
+    const allowance = amount.add(WAD);
     const response = await sendStatefulTransaction(fiat, false, 'setFIATAllowance', token, 'approve', contextData.proxies[0], allowance);
     addRecentTransaction({
       hash: response.transactionHash,
@@ -374,12 +402,30 @@ const Home: NextPage = () => {
     return response;
   }
 
-  const buyCollateralAndModifyDebt = async () => {
-    if (formDataStore.deltaCollateral.isZero()) {
+  const createPosition = async (deltaCollateral: ethers.BigNumber, deltaDebt: ethers.BigNumber, underlier: ethers.BigNumber) => {
+    const args = userActions.buildBuyCollateralAndModifyDebtArgs(
+      contextData,
+      modifyPositionData.collateralType,
+      deltaCollateral,
+      deltaDebt,
+      underlier
+    );
+    const response = await sendStatefulTransaction(contextData.fiat, true, 'createPosition', args.contract, args.methodName, ...args.methodArgs);
+
+    addRecentTransaction({
+      hash: response.transactionHash,
+      description: 'Create position',
+    });
+    handleFinishedTransaction();
+    return response;
+  }
+
+  const buyCollateralAndModifyDebt = async (deltaCollateral: ethers.BigNumber, deltaDebt: ethers.BigNumber, underlier: ethers.BigNumber) => {
+    if (deltaCollateral.isZero()) {
       const args = userActions.buildModifyCollateralAndDebtArgs(
         contextData,
         modifyPositionData.collateralType,
-        formDataStore.deltaDebt, // increase (mint)
+        deltaDebt, // increase (mint)
         modifyPositionData.position,
       );
       const response = await sendStatefulTransaction(contextData.fiat, true, 'modifyCollateralAndDebt', args.contract, args.methodName, ...args.methodArgs);
@@ -394,9 +440,9 @@ const Home: NextPage = () => {
       const args = userActions.buildBuyCollateralAndModifyDebtArgs(
         contextData,
         modifyPositionData.collateralType,
-        formDataStore.deltaCollateral,
-        formDataStore.deltaDebt,
-        formDataStore.underlier
+        deltaCollateral,
+        deltaDebt,
+        underlier
       );
       const response = await sendStatefulTransaction(contextData.fiat, true, 'buyCollateralAndModifyDebt', args.contract, args.methodName, ...args.methodArgs);
 
@@ -409,12 +455,12 @@ const Home: NextPage = () => {
     }
   }
 
-  const sellCollateralAndModifyDebt = async () => {
-    if (formDataStore.deltaCollateral.isZero()) {
+  const sellCollateralAndModifyDebt = async (deltaCollateral: ethers.BigNumber, deltaDebt: ethers.BigNumber, underlier: ethers.BigNumber) => {
+    if (deltaCollateral.isZero()) {
       const args = userActions.buildModifyCollateralAndDebtArgs(
         contextData,
         modifyPositionData.collateralType,
-        formDataStore.deltaDebt.mul(-1), // decrease (pay back)
+        deltaDebt.mul(-1), // decrease (pay back)
         modifyPositionData.position,
       );
       const response = await sendStatefulTransaction(contextData.fiat, true, 'modifyCollateralAndDebt', args.contract, args.methodName, ...args.methodArgs);
@@ -430,9 +476,9 @@ const Home: NextPage = () => {
       const args = userActions.buildSellCollateralAndModifyDebtArgs(
         contextData,
         modifyPositionData.collateralType,
-        formDataStore.deltaCollateral,
-        formDataStore.deltaDebt,
-        formDataStore.underlier,
+        deltaCollateral,
+        deltaDebt,
+        underlier,
         modifyPositionData.position,
       );
       const response = await sendStatefulTransaction(contextData.fiat, true, 'sellCollateralAndModifyDebt', args.contract, args.methodName, ...args.methodArgs);
@@ -446,12 +492,12 @@ const Home: NextPage = () => {
     }
   }
 
-  const redeemCollateralAndModifyDebt = async () => {
-    if (formDataStore.deltaCollateral.isZero()) {
+  const redeemCollateralAndModifyDebt = async (deltaCollateral: ethers.BigNumber, deltaDebt: ethers.BigNumber) => {
+    if (deltaCollateral.isZero()) {
       const args = userActions.buildModifyCollateralAndDebtArgs(
         contextData,
         modifyPositionData.collateralType,
-        formDataStore.deltaDebt.mul(-1), // decrease (pay back)
+        deltaDebt.mul(-1), // decrease (pay back)
         modifyPositionData.position,
       );
       const response = await sendStatefulTransaction(contextData.fiat, true, 'modifyCollateralAndDebt', args.contract, args.methodName, ...args.methodArgs);
@@ -467,8 +513,8 @@ const Home: NextPage = () => {
       const args = userActions.buildRedeemCollateralAndModifyDebtArgs(
         contextData,
         modifyPositionData.collateralType,
-        formDataStore.deltaCollateral,
-        formDataStore.deltaDebt,
+        deltaCollateral,
+        deltaDebt,
         modifyPositionData.position,
       )
       const response = await sendStatefulTransaction(contextData.fiat, true, 'redeemCollateralAndModifyDebt', args.contract, args.methodName, ...args.methodArgs);
@@ -551,7 +597,7 @@ const Home: NextPage = () => {
       </Container>
 
       <CreatePositionModal
-        buyCollateralAndModifyDebt={buyCollateralAndModifyDebt}
+        createPosition={createPosition}
         contextData={contextData}
         disableActions={disableActions}
         modifyPositionData={modifyPositionData}
@@ -565,7 +611,7 @@ const Home: NextPage = () => {
         onClose={() => {
           setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
           setModifyPositionData(initialState.modifyPositionData);
-          formDataStore.reset();
+          createPositionStore.reset();
         }}
       />
 
@@ -590,7 +636,7 @@ const Home: NextPage = () => {
         onClose={() => {
           setSelectedPositionId(initialState.selectedCollateralTypeId);
           setModifyPositionData(initialState.modifyPositionData);
-          formDataStore.reset();
+          modifyPositionStore.reset();
         }}
       />
 

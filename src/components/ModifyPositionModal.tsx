@@ -11,26 +11,26 @@ import {
   Switch,
   Text,
 } from '@nextui-org/react';
-import { ethers } from 'ethers';
+import { BigNumber, ethers } from 'ethers';
 import { scaleToDec, wadToDec } from '@fiatdao/sdk';
 
 import { commifyToDecimalPlaces, floor2, floor4, formatUnixTimestamp } from '../utils';
 import { TransactionStatus } from '../../pages';
-import { useModifyPositionFormDataStore } from '../stores/formStore';
+import { useModifyPositionStore } from '../stores/modifyPositionStore';
 import { Alert } from './Alert';
 import { InputLabelWithMax } from './InputLabelWithMax';
 
 interface ModifyPositionModalProps {
-  buyCollateralAndModifyDebt: () => any;
+  buyCollateralAndModifyDebt: (deltaCollateral: ethers.BigNumber, deltaDebt: ethers.BigNumber, underlier: ethers.BigNumber) => any;
   contextData: any;
   disableActions: boolean;
   modifyPositionData: any;
-  redeemCollateralAndModifyDebt: () => any;
-  sellCollateralAndModifyDebt: () => any;
-  setFIATAllowance: (fiat: any) => any;
+  redeemCollateralAndModifyDebt: (deltaCollateral: ethers.BigNumber, deltaDebt: ethers.BigNumber) => any;
+  sellCollateralAndModifyDebt: (deltaCollateral: ethers.BigNumber, deltaDebt: ethers.BigNumber, underlier: ethers.BigNumber) => any;
+  setFIATAllowance: (fiat: any, amount: BigNumber) => any;
   setTransactionStatus: (status: TransactionStatus) => void;
   setMonetaDelegate: (fiat: any) => any;
-  setUnderlierAllowance: (fiat: any) => any;
+  setUnderlierAllowance: (fiat: any, amount: BigNumber) => any;
   transactionData: any;
   unsetFIATAllowance: (fiat: any) => any;
   unsetMonetaDelegate: (fiat: any) => any;
@@ -55,7 +55,7 @@ export const ModifyPositionModal = (props: ModifyPositionModalProps) => {
 };
 
 const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
-  const formDataStore = useModifyPositionFormDataStore();
+  const modifyPositionStore = useModifyPositionStore();
   const [rpcError, setRpcError] = React.useState('');
 
   const matured = React.useMemo(() => {
@@ -64,10 +64,10 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
   }, [props.modifyPositionData.collateralType?.properties.maturity])
 
   React.useEffect(() => {
-    if (matured && formDataStore.mode !== 'redeem') {
-      formDataStore.setMode('redeem');
+    if (matured && modifyPositionStore.mode !== 'redeem') {
+      modifyPositionStore.setMode('redeem');
     }  
-  }, [formDataStore, matured, props.contextData.fiat, props.modifyPositionData])
+  }, [modifyPositionStore, matured, props.contextData.fiat, props.modifyPositionData])
 
   if (!props.contextData.user || !props.modifyPositionData.collateralType || !props.modifyPositionData.collateralType.metadata ) {
     // TODO: add skeleton components instead of loading
@@ -96,14 +96,14 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
   const renderFormAlerts = () => {
     const formAlerts = [];
 
-    if (formDataStore.formWarnings.length !== 0) {
-      formDataStore.formWarnings.map((formWarning, idx) => {
+    if (modifyPositionStore.formWarnings.length !== 0) {
+      modifyPositionStore.formWarnings.map((formWarning, idx) => {
         formAlerts.push(<Alert severity='warning' message={formWarning} key={`warn-${idx}`} />);
       });
     }
 
-    if (formDataStore.formErrors.length !== 0) {
-      formDataStore.formErrors.forEach((formError, idx) => {
+    if (modifyPositionStore.formErrors.length !== 0) {
+      modifyPositionStore.formErrors.forEach((formError, idx) => {
         formAlerts.push(<Alert severity='error' message={formError} key={`err-${idx}`} />);
       });
     }
@@ -141,22 +141,22 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               <>
                 <Navbar.Link
                   isDisabled={props.disableActions}
-                  isActive={formDataStore.mode === 'deposit'}
+                  isActive={modifyPositionStore.mode === 'deposit'}
                   onClick={() => {
                     if (props.disableActions) return;
-                    formDataStore.resetCollateralAndDebtInputs(props.contextData.fiat, props.modifyPositionData);
-                    formDataStore.setMode('deposit');
+                    modifyPositionStore.resetCollateralAndDebtInputs(props.contextData.fiat, props.modifyPositionData);
+                    modifyPositionStore.setMode('deposit');
                   }}
                 >
                   Increase
                 </Navbar.Link>
                 <Navbar.Link
                   isDisabled={props.disableActions}
-                  isActive={formDataStore.mode === 'withdraw'}
+                  isActive={modifyPositionStore.mode === 'withdraw'}
                   onClick={() => {
                     if (props.disableActions) return;
-                    formDataStore.resetCollateralAndDebtInputs(props.contextData.fiat, props.modifyPositionData);
-                    formDataStore.setMode('withdraw');
+                    modifyPositionStore.resetCollateralAndDebtInputs(props.contextData.fiat, props.modifyPositionData);
+                    modifyPositionStore.setMode('withdraw');
                   }}
                 >
                   Decrease
@@ -166,10 +166,10 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
             {matured && (
               <Navbar.Link
                 isDisabled={props.disableActions || !matured}
-                isActive={formDataStore.mode === 'redeem'}
+                isActive={modifyPositionStore.mode === 'redeem'}
                 onClick={() => {
-                  formDataStore.resetCollateralAndDebtInputs(props.contextData.fiat, props.modifyPositionData);
-                  formDataStore.setMode('redeem');
+                  modifyPositionStore.resetCollateralAndDebtInputs(props.contextData.fiat, props.modifyPositionData);
+                  modifyPositionStore.setMode('redeem');
                 }}
               >
                 Redeem
@@ -180,7 +180,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
         <Text b size={'m'}>
           Inputs
         </Text>
-        {underlierBalance && formDataStore.mode === 'deposit' && (
+        {underlierBalance && modifyPositionStore.mode === 'deposit' && (
           <Text size={'$sm'}>
             Wallet: {commifyToDecimalPlaces(underlierBalance, underlierScale, 2)} {underlierSymbol}
           </Text>
@@ -191,13 +191,13 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
           wrap='wrap'
           css={{ marginBottom: '1rem' }}
         >
-          {formDataStore.mode === 'deposit' && (
+          {modifyPositionStore.mode === 'deposit' && (
             <Input
               label={'Underlier to deposit'}
               disabled={props.disableActions}
-              value={floor2(scaleToDec(formDataStore.underlier, underlierScale))}
+              value={floor2(scaleToDec(modifyPositionStore.underlier, underlierScale))}
               onChange={(event) => {
-                formDataStore.setUnderlier(props.contextData.fiat, event.target.value, props.modifyPositionData, null);
+                modifyPositionStore.setUnderlier(props.contextData.fiat, event.target.value, props.modifyPositionData);
               }}
               placeholder='0'
               inputMode='decimal'
@@ -208,12 +208,12 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               width='15rem'
             />
           )}
-          {(formDataStore.mode === 'withdraw' || formDataStore.mode === 'redeem') && (
+          {(modifyPositionStore.mode === 'withdraw' || modifyPositionStore.mode === 'redeem') && (
             <Input
               disabled={props.disableActions}
-              value={floor2(wadToDec(formDataStore.deltaCollateral))}
+              value={floor2(wadToDec(modifyPositionStore.deltaCollateral))}
               onChange={(event) => {
-                formDataStore.setDeltaCollateral(props.contextData.fiat, event.target.value, props.modifyPositionData, null);
+                modifyPositionStore.setDeltaCollateral(props.contextData.fiat, event.target.value, props.modifyPositionData);
               }}
               placeholder='0'
               inputMode='decimal'
@@ -221,29 +221,29 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               // eslint-disable-next-line @typescript-eslint/ban-ts-comment
               // @ts-ignore
               label={
-                formDataStore.mode === 'withdraw'
+                modifyPositionStore.mode === 'withdraw'
                   ? <InputLabelWithMax
                     label='Collateral to withdraw and swap'
-                    onMaxClick={() => formDataStore.setMaxDeltaCollateral(props.contextData.fiat, props.modifyPositionData, null)}
+                    onMaxClick={() => modifyPositionStore.setMaxDeltaCollateral(props.contextData.fiat, props.modifyPositionData)}
                   />
                   : <InputLabelWithMax
                     label='Collateral to withdraw and redeem'
-                    onMaxClick={() => formDataStore.setMaxDeltaCollateral(props.contextData.fiat, props.modifyPositionData, null)}
+                    onMaxClick={() => modifyPositionStore.setMaxDeltaCollateral(props.contextData.fiat, props.modifyPositionData)}
                   />
               }
               labelRight={symbol}
               bordered
               size='sm'
               borderWeight='light'
-              width={formDataStore.mode === 'redeem' ? '100%' : '15rem'}
+              width={modifyPositionStore.mode === 'redeem' ? '100%' : '15rem'}
             />
           )}
-          {(formDataStore.mode === 'deposit' || formDataStore.mode === 'withdraw') && (
+          {(modifyPositionStore.mode === 'deposit' || modifyPositionStore.mode === 'withdraw') && (
             <Input
               disabled={props.disableActions}
-              value={floor2(Number(wadToDec(formDataStore.slippagePct)) * 100)}
+              value={floor2(Number(wadToDec(modifyPositionStore.slippagePct)) * 100)}
               onChange={(event) => {
-                formDataStore.setSlippagePct(props.contextData.fiat, event.target.value, props.modifyPositionData, null);
+                modifyPositionStore.setSlippagePct(props.contextData.fiat, event.target.value, props.modifyPositionData);
               }}
               step='0.01'
               placeholder='0'
@@ -259,9 +259,9 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
         </Grid.Container>
         <Input
           disabled={props.disableActions}
-          value={floor2(wadToDec(formDataStore.deltaDebt))}
+          value={floor2(wadToDec(modifyPositionStore.deltaDebt))}
           onChange={(event) => {
-            formDataStore.setDeltaDebt(props.contextData.fiat, event.target.value, props.modifyPositionData, null);
+            modifyPositionStore.setDeltaDebt(props.contextData.fiat, event.target.value, props.modifyPositionData);
           }}
           placeholder='0'
           inputMode='decimal'
@@ -269,11 +269,11 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
           label={
-            formDataStore.mode === 'deposit'
+            modifyPositionStore.mode === 'deposit'
               ? 'FIAT to borrow'
               : <InputLabelWithMax
                   label='FIAT to pay back'
-                  onMaxClick={() => formDataStore.setMaxDeltaDebt(props.contextData.fiat, props.modifyPositionData, null)}
+                  onMaxClick={() => modifyPositionStore.setMaxDeltaDebt(props.contextData.fiat, props.modifyPositionData)}
                 />
           }
           labelRight={'FIAT'}
@@ -284,7 +284,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
       </Modal.Body>
       <Spacer y={0.75} />
       <Card.Divider />
-      {(formDataStore.mode === 'deposit' || formDataStore.mode === 'withdraw') && (
+      {(modifyPositionStore.mode === 'deposit' || modifyPositionStore.mode === 'withdraw') && (
         <>
           <Modal.Body>
             <Spacer y={0} />
@@ -294,21 +294,21 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
             <Input
               readOnly
               value={
-                (formDataStore.formDataLoading)
+                (modifyPositionStore.formDataLoading)
                   ? ' '
-                  : (formDataStore.mode === 'deposit')
-                    ? floor4(wadToDec(formDataStore.deltaCollateral))
-                    : floor4(scaleToDec(formDataStore.underlier, underlierScale))
+                  : (modifyPositionStore.mode === 'deposit')
+                    ? floor4(wadToDec(modifyPositionStore.deltaCollateral))
+                    : floor4(scaleToDec(modifyPositionStore.underlier, underlierScale))
               }
               placeholder='0'
               type='string'
               label={
-                formDataStore.mode === 'deposit'
+                modifyPositionStore.mode === 'deposit'
                   ? 'Collateral to deposit (incl. slippage)'
                   : 'Underliers to withdraw (incl. slippage)'
               }
-              labelRight={formDataStore.mode === 'deposit' ? symbol : underlierSymbol}
-              contentLeft={formDataStore.formDataLoading ? <Loading size='xs' /> : null}
+              labelRight={modifyPositionStore.mode === 'deposit' ? symbol : underlierSymbol}
+              contentLeft={modifyPositionStore.formDataLoading ? <Loading size='xs' /> : null}
               size='sm'
               status='primary'
             />
@@ -324,43 +324,43 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
         </Text>
         <Input
           readOnly
-          value={(formDataStore.formDataLoading)
+          value={(modifyPositionStore.formDataLoading)
             ? ' '
-            : `${floor2(wadToDec(position.collateral))} → ${floor4(wadToDec(formDataStore.collateral))}`
+            : `${floor2(wadToDec(position.collateral))} → ${floor4(wadToDec(modifyPositionStore.collateral))}`
           }
           placeholder='0'
           type='string'
           label={`Collateral (before: ${floor2(wadToDec(position.collateral))} ${symbol})`}
           labelRight={symbol}
-          contentLeft={formDataStore.formDataLoading ? <Loading size='xs' /> : null}
+          contentLeft={modifyPositionStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
           status='primary'
         />
         <Input
           readOnly
-          value={(formDataStore.formDataLoading)
+          value={(modifyPositionStore.formDataLoading)
             ? ' '
-            : `${floor2(wadToDec(fiat.normalDebtToDebt(position.normalDebt, virtualRate)))} → ${floor4(wadToDec(formDataStore.debt))}`
+            : `${floor2(wadToDec(fiat.normalDebtToDebt(position.normalDebt, virtualRate)))} → ${floor4(wadToDec(modifyPositionStore.debt))}`
           }
           placeholder='0'
           type='string'
           label={`Debt (before: ${floor2(wadToDec(fiat.normalDebtToDebt(position.normalDebt, virtualRate)))} FIAT)`}
           labelRight={'FIAT'}
-          contentLeft={formDataStore.formDataLoading ? <Loading size='xs' /> : null}
+          contentLeft={modifyPositionStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
           status='primary'
         />
         <Input
           readOnly
           value={(() => {
-            if (formDataStore.formDataLoading) return ' ';
+            if (modifyPositionStore.formDataLoading) return ' ';
             let collRatioBefore = fiat.computeCollateralizationRatio(
               position.collateral, fairPrice, position.normalDebt, virtualRate
             );
             collRatioBefore = (collRatioBefore.eq(ethers.constants.MaxUint256))
               ? '∞' : `${floor2(wadToDec(collRatioBefore.mul(100)))}%`;
-            const collRatioAfter = (formDataStore.collRatio.eq(ethers.constants.MaxUint256))
-              ? '∞' : `${floor2(wadToDec(formDataStore.collRatio.mul(100)))}%`;
+            const collRatioAfter = (modifyPositionStore.collRatio.eq(ethers.constants.MaxUint256))
+              ? '∞' : `${floor2(wadToDec(modifyPositionStore.collRatio.mul(100)))}%`;
             return `${collRatioBefore} → ${collRatioAfter}`;
           })()}
           placeholder='0'
@@ -376,13 +376,13 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
           }%)`
           }
           labelRight={'🚦'}
-          contentLeft={formDataStore.formDataLoading ? <Loading size='xs' /> : null}
+          contentLeft={modifyPositionStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
           status='primary'
         />
       </Modal.Body>
       <Modal.Footer justify='space-evenly'>
-        {formDataStore.mode === 'deposit' && (
+        {modifyPositionStore.mode === 'deposit' && (
           <>
             <Text size={'0.875rem'}>Approve {underlierSymbol}</Text>
             <Switch
@@ -390,9 +390,9 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               // Next UI Switch `checked` type is wrong, this is necessary
               // eslint-disable-next-line @typescript-eslint/ban-ts-comment
               // @ts-ignore
-              checked={() => underlierAllowance?.gt(0) && underlierAllowance?.gte(formDataStore.underlier) ?? false}
+              checked={() => underlierAllowance?.gt(0) && underlierAllowance?.gte(modifyPositionStore.underlier) ?? false}
               onChange={async () => {
-                if(!formDataStore.underlier.isZero() && underlierAllowance.gte(formDataStore.underlier)) {
+                if(!modifyPositionStore.underlier.isZero() && underlierAllowance.gte(modifyPositionStore.underlier)) {
                   try {
                     setRpcError('');
                     await props.unsetUnderlierAllowance(props.contextData.fiat);
@@ -402,7 +402,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
                 } else {
                   try {
                     setRpcError('');
-                    await props.setUnderlierAllowance(props.contextData.fiat)
+                    await props.setUnderlierAllowance(props.contextData.fiat, modifyPositionStore.underlier)
                   } catch (e: any) {
                     setRpcError(e.message);
                   }
@@ -449,7 +449,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
             />
           </>
         )}
-        {(formDataStore.mode === 'withdraw' || formDataStore.mode === 'redeem') && (
+        {(modifyPositionStore.mode === 'withdraw' || modifyPositionStore.mode === 'redeem') && (
           <>
             <Text size={'0.875rem'}>Approve FIAT</Text>
             <Switch
@@ -457,9 +457,9 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               // Next UI Switch `checked` type is wrong, this is necessary
               // eslint-disable-next-line @typescript-eslint/ban-ts-comment
               // @ts-ignore
-              checked={() => fiatAllowance?.gt(0) && fiatAllowance?.gte(formDataStore.deltaDebt) ?? false}
+              checked={() => fiatAllowance?.gt(0) && fiatAllowance?.gte(modifyPositionStore.deltaDebt) ?? false}
               onChange={async () => {
-                if (formDataStore.deltaDebt.gt(0) && fiatAllowance.gte(formDataStore.deltaDebt)) {
+                if (modifyPositionStore.deltaDebt.gt(0) && fiatAllowance.gte(modifyPositionStore.deltaDebt)) {
                   try {
                     setRpcError('');
                     await props.unsetFIATAllowance(props.contextData.fiat);
@@ -469,7 +469,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
                 } else {
                   try {
                     setRpcError('');
-                    await props.setFIATAllowance(props.contextData.fiat);
+                    await props.setFIATAllowance(props.contextData.fiat, modifyPositionStore.deltaDebt);
                   } catch (e: any) {
                     setRpcError(e.message);
                   }
@@ -491,17 +491,17 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
           css={{ minWidth: '100%' }}
           disabled={(() => {
             if (props.disableActions || !hasProxy) return true;
-            if (formDataStore.formErrors.length !== 0 || formDataStore.formWarnings.length !== 0) return true;
-            if (formDataStore.mode === 'deposit') {
+            if (modifyPositionStore.formErrors.length !== 0 || modifyPositionStore.formWarnings.length !== 0) return true;
+            if (modifyPositionStore.mode === 'deposit') {
               if (monetaDelegate === false) return true;
-              if (formDataStore.underlier.isZero() && formDataStore.deltaDebt.isZero()) return true;
-              if (!formDataStore.underlier.isZero() && underlierAllowance.lt(formDataStore.underlier)) return true;
-            } else if (formDataStore.mode === 'withdraw') {
-              if (formDataStore.deltaCollateral.isZero() && formDataStore.deltaDebt.isZero()) return true;
-              if (!formDataStore.deltaDebt.isZero() && fiatAllowance.lt(formDataStore.deltaDebt)) return true;
-            } else if (formDataStore.mode === 'redeem') {
-              if (formDataStore.deltaCollateral.isZero() && formDataStore.deltaDebt.isZero()) return true;
-              if (!formDataStore.deltaDebt.isZero() && fiatAllowance.lt(formDataStore.deltaDebt)) return true;
+              if (modifyPositionStore.underlier.isZero() && modifyPositionStore.deltaDebt.isZero()) return true;
+              if (!modifyPositionStore.underlier.isZero() && underlierAllowance.lt(modifyPositionStore.underlier)) return true;
+            } else if (modifyPositionStore.mode === 'withdraw') {
+              if (modifyPositionStore.deltaCollateral.isZero() && modifyPositionStore.deltaDebt.isZero()) return true;
+              if (!modifyPositionStore.deltaDebt.isZero() && fiatAllowance.lt(modifyPositionStore.deltaDebt)) return true;
+            } else if (modifyPositionStore.mode === 'redeem') {
+              if (modifyPositionStore.deltaCollateral.isZero() && modifyPositionStore.deltaDebt.isZero()) return true;
+              if (!modifyPositionStore.deltaDebt.isZero() && fiatAllowance.lt(modifyPositionStore.deltaDebt)) return true;
             }
             return false;
           })()}
@@ -517,12 +517,12 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
           onPress={async () => {
             try {
               setRpcError('');
-              if (formDataStore.mode === 'deposit') {
-                await props.buyCollateralAndModifyDebt();
-              } else if (formDataStore.mode === 'withdraw') {
-                await props.sellCollateralAndModifyDebt();
-              } else if (formDataStore.mode === 'redeem') {
-                await props.redeemCollateralAndModifyDebt();
+              if (modifyPositionStore.mode === 'deposit') {
+                await props.buyCollateralAndModifyDebt(modifyPositionStore.deltaCollateral, modifyPositionStore.deltaDebt, modifyPositionStore.underlier);
+              } else if (modifyPositionStore.mode === 'withdraw') {
+                await props.sellCollateralAndModifyDebt(modifyPositionStore.deltaCollateral, modifyPositionStore.deltaDebt, modifyPositionStore.underlier);
+              } else if (modifyPositionStore.mode === 'redeem') {
+                await props.redeemCollateralAndModifyDebt(modifyPositionStore.deltaCollateral, modifyPositionStore.deltaDebt);
               }
               props.onClose();
             } catch (e: any) {
@@ -530,9 +530,9 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
             }
           }}
         >
-          {formDataStore.mode === 'deposit' && 'Deposit'}
-          {formDataStore.mode === 'withdraw' && 'Withdraw'}
-          {formDataStore.mode === 'redeem' && 'Redeem'}
+          {modifyPositionStore.mode === 'deposit' && 'Deposit'}
+          {modifyPositionStore.mode === 'withdraw' && 'Withdraw'}
+          {modifyPositionStore.mode === 'redeem' && 'Redeem'}
         </Button>
       </Modal.Footer>
     </>
