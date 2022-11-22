@@ -1,16 +1,16 @@
-import { BigNumber, ethers } from 'ethers';
+import { BigNumber, BigNumberish, ethers } from 'ethers';
 import { decToWad, scaleToDec, wadToDec, ZERO } from '@fiatdao/sdk';
 
-export const formatUnixTimestamp = (unixTimestamp: ethers.BigNumberish): string => {
+export const formatUnixTimestamp = (unixTimestamp: BigNumberish): string => {
   const date = new Date(Number(unixTimestamp.toString()) * 1000);
   return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
 };
 
-export function floor2(dec: ethers.BigNumberish): number {
+export function floor2(dec: BigNumberish): number {
   return Math.floor(Number(String(dec)) * 100) / 100;
 }
 
-export function floor4(dec: ethers.BigNumberish): number {
+export function floor4(dec: BigNumberish): number {
   return Math.floor(Number(String(dec)) * 10000) / 10000;
 }
 
@@ -19,35 +19,35 @@ export const commifyToDecimalPlaces = (value: BigNumber, scale: number, decimalP
   return parts[0] + '.' + parts[1].slice(0, decimalPlaces);
 };
 
-export const earnableRateToAPY = (earnableRate: BigNumber, maturity: ethers.BigNumberish): BigNumber => {
+export const earnableRateToAPY = (earnableRate: BigNumber, maturity: BigNumberish): BigNumber => {
   const now = Math.floor(Date.now() / 1000)
   if (now >= Number(maturity.toString())) return ZERO;
   const secondsUntilMaturity = Number(maturity.toString()) - Math.floor(Date.now() / 1000);
   const yearFraction = secondsUntilMaturity / 31622400;
-  return ethers.BigNumber.from(
+  return BigNumber.from(
     decToWad((Math.pow((1 + Number(wadToDec(earnableRate))), (1 / yearFraction )) - 1).toFixed(10))
   );
 };
 
 export const interestPerSecondToRateUntilMaturity = (
-  interestPerSecond: ethers.BigNumberish, maturity: ethers.BigNumberish
+  interestPerSecond: BigNumberish, maturity: BigNumberish
 ): BigNumber => {
   const now = Math.floor(Date.now() / 1000)
   if (now >= Number(maturity.toString())) return ZERO;
   const secondsUntilMaturity = Number(maturity.toString()) - Math.floor(Date.now() / 1000);
   return decToWad(
-    (Math.pow(Number(wadToDec(ethers.BigNumber.from(interestPerSecond)).slice(0, 17)), secondsUntilMaturity) - 1)
+    (Math.pow(Number(wadToDec(BigNumber.from(interestPerSecond)).slice(0, 17)), secondsUntilMaturity) - 1)
       .toFixed(10)
   );
 }
 
-export const interestPerSecondToAPY = (interestPerSecond: ethers.BigNumberish): BigNumber => {
+export const interestPerSecondToAPY = (interestPerSecond: BigNumberish): BigNumber => {
   return decToWad(
-    (Math.pow(Number(wadToDec(ethers.BigNumber.from(interestPerSecond)).slice(0, 17)), 31622400) - 1).toFixed(10)
+    (Math.pow(Number(wadToDec(BigNumber.from(interestPerSecond)).slice(0, 17)), 31622400) - 1).toFixed(10)
   );
 };
 
-export const encodeCollateralTypeId = (vault: string, tokenId: ethers.BigNumberish): string => {
+export const encodeCollateralTypeId = (vault: string, tokenId: BigNumberish): string => {
   return `${vault}-${tokenId.toString()}`;
 };
 
@@ -56,7 +56,7 @@ export const decodeCollateralTypeId = (collateralTypeId: string) => {
   return { vault, tokenId };
 };
 
-export const encodePositionId = (vault: string, tokenId: ethers.BigNumberish, owner: string): string => {
+export const encodePositionId = (vault: string, tokenId: BigNumberish, owner: string): string => {
   return `${vault}-${tokenId.toString()}-${owner}`;
 };
 
@@ -66,7 +66,7 @@ export const decodePositionId = (positionId: string) => {
 };
 
 export const getCollateralTypeData = (
-  collateralTypes: Array<any>, vault: string, tokenId: ethers.BigNumberish
+  collateralTypes: Array<any>, vault: string, tokenId: BigNumberish
 ): undefined | any => {
   return collateralTypes.find(({properties: { vault: vault_, tokenId: tokenId_ }}) => (
     vault === vault_ && tokenId.toString() === tokenId_.toString()
@@ -74,7 +74,7 @@ export const getCollateralTypeData = (
 };
 
 export const getPositionData = (
-  positions: Array<any>, vault: string, tokenId: ethers.BigNumberish, owner: string
+  positions: Array<any>, vault: string, tokenId: BigNumberish, owner: string
 ): undefined | any => {
   return positions.find(({ vault: vault_, tokenId: tokenId_, owner: owner_ }) => (
     vault === vault_ && tokenId.toString() === tokenId_.toString() && owner === owner_
