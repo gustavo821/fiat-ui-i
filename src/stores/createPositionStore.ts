@@ -67,7 +67,7 @@ const initialState = {
   formErrors: [],
 };
 
-export const useCreatePositionStore = create<CreatePositionState & CreatePositionActions>()((set,get) => ({
+export const useCreatePositionStore = create<CreatePositionState & CreatePositionActions>()((set, get) => ({
     ...initialState,
 
     setUnderlier: async (fiat, value, modifyPositionData, selectedCollateralTypeId) => {
