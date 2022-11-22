@@ -198,7 +198,8 @@ export const useModifyPositionStore = create<ModifyPositionState & ModifyPositio
               throw e;
             }
           }
-          // Calculate deltaNormalDebt based on collRatio, taking into account an existing position's collateral
+
+          // Calculate new position values based on deltaDebt, taking into account an existing position's collateral
           const { deltaDebt } = get();
           const collateral = position.collateral.add(deltaCollateral);
           const debt = fiat.normalDebtToDebt(position.normalDebt, rate).add(deltaDebt);
@@ -211,6 +212,7 @@ export const useModifyPositionStore = create<ModifyPositionState & ModifyPositio
               `This collateral type requires a minimum of ${wadToDec(debtFloor)} FIAT to be borrowed`
             ]
           }));
+
           if (debt.gt(0) && collRatio.lte(WAD)) set(() => ({
             formErrors: [...get().formErrors, 'Collateralization Ratio has to be greater than 100%']
           }));
