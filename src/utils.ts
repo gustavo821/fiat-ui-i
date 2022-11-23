@@ -14,6 +14,10 @@ export function floor4(dec: BigNumberish): number {
   return Math.floor(Number(String(dec)) * 10000) / 10000;
 }
 
+export function floor5(dec: BigNumberish): number {
+  return Math.floor(Number(String(dec)) * 100000) / 100000;
+}
+
 export const commifyToDecimalPlaces = (value: BigNumber, scale: number, decimalPlaces: number): string => {
   const parts = ethers.utils.commify(scaleToDec(value, scale)).split('.');
   return parts[0] + '.' + parts[1].slice(0, decimalPlaces);
