@@ -5,18 +5,24 @@ import { InfoIcon } from './Icons/info';
 import { connectButtonCSS, ProxyButton } from './ProxyButton';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { ResourcesModal } from './ResourcesModal';
+import { useTheme } from '@nextui-org/react';
 
 export const HeaderBar = (props: any) => {
   const [showResourcesModal, setShowResourcesModal] = React.useState<boolean>(false);
+  const { theme } = useTheme();
+  const darkTheme = theme?.colors.background.value != '#ffffff';
 
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', padding: 0 }}>
-      {/* <div style={{ marginLeft: 12 }} >
-        <Image alt="" src="/logo-dark.png" layout="fixed" objectFit={'contain'} width={140} height={69} />
-      </div> */}
-      <div style={{ margin: 12 }} >
-        <Image alt="" src="/logo-white.png" layout="fixed" objectFit={'contain'} width={140} height={45} />
-      </div>
+      { darkTheme ? 
+        (<div style={{ marginLeft: 12 }} >
+          <Image alt="" src="/logo-dark.png" layout="fixed" objectFit={'contain'} width={140} height={69} />
+        </div>)
+        :
+        (<div style={{ margin: 12 }} >
+          <Image alt="" src="/logo-white.png" layout="fixed" objectFit={'contain'} width={140} height={45} />
+        </div>)
+      }
       <div style={{ display: 'flex', justifyContent: 'space-between', padding: 16 }}>
         <div style={{ display: 'flex', height: '40px' }}>
           <Button 
