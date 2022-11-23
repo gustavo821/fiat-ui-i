@@ -13,7 +13,7 @@ interface BlockSyncStatus {
   subgraphBlockNumber: number;
   providerBlockNumber: number;
   blockDiff: number;
-  status: string | undefined;
+  status: 'success' | 'warning' | 'error' | undefined;
   message: string;
 }
 
