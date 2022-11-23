@@ -14,7 +14,7 @@ import {
 import { BigNumber, ethers } from 'ethers';
 import { scaleToDec, wadToDec } from '@fiatdao/sdk';
 
-import { commifyToDecimalPlaces, floor2, formatUnixTimestamp } from '../utils';
+import { commifyToDecimalPlaces, floor2, floor4, formatUnixTimestamp } from '../utils';
 import { TransactionStatus } from '../../pages';
 import { useModifyPositionStore } from '../stores/modifyPositionStore';
 import { Alert } from './Alert';
@@ -260,7 +260,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
         </Grid.Container>
         <Input
           disabled={props.disableActions}
-          value={floor2(wadToDec(modifyPositionStore.deltaDebt))}
+          value={floor4(wadToDec(modifyPositionStore.deltaDebt))}
           onChange={(event) => {
             modifyPositionStore.setDeltaDebt(props.contextData.fiat, event.target.value, props.modifyPositionData);
           }}
@@ -282,6 +282,11 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
           size='sm'
           borderWeight='light'
         />
+        {(modifyPositionStore.mode === 'withdraw' || modifyPositionStore.mode === 'redeem') && (
+          <Text size={'$sm'}>
+            Note: When closing your position make sure you have enough FIAT to cover the due borrow fees.
+          </Text>
+        )}
       </Modal.Body>
       <Spacer y={0.75} />
       <Card.Divider />
@@ -341,11 +346,11 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
           readOnly
           value={(modifyPositionStore.formDataLoading)
             ? ' '
-            : `${floor2(wadToDec(fiat.normalDebtToDebt(position.normalDebt, virtualRate)))} → ${floor2(wadToDec(modifyPositionStore.debt))}`
+            : `${floor4(wadToDec(fiat.normalDebtToDebt(position.normalDebt, virtualRate)))} → ${floor4(wadToDec(modifyPositionStore.debt))}`
           }
           placeholder='0'
           type='string'
-          label={`Debt (before: ${floor2(wadToDec(fiat.normalDebtToDebt(position.normalDebt, virtualRate)))} FIAT)`}
+          label={`Debt (before: ${floor4(wadToDec(fiat.normalDebtToDebt(position.normalDebt, virtualRate)))} FIAT)`}
           labelRight={'FIAT'}
           contentLeft={modifyPositionStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
