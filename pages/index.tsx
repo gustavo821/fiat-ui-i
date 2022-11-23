@@ -6,7 +6,7 @@ import { useAddRecentTransaction } from '@rainbow-me/rainbowkit';
 import { Container, Spacer } from '@nextui-org/react';
 import { BigNumber, ContractReceipt, ethers } from 'ethers';
 import { decToWad, FIAT, WAD, wadToDec, ZERO } from '@fiatdao/sdk';
-import { HeaderButtons } from '../src/components/HeaderButtons';
+import { HeaderBar } from '../src/components/HeaderBar';
 import { CollateralTypesTable } from '../src/components/CollateralTypesTable';
 import { PositionsTable } from '../src/components/PositionsTable';
 import { CreatePositionModal } from '../src/components/CreatePositionModal';
@@ -473,15 +473,12 @@ const Home: NextPage = () => {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', padding: 12 }}>
-        <h3 style={{ justifyContent: 'flex',  }}>(Experimental) FIAT I UI</h3>
-        <HeaderButtons 
-          contextData={contextData} 
-          transactionData={transactionData}
-          disableActions={disableActions}
-          createProxy={createProxy}
-        />
-      </div>
+      <HeaderBar 
+        contextData={contextData} 
+        transactionData={transactionData}
+        disableActions={disableActions}
+        createProxy={createProxy}
+      />
       <Spacer y={2} />
       <Container>
         {
