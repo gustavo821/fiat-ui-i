@@ -11,8 +11,11 @@ export const HeaderBar = (props: any) => {
 
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', padding: 0 }}>
-      <div style={{ marginLeft: 12 }} >
-        <Image alt="" src="/logo.png" width={140} height={69} />
+      {/* <div style={{ marginLeft: 12 }} >
+        <Image alt="" src="/logo-dark.png" layout="fixed" objectFit={'contain'} width={140} height={69} />
+      </div> */}
+      <div style={{ margin: 12 }} >
+        <Image alt="" src="/logo-white.png" layout="fixed" objectFit={'contain'} width={140} height={45} />
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', padding: 16 }}>
         <div style={{ display: 'flex', height: '40px' }}>
