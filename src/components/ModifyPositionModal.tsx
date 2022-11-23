@@ -22,19 +22,19 @@ import { InputLabelWithMax } from './InputLabelWithMax';
 
 interface ModifyPositionModalProps {
   buyCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
+  sellCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
+  redeemCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber) => any;
+  setFIATAllowanceForMoneta: (fiat: any) => any;
+  unsetFIATAllowanceForMoneta: (fiat: any) => any;
+  setFIATAllowanceForProxy: (fiat: any, amount: BigNumber) => any;
+  unsetFIATAllowanceForProxy: (fiat: any) => any;
+  setUnderlierAllowanceForProxy: (fiat: any, amount: BigNumber) => any;
+  unsetUnderlierAllowanceForProxy: (fiat: any) => any;
+  setTransactionStatus: (status: TransactionStatus) => void;
   contextData: any;
   disableActions: boolean;
   modifyPositionData: any;
-  redeemCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber) => any;
-  sellCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
-  setMonetaFIATAllowance: (fiat: any, amount: BigNumber) => any;
-  setTransactionStatus: (status: TransactionStatus) => void;
-  setMonetaDelegate: (fiat: any) => any;
-  setUnderlierAllowance: (fiat: any, amount: BigNumber) => any;
   transactionData: any;
-  unsetMonetaFIATAllowance: (fiat: any) => any;
-  unsetMonetaDelegate: (fiat: any) => any;
-  unsetUnderlierAllowance: (fiat: any) => any;
   open: boolean;
   onClose: () => void;
 }
@@ -86,6 +86,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
     underlierBalance,
     monetaDelegate,
     monetaFIATAllowance,
+    proxyFIATAllowance,
     position,
   } = props.modifyPositionData;
 
@@ -395,14 +396,14 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
                 if(!modifyPositionStore.underlier.isZero() && underlierAllowance.gte(modifyPositionStore.underlier)) {
                   try {
                     setRpcError('');
-                    await props.unsetUnderlierAllowance(props.contextData.fiat);
+                    await props.unsetUnderlierAllowanceForProxy(props.contextData.fiat);
                   } catch (e: any) {
                     setRpcError(e.message);
                   }
                 } else {
                   try {
                     setRpcError('');
-                    await props.setUnderlierAllowance(props.contextData.fiat, modifyPositionStore.underlier)
+                    await props.setUnderlierAllowanceForProxy(props.contextData.fiat, modifyPositionStore.underlier)
                   } catch (e: any) {
                     setRpcError(e.message);
                   }
@@ -410,39 +411,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               }}
               color='primary'
               icon={
-                ['setUnderlierAllowance', 'unsetUnderlierAllowance'].includes(currentTxAction || '') && props.disableActions ? (
-                  <Loading size='xs' />
-                ) : null
-              }
-            />
-            <Spacer y={0.5} />
-            <Text size={'0.875rem'}>Enable FIAT</Text>
-            <Switch
-              disabled={props.disableActions || !hasProxy}
-              // Next UI Switch `checked` type is wrong, this is necessary
-              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-              // @ts-ignore
-              checked={() => !!monetaDelegate}
-              onChange={async () => {
-                if (!!monetaDelegate) {
-                  try {
-                    setRpcError('');
-                    await props.unsetMonetaDelegate(props.contextData.fiat);
-                  } catch (e: any) {
-                    setRpcError(e.message);
-                  }
-                } else {
-                  try {
-                    setRpcError('');
-                    await props.setMonetaDelegate(props.contextData.fiat);
-                  } catch (e: any) {
-                    setRpcError(e.message);
-                  }
-                }
-              }}
-              color='primary'
-              icon={
-                ['setMonetaDelegate', 'unsetMonetaDelegate'].includes(currentTxAction || '') && props.disableActions ? (
+                ['setUnderlierAllowanceForProxy', 'unsetUnderlierAllowanceForProxy'].includes(currentTxAction || '') && props.disableActions ? (
                   <Loading size='xs' />
                 ) : null
               }
@@ -451,25 +420,25 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
         )}
         {(modifyPositionStore.mode === 'withdraw' || modifyPositionStore.mode === 'redeem') && (
           <>
-            <Text size={'0.875rem'}>Approve FIAT</Text>
+            <Text size={'0.875rem'}>Approve FIAT for Proxy</Text>
             <Switch
               disabled={props.disableActions || !hasProxy}
               // Next UI Switch `checked` type is wrong, this is necessary
               // eslint-disable-next-line @typescript-eslint/ban-ts-comment
               // @ts-ignore
-              checked={() => monetaFIATAllowance?.gt(0) && monetaFIATAllowance?.gte(modifyPositionStore.deltaDebt) ?? false}
+              checked={() => proxyFIATAllowance?.gt(0) && proxyFIATAllowance?.gte(modifyPositionStore.deltaDebt) ?? false}
               onChange={async () => {
-                if (modifyPositionStore.deltaDebt.gt(0) && monetaFIATAllowance.gte(modifyPositionStore.deltaDebt)) {
+                if (modifyPositionStore.deltaDebt.gt(0) && proxyFIATAllowance.gte(modifyPositionStore.deltaDebt)) {
                   try {
                     setRpcError('');
-                    await props.unsetMonetaFIATAllowance(props.contextData.fiat);
+                    await props.unsetFIATAllowanceForProxy(props.contextData.fiat);
                   } catch (e: any) {
                     setRpcError(e.message);
                   }
                 } else {
                   try {
                     setRpcError('');
-                    await props.setMonetaFIATAllowance(props.contextData.fiat, modifyPositionStore.deltaDebt);
+                    await props.setFIATAllowanceForProxy(props.contextData.fiat, modifyPositionStore.deltaDebt);
                   } catch (e: any) {
                     setRpcError(e.message);
                   }
@@ -477,16 +446,42 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               }}
               color='primary'
               icon={
-                ['setMonetaFIATAllowance', 'unsetMonetaFIATAllowance'].includes(currentTxAction || '') && props.disableActions ? (
+                ['setFIATAllowanceForProxy', 'unsetFIATAllowanceForProxy'].includes(currentTxAction || '') && props.disableActions ? (
                   <Loading size='xs' />
                 ) : null
               }
             />
+            <Spacer y={3} />
+            {(monetaFIATAllowance?.isZero()) && (
+              <>
+                <Spacer y={3} />
+                <Button
+                  css={{ minWidth: '100%' }}
+                  disabled={(() => {
+                    if (props.disableActions || !hasProxy) return true;
+                    if (monetaFIATAllowance?.gt(0) && monetaFIATAllowance?.gte(modifyPositionStore.deltaDebt)) return true;
+                    return false;
+                  })()}
+                  icon={(['setFIATAllowanceForMoneta'].includes(currentTxAction || '') && props.disableActions)
+                    ? (<Loading size='xs' />)
+                    : null
+                  }
+                  onPress={async () => {
+                    try {
+                      setRpcError('');
+                      await props.setFIATAllowanceForMoneta(props.contextData.fiat);
+                    } catch (e: any) {
+                      setRpcError(e.message);
+                    }
+                  }}
+                >
+                  Approve FIAT for Moneta (One Time Action)
+                </Button>
+              </>
+            )}
           </>
         )}
-        <Spacer y={3} />
         { renderFormAlerts() }
-        <Spacer y={0.5} />
         <Button
           css={{ minWidth: '100%' }}
           disabled={(() => {
