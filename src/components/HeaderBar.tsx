@@ -7,12 +7,13 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { ResourcesModal } from './ResourcesModal';
 import { queryMeta } from '@fiatdao/sdk';
 import { useBlockNumber } from 'wagmi';
+import { useTheme } from '@nextui-org/react';
 
 interface BlockSyncStatus {
   subgraphBlockNumber: number;
   providerBlockNumber: number;
   blockDiff: number;
-  status: string | undefined;
+  status: 'success' | 'warning' | 'error' | undefined;
   message: string;
 }
 
@@ -20,6 +21,8 @@ export const HeaderBar = (props: any) => {
   const [showResourcesModal, setShowResourcesModal] = React.useState<boolean>(false);
   const [syncStatus, setSyncStatus] = React.useState<BlockSyncStatus>();
   const {data: providerBlockNumber, refetch} = useBlockNumber();
+  const { theme } = useTheme();
+  const darkTheme = theme?.colors.background.value != '#ffffff';
 
   const queryBlockNumber = React.useCallback(async () => {
     if (!props.contextData?.fiat) return;
@@ -59,9 +62,15 @@ export const HeaderBar = (props: any) => {
         </Tooltip>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', padding: 0 }}>
-        <div style={{ marginLeft: 12 }} >
-          <Image alt="" src="/logo.png" width={140} height={69} />
-        </div>
+        { darkTheme ? 
+          (<div style={{ marginLeft: 12 }} >
+            <Image alt="" src="/logo-dark.png" layout="fixed" objectFit={'contain'} width={140} height={69} />
+          </div>)
+          :
+          (<div style={{ margin: 12 }} >
+            <Image alt="" src="/logo-white.png" layout="fixed" objectFit={'contain'} width={140} height={45} />
+          </div>)
+        }
         <div style={{ display: 'flex', justifyContent: 'space-between', padding: 16 }}>
           <div style={{ display: 'flex', height: '40px' }}>
             <Button 
