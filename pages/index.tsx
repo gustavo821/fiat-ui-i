@@ -534,6 +534,7 @@ const Home: NextPage = () => {
           transactionData={transactionData} 
           fiatBalance={fiatBalance}
           disableActions={disableActions}
+          createProxy={createProxy}
         />
       </div>
       <Spacer y={2} />
