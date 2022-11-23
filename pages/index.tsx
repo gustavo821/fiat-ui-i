@@ -1,7 +1,5 @@
 import React from 'react';
 import type { NextPage } from 'next';
-import Image from 'next/image';
-import Link from 'next/link';
 import { useAccount, useNetwork, useProvider } from 'wagmi';
 import shallow from 'zustand/shallow'
 import { useAddRecentTransaction } from '@rainbow-me/rainbowkit';
@@ -475,17 +473,12 @@ const Home: NextPage = () => {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', padding: 0 }}>
-        <div style={{ marginLeft: 12 }} >
-          <Image alt="" src="/logo.png" width={140} height={69} />
-        </div>
-        <HeaderBar 
-          contextData={contextData} 
-          transactionData={transactionData}
-          disableActions={disableActions}
-          createProxy={createProxy}
-        />
-      </div>
+      <HeaderBar 
+        contextData={contextData} 
+        transactionData={transactionData}
+        disableActions={disableActions}
+        createProxy={createProxy}
+      />
       <Spacer y={2} />
       <Container>
         {
