@@ -32,7 +32,7 @@ export const HeaderBar = (props: any) => {
     const subgraphBlockNumber = _meta?.block.number;
     const blockDiff = providerBlockNumber - subgraphBlockNumber;
     const status = blockDiff > 5 ? 'error' : blockDiff > 0 ? 'warning' : 'success';
-    const message = blockDiff === 0 ? 'Blocks are synced' : `Syncing (subgraph ${blockDiff} blocks behind`
+    const message = blockDiff === 0 ? 'Synced' : `Syncing (${blockDiff} block${(blockDiff === 1) ? '' : 's'} behind)`
     setSyncStatus({
       subgraphBlockNumber,
       providerBlockNumber,
@@ -47,7 +47,7 @@ export const HeaderBar = (props: any) => {
     const timer = setInterval(() => {
       refetch();
       queryBlockNumber();
-    }, 5000);
+    }, 10000);
     return () => clearInterval(timer);
   }, [props.contextData.fiat, queryBlockNumber, refetch])
 
