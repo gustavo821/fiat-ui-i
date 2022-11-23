@@ -24,11 +24,11 @@ export const HeaderButtons = (props: any) => {
           disableActions={props.disableActions}
           transactionData={props.transactionData}
         />
-        {(props.fiatBalance) && 
+        {(props.contextData?.fiatBalance) && 
           <Badge 
             css={connectButtonCSS}
           >
-            {props.fiatBalance}
+            {props.contextData.fiatBalance}
           </Badge>
         }
         <div className='connectWrapper'>

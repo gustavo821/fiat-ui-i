@@ -32,7 +32,8 @@ const Home: NextPage = () => {
       fiat: null as null | FIAT,
       explorerUrl: null as null | string,
       user: null as null | string,
-      proxies: [] as Array<string>
+      proxies: [] as Array<string>,
+      fiatBalance: '' as string,
     },
     positionsData: [] as Array<any>,
     collateralTypesData: [] as Array<any>,
@@ -64,7 +65,6 @@ const Home: NextPage = () => {
       action: null as null | string,
       status: null as TransactionStatus,
     },
-    fiatBalance: '',
   }), []) 
 
   // Only select necessary actions off of the stores to minimize re-renders
@@ -98,7 +98,6 @@ const Home: NextPage = () => {
   const [transactionData, setTransactionData] = React.useState(initialState.transactionData);
   const [selectedPositionId, setSelectedPositionId] = React.useState(initialState.selectedPositionId);
   const [selectedCollateralTypeId, setSelectedCollateralTypeId] = React.useState(initialState.selectedCollateralTypeId);
-  const [fiatBalance, setFiatBalance] = React.useState<string>(initialState.fiatBalance);
 
   const disableActions = React.useMemo(() => transactionData.status === 'sent', [transactionData.status])
 
@@ -112,7 +111,6 @@ const Home: NextPage = () => {
     setTransactionData(initialState.transactionData);
     setSelectedPositionId(initialState.selectedPositionId);
     setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
-    setFiatBalance(initialState.fiatBalance);
   }
 
   const handleFinishedTransaction = () => {
@@ -131,8 +129,11 @@ const Home: NextPage = () => {
     if (!contextData.fiat || !contextData.user) return;
     const { fiat } = contextData.fiat.getContracts();
     const fiatBalance = await fiat.balanceOf(contextData.user)
-    setFiatBalance(`${parseFloat(wadToDec(fiatBalance)).toFixed(2)} FIAT`)
-  }, [contextData]);
+    setContextData((curContextData) => ({
+      ...curContextData,
+      fiatBalance: `${parseFloat(wadToDec(fiatBalance)).toFixed(2)} FIAT`
+    }));
+  }, [contextData.fiat, contextData.user]);
 
   const handleCollateralTypesData = React.useCallback(async () => {
     if (!contextData.fiat) return;
@@ -531,8 +532,7 @@ const Home: NextPage = () => {
         <h3 style={{ justifyContent: 'flex',  }}>(Experimental) FIAT I UI</h3>
         <HeaderButtons 
           contextData={contextData} 
-          transactionData={transactionData} 
-          fiatBalance={fiatBalance}
+          transactionData={transactionData}
           disableActions={disableActions}
           createProxy={createProxy}
         />
