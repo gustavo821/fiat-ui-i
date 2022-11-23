@@ -3,13 +3,13 @@ import { useState } from 'react';
 import Skeleton from 'react-loading-skeleton';
 
 interface ProxyCardProps {
-  createProxy: (fiat: any, user: string) => any;
   proxies: Array<string>;
   explorerUrl: null | string;
   fiat: any;
   user: null | string;
   disableActions: boolean;
   transactionData: any;
+  createProxy: (fiat: any, user: string) => any;
 }
 
 export const connectButtonCSS = {
