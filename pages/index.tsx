@@ -193,7 +193,7 @@ const Home: NextPage = () => {
       ...curContextData,
       explorerUrl: chain?.blockExplorers?.etherscan?.url || '',
     }));
-  }, [chain?.blockExplorers?.etherscan?.url]);
+  }, [connector, chain?.blockExplorers?.etherscan?.url]);
   
   React.useEffect(() => {
     handleFiatBalance();
