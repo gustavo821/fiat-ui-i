@@ -47,8 +47,8 @@ const Home: NextPage = () => {
       position: null as undefined | null | any,
       underlierAllowance: null as null | BigNumber, // [underlierScale]
       underlierBalance: null as null | BigNumber, // [underlierScale]
-      monetaDelegate: null as null | boolean, // [boolean]
       monetaFIATAllowance: null as null | BigNumber, // [wad]
+      proxyFIATAllowance: null as null | BigNumber, // [wad]
     },
     modifyPositionFormData: {
       outdated: true,
@@ -119,7 +119,7 @@ const Home: NextPage = () => {
     setFiatBalance(initialState.fiatBalance);
   }
 
-  const handleFinishedTransaction = () => {
+  const softReset = () => {
     // Soft reset after a transaction
     setModifyPositionData(initialState.modifyPositionData);
     setTransactionData(initialState.transactionData);
@@ -267,35 +267,35 @@ const Home: NextPage = () => {
         return;
       }
 
-      const { codex, moneta, fiat } = contextData.fiat.getContracts();
+      const { moneta, fiat } = contextData.fiat.getContracts();
       const underlier = contextData.fiat.getERC20Contract(data.collateralType.properties.underlierToken);
 
       const signer = (await connector?.getSigner());
       if (!signer || !signer.provider) return;
       const user = await signer.getAddress();
-      const [underlierAllowance, underlierBalance, monetaDelegate, monetaFIATAllowance] = await contextData.fiat.multicall([
+      const [underlierAllowance, underlierBalance, monetaFIATAllowance, proxyFIATAllowance] = await contextData.fiat.multicall([
         { contract: underlier, method: 'allowance', args: [user, proxy] },
         { contract: underlier, method: 'balanceOf', args: [user] },
-        { contract: codex, method: 'delegates', args: [proxy, moneta.address] },
         { contract: fiat, method: 'allowance', args: [proxy, moneta.address] },
+        { contract: fiat, method: 'allowance', args: [user, proxy] }
       ]);
 
       setModifyPositionData({
-        ...modifyPositionData, ...data, underlierAllowance, underlierBalance, monetaDelegate, monetaFIATAllowance
+        ...modifyPositionData, ...data, underlierAllowance, underlierBalance, monetaFIATAllowance, proxyFIATAllowance
       });
     })();
 
   }, [connector, contextData, collateralTypesData, positionsData, selectedCollateralTypeId, selectedPositionId, modifyPositionData, createPositionStore, modifyPositionStore]);
 
-  const sendStatefulTransaction = async (fiat: any, useProxy: boolean, action: string, contract: ethers.Contract, method: string, ...args: any[]): Promise<ContractReceipt> => {
+  const sendTransaction = async (
+    fiat: any, useProxy: boolean, action: string, contract: ethers.Contract, method: string, ...args: any[]
+  ): Promise<ContractReceipt> => {
     try {
       setTransactionData({ action, status: 'sent' });
-
       // Dryrun every transaction first to catch and decode errors
       useProxy
         ? await fiat.dryrunViaProxy(contextData.proxies[0], contract, method, ...args)
         : await fiat.dryrun(contract, method, ...args);
-
       const resp = useProxy
         ? await fiat.sendAndWaitViaProxy(contextData.proxies[0], contract, method, ...args)
         : await fiat.sendAndWait(contract, method, ...args);
@@ -304,7 +304,7 @@ const Home: NextPage = () => {
     } catch (e: any) {
       setTransactionData({ ...transactionData, status: 'error' });
       if (e && e.code && e.code === 'ACTION_REJECTED') {
-        // Special handling for Metamask errors
+        // handle rejected transactions by user
         throw new Error('ACTION_REJECTED');
       } else {
         // Should be caught by caller to set appropriate errors
@@ -314,218 +314,163 @@ const Home: NextPage = () => {
   }
 
   const createProxy = async (fiat: any, user: string) => {
-    const response = await sendStatefulTransaction(fiat, false, 'createProxy', fiat.getContracts().proxyRegistry, 'deployFor', user);
-    addRecentTransaction({
-      hash: response.transactionHash,
-      description: 'Create proxy account',
-    });
+    const response = await sendTransaction(
+      fiat, false, 'createProxy', fiat.getContracts().proxyRegistry, 'deployFor', user
+    );
+    addRecentTransaction({ hash: response.transactionHash, description: 'Create Proxy account' });
     // Querying chain directly after this to update as soon as possible
     const { proxyRegistry } = fiat.getContracts();
-    const proxyAddress = await fiat.call(
-      proxyRegistry,
-      'getCurrentProxy',
-      user,
-    );
+    const proxyAddress = await fiat.call(proxyRegistry, 'getCurrentProxy', user);
     setContextData({ ...contextData, proxies: [proxyAddress] });
   }
 
-  const setUnderlierAllowance = async (fiat: any, amount: BigNumber) => {
+  const setUnderlierAllowanceForProxy = async (fiat: any, amount: BigNumber) => {
     const token = fiat.getERC20Contract(modifyPositionData.collateralType.properties.underlierToken);
     // add 1 unit has a buffer in case user refreshes the page and the value becomes outdated
     const allowance = amount.add(modifyPositionData.collateralType.properties.underlierScale);
-    const response = await sendStatefulTransaction(fiat, false, 'setUnderlierAllowance', token, 'approve', contextData.proxies[0], allowance);
-    addRecentTransaction({
-      hash: response.transactionHash,
-      description: 'Set underlier allowance',
-    });
+    const response = await sendTransaction(
+      fiat, false, 'setUnderlierAllowanceForProxy', token, 'approve', contextData.proxies[0], allowance
+    );
+    addRecentTransaction({ hash: response.transactionHash, description: 'Set underlier allowance for Proxy' });
     const underlierAllowance = await token.allowance(contextData.user, contextData.proxies[0])
     setModifyPositionData({ ...modifyPositionData, underlierAllowance });
   }
 
-  const unsetUnderlierAllowance = async (fiat: any) => {
+  const unsetUnderlierAllowanceForProxy = async (fiat: any) => {
     const token = fiat.getERC20Contract(modifyPositionData.collateralType.properties.underlierToken);
-    const response =  await sendStatefulTransaction(fiat, false, 'unsetUnderlierAllowance', token, 'approve', contextData.proxies[0], 0);
-    addRecentTransaction({
-      hash: response.transactionHash,
-      description: 'Reset underlier allowance',
-    });
-    return response;
+    const response =  await sendTransaction(
+      fiat, false, 'unsetUnderlierAllowanceForProxy', token, 'approve', contextData.proxies[0], 0
+    );
+    addRecentTransaction({ hash: response.transactionHash, description: 'Reset underlier allowance for Proxy' });
   }
 
-  const setMonetaFIATAllowance = async (fiat: any, amount: BigNumber) => {
+  const setFIATAllowanceForMoneta = async (fiat: any) => {
     const { moneta, vaultEPTActions, fiat: token } = fiat.getContracts();
-    // add 1 unit has a buffer in case user refreshes the page and the value becomes outdated
-    const allowance = amount.add(WAD);
-    // TODO: describe why calling executing approve(moneta.address, amount) via proxy doesn't work
-    const response = await sendStatefulTransaction(fiat, true, 'setMonetaFIATAllowance', vaultEPTActions, 'approveFIAT', moneta.address, allowance);
-    addRecentTransaction({
-      hash: response.transactionHash,
-      description: 'Set Moneta FIAT allowance',
-    });
+    const response = await sendTransaction(
+      // approveFIAT is implemented for all Actions contract
+      fiat, true, 'setFIATAllowanceForMoneta', vaultEPTActions, 'approveFIAT', moneta.address, ethers.constants.MaxUint256
+    );
+    addRecentTransaction({ hash: response.transactionHash, description: 'Set FIAT allowance Moneta' });
     const monetaFIATAllowance = await token.allowance(contextData.proxies[0], moneta.address)
     setModifyPositionData({ ...modifyPositionData, monetaFIATAllowance });
   }
 
-  const unsetMonetaFIATAllowance = async (fiat: any) => {
+  const unsetFIATAllowanceForMoneta = async (fiat: any) => {
     const { moneta, vaultEPTActions } = fiat.getContracts();
-    const response = await sendStatefulTransaction(fiat, true, 'unsetMonetaFIATAllowance', vaultEPTActions, 'approveFIAT', moneta.address, 0);
-    addRecentTransaction({
-      hash: response.transactionHash,
-      description: 'Reset Moneta FIAT allowance',
-    });
-    return response;
-  }
-
-  const setMonetaDelegate = async (fiat: any) => {
-    const { codex, moneta } = fiat.getContracts();
-    const response = await sendStatefulTransaction(fiat, false, 'setMonetaDelegate', codex, 'grantDelegate', moneta.address);
-    addRecentTransaction({
-      hash: response.transactionHash,
-      description: 'Grant delegate to Moneta',
-    });
-
-    const monetaDelegate = await fiat.call(
-      codex,
-      'delegates',
-      contextData.proxies[0],
-      moneta.address,
+    const response = await sendTransaction(
+      // approveFIAT is implemented for all Actions contract
+      fiat, true, 'unsetFIATAllowanceForMoneta', vaultEPTActions, 'approveFIAT', moneta.address, 0
     );
-    setModifyPositionData({ ...modifyPositionData, monetaDelegate });
+    addRecentTransaction({ hash: response.transactionHash, description: 'Reset FIAT allowance Moneta' });
   }
 
-  const unsetMonetaDelegate = async (fiat: any) => {
-    const { codex, moneta } = fiat.getContracts();
-    const response = await sendStatefulTransaction(fiat, false, 'unsetMonetaDelegate', codex, 'revokeDelegate', moneta.address);
-    addRecentTransaction({
-      hash: response.transactionHash,
-      description: 'Revoke delegate from Moneta',
-    });
-    return response;
+  const setFIATAllowanceForProxy = async (fiat: any, amount: BigNumber) => {
+    const { moneta, fiat: token } = fiat.getContracts();
+    // add 1 unit has a buffer in case user refreshes the page and the value becomes outdated
+    const allowance = amount.add(WAD);
+    const response = await sendTransaction(
+      fiat, false, 'setFIATAllowanceForProxy', token, 'approve', contextData.proxies[0], allowance
+    );
+    addRecentTransaction({ hash: response.transactionHash, description: 'Set  FIAT allowance for Proxy' });
+    const monetaFIATAllowance = await token.allowance(contextData.proxies[0], moneta.address)
+    setModifyPositionData({ ...modifyPositionData, monetaFIATAllowance });
+  }
+
+  const unsetFIATAllowanceForProxy = async (fiat: any) => {
+    const { fiat: token } = fiat.getContracts();
+    const response = await sendTransaction(
+      fiat, false, 'unsetFIATAllowanceForProxy', token, 'approve', contextData.proxies[0], 0
+    );
+    addRecentTransaction({ hash: response.transactionHash, description: 'Reset FIAT allowance for Proxy' });
   }
 
   const createPosition = async (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => {
     const args = userActions.buildBuyCollateralAndModifyDebtArgs(
-      contextData,
-      modifyPositionData.collateralType,
-      deltaCollateral,
-      deltaDebt,
-      underlier
+      contextData, modifyPositionData.collateralType, deltaCollateral, deltaDebt, underlier
     );
-    const response = await sendStatefulTransaction(contextData.fiat, true, 'createPosition', args.contract, args.methodName, ...args.methodArgs);
-
-    addRecentTransaction({
-      hash: response.transactionHash,
-      description: 'Create position',
-    });
-    handleFinishedTransaction();
-    return response;
+    const response = await sendTransaction(
+      contextData.fiat, true, 'createPosition', args.contract, args.methodName, ...args.methodArgs
+    );
+    addRecentTransaction({ hash: response.transactionHash, description: 'Create position' });
+    softReset();
   }
 
   const buyCollateralAndModifyDebt = async (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => {
+    const { collateralType, position } = modifyPositionData;
     if (deltaCollateral.isZero()) {
-      const args = userActions.buildModifyCollateralAndDebtArgs(
-        contextData,
-        modifyPositionData.collateralType,
-        deltaDebt, // increase (mint)
-        modifyPositionData.position,
+       // increase (mint)
+      const args = userActions.buildModifyCollateralAndDebtArgs(contextData, collateralType, deltaDebt, position);
+      const response = await sendTransaction(
+        contextData.fiat, true, 'modifyCollateralAndDebt', args.contract, args.methodName, ...args.methodArgs
       );
-      const response = await sendStatefulTransaction(contextData.fiat, true, 'modifyCollateralAndDebt', args.contract, args.methodName, ...args.methodArgs);
-
-      addRecentTransaction({
-        hash: response.transactionHash,
-        description: 'Borrow FIAT',
-      });
-      handleFinishedTransaction();
-      return response;
+      addRecentTransaction({ hash: response.transactionHash, description: 'Borrow FIAT' });
+      softReset();
     } else {
       const args = userActions.buildBuyCollateralAndModifyDebtArgs(
-        contextData,
-        modifyPositionData.collateralType,
-        deltaCollateral,
-        deltaDebt,
-        underlier
+        contextData, collateralType, deltaCollateral, deltaDebt, underlier
       );
-      const response = await sendStatefulTransaction(contextData.fiat, true, 'buyCollateralAndModifyDebt', args.contract, args.methodName, ...args.methodArgs);
-
+      const response = await sendTransaction(
+        contextData.fiat, true, 'buyCollateralAndModifyDebt', args.contract, args.methodName, ...args.methodArgs
+      );
       addRecentTransaction({
-        hash: response.transactionHash,
-        description: 'Buy and deposit collateral and borrow FIAT',
+        hash: response.transactionHash, description: 'Buy and deposit collateral and borrow FIAT'
       });
-      handleFinishedTransaction();
+      softReset();
       return response;
     }
   }
 
   const sellCollateralAndModifyDebt = async (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => {
+    const { collateralType, position } = modifyPositionData;
     if (deltaCollateral.isZero()) {
+      // decrease (pay back)
       const args = userActions.buildModifyCollateralAndDebtArgs(
-        contextData,
-        modifyPositionData.collateralType,
-        deltaDebt.mul(-1), // decrease (pay back)
-        modifyPositionData.position,
+        contextData, collateralType, deltaDebt.mul(-1), position
       );
-      const response = await sendStatefulTransaction(contextData.fiat, true, 'modifyCollateralAndDebt', args.contract, args.methodName, ...args.methodArgs);
-
-      addRecentTransaction({
-        hash: response.transactionHash,
-        description: 'Repay borrowed FIAT',
-      });
-      handleFinishedTransaction();
-      return response;
+      const response = await sendTransaction(
+        contextData.fiat, true, 'modifyCollateralAndDebt', args.contract, args.methodName, ...args.methodArgs
+      );
+      addRecentTransaction({ hash: response.transactionHash, description: 'Repay borrowed FIAT' });
+      softReset();
     }
     else {
       const args = userActions.buildSellCollateralAndModifyDebtArgs(
-        contextData,
-        modifyPositionData.collateralType,
-        deltaCollateral,
-        deltaDebt,
-        underlier,
-        modifyPositionData.position,
+        contextData, collateralType, deltaCollateral, deltaDebt, underlier, position,
       );
-      const response = await sendStatefulTransaction(contextData.fiat, true, 'sellCollateralAndModifyDebt', args.contract, args.methodName, ...args.methodArgs);
-
+      const response = await sendTransaction(
+        contextData.fiat, true, 'sellCollateralAndModifyDebt', args.contract, args.methodName, ...args.methodArgs
+      );
       addRecentTransaction({
-        hash: response.transactionHash,
-        description: 'Withdraw and sell collateral and repay borrowed FIAT',
+        hash: response.transactionHash, description: 'Withdraw and sell collateral and repay borrowed FIAT'
       });
-      handleFinishedTransaction();
-      return response;
+      softReset();
     }
   }
 
   const redeemCollateralAndModifyDebt = async (deltaCollateral: BigNumber, deltaDebt: BigNumber) => {
+    const { collateralType, position } = modifyPositionData;
     if (deltaCollateral.isZero()) {
+       // decrease (pay back)
       const args = userActions.buildModifyCollateralAndDebtArgs(
-        contextData,
-        modifyPositionData.collateralType,
-        deltaDebt.mul(-1), // decrease (pay back)
-        modifyPositionData.position,
+        contextData, collateralType, deltaDebt.mul(-1), position
       );
-      const response = await sendStatefulTransaction(contextData.fiat, true, 'modifyCollateralAndDebt', args.contract, args.methodName, ...args.methodArgs);
-
-      addRecentTransaction({
-        hash: response.transactionHash,
-        description: 'Repay borrowed FIAT',
-      });
-      handleFinishedTransaction();
-      return response;
+      const response = await sendTransaction(
+        contextData.fiat, true, 'modifyCollateralAndDebt', args.contract, args.methodName, ...args.methodArgs
+      );
+      addRecentTransaction({ hash: response.transactionHash, description: 'Repay borrowed FIAT' });
+      softReset();
     }
     else {
       const args = userActions.buildRedeemCollateralAndModifyDebtArgs(
-        contextData,
-        modifyPositionData.collateralType,
-        deltaCollateral,
-        deltaDebt,
-        modifyPositionData.position,
-      )
-      const response = await sendStatefulTransaction(contextData.fiat, true, 'redeemCollateralAndModifyDebt', args.contract, args.methodName, ...args.methodArgs);
-
+        contextData, collateralType, deltaCollateral, deltaDebt, position
+      );
+      const response = await sendTransaction(
+        contextData.fiat, true, 'redeemCollateralAndModifyDebt', args.contract, args.methodName, ...args.methodArgs
+      );
       addRecentTransaction({
-        hash: response.transactionHash,
-        description: 'Withdraw and redeem collateral and repay borrowed FIAT',
+        hash: response.transactionHash, description: 'Withdraw and redeem collateral and repay borrowed FIAT'
       });
-      handleFinishedTransaction();
-      return response;
+      softReset();
     }
   }
 
@@ -603,11 +548,9 @@ const Home: NextPage = () => {
         disableActions={disableActions}
         modifyPositionData={modifyPositionData}
         selectedCollateralTypeId={selectedCollateralTypeId}
-        setMonetaDelegate={setMonetaDelegate}
-        setUnderlierAllowance={setUnderlierAllowance}
+        setUnderlierAllowanceForProxy={setUnderlierAllowanceForProxy}
+        unsetUnderlierAllowanceForProxy={unsetUnderlierAllowanceForProxy}
         transactionData={transactionData}
-        unsetMonetaDelegate={unsetMonetaDelegate}
-        unsetUnderlierAllowance={unsetUnderlierAllowance}
         open={(!!selectedCollateralTypeId && !!modifyPositionData)}
         onClose={() => {
           setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
@@ -623,16 +566,16 @@ const Home: NextPage = () => {
         modifyPositionData={modifyPositionData}
         redeemCollateralAndModifyDebt={redeemCollateralAndModifyDebt}
         sellCollateralAndModifyDebt={sellCollateralAndModifyDebt}
-        setMonetaFIATAllowance={setMonetaFIATAllowance}
+        setFIATAllowanceForProxy={setFIATAllowanceForProxy}
+        unsetFIATAllowanceForProxy={unsetFIATAllowanceForProxy}
+        setFIATAllowanceForMoneta={setFIATAllowanceForMoneta}
+        unsetFIATAllowanceForMoneta={unsetFIATAllowanceForMoneta}
+        setUnderlierAllowanceForProxy={setUnderlierAllowanceForProxy}
+        unsetUnderlierAllowanceForProxy={unsetUnderlierAllowanceForProxy}
+        transactionData={transactionData}
         setTransactionStatus={(status) =>
           setTransactionData({ ...transactionData, status })
         }
-        setMonetaDelegate={setMonetaDelegate}
-        setUnderlierAllowance={setUnderlierAllowance}
-        transactionData={transactionData}
-        unsetMonetaDelegate={unsetMonetaDelegate}
-        unsetMonetaFIATAllowance={unsetMonetaFIATAllowance}
-        unsetUnderlierAllowance={unsetUnderlierAllowance}
         open={(!!selectedPositionId)}
         onClose={() => {
           setSelectedPositionId(initialState.selectedCollateralTypeId);
