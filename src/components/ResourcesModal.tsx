@@ -23,6 +23,10 @@ const links = [
     url: 'https://gov.fiatdao.com',
   },
   {
+    text: 'Audits',
+    url: 'https://github.com/fiatdao/security/tree/main/audits',
+  },
+  {
     text: 'Documentation',
     url: 'https://docs.fiatdao.com',
   },
@@ -45,7 +49,7 @@ const headerCss = {
   color: '$connectButtonColor',
 }
 
-export const InfoModal = (props: any) => {
+export const ResourcesModal = (props: any) => {
   return (
     <Modal
       closeButton

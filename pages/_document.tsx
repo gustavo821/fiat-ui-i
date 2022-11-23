@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-title-in-document-head */
 import Document, { DocumentContext, Head, Html, Main, NextScript } from 'next/document'
 
 class MyDocument extends Document {
@@ -17,10 +18,11 @@ class MyDocument extends Document {
     const description = 'Leverage and secondary liquidity for your DeFi fixed income assets'
     const twitterHandle = '@fiatdao'
 
+    
     return (
       <Html>
         <Head>
-          {/* <title>{title}</title> */}
+          <title>{title}</title>
           <meta content="summary_large_image" name="twitter:card" />
           <meta content="website" property="og:type" />
           <meta content={`${siteURL}/shareable/ogImage.jpg`} property="og:image" />

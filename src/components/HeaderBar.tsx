@@ -3,20 +3,19 @@ import { Badge, Button } from '@nextui-org/react';
 import { InfoIcon } from './Icons/info';
 import { connectButtonCSS, ProxyButton } from './ProxyButton';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { InfoModal } from './InfoModal';
+import { ResourcesModal } from './ResourcesModal';
 
-export const HeaderButtons = (props: any) => {
-  const [showInfoModal, setShowInfoModal] = React.useState<boolean>(false);
+export const HeaderBar = (props: any) => {
+  const [showResourcesModal, setShowResourcesModal] = React.useState<boolean>(false);
 
   return (
-    <>
-      {/* Header Buttons */}
-      <div style={{ display: 'flex', height: '40px'}}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', padding: 16 }}>
+      <div style={{ display: 'flex', height: '40px' }}>
         <Button 
           auto
           icon={<InfoIcon fillColor='var(--rk-colors-connectButtonText)'/>}
           css={connectButtonCSS}
-          onPress={()=>setShowInfoModal(true)}
+          onPress={()=>setShowResourcesModal(true)}
         />
         <ProxyButton
           {...props.contextData}
@@ -35,11 +34,10 @@ export const HeaderButtons = (props: any) => {
           <ConnectButton showBalance={false} />
         </div>
       </div>
-      {/* Info Modal */}
-      <InfoModal 
-        open={showInfoModal}
-        onClose={() => setShowInfoModal(false)}
+      <ResourcesModal 
+        open={showResourcesModal}
+        onClose={() => setShowResourcesModal(false)}
       />
-    </>
+    </div>
   );
 }

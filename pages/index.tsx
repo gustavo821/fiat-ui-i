@@ -1,12 +1,14 @@
 import React from 'react';
 import type { NextPage } from 'next';
+import Image from 'next/image';
+import Link from 'next/link';
 import { useAccount, useNetwork, useProvider } from 'wagmi';
 import shallow from 'zustand/shallow'
 import { useAddRecentTransaction } from '@rainbow-me/rainbowkit';
 import { Container, Spacer } from '@nextui-org/react';
 import { BigNumber, ContractReceipt, ethers } from 'ethers';
 import { decToWad, FIAT, WAD, wadToDec, ZERO } from '@fiatdao/sdk';
-import { HeaderButtons } from '../src/components/HeaderButtons';
+import { HeaderBar } from '../src/components/HeaderBar';
 import { CollateralTypesTable } from '../src/components/CollateralTypesTable';
 import { PositionsTable } from '../src/components/PositionsTable';
 import { CreatePositionModal } from '../src/components/CreatePositionModal';
@@ -473,9 +475,11 @@ const Home: NextPage = () => {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', padding: 12 }}>
-        <h3 style={{ justifyContent: 'flex',  }}>(Experimental) FIAT I UI</h3>
-        <HeaderButtons 
+      <div style={{ display: 'flex', justifyContent: 'space-between', padding: 0 }}>
+        <div style={{ marginLeft: 12 }} >
+          <Image alt="" src="/logo.png" width={140} height={69} />
+        </div>
+        <HeaderBar 
           contextData={contextData} 
           transactionData={transactionData}
           disableActions={disableActions}
