@@ -22,15 +22,13 @@ import { useCreatePositionStore } from '../stores/createPositionStore';
 
 interface CreatePositionModalProps {
   createPosition: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
+  setUnderlierAllowanceForProxy: (fiat: any, amount: BigNumber) => any;
+  unsetUnderlierAllowanceForProxy: (fiat: any) => any;
   contextData: any;
   disableActions: boolean;
   modifyPositionData: any;
   selectedCollateralTypeId: string | null;
-  setMonetaDelegate: (fiat: any) => any;
-  setUnderlierAllowance: (fiat: any, amount: BigNumber) => any;
   transactionData: any;
-  unsetMonetaDelegate: (fiat: any) => any;
-  unsetUnderlierAllowance: (fiat: any) => any;
   open: boolean;
   onClose: () => void;
 }
@@ -359,14 +357,14 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
             if (!createPositionStore.underlier.isZero() && underlierAllowance?.gte(createPositionStore.underlier)) {
               try {
                 setRpcError('');
-                await props.unsetUnderlierAllowance(props.contextData.fiat);
+                await props.unsetUnderlierAllowanceForProxy(props.contextData.fiat);
               } catch (e: any) {
                 setRpcError(e.message);
               }
             } else {
               try {
                 setRpcError('');
-                await props.setUnderlierAllowance(props.contextData.fiat, createPositionStore.underlier);
+                await props.setUnderlierAllowanceForProxy(props.contextData.fiat, createPositionStore.underlier);
               } catch (e: any) {
                 setRpcError(e.message);
               }
@@ -374,39 +372,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
           }}
           color='primary'
           icon={
-            ['setUnderlierAllowance', 'unsetUnderlierAllowance'].includes(currentTxAction || '') && props.disableActions ? (
-              <Loading size='xs' />
-            ) : null
-          }
-        />
-        <Spacer y={0.5} />
-        <Text size={'0.875rem'}>Enable FIAT</Text>
-        <Switch
-          disabled={props.disableActions || !hasProxy}
-          // Switch type is wrong, this is necessary
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
-          checked={() => !!monetaDelegate}
-          onChange={async () => {
-            if (!!monetaDelegate) {
-              try {
-                setRpcError('');
-                await props.unsetMonetaDelegate(props.contextData.fiat);
-              } catch (e: any) {
-                setRpcError(e.message);
-              }
-            } else {
-              try {
-                setRpcError('');
-                await props.setMonetaDelegate(props.contextData.fiat);
-              } catch (e: any) {
-                setRpcError(e.message);
-              }
-            }
-          }}
-          color='primary'
-          icon={
-            ['setMonetaDelegate', 'unsetMonetaDelegate'].includes(currentTxAction || '') && props.disableActions ? (
+            ['setUnderlierAllowanceForProxy', 'unsetUnderlierAllowanceForProxy'].includes(currentTxAction || '') && props.disableActions ? (
               <Loading size='xs' />
             ) : null
           }
@@ -426,16 +392,13 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
             underlierAllowance?.lt(createPositionStore.underlier) ||
             monetaDelegate === false
           }
-          icon={
-            props.disableActions &&
-            currentTxAction === 'createPosition' ? (
-              <Loading size='xs' />
-            ) : null
-          }
+          icon={(props.disableActions && currentTxAction === 'createPosition') ? (<Loading size='xs' />) : null}
           onPress={async () => {
             try {
               setRpcError('');
-              await props.createPosition(createPositionStore.deltaCollateral, createPositionStore.deltaDebt, createPositionStore.underlier);
+              await props.createPosition(
+                createPositionStore.deltaCollateral, createPositionStore.deltaDebt, createPositionStore.underlier
+              );
               props.onClose();
             } catch (e: any) {
               setRpcError(e.message);
