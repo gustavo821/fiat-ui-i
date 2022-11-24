@@ -83,10 +83,15 @@ export const HeaderBar = (props: any) => {
               transactionData={props.transactionData}
             />
             {(props.contextData?.fiatBalance) && 
-              <Badge 
-                css={connectButtonCSS}
-              >
-                {props.contextData.fiatBalance}
+              <Badge css={connectButtonCSS} >
+                <Link
+                  href={'https://app.balancer.fi/#/ethereum/pool/0x178e029173417b1f9c8bc16dcec6f697bc32374600000000000000000000025d'}
+                  target='_blank'
+                  rel='noreferrer noopener'
+                  color="text"
+                  >
+                    {props.contextData.fiatBalance}
+                </Link>
               </Badge>
             }
             <div className='connectWrapper'>
