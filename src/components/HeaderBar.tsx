@@ -1,13 +1,11 @@
 import React from 'react';
-import Image from 'next/image';
-import { Badge, Button, Text, Tooltip } from '@nextui-org/react';
+import { Badge, Button, Link, Text, Tooltip } from '@nextui-org/react';
 import { InfoIcon } from './Icons/info';
 import { connectButtonCSS, ProxyButton } from './ProxyButton';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { ResourcesModal } from './ResourcesModal';
 import { queryMeta } from '@fiatdao/sdk';
 import { useBlockNumber } from 'wagmi';
-import { useTheme } from '@nextui-org/react';
 
 interface BlockSyncStatus {
   subgraphBlockNumber: number;
@@ -21,8 +19,6 @@ export const HeaderBar = (props: any) => {
   const [showResourcesModal, setShowResourcesModal] = React.useState<boolean>(false);
   const [syncStatus, setSyncStatus] = React.useState<BlockSyncStatus>();
   const {data: providerBlockNumber, refetch} = useBlockNumber();
-  const { theme } = useTheme();
-  const darkTheme = theme?.colors.background.value != '#ffffff';
 
   const queryBlockNumber = React.useCallback(async () => {
     if (!props.contextData?.fiat) return;
@@ -52,25 +48,26 @@ export const HeaderBar = (props: any) => {
   }, [props.contextData.fiat, queryBlockNumber, refetch])
 
   return (
-    <div style={{display: 'flex', flexDirection: 'column'}}>
-      <div style={{display: 'flex', padding: '6px 20px 6px 12px', borderBottom: '1px solid var(--nextui-colors-border)', width: '100%', justifyContent: 'end'}}>
-        <Tooltip content={syncStatus?.message} placement='left' css={{whiteSpace: 'nowrap'}}>
-          <Badge color={syncStatus?.status ?? 'default'} variant="dot" css={{alignSelf: 'center'}}/>
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <div style={{
+        display: 'flex',
+        padding: '6px 20px 6px 12px',
+        borderBottom: '1px solid var(--nextui-colors-border)',
+        width: '100%',
+        justifyContent: 'space-between'
+      }}>
+        <Link href={'https://fiatdao.com'} target='_blank' rel='noreferrer noopener' >
+         <Text size="$xs">FIAT DAO - FIAT I</Text>
+        </Link>
+        <Tooltip content={syncStatus?.message} placement='left' css={{ whiteSpace: 'nowrap' }}>
+          <Badge color={syncStatus?.status ?? 'default'} variant="dot" css={{ alignSelf: 'center', marginRight: '3px' }}/>
           <Text size="$xs">
             {syncStatus?.subgraphBlockNumber}
           </Text>
         </Tooltip>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', padding: 0 }}>
-        { darkTheme ? 
-          (<div style={{ marginLeft: 12 }} >
-            <Image alt="" src="/logo-dark.png" layout="fixed" objectFit={'contain'} width={140} height={69} />
-          </div>)
-          :
-          (<div style={{ margin: 12 }} >
-            <Image alt="" src="/logo-white.png" layout="fixed" objectFit={'contain'} width={140} height={45} />
-          </div>)
-        }
+        <div></div>
         <div style={{ display: 'flex', justifyContent: 'space-between', padding: 16 }}>
           <div style={{ display: 'flex', height: '40px' }}>
             <Button 
@@ -86,10 +83,15 @@ export const HeaderBar = (props: any) => {
               transactionData={props.transactionData}
             />
             {(props.contextData?.fiatBalance) && 
-              <Badge 
-                css={connectButtonCSS}
-              >
-                {props.contextData.fiatBalance}
+              <Badge css={connectButtonCSS} >
+                <Link
+                  href={'https://app.balancer.fi/#/ethereum/pool/0x178e029173417b1f9c8bc16dcec6f697bc32374600000000000000000000025d'}
+                  target='_blank'
+                  rel='noreferrer noopener'
+                  color="text"
+                  >
+                    {props.contextData.fiatBalance}
+                </Link>
               </Badge>
             }
             <div className='connectWrapper'>

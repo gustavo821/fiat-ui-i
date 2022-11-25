@@ -479,25 +479,26 @@ const Home: NextPage = () => {
         disableActions={disableActions}
         createProxy={createProxy}
       />
-      <Spacer y={2} />
       <Container>
         {
           positionsData === null || positionsData.length === 0
             ? null
             : (
-              <PositionsTable
-                contextData={contextData}
-                collateralTypesData={collateralTypesData}
-                positionsData={positionsData}
-                onSelectPosition={(positionId) => {
-                  setSelectedPositionId(positionId);
-                  setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
-                }}
-              />
+              <>
+                <PositionsTable
+                  contextData={contextData}
+                  collateralTypesData={collateralTypesData}
+                  positionsData={positionsData}
+                  onSelectPosition={(positionId) => {
+                    setSelectedPositionId(positionId);
+                    setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
+                  }}
+                />
+                <Spacer y={2} />
+              </>
             )
         }
       </Container>
-      <Spacer y={2} />
       <Container>
         <CollateralTypesTable
           collateralTypesData={collateralTypesData}
