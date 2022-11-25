@@ -1,6 +1,6 @@
 import React from 'react';
 import { Badge, Button, Link, Text, Tooltip } from '@nextui-org/react';
-import { InfoIcon } from './Icons/info';
+import { InfoIcon } from './icons/Info';
 import { connectButtonCSS, ProxyButton } from './ProxyButton';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { ResourcesModal } from './ResourcesModal';
