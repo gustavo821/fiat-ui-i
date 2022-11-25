@@ -72,7 +72,7 @@ export const HeaderBar = (props: any) => {
           <div style={{ display: 'flex', height: '40px' }}>
             <Button 
               auto
-              icon={<InfoIcon fill='var(--rk-colors-connectButtonText)' width='20' height='20'/>}
+              icon={<InfoIcon fill='var(--nextui-colors-foreground)' width='20' height='20'/>}
               css={connectButtonCSS}
               onPress={()=>setShowResourcesModal(true)}
             />

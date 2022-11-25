@@ -1,4 +1,3 @@
-// Icons from: https://icons.radix-ui.com/
 import { Text } from '@nextui-org/react';
 import { ReactNode } from 'react';
 import { InfoIcon } from './icons/Info';
