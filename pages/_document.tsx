@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-title-in-document-head */
 import Document, { DocumentContext, Head, Html, Main, NextScript } from 'next/document'
 
 class MyDocument extends Document {
@@ -22,7 +21,6 @@ class MyDocument extends Document {
     return (
       <Html>
         <Head>
-          <title>{title}</title>
           <meta content="summary_large_image" name="twitter:card" />
           <meta content="website" property="og:type" />
           <meta content={`${siteURL}/shareable/ogImage.jpg`} property="og:image" />
