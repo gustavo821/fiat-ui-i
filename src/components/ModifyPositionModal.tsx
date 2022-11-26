@@ -24,8 +24,8 @@ interface ModifyPositionModalProps {
   buyCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
   sellCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
   redeemCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber) => any;
+  selectedCollateralTypeId: string | null;
   setFIATAllowanceForMoneta: (fiat: any) => any;
-  unsetFIATAllowanceForMoneta: (fiat: any) => any;
   setFIATAllowanceForProxy: (fiat: any, amount: BigNumber) => any;
   unsetFIATAllowanceForProxy: (fiat: any) => any;
   setUnderlierAllowanceForProxy: (fiat: any, amount: BigNumber) => any;
@@ -198,7 +198,11 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               disabled={props.disableActions}
               value={floor2(scaleToDec(modifyPositionStore.underlier, underlierScale))}
               onChange={(event) => {
-                modifyPositionStore.setUnderlier(props.contextData.fiat, event.target.value, props.modifyPositionData);
+                if (props.selectedCollateralTypeId) {
+                  modifyPositionStore.setUnderlier(props.contextData.fiat, event.target.value, props.modifyPositionData, props.selectedCollateralTypeId);
+                } else {
+                  console.error('Setting underlier to deposit required a selectedCollateralTypeId');
+                }
               }}
               placeholder='0'
               inputMode='decimal'
