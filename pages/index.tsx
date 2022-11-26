@@ -15,7 +15,6 @@ import {
   decodeCollateralTypeId, decodePositionId, encodePositionId, getCollateralTypeData, getPositionData
 } from '../src/utils';
 import * as userActions from '../src/actions';
-import { useCreatePositionStore } from '../src/stores/createPositionStore';
 import { useModifyPositionStore } from '../src/stores/modifyPositionStore';
 
 export type TransactionStatus = null | 'error' | 'sent' | 'confirming' | 'confirmed';
@@ -67,23 +66,12 @@ const Home: NextPage = () => {
     },
   }), []) 
 
-  // Only select necessary actions off of the stores to minimize re-renders
-  const createPositionStore = useCreatePositionStore(
-    React.useCallback(
-      (state) => ({
-        setFormDataLoading: state.setFormDataLoading,
-        calculateNewPositionData: state.calculateNewPositionData,
-        reset: state.reset,
-      }),
-      []
-    ), shallow
-  );
-
+  // Only select necessary actions off of the store to minimize re-renders
   const modifyPositionStore = useModifyPositionStore(
     React.useCallback(
       (state) => ({
         setFormDataLoading: state.setFormDataLoading,
-        calculateNewPositionData: state.calculateNewPositionData,
+        calculatePositionValuesAfterAction: state.calculatePositionValuesAfterAction,
         reset: state.reset,
       }),
       []
@@ -241,13 +229,8 @@ const Home: NextPage = () => {
     }
     const data = { ...modifyPositionData, collateralType, position };
 
-    if (selectedCollateralTypeId != null) {
-      createPositionStore.setFormDataLoading(true);
-      createPositionStore.calculateNewPositionData(contextData.fiat, data, selectedCollateralTypeId);
-    } else {
-      modifyPositionStore.setFormDataLoading(true);
-      modifyPositionStore.calculateNewPositionData(contextData.fiat, data);
-    }
+    modifyPositionStore.setFormDataLoading(true);
+    modifyPositionStore.calculatePositionValuesAfterAction(contextData.fiat, data, selectedCollateralTypeId ?? undefined);
 
     setModifyPositionData({...data});
 
@@ -282,7 +265,7 @@ const Home: NextPage = () => {
       });
     })();
 
-  }, [connector, contextData, collateralTypesData, positionsData, selectedCollateralTypeId, selectedPositionId, modifyPositionData, createPositionStore, modifyPositionStore]);
+  }, [connector, contextData, collateralTypesData, positionsData, selectedCollateralTypeId, selectedPositionId, modifyPositionData, modifyPositionStore]);
 
   const sendTransaction = async (
     fiat: any, useProxy: boolean, action: string, contract: ethers.Contract, method: string, ...args: any[]
@@ -350,15 +333,6 @@ const Home: NextPage = () => {
     addRecentTransaction({ hash: response.transactionHash, description: 'Set FIAT allowance Moneta' });
     const monetaFIATAllowance = await token.allowance(contextData.proxies[0], moneta.address)
     setModifyPositionData({ ...modifyPositionData, monetaFIATAllowance });
-  }
-
-  const unsetFIATAllowanceForMoneta = async (fiat: any) => {
-    const { moneta, vaultEPTActions } = fiat.getContracts();
-    const response = await sendTransaction(
-      // approveFIAT is implemented for all Actions contract
-      fiat, true, 'unsetFIATAllowanceForMoneta', vaultEPTActions, 'approveFIAT', moneta.address, 0
-    );
-    addRecentTransaction({ hash: response.transactionHash, description: 'Reset FIAT allowance Moneta' });
   }
 
   const setFIATAllowanceForProxy = async (fiat: any, amount: BigNumber) => {
@@ -532,7 +506,7 @@ const Home: NextPage = () => {
         onClose={() => {
           setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
           setModifyPositionData(initialState.modifyPositionData);
-          createPositionStore.reset();
+          modifyPositionStore.reset();
         }}
       />
 
@@ -546,7 +520,6 @@ const Home: NextPage = () => {
         setFIATAllowanceForProxy={setFIATAllowanceForProxy}
         unsetFIATAllowanceForProxy={unsetFIATAllowanceForProxy}
         setFIATAllowanceForMoneta={setFIATAllowanceForMoneta}
-        unsetFIATAllowanceForMoneta={unsetFIATAllowanceForMoneta}
         setUnderlierAllowanceForProxy={setUnderlierAllowanceForProxy}
         unsetUnderlierAllowanceForProxy={unsetUnderlierAllowanceForProxy}
         transactionData={transactionData}

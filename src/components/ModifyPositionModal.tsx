@@ -457,7 +457,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               }
             />
             <Spacer y={3} />
-            {(monetaFIATAllowance?.isZero()) && (
+            {monetaFIATAllowance?.lt(modifyPositionStore.deltaDebt) && (
               <>
                 <Spacer y={3} />
                 <Button

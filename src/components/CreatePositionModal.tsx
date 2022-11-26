@@ -18,7 +18,7 @@ import { scaleToDec, wadToDec } from '@fiatdao/sdk';
 
 import { commifyToDecimalPlaces, floor2, formatUnixTimestamp } from '../utils';
 import { Alert } from './Alert';
-import { useCreatePositionStore } from '../stores/createPositionStore';
+import { useModifyPositionStore } from '../stores/modifyPositionStore';
 
 interface CreatePositionModalProps {
   createPosition: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
@@ -49,7 +49,7 @@ export const CreatePositionModal = (props: CreatePositionModalProps) => {
 };
 
 const CreatePositionModalBody = (props: CreatePositionModalProps) => {
-  const createPositionStore = useCreatePositionStore();
+  const formStore = useModifyPositionStore();
   const [rpcError, setRpcError] = React.useState('');
 
   if (
@@ -104,14 +104,14 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
       );
     }
 
-    if (createPositionStore.formWarnings.length !== 0) {
-      createPositionStore.formWarnings.map((formWarning, idx) => {
+    if (formStore.formWarnings.length !== 0) {
+      formStore.formWarnings.map((formWarning, idx) => {
         formAlerts.push(<Alert severity='warning' message={formWarning} key={`warn-${idx}`} />);
       });
     }
 
-    if (createPositionStore.formErrors.length !== 0) {
-      createPositionStore.formErrors.forEach((formError, idx) => {
+    if (formStore.formErrors.length !== 0) {
+      formStore.formErrors.forEach((formError, idx) => {
         formAlerts.push(<Alert severity='error' message={formError} key={`err-${idx}`} />);
       });
     }
@@ -164,13 +164,13 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
           <Grid>
             <Input
               disabled={props.disableActions}
-              value={floor2(scaleToDec(createPositionStore.underlier, underlierScale))}
+              value={floor2(scaleToDec(formStore.underlier, underlierScale))}
               onChange={(event) => {
                 if (!props.selectedCollateralTypeId) {
                   console.error('No selectedCollateralTypeId!');
                   return;
                 }
-                createPositionStore.setUnderlier(
+                formStore.setUnderlier(
                   props.contextData.fiat, event.target.value, props.modifyPositionData, props.selectedCollateralTypeId
                 );
               }}
@@ -187,13 +187,13 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
           <Grid>
             <Input
               disabled={props.disableActions}
-              value={floor2(Number(wadToDec(createPositionStore.slippagePct)) * 100)}
+              value={floor2(Number(wadToDec(formStore.slippagePct)) * 100)}
               onChange={(event) => {
                 if (!props.selectedCollateralTypeId) {
                   console.error('No selectedCollateralTypeId!');
                   return;
                 }
-                createPositionStore.setSlippagePct(
+                formStore.setSlippagePct(
                   props.contextData.fiat, event.target.value, props.modifyPositionData, props.selectedCollateralTypeId
                 );
               }}
@@ -213,7 +213,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
           size={'0.75rem'}
           style={{ paddingLeft: '0.25rem', marginBottom: '0.375rem' }}
         >
-          Targeted collateralization ratio ({floor2(wadToDec(createPositionStore.targetedCollRatio.mul(100)))}%)
+          Targeted collateralization ratio ({floor2(wadToDec(formStore.targetedCollRatio.mul(100)))}%)
         </Text>
         <Card variant='bordered' borderWeight='light' style={{height:'100%'}}>
           <Card.Body
@@ -223,13 +223,13 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
               handleStyle={{ borderColor: '#0072F5' }}
               included={false}
               disabled={props.disableActions}
-              value={Number(wadToDec(createPositionStore.targetedCollRatio))}
+              value={Number(wadToDec(formStore.targetedCollRatio))}
               onChange={(value) => {
                 if (!props.selectedCollateralTypeId) {
                   console.error('No selectedCollateralTypeId!');
                   return;
                 }
-                createPositionStore.setTargetedCollRatio(
+                formStore.setTargetedCollRatio(
                   props.contextData.fiat, value, props.modifyPositionData, props.selectedCollateralTypeId
                 );
               }}
@@ -276,12 +276,12 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
         </Text>
         <Input
           readOnly
-          value={createPositionStore.formDataLoading ? ' ' : floor2(wadToDec(createPositionStore.deltaCollateral))}
+          value={formStore.formDataLoading ? ' ' : floor2(wadToDec(formStore.deltaCollateral))}
           placeholder='0'
           type='string'
           label={'Collateral to deposit (incl. slippage)'}
           labelRight={tokenSymbol}
-          contentLeft={createPositionStore.formDataLoading ? <Loading size='xs' /> : null}
+          contentLeft={formStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
           status='primary'
         />
@@ -295,40 +295,40 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
         </Text>
         <Input
           readOnly
-          value={createPositionStore.formDataLoading ? ' ' : floor2(wadToDec(createPositionStore.collateral))}
+          value={formStore.formDataLoading ? ' ' : floor2(wadToDec(formStore.collateral))}
           placeholder='0'
           type='string'
           label={'Collateral'}
           labelRight={tokenSymbol}
-          contentLeft={createPositionStore.formDataLoading ? <Loading size='xs' /> : null}
+          contentLeft={formStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
           status='primary'
         />
         <Input
           readOnly
-          value={createPositionStore.formDataLoading ? ' ' : floor2(wadToDec(createPositionStore.debt))}
+          value={formStore.formDataLoading ? ' ' : floor2(wadToDec(formStore.debt))}
           placeholder='0'
           type='string'
           label='Debt'
           labelRight={'FIAT'}
-          contentLeft={createPositionStore.formDataLoading ? <Loading size='xs' /> : null}
+          contentLeft={formStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
           status='primary'
         />
         <Input
           readOnly
           value={
-            createPositionStore.formDataLoading
+            formStore.formDataLoading
               ? ' '
-              : createPositionStore.collRatio.eq(ethers.constants.MaxUint256)
+              : formStore.collRatio.eq(ethers.constants.MaxUint256)
               ? '∞'
-              : `${floor2(wadToDec(createPositionStore.collRatio.mul(100)))}%`
+              : `${floor2(wadToDec(formStore.collRatio.mul(100)))}%`
           }
           placeholder='0'
           type='string'
           label='Collateralization Ratio'
           labelRight={'🚦'}
-          contentLeft={createPositionStore.formDataLoading ? <Loading size='xs' /> : null}
+          contentLeft={formStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
           status='primary'
         />
@@ -352,9 +352,9 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
           // Next UI Switch `checked` type is wrong, this is necessary
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
-          checked={() => underlierAllowance?.gt(0) && underlierAllowance?.gte(createPositionStore.underlier) ?? false}
+          checked={() => underlierAllowance?.gt(0) && underlierAllowance?.gte(formStore.underlier) ?? false}
           onChange={async () => {
-            if (!createPositionStore.underlier.isZero() && underlierAllowance?.gte(createPositionStore.underlier)) {
+            if (!formStore.underlier.isZero() && underlierAllowance?.gte(formStore.underlier)) {
               try {
                 setRpcError('');
                 await props.unsetUnderlierAllowanceForProxy(props.contextData.fiat);
@@ -364,7 +364,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
             } else {
               try {
                 setRpcError('');
-                await props.setUnderlierAllowanceForProxy(props.contextData.fiat, createPositionStore.underlier);
+                await props.setUnderlierAllowanceForProxy(props.contextData.fiat, formStore.underlier);
               } catch (e: any) {
                 setRpcError(e.message);
               }
@@ -383,13 +383,13 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
         <Button
           css={{ minWidth: '100%' }}
           disabled={
-            createPositionStore.formErrors.length !== 0 ||
-            createPositionStore.formWarnings.length !== 0 ||
+            formStore.formErrors.length !== 0 ||
+            formStore.formWarnings.length !== 0 ||
             props.disableActions ||
             !hasProxy ||
-            createPositionStore.underlier?.isZero() ||
-            createPositionStore.deltaCollateral?.isZero() ||
-            underlierAllowance?.lt(createPositionStore.underlier) ||
+            formStore.underlier?.isZero() ||
+            formStore.deltaCollateral?.isZero() ||
+            underlierAllowance?.lt(formStore.underlier) ||
             monetaDelegate === false
           }
           icon={(props.disableActions && currentTxAction === 'createPosition') ? (<Loading size='xs' />) : null}
@@ -397,7 +397,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
             try {
               setRpcError('');
               await props.createPosition(
-                createPositionStore.deltaCollateral, createPositionStore.deltaDebt, createPositionStore.underlier
+                formStore.deltaCollateral, formStore.deltaDebt, formStore.underlier
               );
               props.onClose();
             } catch (e: any) {
