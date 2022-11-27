@@ -516,7 +516,6 @@ const Home: NextPage = () => {
         disableActions={disableActions}
         modifyPositionData={modifyPositionData}
         redeemCollateralAndModifyDebt={redeemCollateralAndModifyDebt}
-        selectedCollateralTypeId={selectedCollateralTypeId}
         sellCollateralAndModifyDebt={sellCollateralAndModifyDebt}
         setFIATAllowanceForProxy={setFIATAllowanceForProxy}
         unsetFIATAllowanceForProxy={unsetFIATAllowanceForProxy}

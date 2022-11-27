@@ -27,7 +27,7 @@ interface ModifyPositionActions {
     fiat: any,
     value: string,
     modifyPositionData: any,
-    selectedCollateralTypeId: string
+    selectedCollateralTypeId?: string
   ) => void;
   setSlippagePct: (
     fiat: any,
