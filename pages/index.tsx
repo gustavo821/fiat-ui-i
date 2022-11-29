@@ -453,7 +453,7 @@ const Home: NextPage = () => {
         disableActions={disableActions}
         createProxy={createProxy}
       />
-      <Container>
+      <Container lg>
         {
           positionsData === null || positionsData.length === 0
             ? null
@@ -473,7 +473,7 @@ const Home: NextPage = () => {
             )
         }
       </Container>
-      <Container>
+      <Container lg>
         <CollateralTypesTable
           collateralTypesData={collateralTypesData}
           positionsData={positionsData}

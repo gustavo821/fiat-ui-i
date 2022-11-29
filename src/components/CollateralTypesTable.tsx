@@ -39,7 +39,7 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
       <Text h2>Create Position</Text>
       <Table
         aria-label='Collateral Types'
-        css={{ height: 'auto', minWidth: '100%' }}
+        css={{ height: 'auto', minWidth: '1088px' }}
         selectionMode='single'
         selectedKeys={'1'}
         onSelectionChange={(selected) => props.onSelectCollateralType(Object.values(selected)[0])}

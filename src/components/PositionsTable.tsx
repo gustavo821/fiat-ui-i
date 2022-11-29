@@ -50,7 +50,7 @@ export const PositionsTable = (props: PositionsTableProps) => {
       <Text h2>Positions</Text>
       <Table
         aria-label='Positions'
-        css={{ height: 'auto', minWidth: '100%' }}
+        css={{ height: 'auto', minWidth: '1088px' }}
         selectionMode='single'
         selectedKeys={'1'}
         onSelectionChange={(selected) =>
