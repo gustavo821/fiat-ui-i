@@ -78,6 +78,7 @@ const Home: NextPage = () => {
     ), shallow
   );
 
+  const [initialPageLoad, setInitialPageLoad] = React.useState<boolean>(true);
   const [setupListeners, setSetupListeners] = React.useState(false);
   const [contextData, setContextData] = React.useState(initialState.contextData);
   const [collateralTypesData, setCollateralTypesData] = React.useState(initialState.collateralTypesData);
@@ -444,6 +445,13 @@ const Home: NextPage = () => {
       softReset();
     }
   }
+
+  // Cycle the first page render to allow styles to load
+  React.useEffect(() => {
+    setInitialPageLoad(false);
+  }, []);
+
+  if (initialPageLoad) return null;
 
   return (
     <div>
