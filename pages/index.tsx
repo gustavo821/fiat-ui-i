@@ -78,6 +78,7 @@ const Home: NextPage = () => {
     ), shallow
   );
 
+  const [initialPageLoad, setInitialPageLoad] = React.useState<boolean>(true);
   const [setupListeners, setSetupListeners] = React.useState(false);
   const [contextData, setContextData] = React.useState(initialState.contextData);
   const [collateralTypesData, setCollateralTypesData] = React.useState(initialState.collateralTypesData);
@@ -445,6 +446,13 @@ const Home: NextPage = () => {
     }
   }
 
+  // Cycle the first page render to allow styles to load
+  React.useEffect(() => {
+    setInitialPageLoad(false);
+  }, []);
+
+  if (initialPageLoad) return null;
+
   return (
     <div>
       <HeaderBar 
@@ -453,7 +461,7 @@ const Home: NextPage = () => {
         disableActions={disableActions}
         createProxy={createProxy}
       />
-      <Container>
+      <Container lg>
         {
           positionsData === null || positionsData.length === 0
             ? null
@@ -473,7 +481,7 @@ const Home: NextPage = () => {
             )
         }
       </Container>
-      <Container>
+      <Container lg>
         <CollateralTypesTable
           collateralTypesData={collateralTypesData}
           positionsData={positionsData}
