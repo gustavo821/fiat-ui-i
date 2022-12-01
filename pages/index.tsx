@@ -5,17 +5,17 @@ import shallow from 'zustand/shallow'
 import { useAddRecentTransaction } from '@rainbow-me/rainbowkit';
 import { Container, Spacer } from '@nextui-org/react';
 import { BigNumber, ContractReceipt, ethers } from 'ethers';
-import { decToWad, FIAT, WAD, wadToDec, ZERO } from '@fiatdao/sdk';
+import { FIAT, WAD, wadToDec } from '@fiatdao/sdk';
 import { HeaderBar } from '../src/components/HeaderBar';
 import { CollateralTypesTable } from '../src/components/CollateralTypesTable';
 import { PositionsTable } from '../src/components/PositionsTable';
 import { CreatePositionModal } from '../src/components/CreatePositionModal';
-import { ModifyPositionModal } from '../src/components/ModifyPositionModal';
+import { BorrowModal } from '../src/components/BorrowModal';
 import {
   decodeCollateralTypeId, decodePositionId, encodePositionId, getCollateralTypeData, getPositionData
 } from '../src/utils';
 import * as userActions from '../src/actions';
-import { useModifyPositionStore } from '../src/stores/modifyPositionStore';
+import { useBorrowStore } from '../src/stores/borrowStore';
 
 export type TransactionStatus = null | 'error' | 'sent' | 'confirming' | 'confirmed';
 
@@ -47,19 +47,6 @@ const Home: NextPage = () => {
       monetaFIATAllowance: null as null | BigNumber, // [wad]
       proxyFIATAllowance: null as null | BigNumber, // [wad]
     },
-    modifyPositionFormData: {
-      outdated: true,
-      mode: 'deposit', // [deposit, withdraw, redeem]
-      slippagePct: decToWad('0.001') as BigNumber, // [wad]
-      underlier: ZERO as BigNumber, // [underlierScale]
-      deltaCollateral: ZERO as BigNumber, // [wad]
-      deltaDebt: ZERO as BigNumber, // [wad]
-      targetedCollRatio: decToWad('1.2') as BigNumber, // [wad]
-      collateral: ZERO as BigNumber, // [wad]
-      debt: ZERO as BigNumber, // [wad]
-      collRatio: ZERO as BigNumber, // [wad] estimated new collateralization ratio
-      error: null as null | string
-    },
     transactionData: {
       action: null as null | string,
       status: null as TransactionStatus,
@@ -67,11 +54,9 @@ const Home: NextPage = () => {
   }), []) 
 
   // Only select necessary actions off of the store to minimize re-renders
-  const modifyPositionStore = useModifyPositionStore(
+  const borrowStore = useBorrowStore(
     React.useCallback(
       (state) => ({
-        setFormDataLoading: state.setFormDataLoading,
-        calculatePositionValuesAfterAction: state.calculatePositionValuesAfterAction,
         reset: state.reset,
       }),
       []
@@ -230,9 +215,6 @@ const Home: NextPage = () => {
     }
     const data = { ...modifyPositionData, collateralType, position };
 
-    modifyPositionStore.setFormDataLoading(true);
-    modifyPositionStore.calculatePositionValuesAfterAction(contextData.fiat, data, selectedCollateralTypeId ?? undefined);
-
     setModifyPositionData({...data});
 
     (async function () {
@@ -266,7 +248,7 @@ const Home: NextPage = () => {
       });
     })();
 
-  }, [connector, contextData, collateralTypesData, positionsData, selectedCollateralTypeId, selectedPositionId, modifyPositionData, modifyPositionStore]);
+  }, [connector, contextData, collateralTypesData, positionsData, selectedCollateralTypeId, selectedPositionId, modifyPositionData, borrowStore]);
 
   const sendTransaction = async (
     fiat: any, useProxy: boolean, action: string, contract: ethers.Contract, method: string, ...args: any[]
@@ -337,15 +319,15 @@ const Home: NextPage = () => {
   }
 
   const setFIATAllowanceForProxy = async (fiat: any, amount: BigNumber) => {
-    const { moneta, fiat: token } = fiat.getContracts();
+    const { fiat: token } = fiat.getContracts();
     // add 1 unit has a buffer in case user refreshes the page and the value becomes outdated
     const allowance = amount.add(WAD);
     const response = await sendTransaction(
       fiat, false, 'setFIATAllowanceForProxy', token, 'approve', contextData.proxies[0], allowance
     );
     addRecentTransaction({ hash: response.transactionHash, description: 'Set  FIAT allowance for Proxy' });
-    const monetaFIATAllowance = await token.allowance(contextData.proxies[0], moneta.address)
-    setModifyPositionData({ ...modifyPositionData, monetaFIATAllowance });
+    const proxyFIATAllowance = await token.allowance(contextData.user, contextData.proxies[0]);
+    setModifyPositionData({ ...modifyPositionData, proxyFIATAllowance });
   }
 
   const unsetFIATAllowanceForProxy = async (fiat: any) => {
@@ -486,7 +468,7 @@ const Home: NextPage = () => {
           collateralTypesData={collateralTypesData}
           positionsData={positionsData}
           onSelectCollateralType={(collateralTypeId) => {
-            // If user has an existing position for the collateral type then open ModifyPositionModal instead
+            // If user has an existing position for the collateral type then open BorrowModal instead
             const { vault, tokenId } = decodeCollateralTypeId(collateralTypeId);
             const positionData = getPositionData(positionsData, vault, tokenId, contextData.proxies[0]);
             if (positionData !== undefined) {
@@ -514,11 +496,11 @@ const Home: NextPage = () => {
         onClose={() => {
           setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
           setModifyPositionData(initialState.modifyPositionData);
-          modifyPositionStore.reset();
+          borrowStore.reset();
         }}
       />
 
-      <ModifyPositionModal
+      <BorrowModal
         buyCollateralAndModifyDebt={buyCollateralAndModifyDebt}
         contextData={contextData}
         disableActions={disableActions}
@@ -538,7 +520,7 @@ const Home: NextPage = () => {
         onClose={() => {
           setSelectedPositionId(initialState.selectedCollateralTypeId);
           setModifyPositionData(initialState.modifyPositionData);
-          modifyPositionStore.reset();
+          borrowStore.reset();
         }}
       />
       <Spacer />
