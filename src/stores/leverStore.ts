@@ -1,8 +1,6 @@
-import create from 'zustand';
+import { decToScale, decToWad, ZERO } from '@fiatdao/sdk';
 import { BigNumber } from 'ethers';
-import { decToScale, decToWad, scaleToWad, WAD, wadToDec, wadToScale, ZERO } from '@fiatdao/sdk';
-
-import * as userActions from '../actions';
+import create from 'zustand';
 import { debounce, floor4 } from '../utils';
 
 export const enum Mode {

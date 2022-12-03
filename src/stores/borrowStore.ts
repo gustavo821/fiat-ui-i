@@ -1,7 +1,18 @@
-import create from 'zustand';
+import {
+  computeCollateralizationRatio,
+  computeMaxNormalDebt,
+  debtToNormalDebt,
+  decToScale,
+  decToWad,
+  normalDebtToDebt,
+  scaleToWad,
+  WAD,
+  wadToDec,
+  wadToScale,
+  ZERO,
+} from '@fiatdao/sdk';
 import { BigNumber } from 'ethers';
-import { computeCollateralizationRatio, computeMaxNormalDebt, debtToNormalDebt, decToScale, decToWad, normalDebtToDebt, scaleToWad, WAD, wadToDec, wadToScale, ZERO} from '@fiatdao/sdk';
-
+import create from 'zustand';
 import * as userActions from '../actions';
 import { debounce, floor4 } from '../utils';
 
