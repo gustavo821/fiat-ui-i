@@ -16,16 +16,8 @@ import create from 'zustand';
 import * as userActions from '../actions';
 import { debounce, floor4 } from '../utils';
 
-export const enum Mode {
-  CREATE='create',
-  INCREASE='increase',
-  DECREASE='decrease',
-  REDEEM='redeem',
-}
-
 /// A store for setting and getting form values to create and manage positions.
 interface BorrowState {
-  mode: Mode; // [deposit, withdraw, redeem]
   formDataLoading: boolean;
   formWarnings: string[];
   formErrors: string[];
@@ -70,7 +62,6 @@ interface BorrowState {
 }
 
 interface BorrowActions {
-  setMode: (mode: Mode) => void;
   setFormDataLoading: (isLoading: boolean) => void;
   reset: () => void;
   createActions: {
@@ -178,7 +169,6 @@ interface BorrowActions {
 }
 
 const initialState = {
-  mode: Mode.INCREASE,
   formDataLoading: false,
   formWarnings: [],
   formErrors: [],
@@ -226,8 +216,6 @@ const initialState = {
 
 export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) => ({
     ...initialState,
-
-    setMode: (mode: Mode) => { set(() => ({ mode })); },
 
     setFormDataLoading: (isLoading) => { set(() => ({ formDataLoading: isLoading })) },
 
