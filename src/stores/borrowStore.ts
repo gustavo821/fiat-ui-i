@@ -294,7 +294,7 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
         const { collateralType } = modifyPositionData;
         const { tokenScale, underlierScale } = collateralType.properties;
         const { codex: { debtFloor } } = collateralType.settings;
-        const { slippagePct, underlier } = get().createState;
+        const { slippagePct, underlier, targetedCollRatio } = get().createState;
         const { codex: { virtualRate: rate }, collybus: { fairPrice } } = collateralType.state;
 
         // Reset form errors and warnings on new input
@@ -326,7 +326,6 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
           }
 
           // For new position, calculate deltaDebt based on targetedCollRatio
-          const { targetedCollRatio } = get().createState;
           const deltaNormalDebt = computeMaxNormalDebt(deltaCollateral, rate, fairPrice, targetedCollRatio);
           const deltaDebt = normalDebtToDebt(deltaNormalDebt, rate);
           const collateral = deltaCollateral;
