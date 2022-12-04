@@ -6,7 +6,7 @@ import { BigNumber, ethers } from 'ethers';
 import React from 'react';
 import shallow from 'zustand/shallow';
 import { useLeverStore } from '../../stores/leverStore';
-import { commifyToDecimalPlaces, floor2, floor5 } from '../../utils';
+import { commifyToDecimalPlaces, floor2, floor4, floor5, minCollRatioWithBuffer } from '../../utils';
 import { Alert } from '../Alert';
 import { InputLabelWithMax } from '../InputLabelWithMax';
 import { PositionPreview } from './PositionPreview';
@@ -60,14 +60,15 @@ export const LeverCreateForm = ({
     collateralType: {
       metadata: { symbol: tokenSymbol },
       properties: { underlierScale, underlierSymbol },
+      settings: { collybus: { liquidationRatio } }
     },
     underlierAllowance,
     underlierBalance,
     monetaDelegate,
   } = modifyPositionData;
 
+  const minCollRatio = minCollRatioWithBuffer(liquidationRatio);
   const { action: currentTxAction } = transactionData;
-
   const hasProxy = proxies.length > 0;
 
   // const renderSummary = () => {
@@ -133,6 +134,22 @@ export const LeverCreateForm = ({
             {underlierSymbol}
           </Text>
         )}
+        <Input
+          disabled={disableActions}
+          value={floor2(scaleToDec(leverStore.createState.underlier, underlierScale))}
+          onChange={(event) => {
+            leverStore.createActions.setUnderlier(
+              contextData.fiat, event.target.value, modifyPositionData);
+          }}
+          placeholder='0'
+          inputMode='decimal'
+          label={'Underlier to swap'}
+          labelRight={underlierSymbol}
+          bordered
+          size='sm'
+          borderWeight='light'
+          width='15rem'
+        />
         <Grid.Container
           gap={0}
           justify='space-between'
@@ -141,37 +158,37 @@ export const LeverCreateForm = ({
           <Grid>
             <Input
               disabled={disableActions}
-              value={floor2(scaleToDec(leverStore.createState.underlier, underlierScale))}
+              value={floor2(Number(wadToDec(leverStore.createState.underlierSlippagePct)) * 100)}
               onChange={(event) => {
-                leverStore.createActions.setUnderlier(
-                  contextData.fiat, event.target.value, modifyPositionData);
+                leverStore.createActions.setUnderlierSlippagePct(contextData.fiat, event.target.value, modifyPositionData);
               }}
+              step='0.01'
               placeholder='0'
               inputMode='decimal'
-              label={'Underlier to swap'}
-              labelRight={underlierSymbol}
+              label='Slippage (FIAT to Underlier swap)'
+              labelRight={'%'}
               bordered
               size='sm'
               borderWeight='light'
-              width='15rem'
+              width='11.0rem'
             />
           </Grid>
           <Grid>
             <Input
               disabled={disableActions}
-              value={floor2(Number(wadToDec(leverStore.createState.slippagePct)) * 100)}
+              value={floor2(Number(wadToDec(leverStore.createState.collateralSlippagePct)) * 100)}
               onChange={(event) => {
-                leverStore.createActions.setSlippagePct(contextData.fiat, event.target.value, modifyPositionData);
+                leverStore.createActions.setCollateralSlippagePct(contextData.fiat, event.target.value, modifyPositionData);
               }}
               step='0.01'
               placeholder='0'
               inputMode='decimal'
-              label='Slippage'
+              label='Slippage (Underlier to Collateral swap)'
               labelRight={'%'}
               bordered
               size='sm'
               borderWeight='light'
-              width='7.5rem'
+              width='11.0rem'
             />
           </Grid>
         </Grid.Container>
@@ -193,35 +210,35 @@ export const LeverCreateForm = ({
               onChange={(value) => {
                 leverStore.createActions.setTargetedCollRatio(contextData.fiat, value, modifyPositionData);
               }}
-              min={1.001}
+              min={floor4(wadToDec(minCollRatio))}
               max={5.0}
               step={0.001}
               reverse
               marks={{
                 5.0: {
                   style: { color: 'grey', fontSize: '0.75rem' },
-              label: 'Safe',
-              },
-              4.0: {
-                style: { color: 'grey', fontSize: '0.75rem' },
-              label: '400%',
-              },
-              3.0: {
-                style: { color: 'grey', fontSize: '0.75rem' },
-              label: '300%',
-              },
-              2.0: {
-                style: { color: 'grey', fontSize: '0.75rem' },
-              label: '200%',
-              },
-              1.001: {
-                style: {
+                  label: 'Safe',
+                },
+                4.0: {
+                  style: { color: 'grey', fontSize: '0.75rem' },
+                  label: '400%',
+                },
+                3.0: {
+                  style: { color: 'grey', fontSize: '0.75rem' },
+                  label: '300%',
+                },
+                2.0: {
+                  style: { color: 'grey', fontSize: '0.75rem' },
+                  label: '200%',
+                },
+                [floor4(wadToDec(minCollRatio))]: {
+                  style: {
                   color: 'grey',
                   fontSize: '0.75rem',
                   borderColor: 'white',
-              },
-              label: 'Unsafe',
-              },
+                },
+                label: 'Unsafe',
+                },
               }}
             />
           </Card.Body>
@@ -232,14 +249,14 @@ export const LeverCreateForm = ({
       <Modal.Body>
         <Spacer y={0} />
         <Text b size={'m'}>
-          Swap Preview
+          Leveraged Swap Preview
         </Text>
         <Input
           readOnly
           value={leverStore.formDataLoading ? ' ' : floor2(wadToDec(leverStore.createState.deltaCollateral))}
           placeholder='0'
           type='string'
-          label={'Collateral to deposit (incl. slippage)'}
+          label={'Total Collateral to deposit (incl. slippage)'}
           labelRight={tokenSymbol}
           contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
@@ -434,43 +451,62 @@ export const LeverIncreaseForm = ({
           Wallet: {commifyToDecimalPlaces(modifyPositionData.underlierBalance, modifyPositionData.collateralType.properties.underlierScale, 2)} {modifyPositionData.collateralType.properties.underlierSymbol}
         </Text>
       )}
+      <Input
+        label={'Underlier to deposit'}
+        disabled={disableActions}
+        value={floor2(scaleToDec(leverStore.increaseState.underlier, modifyPositionData.collateralType.properties.underlierScale))}
+        onChange={(event) => {
+          leverStore.increaseActions.setUnderlier(contextData.fiat, event.target.value, modifyPositionData);
+        }}
+        placeholder='0'
+        inputMode='decimal'
+        labelRight={modifyPositionData.collateralType.properties.underlierSymbol}
+        bordered
+        size='sm'
+        borderWeight='light'
+        width='15rem'
+      />
       <Grid.Container
         gap={0}
         justify='space-between'
-        wrap='wrap'
         css={{ marginBottom: '1rem' }}
       >
-        <Input
-          label={'Underlier to deposit'}
-          disabled={disableActions}
-          value={floor2(scaleToDec(leverStore.increaseState.underlier, modifyPositionData.collateralType.properties.underlierScale))}
-          onChange={(event) => {
-            leverStore.increaseActions.setUnderlier(contextData.fiat, event.target.value, modifyPositionData);
-          }}
-          placeholder='0'
-          inputMode='decimal'
-          labelRight={modifyPositionData.collateralType.properties.underlierSymbol}
-          bordered
-          size='sm'
-          borderWeight='light'
-          width='15rem'
-        />
-        <Input
-          disabled={disableActions}
-          value={floor2(Number(wadToDec(leverStore.increaseState.slippagePct)) * 100)}
-          onChange={(event) => {
-            leverStore.increaseActions.setSlippagePct(contextData.fiat, event.target.value, modifyPositionData);
-          }}
-          step='0.01'
-          placeholder='0'
-          inputMode='decimal'
-          label='Slippage'
-          labelRight={'%'}
-          bordered
-          size='sm'
-          borderWeight='light'
-          width='7.5rem'
-        />
+        <Grid>
+          <Input
+            disabled={disableActions}
+            value={floor2(Number(wadToDec(leverStore.increaseState.underlierSlippagePct)) * 100)}
+            onChange={(event) => {
+              leverStore.increaseActions.setUnderlierSlippagePct(contextData.fiat, event.target.value, modifyPositionData);
+            }}
+            step='0.01'
+            placeholder='0'
+            inputMode='decimal'
+            label='Slippage (FIAT to Underlier swap)'
+            labelRight={'%'}
+            bordered
+            size='sm'
+            borderWeight='light'
+            width='11.0rem'
+          />
+        </Grid>
+        <Grid>
+          <Input
+            disabled={disableActions}
+            value={floor2(Number(wadToDec(leverStore.increaseState.collateralSlippagePct)) * 100)}
+            onChange={(event) => {
+              leverStore.increaseActions.setCollateralSlippagePct(contextData.fiat, event.target.value, modifyPositionData);
+            }}
+            step='0.01'
+            placeholder='0'
+            inputMode='decimal'
+            label='Slippage (Underlier to Collateral swap)'
+            labelRight={'%'}
+            bordered
+            size='sm'
+            borderWeight='light'
+            width='11.0rem'
+          />
+        </Grid>
       </Grid.Container>
       <Input
         disabled={disableActions}
@@ -673,49 +709,68 @@ export const LeverDecreaseForm = ({
         <Grid.Container
           gap={0}
           justify='space-between'
-          wrap='wrap'
           css={{ marginBottom: '1rem' }}
         >
-          <Input
-            disabled={disableActions}
-            value={floor2(wadToDec(leverStore.decreaseState.deltaCollateral))}
-            onChange={(event) => {
-              leverStore.decreaseActions.setDeltaCollateral(contextData.fiat, event.target.value, modifyPositionData);
-            }}
-            placeholder='0'
-            inputMode='decimal'
-            // Bypass type warning from passing a custom component instead of a string
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-ignore
-            label={
-              <InputLabelWithMax
-                label='Collateral to withdraw and swap'
-                onMaxClick={() => leverStore.decreaseActions.setMaxDeltaCollateral(contextData.fiat, modifyPositionData)}
-              />
-            }
-            labelRight={modifyPositionData.collateralType.metadata.symbol}
-            bordered
-            size='sm'
-            borderWeight='light'
-            width={'15rem'}
-          />
-          <Input
-            disabled={disableActions}
-            value={floor2(Number(wadToDec(leverStore.decreaseState.slippagePct)) * 100)}
-            onChange={(event) => {
-              leverStore.decreaseActions.setSlippagePct(contextData.fiat, event.target.value, modifyPositionData);
-            }}
-            step='0.01'
-            placeholder='0'
-            inputMode='decimal'
-            label='Slippage'
-            labelRight={'%'}
-            bordered
-            size='sm'
-            borderWeight='light'
-            width='7.5rem'
-          />
+          <Grid>
+            <Input
+              disabled={disableActions}
+              value={floor2(Number(wadToDec(leverStore.decreaseState.underlierSlippagePct)) * 100)}
+              onChange={(event) => {
+                leverStore.decreaseActions.setUnderlierSlippagePct(contextData.fiat, event.target.value, modifyPositionData);
+              }}
+              step='0.01'
+              placeholder='0'
+              inputMode='decimal'
+              label='Slippage (Underlier to FIAT swap)'
+              labelRight={'%'}
+              bordered
+              size='sm'
+              borderWeight='light'
+              width='11.0rem'
+            />
+          </Grid>
+          <Grid>
+            <Input
+              disabled={disableActions}
+              value={floor2(Number(wadToDec(leverStore.decreaseState.collateralSlippagePct)) * 100)}
+              onChange={(event) => {
+                leverStore.decreaseActions.setCollateralSlippagePct(contextData.fiat, event.target.value, modifyPositionData);
+              }}
+              step='0.01'
+              placeholder='0'
+              inputMode='decimal'
+              label='Slippage (Collateral to Underlier swap)'
+              labelRight={'%'}
+              bordered
+              size='sm'
+              borderWeight='light'
+              width='11.0rem'
+            />
+          </Grid>
         </Grid.Container>
+        <Input
+          disabled={disableActions}
+          value={floor2(wadToDec(leverStore.decreaseState.deltaCollateral))}
+          onChange={(event) => {
+            leverStore.decreaseActions.setDeltaCollateral(contextData.fiat, event.target.value, modifyPositionData);
+          }}
+          placeholder='0'
+          inputMode='decimal'
+          // Bypass type warning from passing a custom component instead of a string
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          label={
+            <InputLabelWithMax
+              label='Collateral to withdraw and swap'
+              onMaxClick={() => leverStore.decreaseActions.setMaxDeltaCollateral(contextData.fiat, modifyPositionData)}
+            />
+          }
+          labelRight={modifyPositionData.collateralType.metadata.symbol}
+          bordered
+          size='sm'
+          borderWeight='light'
+          width={'15rem'}
+        />
         <Input
           disabled={disableActions}
           value={floor5(wadToDec(leverStore.decreaseState.deltaDebt))}
@@ -952,6 +1007,24 @@ export const LeverRedeemForm = ({
         <Text b size={'m'}>
           Inputs
         </Text>
+        <Input
+          disabled={disableActions}
+          value={floor2(wadToDec(leverStore.redeemState.deltaCollateral))}
+          onChange={(event) => {
+            leverStore.redeemActions.setDeltaCollateral(contextData.fiat, event.target.value, modifyPositionData);
+          }}
+          placeholder='0'
+          inputMode='decimal'
+          // Bypass type warning from passing a custom component instead of a string
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          label={<InputLabelWithMax label='Collateral to withdraw and redeem' onMaxClick={() => leverStore.redeemActions.setMaxDeltaCollateral(contextData.fiat, modifyPositionData)} /> }
+          labelRight={modifyPositionData.collateralType.metadata.symbol}
+          bordered
+          size='sm'
+          borderWeight='light'
+          width={'100%'}
+        />
         <Grid.Container
           gap={0}
           justify='space-between'
@@ -960,21 +1033,19 @@ export const LeverRedeemForm = ({
         >
           <Input
             disabled={disableActions}
-            value={floor2(wadToDec(leverStore.redeemState.deltaCollateral))}
+            value={floor2(Number(wadToDec(leverStore.redeemState.underlierSlippagePct)) * 100)}
             onChange={(event) => {
-              leverStore.redeemActions.setDeltaCollateral(contextData.fiat, event.target.value, modifyPositionData);
+              leverStore.redeemActions.setUnderlierSlippagePct(contextData.fiat, event.target.value, modifyPositionData);
             }}
+            step='0.01'
             placeholder='0'
             inputMode='decimal'
-            // Bypass type warning from passing a custom component instead of a string
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-ignore
-            label={<InputLabelWithMax label='Collateral to withdraw and redeem' onMaxClick={() => leverStore.redeemActions.setMaxDeltaCollateral(contextData.fiat, modifyPositionData)} /> }
-            labelRight={modifyPositionData.collateralType.metadata.symbol}
+            label='Slippage (Underlier to FIAT swap)'
+            labelRight={'%'}
             bordered
             size='sm'
             borderWeight='light'
-            width={'100%'}
+            width='11.0rem'
           />
         </Grid.Container>
         <Input

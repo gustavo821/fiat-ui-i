@@ -7,8 +7,6 @@ import {
   decToWad,
   maxCRForLeveredDeposit,
   minCRForLeveredDeposit,
-  normalDebtToDebt,
-  scaleToDec,
   scaleToWad,
   WAD,
   wadToDec,
@@ -18,7 +16,7 @@ import {
 import { BigNumber } from 'ethers';
 import create from 'zustand';
 import * as userActions from '../actions';
-import { debounce, floor4 } from '../utils';
+import { debounce, floor2, floor4, minCollRatioWithBuffer } from '../utils';
 
 /// A store for setting and getting form values to create and manage positions.
 interface LeverState {
@@ -27,41 +25,53 @@ interface LeverState {
   formErrors: string[];
   createState: {
     underlier: BigNumber; // [underlierScale]
-    slippagePct: BigNumber; // [wad]
+    collateralSlippagePct: BigNumber; // [wad] underlier to collateral
+    underlierSlippagePct: BigNumber; // [wad] fiat to underlier
     targetedCollRatio: BigNumber; // [wad]
     collateral: BigNumber; // [wad]
     collRatio: BigNumber; // [wad] estimated new collateralization ratio
     debt: BigNumber; // [wad]
     deltaCollateral: BigNumber; // [wad]
     deltaDebt: BigNumber; // [wad]
+    minCollRatio: BigNumber; // [wad]
+    maxCollRatio: BigNumber; // [wad]
     // TODO: give its own form errors and warning
   };
   increaseState: {
     underlier: BigNumber; // [underlierScale]
-    slippagePct: BigNumber; // [wad]
+    collateralSlippagePct: BigNumber; // [wad] underlier to collateral
+    underlierSlippagePct: BigNumber; // [wad] fiat to underlier
     collateral: BigNumber; // [wad]
     collRatio: BigNumber; // [wad] estimated new collateralization ratio
     debt: BigNumber; // [wad]
     deltaCollateral: BigNumber; // [wad]
     deltaDebt: BigNumber; // [wad]
+    minCollRatio: BigNumber; // [wad]
+    maxCollRatio: BigNumber; // [wad]
   };
   decreaseState: {
     underlier: BigNumber; // [underlierScale]
-    slippagePct: BigNumber; // [wad]
+    collateralSlippagePct: BigNumber; // [wad] underlier to collateral
+    underlierSlippagePct: BigNumber; // [wad] fiat to underlier
     collateral: BigNumber; // [wad]
     collRatio: BigNumber; // [wad] estimated new collateralization ratio
     debt: BigNumber; // [wad]
     deltaCollateral: BigNumber; // [wad]
     deltaDebt: BigNumber; // [wad]
+    minCollRatio: BigNumber; // [wad]
+    maxCollRatio: BigNumber; // [wad]
   };
   redeemState: {
     underlier: BigNumber; // [underlierScale]
-    slippagePct: BigNumber; // [wad]
+    collateralSlippagePct: BigNumber; // [wad] underlier to collateral
+    underlierSlippagePct: BigNumber; // [wad] fiat to underlier
     collateral: BigNumber; // [wad]
     collRatio: BigNumber; // [wad] estimated new collateralization ratio
     debt: BigNumber; // [wad]
     deltaCollateral: BigNumber; // [wad]
     deltaDebt: BigNumber; // [wad]
+    minCollRatio: BigNumber; // [wad]
+    maxCollRatio: BigNumber; // [wad]
   };
 }
 
@@ -74,7 +84,12 @@ interface LeverActions {
       value: string,
       modifyPositionData: any,
     ) => void;
-    setSlippagePct: (
+    setCollateralSlippagePct: (
+      fiat: any,
+      value: string,
+      modifyPositionData: any,
+    ) => void;
+    setUnderlierSlippagePct: (
       fiat: any,
       value: string,
       modifyPositionData: any,
@@ -96,11 +111,15 @@ interface LeverActions {
       modifyPositionData: any,
       selectedCollateralTypeId?: string
     ) => void;
-    setSlippagePct: (
+    setCollateralSlippagePct: (
       fiat: any,
       value: string,
       modifyPositionData: any,
-      selectedCollateralTypeId?: string
+    ) => void;
+    setUnderlierSlippagePct: (
+      fiat: any,
+      value: string,
+      modifyPositionData: any,
     ) => void;
     setDeltaDebt: (
       fiat: any,
@@ -118,7 +137,12 @@ interface LeverActions {
       value: string,
       modifyPositionData: any,
     ) => void;
-    setSlippagePct: (
+    setCollateralSlippagePct: (
+      fiat: any,
+      value: string,
+      modifyPositionData: any,
+    ) => void;
+    setUnderlierSlippagePct: (
       fiat: any,
       value: string,
       modifyPositionData: any,
@@ -147,7 +171,12 @@ interface LeverActions {
       value: string,
       modifyPositionData: any,
     ) => void;
-    setSlippagePct: (
+    setCollateralSlippagePct: (
+      fiat: any,
+      value: string,
+      modifyPositionData: any,
+    ) => void;
+    setUnderlierSlippagePct: (
       fiat: any,
       value: string,
       modifyPositionData: any,
@@ -178,43 +207,55 @@ const initialState = {
   formErrors: [],
   createState: {
     underlier: ZERO,
-    slippagePct: decToWad('0.001'),
+    collateralSlippagePct: decToWad('0.001'),
+    underlierSlippagePct: decToWad('0.001'),
     targetedCollRatio: decToWad('1.2'),
     collateral: ZERO, // [wad]
     collRatio: ZERO, // [wad] estimated new collateralization ratio
     debt: ZERO, // [wad]
     deltaCollateral: ZERO,
     deltaDebt: ZERO, // [wad]
+    minCollRatio: ZERO, // [wad]
+    maxCollRatio: ZERO // [wad]
   },
   increaseState: {
     underlier: ZERO,
-    slippagePct: decToWad('0.001'),
+    collateralSlippagePct: decToWad('0.001'),
+    underlierSlippagePct: decToWad('0.001'),
     targetedCollRatio: decToWad('1.2'),
     collateral: ZERO, // [wad]
     collRatio: ZERO, // [wad] estimated new collateralization ratio
     debt: ZERO, // [wad]
     deltaCollateral: ZERO,
     deltaDebt: ZERO, // [wad]
+    minCollRatio: ZERO, // [wad]
+    maxCollRatio: ZERO // [wad]
   },
   decreaseState: {
     underlier: ZERO,
-    slippagePct: decToWad('0.001'),
+    collateralSlippagePct: decToWad('0.001'),
+    underlierSlippagePct: decToWad('0.001'),
     targetedCollRatio: decToWad('1.2'),
     collateral: ZERO, // [wad]
     collRatio: ZERO, // [wad] estimated new collateralization ratio
     debt: ZERO, // [wad]
     deltaCollateral: ZERO,
     deltaDebt: ZERO, // [wad]
+    minCollRatio: ZERO, // [wad]
+    maxCollRatio: ZERO // [wad]
   },
   redeemState: {
     underlier: ZERO,
-    slippagePct: decToWad('0.001'),
+    collateralSlippagePct: decToWad('0.001'),
+    underlierSlippagePct: decToWad('0.001'),
     targetedCollRatio: decToWad('1.2'),
     collateral: ZERO, // [wad]
     collRatio: ZERO, // [wad] estimated new collateralization ratio
     debt: ZERO, // [wad]
     deltaCollateral: ZERO,
     deltaDebt: ZERO, // [wad]
+    minCollRatio: ZERO, // [wad]
+    maxCollRatio: ZERO // [wad]
   },
 };
 
@@ -256,17 +297,33 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           get().createActions.calculatePositionValuesAfterCreation(fiat, modifyPositionData);
       },
 
-      setSlippagePct: (fiat, value, modifyPositionData) => {
+      setCollateralSlippagePct: (fiat, value, modifyPositionData) => {
         let newSlippage: BigNumber;
         if (value === null || value === '') {
-          newSlippage = initialState.createState.slippagePct;
+          newSlippage = initialState.createState.collateralSlippagePct;
         } else {
           const ceiled = Number(value) < 0 ? 0 : Number(value) > 50 ? 50 : Number(value);
           newSlippage = decToWad(floor4(ceiled / 100));
         }
 
         set((state) => ({
-          createState: { ...state.createState, slippagePct: newSlippage },
+          createState: { ...state.createState, collateralSlippagePct: newSlippage },
+          formDataLoading: true,
+        }));
+        get().createActions.calculatePositionValuesAfterCreation(fiat, modifyPositionData);
+      },
+
+      setUnderlierSlippagePct: (fiat, value, modifyPositionData) => {
+        let newSlippage: BigNumber;
+        if (value === null || value === '') {
+          newSlippage = initialState.createState.underlierSlippagePct;
+        } else {
+          const ceiled = Number(value) < 0 ? 0 : Number(value) > 50 ? 50 : Number(value);
+          newSlippage = decToWad(floor4(ceiled / 100));
+        }
+
+        set((state) => ({
+          createState: { ...state.createState, underlierSlippagePct: newSlippage },
           formDataLoading: true,
         }));
         get().createActions.calculatePositionValuesAfterCreation(fiat, modifyPositionData);
@@ -281,20 +338,19 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
       },
 
       calculatePositionValuesAfterCreation: debounce(async function (fiat: any, modifyPositionData: any) {
-        console.log('fmof');
         const { collateralType } = modifyPositionData;
         const { tokenScale, underlierScale } = collateralType.properties;
         const { codex: { debtFloor }, collybus: { liquidationRatio } } = collateralType.settings;
-        const { slippagePct, underlier, targetedCollRatio } = get().createState;
+        const { collateralSlippagePct, underlierSlippagePct, underlier, targetedCollRatio } = get().createState;
         const { codex: { virtualRate: rate }, collybus: { fairPrice, faceValue } } = collateralType.state;
 
         // Reset form errors and warnings on new input
         set(() => ({ formWarnings: [], formErrors: [] }));
 
         try {
-            
           // calculate exchange rates
-          const fiatToUnderlierRateIdeal = decToScale(1, underlierScale); // TODO: use userActions.fiatToUnderlier()
+          // TODO: use userActions.fiatToUnderlier()
+          const fiatToUnderlierRateIdeal = decToScale(1, underlierScale);
           const underlierToCollateralRateIdeal = await userActions.underlierToCollateralToken(
             fiat, decToScale(1, underlierScale), collateralType
           );
@@ -312,17 +368,20 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           const underlierIn = underlier.add(
             wadToScale(flashloanIdeal, underlierScale).mul(fiatToUnderlierRateIdeal).div(underlierScale)
           );
+          // deltaCollateral
           const collateralOut = await userActions.underlierToCollateralToken(fiat, underlierIn, collateralType);
           const underlierToCollateralRateWithPriceImpact = applySwapSlippage(
             scaleToWad(collateralOut, tokenScale).mul(WAD).div(scaleToWad(underlierIn, underlierScale)),
-            slippagePct
+            collateralSlippagePct
           );
-          const fiatToUnderlierRateWithPriceImpact = applySwapSlippage(WAD, slippagePct); // TODO: use userActions.fiatToUnderlier() with scaleToWad
+          // TODO: use userActions.fiatToUnderlier() with scaleToWad
+          const fiatToUnderlierRateWithPriceImpact = applySwapSlippage(WAD, underlierSlippagePct);
 
-          let minCollRatio = minCRForLeveredDeposit(
+          let minCollRatio = minCollRatioWithBuffer(minCRForLeveredDeposit(
             faceValue, fiatToUnderlierRateWithPriceImpact, underlierToCollateralRateWithPriceImpact
-          );
-          if (minCollRatio.lt(liquidationRatio)) minCollRatio = liquidationRatio;
+          ));
+          if (minCollRatio.lt(minCollRatioWithBuffer(liquidationRatio)))
+            minCollRatio = minCollRatioWithBuffer(liquidationRatio);
           const maxCollRatio = maxCRForLeveredDeposit(
             ZERO, ZERO, rate, faceValue, underlierToCollateralRateWithPriceImpact, scaleToWad(underlier, underlierScale)
           );
@@ -339,11 +398,12 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
             targetedCollRatio
           );
 
-          const deltaDebt = flashloan; // includes price impact and slippage
+          const deltaDebt = flashloan;
           const deltaNormalDebt = debtToNormalDebt(deltaDebt, rate);
-          const deltaCollateral = applySwapSlippage(scaleToWad(collateralOut, tokenScale), slippagePct);
+          const deltaCollateral = applySwapSlippage(scaleToWad(collateralOut, tokenScale), collateralSlippagePct);
           const collateral = deltaCollateral;
           const debt = deltaDebt;
+          // TODO: should match targetCollRatio
           const collRatio = computeCollateralizationRatio(collateral, fairPrice, deltaNormalDebt, rate);
 
           if (deltaDebt.gt(ZERO) && deltaDebt.lte(debtFloor)) set(() => ({
@@ -352,8 +412,10 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
               `This collateral type requires a minimum of ${wadToDec(debtFloor)} FIAT to be borrowed`
             ]
           }));
-          if (debt.gt(0) && collRatio.lte(WAD)) set(() => ({
-            formErrors: [...get().formErrors, 'Collateralization Ratio has to be greater than 100%']
+          if (debt.gt(0) && collRatio.lt(minCollRatio)) set(() => ({
+            formErrors: [
+              ...get().formErrors, `Collateralization Ratio has to be greater than ${floor2(wadToDec(minCollRatio))} %`
+            ]
           }));
 
           const newCreateFormState = {
@@ -411,21 +473,33 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
         get().increaseActions.calculatePositionValuesAfterIncrease(fiat, modifyPositionData);
       },
 
-      setSlippagePct: (
-        fiat,
-        value,
-        modifyPositionData,
-      ) => {
+      setCollateralSlippagePct: (fiat, value, modifyPositionData) => {
         let newSlippage: BigNumber;
         if (value === null || value === '') {
-          newSlippage = initialState.increaseState.slippagePct;
+          newSlippage = initialState.increaseState.collateralSlippagePct;
         } else {
           const ceiled = Number(value) < 0 ? 0 : Number(value) > 50 ? 50 : Number(value);
           newSlippage = decToWad(floor4(ceiled / 100));
         }
 
         set((state) => ({
-          increaseState: { ...state.increaseState, slippagePct: newSlippage },
+          increaseState: { ...state.increaseState, collateralSlippagePct: newSlippage },
+          formDataLoading: true,
+        }));
+        get().increaseActions.calculatePositionValuesAfterIncrease(fiat, modifyPositionData);
+      },
+
+      setUnderlierSlippagePct: (fiat, value, modifyPositionData) => {
+        let newSlippage: BigNumber;
+        if (value === null || value === '') {
+          newSlippage = initialState.increaseState.underlierSlippagePct;
+        } else {
+          const ceiled = Number(value) < 0 ? 0 : Number(value) > 50 ? 50 : Number(value);
+          newSlippage = decToWad(floor4(ceiled / 100));
+        }
+
+        set((state) => ({
+          increaseState: { ...state.increaseState, underlierSlippagePct: newSlippage },
           formDataLoading: true,
         }));
         get().increaseActions.calculatePositionValuesAfterIncrease(fiat, modifyPositionData);
@@ -451,119 +525,7 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
       },
 
       calculatePositionValuesAfterIncrease: debounce(async (fiat: any, modifyPositionData: any) => {
-        console.log('fmof');
-        const { collateralType, position } = modifyPositionData;
-        const { tokenScale, underlierScale } = collateralType.properties;
-        const { codex: { debtFloor } } = collateralType.settings;
-        const { slippagePct, underlier } = get().increaseState;
-        const { codex: { virtualRate: rate }, collybus: { fairPrice } } = collateralType.state;
-
-        // Reset form errors and warnings on new input
-        set(() => ({ formWarnings: [], formErrors: [] }));
-
-        try {
-          // const deltaCollateral = ZERO;
-          // if (!underlier.isZero()) {
-          //   try {
-          //     // Preview underlier to collateral token swap
-          //     const tokensOut = await userActions.underlierToCollateralToken(fiat, underlier, collateralType);
-          //     // redemption price with a 1:1 exchange rate
-          //     const minTokensOut = underlier.mul(tokenScale).div(underlierScale);
-          //     // apply slippagePct to preview
-          //     const tokensOutWithSlippage = tokensOut.mul(WAD.sub(slippagePct)).div(WAD);
-          //     // assert: minTokensOut > idealTokenOut
-          //     if (tokensOutWithSlippage.lt(minTokensOut)) set(() => (
-          //       { formWarnings: ['Large Price Impact (Negative Yield)'] }
-          //     ));
-          //     deltaCollateral = scaleToWad(tokensOut, tokenScale).mul(WAD.sub(slippagePct)).div(WAD);
-          //   } catch (e: any) {
-          //     if (e.reason && e.reason === 'BAL#001') {
-          //       // Catch balancer-specific underflow error
-          //       // https://dev.balancer.fi/references/error-codes
-          //       throw new Error('Insufficient liquidity to convert underlier to collateral');
-          //     }
-          //     throw e;
-          //   }
-          // }
-
-          // calculate exchange rates
-          const fiatToUnderlierRateIdeal = WAD; // TODO: use userActions.fiatToUnderlier()
-          const underlierToCollateralRateIdeal = await userActions.underlierToCollateralToken(
-            fiat, decToScale(1, underlierScale), collateralType
-          );
-          const flashloanIdeal = computeLeveredDeposit(
-            position.collateral,
-            position.normalDebt,
-            rate,
-            fairPrice,
-            fiatToUnderlierRateIdeal,
-            scaleToWad(underlierToCollateralRateIdeal, tokenScale),
-            modifyPositionData.underlier,
-            modifyPositionData.targetedCollRatio
-          );
-          const underlierIn = underlier.add(
-            wadToScale(flashloanIdeal.mul(fiatToUnderlierRateIdeal).div(WAD), underlierScale)
-          );
-          const collateralOut = await userActions.underlierToCollateralToken(fiat, underlierIn, collateralType);
-          const underlierToCollateralRateWithPriceImpact = scaleToWad(collateralOut, tokenScale).mul(WAD).div(
-            scaleToWad(underlierIn, underlierScale)
-          );
-          // TODO: apply price impact from swapping flashloanIdeal to underlier
-          const fiatToUnderlierRateWithPriceImpact = flashloanIdeal; // TODO: use userActions.fiatToUnderlier()
-
-          // calculate actual flashloan amount
-          const flashloan = computeLeveredDeposit(
-            position.collateral,
-            position.normalDebt,
-            rate,
-            fairPrice,
-            applySwapSlippage(fiatToUnderlierRateWithPriceImpact, slippagePct),
-            applySwapSlippage(underlierToCollateralRateWithPriceImpact, slippagePct),
-            modifyPositionData.underlier,
-            modifyPositionData.targetedCollRatio
-          );
-
-          console.log(flashloan.toString())
-          
-          const deltaCollateral = applySwapSlippage(collateralOut, slippagePct);
-
-          // Estimate new position values based on deltaDebt, taking into account an existing position's collateral
-          const deltaDebt = flashloan;
-          const collateral = position.collateral.add(deltaCollateral);
-          const debt = normalDebtToDebt(position.normalDebt, rate).add(deltaDebt);
-          const normalDebt = debtToNormalDebt(debt, rate);
-          const collRatio = computeCollateralizationRatio(collateral, fairPrice, normalDebt, rate);
-
-          if (debt.gt(ZERO) && debt.lte(collateralType.settings.codex.debtFloor) ) set(() => ({
-            formErrors: [
-              ...get().formErrors,
-              `This collateral type requires a minimum of ${wadToDec(debtFloor)} FIAT to be borrowed`
-            ]
-          }));
-
-          if (debt.gt(0) && collRatio.lte(WAD)) set(() => ({
-            formErrors: [...get().formErrors, 'Collateralization Ratio has to be greater than 100%']
-          }));
-
-          set((state) => ({
-            increaseState: { ...state.increaseState, collateral, collRatio, debt, deltaCollateral },
-            formDataLoading: false,
-          }));
-        } catch (e: any) {
-          console.log(e);
-          set((state) => ({
-            increaseState: {
-              ...state.increaseState,
-              collateral: ZERO,
-              collRatio: ZERO,
-              debt: ZERO,
-              deltaCollateral: ZERO,
-              deltaDebt: ZERO,
-            },
-            formDataLoading: false,
-            formErrors: [...get().formErrors, e.message],
-          }));
-        }
+        return null;
       }),
     },
 
@@ -613,21 +575,33 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
         get().decreaseActions.calculatePositionValuesAfterDecrease(fiat, modifyPositionData);
       },
 
-      setSlippagePct: (
-        fiat: any,
-        value: string,
-        modifyPositionData: any,
-      ) => {
+      setCollateralSlippagePct: (fiat, value, modifyPositionData) => {
         let newSlippage: BigNumber;
         if (value === null || value === '') {
-          newSlippage = initialState.decreaseState.slippagePct;
+          newSlippage = initialState.decreaseState.collateralSlippagePct;
         } else {
           const ceiled = Number(value) < 0 ? 0 : Number(value) > 50 ? 50 : Number(value);
           newSlippage = decToWad(floor4(ceiled / 100));
         }
 
         set((state) => ({
-          decreaseState: { ...state.decreaseState, slippagePct: newSlippage },
+          decreaseState: { ...state.decreaseState, collateralSlippagePct: newSlippage },
+          formDataLoading: true,
+        }));
+        get().decreaseActions.calculatePositionValuesAfterDecrease(fiat, modifyPositionData);
+      },
+
+      setUnderlierSlippagePct: (fiat, value, modifyPositionData) => {
+        let newSlippage: BigNumber;
+        if (value === null || value === '') {
+          newSlippage = initialState.decreaseState.underlierSlippagePct;
+        } else {
+          const ceiled = Number(value) < 0 ? 0 : Number(value) > 50 ? 50 : Number(value);
+          newSlippage = decToWad(floor4(ceiled / 100));
+        }
+
+        set((state) => ({
+          decreaseState: { ...state.decreaseState, underlierSlippagePct: newSlippage },
           formDataLoading: true,
         }));
         get().decreaseActions.calculatePositionValuesAfterDecrease(fiat, modifyPositionData);
@@ -707,21 +681,33 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
         get().redeemActions.calculatePositionValuesAfterRedeem(fiat, modifyPositionData);
       },
 
-      setSlippagePct: (
-        fiat: any,
-        value: string,
-        modifyPositionData: any,
-      ) => {
+      setCollateralSlippagePct: (fiat, value, modifyPositionData) => {
         let newSlippage: BigNumber;
         if (value === null || value === '') {
-          newSlippage = initialState.redeemState.slippagePct;
+          newSlippage = initialState.redeemState.collateralSlippagePct;
         } else {
           const ceiled = Number(value) < 0 ? 0 : Number(value) > 50 ? 50 : Number(value);
           newSlippage = decToWad(floor4(ceiled / 100));
         }
 
         set((state) => ({
-          redeemState: { ...state.redeemState, slippagePct: newSlippage },
+          redeemState: { ...state.redeemState, collateralSlippagePct: newSlippage },
+          formDataLoading: true,
+        }));
+        get().redeemActions.calculatePositionValuesAfterRedeem(fiat, modifyPositionData);
+      },
+
+      setUnderlierSlippagePct: (fiat, value, modifyPositionData) => {
+        let newSlippage: BigNumber;
+        if (value === null || value === '') {
+          newSlippage = initialState.redeemState.underlierSlippagePct;
+        } else {
+          const ceiled = Number(value) < 0 ? 0 : Number(value) > 50 ? 50 : Number(value);
+          newSlippage = decToWad(floor4(ceiled / 100));
+        }
+
+        set((state) => ({
+          redeemState: { ...state.redeemState, underlierSlippagePct: newSlippage },
           formDataLoading: true,
         }));
         get().redeemActions.calculatePositionValuesAfterRedeem(fiat, modifyPositionData);
