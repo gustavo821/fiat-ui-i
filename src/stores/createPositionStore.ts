@@ -3,7 +3,7 @@ import { BigNumber } from 'ethers';
 import { decToScale, decToWad, scaleToWad, WAD, wadToDec, ZERO } from '@fiatdao/sdk';
 
 import * as userActions from '../actions';
-import { debounce, floor4 } from '../utils';
+import { debounce, floor2, floor4, minCollRatioWithBuffer } from '../utils';
 
 interface CreatePositionState {
   collateral: BigNumber; // [wad]
@@ -120,7 +120,7 @@ export const useCreatePositionStore = create<CreatePositionState & CreatePositio
     ) {
       const { collateralType } = modifyPositionData;
       const { tokenScale, underlierScale } = collateralType.properties;
-      const { codex: { debtFloor } } = collateralType.settings;
+      const { codex: { debtFloor }, collybus: { liquidationRatio } } = collateralType.settings;
       const { slippagePct, underlier } = get();
       const { codex: { virtualRate: rate }, collybus: { fairPrice } } = collateralType.state;
 
@@ -163,6 +163,7 @@ export const useCreatePositionStore = create<CreatePositionState & CreatePositio
         const collateral = deltaCollateral;
         const debt = deltaDebt;
         const collRatio = fiat.computeCollateralizationRatio(collateral, fairPrice, deltaNormalDebt, rate);
+        const minCollRatio = minCollRatioWithBuffer(liquidationRatio);
 
         if (deltaDebt.gt(ZERO) && deltaDebt.lte(debtFloor)) set(() => ({
           formErrors: [
@@ -170,8 +171,10 @@ export const useCreatePositionStore = create<CreatePositionState & CreatePositio
             `This collateral type requires a minimum of ${wadToDec(debtFloor)} FIAT to be borrowed`
           ]
         }));
-        if (debt.gt(0) && collRatio.lte(WAD)) set(() => ({
-          formErrors: [...get().formErrors, 'Collateralization Ratio has to be greater than 100%']
+        if (debt.gt(0) && collRatio.lt(minCollRatio)) set(() => ({
+          formErrors: [
+            ...get().formErrors, 'Collateralization Ratio has to be greater than ' + floor2(wadToDec(minCollRatio))
+          ]
         }));
 
         set(() => ({ collRatio, collateral, debt, deltaDebt, deltaCollateral }));

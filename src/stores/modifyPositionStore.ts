@@ -3,7 +3,7 @@ import { BigNumber } from 'ethers';
 import { decToScale, decToWad, scaleToWad, WAD, wadToDec, wadToScale, ZERO } from '@fiatdao/sdk';
 
 import * as userActions from '../actions';
-import { debounce, floor4 } from '../utils';
+import { debounce, floor2, floor4, minCollRatioWithBuffer } from '../utils';
 
 /// A store for setting and getting form values to create and manage positions.
 interface ModifyPositionState {
@@ -197,7 +197,7 @@ export const useModifyPositionStore = create<ModifyPositionState & ModifyPositio
     calculatePositionValuesAfterDeposit: async function (fiat: any, modifyPositionData: any) {
       const { collateralType, position } = modifyPositionData;
       const { tokenScale, underlierScale } = collateralType.properties;
-      const { codex: { debtFloor } } = collateralType.settings;
+      const { codex: { debtFloor }, collybus: { liquidationRatio } } = collateralType.settings;
       const { slippagePct, underlier } = get();
       const { codex: { virtualRate: rate }, collybus: { fairPrice } } = collateralType.state;
 
@@ -232,6 +232,7 @@ export const useModifyPositionStore = create<ModifyPositionState & ModifyPositio
         const debt = fiat.normalDebtToDebt(position.normalDebt, rate).add(deltaDebt);
         const normalDebt = fiat.debtToNormalDebt(debt, rate);
         const collRatio = fiat.computeCollateralizationRatio(collateral, fairPrice, normalDebt, rate);
+        const minCollRatio = liquidationRatio.add(decToWad(0.025));
 
         if (debt.gt(ZERO) && debt.lte(collateralType.settings.codex.debtFloor) ) set(() => ({
           formErrors: [
@@ -239,9 +240,10 @@ export const useModifyPositionStore = create<ModifyPositionState & ModifyPositio
             `This collateral type requires a minimum of ${wadToDec(debtFloor)} FIAT to be borrowed`
           ]
         }));
-
-        if (debt.gt(0) && collRatio.lte(WAD)) set(() => ({
-          formErrors: [...get().formErrors, 'Collateralization Ratio has to be greater than 100%']
+        if (debt.gt(0) && collRatio.lte(minCollRatio)) set(() => ({
+          formErrors: [
+            ...get().formErrors, 'Collateralization Ratio has to be greater than ' + floor2(wadToDec(minCollRatio))
+          ]
         }));
 
         set(() => ({ collRatio, collateral, debt, deltaCollateral }));
@@ -260,7 +262,7 @@ export const useModifyPositionStore = create<ModifyPositionState & ModifyPositio
     calculatePositionValuesAfterWithdraw: async function (fiat: any, modifyPositionData: any) {
       const { collateralType, position } = modifyPositionData;
       const { tokenScale } = collateralType.properties;
-      const { codex: { debtFloor } } = collateralType.settings;
+      const { codex: { debtFloor }, collybus: { liquidationRatio } } = collateralType.settings;
       const { codex: { virtualRate: rate }, collybus: { fairPrice } } = collateralType.state;
 
       try {
@@ -302,8 +304,12 @@ export const useModifyPositionStore = create<ModifyPositionState & ModifyPositio
         }));
 
         const collRatio = fiat.computeCollateralizationRatio(collateral, fairPrice, normalDebt, rate);
-        if (!(collateral.isZero() && normalDebt.isZero()) && collRatio.lte(WAD))
-          set(() => ({ formErrors: [...get().formErrors, 'Collateralization Ratio has to be greater than 100%'] }));
+        const minCollRatio = minCollRatioWithBuffer(liquidationRatio);
+        if (!(collateral.isZero() && normalDebt.isZero()) && collRatio.lte(minCollRatio)) set(() => ({
+          formErrors: [
+            ...get().formErrors, 'Collateralization Ratio has to be greater than ' + floor2(wadToDec(minCollRatio))
+          ]
+        }));
 
         set(() => ({ collRatio, underlier, collateral, debt }));
       } catch(e: any) {
@@ -319,7 +325,7 @@ export const useModifyPositionStore = create<ModifyPositionState & ModifyPositio
 
     calculatePositionValuesAfterRedeem: async function (fiat: any, modifyPositionData: any) {
       const { collateralType, position } = modifyPositionData;
-      const { codex: { debtFloor } } = collateralType.settings;
+      const { codex: { debtFloor }, collybus: { liquidationRatio } } = collateralType.settings;
       const { codex: { virtualRate: rate }, collybus: { fairPrice } } = collateralType.state;
 
       try {
@@ -345,8 +351,12 @@ export const useModifyPositionStore = create<ModifyPositionState & ModifyPositio
           ]
         }));
         const collRatio = fiat.computeCollateralizationRatio(collateral, fairPrice, normalDebt, rate);
-        if (!(collateral.isZero() && normalDebt.isZero()) && collRatio.lte(WAD))
-          set(() => ({ formErrors: [...get().formErrors, 'Collateralization Ratio has to be greater than 100%'] }));
+        const minCollRatio = minCollRatioWithBuffer(liquidationRatio);
+        if (!(collateral.isZero() && normalDebt.isZero()) && collRatio.lte(minCollRatio)) set(() => ({
+          formErrors: [
+            ...get().formErrors, 'Collateralization Ratio has to be greater than ' + floor2(wadToDec(minCollRatio))
+          ]
+        }));
 
         set(() => ({ collRatio, collateral, debt }));
       } catch (e: any) {
