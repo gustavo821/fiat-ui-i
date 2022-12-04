@@ -16,7 +16,7 @@ import { Slider } from 'antd';
 import 'antd/dist/antd.css';
 import { scaleToDec, wadToDec } from '@fiatdao/sdk';
 
-import { commifyToDecimalPlaces, floor2, formatUnixTimestamp } from '../utils';
+import { commifyToDecimalPlaces, floor2, floor4, formatUnixTimestamp, minCollRatioWithBuffer } from '../utils';
 import { Alert } from './Alert';
 import { useCreatePositionStore } from '../stores/createPositionStore';
 
@@ -65,11 +65,13 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
     collateralType: {
       metadata: { symbol: tokenSymbol, protocol, asset },
       properties: { underlierScale, underlierSymbol, maturity },
+      settings: { collybus: { liquidationRatio } }
     },
     underlierAllowance,
     underlierBalance,
     monetaDelegate,
   } = props.modifyPositionData;
+  const minCollRatio = minCollRatioWithBuffer(liquidationRatio);
 
   if (Math.floor(Date.now() / 1000) > Number(maturity.toString())) {
     return (
@@ -233,7 +235,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
                   props.contextData.fiat, value, props.modifyPositionData, props.selectedCollateralTypeId
                 );
               }}
-              min={1.001}
+              min={floor4(wadToDec(minCollRatio))}
               max={5.0}
               step={0.001}
               reverse
@@ -254,7 +256,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
                   style: { color: 'grey', fontSize: '0.75rem' },
                   label: '200%',
                 },
-                1.001: {
+                [floor4(wadToDec(minCollRatio))]: {
                   style: {
                     color: 'grey',
                     fontSize: '0.75rem',
