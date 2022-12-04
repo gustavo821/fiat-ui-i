@@ -3,7 +3,6 @@ import 'antd/dist/antd.css';
 import { BigNumber } from 'ethers';
 import React, { useState } from 'react';
 import { TransactionStatus } from '../../../pages';
-import { useBorrowStore } from '../../stores/borrowStore';
 import { formatUnixTimestamp } from '../../utils';
 import { CreateForm, DecreaseForm, IncreaseForm, RedeemForm } from './BorrowForms';
 import { LeverCreateForm, LeverDecreaseForm, LeverIncreaseForm, LeverRedeemForm } from './LeverForms';

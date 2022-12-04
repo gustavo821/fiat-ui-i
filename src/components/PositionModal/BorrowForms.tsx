@@ -3,10 +3,10 @@ import { Button, Card, Grid, Input, Loading, Modal, Spacer, Switch, Text } from 
 import { Slider } from 'antd';
 import 'antd/dist/antd.css';
 import { BigNumber, ethers } from 'ethers';
-import React from 'react';
+import React, {useMemo} from 'react';
 import shallow from 'zustand/shallow';
 import { useBorrowStore } from '../../stores/borrowStore';
-import { commifyToDecimalPlaces, floor2, floor5 } from '../../utils';
+import { commifyToDecimalPlaces, floor2, floor4, floor5, minCollRatioWithBuffer } from '../../utils';
 import { Alert } from '../Alert';
 import { InputLabelWithMax } from '../InputLabelWithMax';
 import { PositionPreview } from './PositionPreview';
@@ -32,6 +32,20 @@ export const CreateForm = ({
   setUnderlierAllowanceForProxy: (fiat: any, amount: BigNumber) => any,
   unsetUnderlierAllowanceForProxy: (fiat: any) => any,
 }) => {
+  const { proxies } = contextData;
+  const {
+    collateralType: {
+      metadata: { symbol: tokenSymbol },
+      properties: { underlierScale, underlierSymbol },
+      settings: { collybus: { liquidationRatio } }
+    },
+    underlierAllowance,
+    underlierBalance,
+    monetaDelegate,
+  } = modifyPositionData;
+  const { action: currentTxAction } = transactionData;
+  const hasProxy = proxies.length > 0;
+
   const borrowStore = useBorrowStore(
     React.useCallback(
       (state) => ({
@@ -47,6 +61,8 @@ export const CreateForm = ({
 
   const [rpcError, setRpcError] = React.useState('');
 
+  const minCollRatio = useMemo(() => minCollRatioWithBuffer(liquidationRatio), [liquidationRatio])
+
   if (
     !modifyPositionData.collateralType ||
     !modifyPositionData.collateralType.metadata
@@ -54,21 +70,6 @@ export const CreateForm = ({
     // TODO: add skeleton components instead of loading
     return null;
   }
-
-  const { proxies } = contextData;
-  const {
-    collateralType: {
-      metadata: { symbol: tokenSymbol },
-      properties: { underlierScale, underlierSymbol },
-    },
-    underlierAllowance,
-    underlierBalance,
-    monetaDelegate,
-  } = modifyPositionData;
-
-  const { action: currentTxAction } = transactionData;
-
-  const hasProxy = proxies.length > 0;
 
   // const renderSummary = () => {
   //   if (borrowStore.createState.deltaCollateral.isZero()) {
@@ -193,7 +194,7 @@ export const CreateForm = ({
               onChange={(value) => {
                 borrowStore.createActions.setTargetedCollRatio(contextData.fiat, value, modifyPositionData);
               }}
-              min={1.001}
+              min={floor4(wadToDec(minCollRatio))}
               max={5.0}
               step={0.001}
               reverse
@@ -214,7 +215,7 @@ export const CreateForm = ({
                 style: { color: 'grey', fontSize: '0.75rem' },
               label: '200%',
               },
-              1.001: {
+              [floor4(wadToDec(minCollRatio))]: {
                 style: {
                   color: 'grey',
                   fontSize: '0.75rem',
