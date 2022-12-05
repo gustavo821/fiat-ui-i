@@ -45,7 +45,7 @@ export const LeverCreateForm = ({
     ), shallow
   );
 
-  const [rpcError, setRpcError] = React.useState('');
+  const [submitError, setSubmitError] = React.useState('');
 
   if (
     !modifyPositionData.collateralType ||
@@ -113,8 +113,8 @@ export const LeverCreateForm = ({
       });
     }
 
-    if (rpcError !== '' && rpcError !== 'ACTION_REJECTED' ) {
-      formAlerts.push(<Alert severity='error' message={rpcError} />);
+    if (submitError !== '' && submitError !== 'ACTION_REJECTED' ) {
+      formAlerts.push(<Alert severity='error' message={rpcError} key={'error-submit'}/>);
     }
 
     return formAlerts;
@@ -307,17 +307,17 @@ export const LeverCreateForm = ({
           onChange={async () => {
             if (!leverStore.createState.underlier.isZero() && underlierAllowance?.gte(leverStore.createState.underlier)) {
               try {
-                setRpcError('');
+                setSubmitError('');
                 await unsetUnderlierAllowanceForProxy(contextData.fiat);
               } catch (e: any) {
-                setRpcError(e.message);
+                setSubmitError(e.message);
               }
             } else {
               try {
-                setRpcError('');
+                setSubmitError('');
                 await setUnderlierAllowanceForProxy(contextData.fiat, leverStore.createState.underlier);
               } catch (e: any) {
-                setRpcError(e.message);
+                setSubmitError(e.message);
               }
             }
           }}
@@ -346,13 +346,13 @@ export const LeverCreateForm = ({
           icon={(disableActions && currentTxAction === 'createPosition') ? (<Loading size='xs' />) : null}
           onPress={async () => {
             try {
-              setRpcError('');
+              setSubmitError('');
               await createPosition(
                 leverStore.createState.deltaCollateral, leverStore.createState.deltaDebt, leverStore.createState.underlier
               );
               onClose();
             } catch (e: any) {
-              setRpcError(e.message);
+              setSubmitError(e.message);
             }
           }}
         >
@@ -417,7 +417,7 @@ export const LeverIncreaseForm = ({
     }
 
     if (submitError !== '' && submitError !== 'ACTION_REJECTED') {
-      formAlerts.push(<Alert severity='error' message={submitError} />);
+      formAlerts.push(<Alert severity='error' message={rpcError} key={'error-submit'}/>);
     }
 
     return formAlerts;
@@ -658,7 +658,7 @@ export const LeverDecreaseForm = ({
     }
 
     if (submitError !== '' && submitError !== 'ACTION_REJECTED') {
-      formAlerts.push(<Alert severity='error' message={submitError} />);
+      formAlerts.push(<Alert severity='error' message={rpcError} key={'error-submit'}/>);
     }
 
     return formAlerts;
@@ -940,7 +940,7 @@ export const LeverRedeemForm = ({
     }
 
     if (submitError !== '' && submitError !== 'ACTION_REJECTED') {
-      formAlerts.push(<Alert severity='error' message={submitError} />);
+      formAlerts.push(<Alert severity='error' message={rpcError} key={'error-submit'}/>);
     }
 
     return formAlerts;

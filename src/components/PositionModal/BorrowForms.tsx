@@ -59,7 +59,7 @@ export const CreateForm = ({
     ), shallow
   );
 
-  const [rpcError, setRpcError] = React.useState('');
+  const [submitError, setSubmitError] = React.useState('');
 
   const minCollRatio = useMemo(() => minCollRatioWithBuffer(liquidationRatio), [liquidationRatio])
 
@@ -114,8 +114,8 @@ export const CreateForm = ({
       });
     }
 
-    if (rpcError !== '' && rpcError !== 'ACTION_REJECTED' ) {
-      formAlerts.push(<Alert severity='error' message={rpcError} />);
+    if (submitError !== '' && submitError !== 'ACTION_REJECTED' ) {
+      formAlerts.push(<Alert severity='error' message={rpcError} key={'error-submit'}/>);
     }
 
     return formAlerts;
@@ -308,17 +308,17 @@ export const CreateForm = ({
           onChange={async () => {
             if (!borrowStore.createState.underlier.isZero() && underlierAllowance?.gte(borrowStore.createState.underlier)) {
               try {
-                setRpcError('');
+                setSubmitError('');
                 await unsetUnderlierAllowanceForProxy(contextData.fiat);
               } catch (e: any) {
-                setRpcError(e.message);
+                setSubmitError(e.message);
               }
             } else {
               try {
-                setRpcError('');
+                setSubmitError('');
                 await setUnderlierAllowanceForProxy(contextData.fiat, borrowStore.createState.underlier);
               } catch (e: any) {
-                setRpcError(e.message);
+                setSubmitError(e.message);
               }
             }
           }}
@@ -347,13 +347,13 @@ export const CreateForm = ({
           icon={(disableActions && currentTxAction === 'createPosition') ? (<Loading size='xs' />) : null}
           onPress={async () => {
             try {
-              setRpcError('');
+              setSubmitError('');
               await createPosition(
                 borrowStore.createState.deltaCollateral, borrowStore.createState.deltaDebt, borrowStore.createState.underlier
               );
               onClose();
             } catch (e: any) {
-              setRpcError(e.message);
+              setSubmitError(e.message);
             }
           }}
         >
@@ -418,7 +418,7 @@ export const IncreaseForm = ({
     }
 
     if (submitError !== '' && submitError !== 'ACTION_REJECTED') {
-      formAlerts.push(<Alert severity='error' message={submitError} />);
+      formAlerts.push(<Alert severity='error' message={rpcError} key={'error-submit'}/>);
     }
 
     return formAlerts;
@@ -659,7 +659,7 @@ export const DecreaseForm = ({
     }
 
     if (submitError !== '' && submitError !== 'ACTION_REJECTED') {
-      formAlerts.push(<Alert severity='error' message={submitError} />);
+      formAlerts.push(<Alert severity='error' message={rpcError} key={'error-submit'}/>);
     }
 
     return formAlerts;
@@ -941,7 +941,7 @@ export const RedeemForm = ({
     }
 
     if (submitError !== '' && submitError !== 'ACTION_REJECTED') {
-      formAlerts.push(<Alert severity='error' message={submitError} />);
+      formAlerts.push(<Alert severity='error' message={rpcError} key={'error-submit'}/>);
     }
 
     return formAlerts;
