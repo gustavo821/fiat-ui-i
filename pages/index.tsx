@@ -255,9 +255,17 @@ const Home: NextPage = () => {
     try {
       setTransactionData({ action, status: 'sent' });
       // Dryrun every transaction first to catch and decode errors
-      useProxy
+      const dryrunResp = useProxy
         ? await fiat.dryrunViaProxy(contextData.proxies[0], contract, method, ...args)
         : await fiat.dryrun(contract, method, ...args);
+      if (!dryrunResp.success) {
+        const reason = dryrunResp.reason !== undefined ? 'Reason: ' + dryrunResp.reason + '.' : '';
+        const customError = dryrunResp.customError !== undefined ? 'Custom error: ' + dryrunResp.customError + '.' : '';
+        const error = dryrunResp.error !== undefined ? dryrunResp.error + '.' : '';
+        // Throw conglomerate error message to prevent sendAndWait from running and throwing a less user-friendly error
+        throw new Error(reason + customError + error);
+      }
+
       const resp = useProxy
         ? await fiat.sendAndWaitViaProxy(contextData.proxies[0], contract, method, ...args)
         : await fiat.sendAndWait(contract, method, ...args);
