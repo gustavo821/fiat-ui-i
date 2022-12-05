@@ -427,6 +427,69 @@ const Home: NextPage = () => {
     }
   }
 
+  const createLeveredPosition = async (
+    upFrontUnderlier: BigNumber, addDebt: BigNumber, minUnderlierToBuy: BigNumber, minTokenToBuy: BigNumber
+  ) => {
+    const args = userActions.buildBuyCollateralAndIncreaseLeverArgs(
+      contextData, modifyPositionData.collateralType, upFrontUnderlier, addDebt, minUnderlierToBuy, minTokenToBuy
+    );
+    const response = await sendTransaction(
+      contextData.fiat, true, 'createLeveredPosition', args.contract, args.methodName, ...args.methodArgs
+    );
+    addRecentTransaction({ hash: response.transactionHash, description: 'Create levered position' });
+    softReset();
+  }
+
+  const buyCollateralAndIncreaseLever = async (
+    upFrontUnderlier: BigNumber, addDebt: BigNumber, minUnderlierToBuy: BigNumber, minTokenToBuy: BigNumber
+  ) => {
+    const args = userActions.buildBuyCollateralAndIncreaseLeverArgs(
+      contextData, modifyPositionData.collateralType, upFrontUnderlier, addDebt, minUnderlierToBuy, minTokenToBuy
+    );
+    const response = await sendTransaction(
+      contextData.fiat, true, 'buyCollateralAndIncreaseLever', args.contract, args.methodName, ...args.methodArgs
+    );
+    addRecentTransaction({
+      hash: response.transactionHash, description: 'Buy and deposit collateral and increase leverage'
+    });
+    softReset();
+    return response;
+  }
+
+  const sellCollateralAndDecreaseLever = async (
+    subTokenAmount: BigNumber, subDebt: BigNumber, maxUnderlierToSell: BigNumber, minUnderlierToBuy: BigNumber
+  ) => {
+    const { collateralType, position } = modifyPositionData;
+    const args = userActions.buildSellCollateralAndDecreaseLeverArgs(
+      contextData, collateralType, subTokenAmount, subDebt, maxUnderlierToSell, minUnderlierToBuy, position
+    );
+    const response = await sendTransaction(
+      contextData.fiat, true, 'sellCollateralAndDecreaseLever', args.contract, args.methodName, ...args.methodArgs
+    );
+    addRecentTransaction({
+      hash: response.transactionHash, description: 'Withdraw and sell collateral and decrease leverage'
+    });
+    softReset();
+    return response;
+  }
+
+  const redeemCollateralAndDecreaseLever = async (
+    subTokenAmount: BigNumber, subDebt: BigNumber, maxUnderlierToSell: BigNumber
+  ) => {
+    const { collateralType, position } = modifyPositionData;
+    const args = userActions.buildRedeemCollateralAndDecreaseLeverArgs(
+      contextData, collateralType, subTokenAmount, subDebt, maxUnderlierToSell, position
+    );
+    const response = await sendTransaction(
+      contextData.fiat, true, 'redeemCollateralAndDecreaseLever', args.contract, args.methodName, ...args.methodArgs
+    );
+    addRecentTransaction({
+      hash: response.transactionHash, description: 'Withdraw and redeem collateral and decrease leverage'
+    });
+    softReset();
+    return response;
+  }
+
   // Cycle the first page render to allow styles to load
   React.useEffect(() => {
     setInitialPageLoad(false);
@@ -483,13 +546,17 @@ const Home: NextPage = () => {
       </Container>
 
       <PositionModal
-        buyCollateralAndModifyDebt={buyCollateralAndModifyDebt}
         contextData={contextData}
-        createPosition={createPosition}
-        disableActions={disableActions}
         modifyPositionData={modifyPositionData}
-        redeemCollateralAndModifyDebt={redeemCollateralAndModifyDebt}
+        disableActions={disableActions}
+        createPosition={createPosition}
+        buyCollateralAndModifyDebt={buyCollateralAndModifyDebt}
         sellCollateralAndModifyDebt={sellCollateralAndModifyDebt}
+        redeemCollateralAndModifyDebt={redeemCollateralAndModifyDebt}
+        createLeveredPosition={createLeveredPosition}
+        buyCollateralAndIncreaseLever={buyCollateralAndIncreaseLever}
+        sellCollateralAndDecreaseLever={sellCollateralAndDecreaseLever}
+        redeemCollateralAndDecreaseLever={redeemCollateralAndDecreaseLever}
         selectedPositionId={selectedPositionId}
         selectedCollateralTypeId={selectedCollateralTypeId}
         setFIATAllowanceForProxy={setFIATAllowanceForProxy}

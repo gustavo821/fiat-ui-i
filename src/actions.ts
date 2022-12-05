@@ -579,3 +579,274 @@ export const buildRedeemCollateralAndModifyDebtArgs = (contextData: any,
     }
   }
 };
+
+export const buildBuyCollateralAndIncreaseLeverArgs = (
+  contextData: any,
+  collateralTypeData: any,
+  upFrontUnderliers: BigNumber,
+  addDebt: BigNumber,
+  minUnderlierToBuy: BigNumber,
+  minTokenToBuy: BigNumber,
+): { contract: Contract, methodName: string, methodArgs: any[] } => {
+  const { leverEPTActions, leverFYActions, leverSPTActions } = contextData.fiat.getContracts();
+  const { properties } = collateralTypeData;
+
+  const deadline = Math.round(+new Date() / 1000) + 3600;
+  const sellFIATSwapParams = [properties.underlierToken, minUnderlierToBuy, deadline];
+
+  // if underlier is zero then min. collateralization can never be met
+  if (upFrontUnderliers.isZero()) throw new Error('Invalid value for `upFrontUnderliers` - Value has to be non-zero');
+
+  switch (properties.vaultType) {
+    case 'ERC20:EPT': {
+      if (!properties.eptData) throw new Error('Missing EPT data');
+      const args = {
+        contract: leverEPTActions,
+        methodName: 'buyCollateralAndIncreaseLever',
+        methodArgs: [
+          properties.vault,
+          contextData.proxies[0],
+          contextData.user,
+          upFrontUnderliers,
+          addDebt,
+          sellFIATSwapParams,
+          [
+            properties.eptData.balancerVault,
+            properties.eptData.poolId,
+            properties.underlierToken,
+            properties.token,
+            minTokenToBuy,
+            deadline
+          ]
+        ]
+      };
+      return args;
+    }
+    case 'ERC20:FY': {
+      if (!properties.fyData) throw new Error('Missing FY data');
+      const args = {
+        contract: contextData,
+        methodName: leverFYActions,
+        methodArgs: [
+          'buyCollateralAndIncreaseLever',
+          properties.vault,
+          contextData.proxies[0],
+          contextData.user,
+          upFrontUnderliers,
+          addDebt,
+          sellFIATSwapParams,
+          [
+            minTokenToBuy,
+            properties.fyData.yieldSpacePool,
+            properties.underlierToken,
+            properties.token
+          ]
+        ],
+      };
+      return args;
+    }
+    case 'ERC20:SPT': {
+      if (!properties.sptData) throw new Error('Missing SPT data');
+      const args = {
+        contract: contextData,
+        methodName: leverSPTActions,
+        methodArgs: [
+          'buyCollateralAndIncreaseLever',
+          properties.vault,
+          contextData.proxies[0],
+          contextData.user,
+          upFrontUnderliers,
+          addDebt,
+          sellFIATSwapParams,
+          [
+            properties.sptData.adapter,
+            minTokenToBuy,
+            properties.sptData.maturity,
+            properties.underlierToken,
+            properties.token,
+            upFrontUnderliers.add(minUnderlierToBuy)
+          ]
+        ],
+      };
+      return args;
+    }
+    default: {
+      throw new Error('Unsupported vault: ', properties.vaultType);
+    }
+  }
+};
+
+export const buildSellCollateralAndDecreaseLeverArgs = (
+  contextData: any,
+  collateralTypeData: any,
+  subTokenAmount: BigNumber,
+  subDebt: BigNumber,
+  maxUnderliersToSell: BigNumber,
+  minUnderliersToBuy: BigNumber,
+  position: any
+): { contract: Contract, methodName: string, methodArgs: any[] } => {
+  const { leverEPTActions, leverFYActions, leverSPTActions } = contextData.fiat.getContracts();
+  const { properties } = collateralTypeData;
+
+  let subNormalDebt = addDeltaNormalBuffer(debtToNormalDebt(subDebt, collateralTypeData.state.codex.virtualRate));
+  if (position.normalDebt.sub(subNormalDebt).lt(WAD)) subNormalDebt = position.normalDebt;
+  const deadline = Math.round(+new Date() / 1000) + 3600;
+  const buyFIATSwapParams = [properties.underlierToken, maxUnderliersToSell, deadline];
+
+  // if subTokenAmount is zero then debt can't be decreased
+  if (subTokenAmount.isZero()) throw new Error('Invalid value for `subTokenAmount` - Value has to be non-zero');
+
+  switch (properties.vaultType) {
+    case 'ERC20:EPT': {
+      if (!properties.eptData) throw new Error('Missing EPT data');
+      const args = {
+        contract: leverEPTActions,
+        methodName: 'sellCollateralAndDecreaseLever',
+        methodArgs: [
+          properties.vault,
+          contextData.proxies[0],
+          contextData.user,
+          subTokenAmount,
+          subNormalDebt,
+          buyFIATSwapParams,
+          [
+            properties.eptData.balancerVault,
+            properties.eptData.poolId,
+            properties.token,
+            properties.underlierToken,
+            minUnderliersToBuy,
+            deadline
+          ]
+        ]
+      };
+      return args;
+    }
+    case 'ERC20:FY': {
+      if (!properties.fyData) throw new Error('Missing FY data');
+      const args = {
+        contract: contextData,
+        methodName: leverFYActions,
+        methodArgs: [
+          'sellCollateralAndDecreaseLever',
+          properties.vault,
+          contextData.proxies[0],
+          contextData.user,
+          subTokenAmount,
+          subNormalDebt,
+          buyFIATSwapParams,
+          [
+            minUnderliersToBuy,
+            properties.fyData.yieldSpacePool,
+            properties.token,
+            properties.underlierToken
+          ]
+        ]
+      };
+      return args;
+    }
+    case 'ERC20:SPT': {
+      if (!properties.sptData) throw new Error('Missing SPT data');
+      const args = {
+        contract: contextData,
+        methodName: leverSPTActions,
+        methodArgs: [
+          'sellCollateralAndDecreaseLever',
+          properties.vault,
+          contextData.proxies[0],
+          contextData.user,
+          subTokenAmount,
+          subNormalDebt,
+          buyFIATSwapParams,
+          [
+            properties.sptData.adapter,
+            minUnderliersToBuy,
+            properties.sptData.maturity,
+            properties.token,
+            properties.underlierToken,
+            subTokenAmount
+          ]
+        ]
+      };
+      return args;
+    }
+    default: {
+      throw new Error('Unsupported vault: ', properties.vaultType);
+    }
+  }
+};
+
+export const buildRedeemCollateralAndDecreaseLeverArgs = (
+  contextData: any,
+  collateralTypeData: any,
+  subTokenAmount: BigNumber,
+  subDebt: BigNumber,
+  maxUnderliersToSell: BigNumber,
+  position: any
+): { contract: Contract, methodName: string, methodArgs: any[] } => {
+  const { leverEPTActions, leverFYActions, leverSPTActions } = contextData.fiat.getContracts();
+  const { properties } = collateralTypeData;
+
+  let subNormalDebt = addDeltaNormalBuffer(debtToNormalDebt(subDebt, collateralTypeData.state.codex.virtualRate));
+  if (position.normalDebt.sub(subNormalDebt).lt(WAD)) subNormalDebt = position.normalDebt;
+  const deadline = Math.round(+new Date() / 1000) + 3600;
+  const buyFIATSwapParams = [properties.underlierToken, maxUnderliersToSell, deadline];
+
+  // if subTokenAmount is zero then debt can't be decreased
+  if (subTokenAmount.isZero()) throw new Error('Invalid value for `subTokenAmount` - Value has to be non-zero');
+
+  switch (properties.vaultType) {
+    case 'ERC20:EPT': {
+      if (!properties.eptData) throw new Error('Missing EPT data');
+      const args = {
+        contract: leverEPTActions,
+        methodName: 'redeemCollateralAndDecreaseLever',
+        methodArgs: [
+          properties.vault,
+          contextData.proxies[0],
+          contextData.user,
+          subTokenAmount,
+          subNormalDebt,
+          buyFIATSwapParams
+        ]
+      };
+      return args;
+    }
+    case 'ERC20:FY': {
+      if (!properties.fyData) throw new Error('Missing FY data');
+      const args = {
+        contract: contextData,
+        methodName: leverFYActions,
+        methodArgs: [
+          'redeemCollateralAndDecreaseLever',
+          properties.vault,
+          contextData.proxies[0],
+          contextData.user,
+          subTokenAmount,
+          subNormalDebt,
+          buyFIATSwapParams
+        ]
+      };
+      return args;
+    }
+    case 'ERC20:SPT': {
+      if (!properties.sptData) throw new Error('Missing SPT data');
+      const args = {
+        contract: contextData,
+        methodName: leverSPTActions,
+        methodArgs: [
+          'redeemCollateralAndDecreaseLever',
+          properties.vault,
+          contextData.proxies[0],
+          contextData.user,
+          subTokenAmount,
+          subNormalDebt,
+          buyFIATSwapParams
+        ]
+      };
+      return args;
+    }
+    default: {
+      throw new Error('Unsupported vault: ', properties.vaultType);
+    }
+  }
+};

@@ -6,7 +6,7 @@ import { BigNumber, ethers } from 'ethers';
 import React from 'react';
 import shallow from 'zustand/shallow';
 import { useLeverStore } from '../../stores/leverStore';
-import { commifyToDecimalPlaces, floor2, floor4, floor5, minCollRatioWithBuffer } from '../../utils';
+import { commifyToDecimalPlaces, floor2, floor4, minCollRatioWithBuffer } from '../../utils';
 import { Alert } from '../Alert';
 import { InputLabelWithMax } from '../InputLabelWithMax';
 import { PositionPreview } from './PositionPreview';
@@ -18,7 +18,7 @@ export const LeverCreateForm = ({
   transactionData,
   onClose,
   // TODO: refactor out into react query mutations / store actions
-  createPosition,
+  createLeveredPosition,
   setUnderlierAllowanceForProxy,
   unsetUnderlierAllowanceForProxy,
 }: {
@@ -28,7 +28,7 @@ export const LeverCreateForm = ({
   transactionData: any,
   onClose: () => void,
   // TODO: refactor out into react query mutations / store actions
-  createPosition: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
+  createLeveredPosition: (upFrontUnderlier: BigNumber, addDebt: BigNumber, minUnderlierToBuy: BigNumber, minTokenToBuy: BigNumber) => any;
   setUnderlierAllowanceForProxy: (fiat: any, amount: BigNumber) => any,
   unsetUnderlierAllowanceForProxy: (fiat: any) => any,
 }) => {
@@ -136,9 +136,9 @@ export const LeverCreateForm = ({
         )}
         <Input
           disabled={disableActions}
-          value={floor2(scaleToDec(leverStore.createState.underlier, underlierScale))}
+          value={floor2(scaleToDec(leverStore.createState.upFrontUnderliers, underlierScale))}
           onChange={(event) => {
-            leverStore.createActions.setUnderlier(
+            leverStore.createActions.setUpFrontUnderliers(
               contextData.fiat, event.target.value, modifyPositionData);
           }}
           placeholder='0'
@@ -253,7 +253,7 @@ export const LeverCreateForm = ({
         </Text>
         <Input
           readOnly
-          value={leverStore.formDataLoading ? ' ' : floor2(wadToDec(leverStore.createState.deltaCollateral))}
+          value={leverStore.formDataLoading ? ' ' : floor2(wadToDec(leverStore.createState.minTokenToBuy))}
           placeholder='0'
           type='string'
           label={'Total Collateral to deposit (incl. slippage)'}
@@ -322,7 +322,10 @@ export const LeverCreateForm = ({
           // @ts-ignore
           checked={() => underlierAllowance?.gt(0) && underlierAllowance?.gte(leverStore.createState.underlier) ?? false}
           onChange={async () => {
-            if (!leverStore.createState.underlier.isZero() && underlierAllowance?.gte(leverStore.createState.underlier)) {
+            if (
+              !leverStore.createState.upFrontUnderliers.isZero()
+              && underlierAllowance?.gte(leverStore.createState.upFrontUnderliers)
+            ) {
               try {
                 setRpcError('');
                 await unsetUnderlierAllowanceForProxy(contextData.fiat);
@@ -332,7 +335,7 @@ export const LeverCreateForm = ({
             } else {
               try {
                 setRpcError('');
-                await setUnderlierAllowanceForProxy(contextData.fiat, leverStore.createState.underlier);
+                await setUnderlierAllowanceForProxy(contextData.fiat, leverStore.createState.upFrontUnderliers);
               } catch (e: any) {
                 setRpcError(e.message);
               }
@@ -355,17 +358,20 @@ export const LeverCreateForm = ({
             leverStore.formWarnings.length !== 0 ||
             disableActions ||
             !hasProxy ||
-            leverStore.createState.underlier?.isZero() ||
-            leverStore.createState.deltaCollateral?.isZero() ||
-            underlierAllowance?.lt(leverStore.createState.underlier) ||
+            leverStore.createState.upFrontUnderliers?.isZero() ||
+            leverStore.createState.minTokenToBuy?.isZero() ||
+            underlierAllowance?.lt(leverStore.createState.upFrontUnderliers) ||
             monetaDelegate === false
           }
-          icon={(disableActions && currentTxAction === 'createPosition') ? (<Loading size='xs' />) : null}
+          icon={(disableActions && currentTxAction === 'createLeveredPosition') ? (<Loading size='xs' />) : null}
           onPress={async () => {
             try {
               setRpcError('');
-              await createPosition(
-                leverStore.createState.deltaCollateral, leverStore.createState.deltaDebt, leverStore.createState.underlier
+              await createLeveredPosition(
+                leverStore.createState.upFrontUnderliers,
+                leverStore.createState.addDebt,
+                leverStore.createState.minUnderliersToBuy,
+                leverStore.createState.minTokenToBuy
               );
               onClose();
             } catch (e: any) {
@@ -387,7 +393,7 @@ export const LeverIncreaseForm = ({
   transactionData,
   onClose,
   // TODO: refactor out into react query mutations / store actions
-  buyCollateralAndModifyDebt,
+  buyCollateralAndIncreaseLever,
   setUnderlierAllowanceForProxy,
   unsetUnderlierAllowanceForProxy,
 }: {
@@ -397,7 +403,7 @@ export const LeverIncreaseForm = ({
   transactionData: any,
   onClose: () => void,
   // TODO: refactor out into react query mutations / store actions
-  buyCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any,
+  buyCollateralAndIncreaseLever: (upFrontUnderlier: BigNumber, addDebt: BigNumber, minUnderlierToBuy: BigNumber, minTokenToBuy: BigNumber) => any;
   setUnderlierAllowanceForProxy: (fiat: any, amount: BigNumber) => any,
   unsetUnderlierAllowanceForProxy: (fiat: any) => any,
 }) => {
@@ -454,9 +460,9 @@ export const LeverIncreaseForm = ({
       <Input
         label={'Underlier to deposit'}
         disabled={disableActions}
-        value={floor2(scaleToDec(leverStore.increaseState.underlier, modifyPositionData.collateralType.properties.underlierScale))}
+        value={floor2(scaleToDec(leverStore.increaseState.upFrontUnderliers, modifyPositionData.collateralType.properties.underlierScale))}
         onChange={(event) => {
-          leverStore.increaseActions.setUnderlier(contextData.fiat, event.target.value, modifyPositionData);
+          leverStore.increaseActions.setUpFrontUnderliers(contextData.fiat, event.target.value, modifyPositionData);
         }}
         placeholder='0'
         inputMode='decimal'
@@ -508,7 +514,7 @@ export const LeverIncreaseForm = ({
           />
         </Grid>
       </Grid.Container>
-      <Input
+      {/* <Input
         disabled={disableActions}
         value={floor5(wadToDec(leverStore.increaseState.deltaDebt))}
         onChange={(event) => {
@@ -521,7 +527,7 @@ export const LeverIncreaseForm = ({
         bordered
         size='sm'
         borderWeight='light'
-      />
+      /> */}
     </Modal.Body>
 
     <Spacer y={0.75} />
@@ -536,7 +542,7 @@ export const LeverIncreaseForm = ({
           value={
             leverStore.formDataLoading
               ? ' '
-              : floor2(wadToDec(leverStore.increaseState.deltaCollateral))
+              : floor2(wadToDec(leverStore.increaseState.minTokenToBuy))
           }
           placeholder='0'
           type='string'
@@ -574,7 +580,10 @@ export const LeverIncreaseForm = ({
           // @ts-ignore
           checked={() => modifyPositionData.underlierAllowance?.gt(0) && modifyPositionData.underlierAllowance?.gte(leverStore.increaseState.underlier) ?? false}
           onChange={async () => {
-            if(!leverStore.increaseState.underlier.isZero() && modifyPositionData.underlierAllowance.gte(leverStore.increaseState.underlier)) {
+            if(
+              !leverStore.increaseState.upFrontUnderliers.isZero()
+              && modifyPositionData.underlierAllowance.gte(leverStore.increaseState.upFrontUnderliers)
+            ) {
               try {
                 setSubmitError('');
                 await unsetUnderlierAllowanceForProxy(contextData.fiat);
@@ -584,7 +593,7 @@ export const LeverIncreaseForm = ({
             } else {
               try {
                 setSubmitError('');
-                await setUnderlierAllowanceForProxy(contextData.fiat, leverStore.increaseState.underlier)
+                await setUnderlierAllowanceForProxy(contextData.fiat, leverStore.increaseState.upFrontUnderliers)
               } catch (e: any) {
                 setSubmitError(e.message);
               }
@@ -608,15 +617,15 @@ export const LeverIncreaseForm = ({
             if (disableActions || !hasProxy) return true;
             if (leverStore.formErrors.length !== 0 || leverStore.formWarnings.length !== 0) return true;
             if (modifyPositionData.monetaDelegate === false) return true;
-            if (leverStore.increaseState.underlier.isZero() && leverStore.increaseState.deltaDebt.isZero()) return true;
-            if (!leverStore.increaseState.underlier.isZero() && modifyPositionData.underlierAllowance.lt(leverStore.increaseState.underlier)) return true;
+            if (leverStore.increaseState.upFrontUnderliers.isZero() && leverStore.increaseState.minTokenToBuy.isZero()) return true;
+            if (!leverStore.increaseState.upFrontUnderliers.isZero() && modifyPositionData.underlierAllowance.lt(leverStore.increaseState.upFrontUnderliers)) return true;
             return false;
           })()}
           icon={
             [
-              'buyCollateralAndModifyDebt',
-              'sellCollateralAndModifyDebt',
-              'redeemCollateralAndModifyDebt',
+              'buyCollateralAndIncreaseLever',
+              'sellCollateralAndDecreaseLever',
+              'redeemCollateralAndDecreaseLever'
             ].includes(currentTxAction || '') && disableActions ? (
               <Loading size='xs' />
             ) : null
@@ -624,7 +633,12 @@ export const LeverIncreaseForm = ({
           onPress={async () => {
             try {
               setSubmitError('');
-              await buyCollateralAndModifyDebt(leverStore.increaseState.deltaCollateral, leverStore.increaseState.deltaDebt, leverStore.increaseState.underlier);
+              await buyCollateralAndIncreaseLever(
+                leverStore.increaseState.upFrontUnderliers,
+                leverStore.increaseState.addDebt,
+                leverStore.increaseState.minUnderliersToBuy,
+                leverStore.increaseState.minTokenToBuy
+              );
               onClose();
             } catch (e: any) {
               setSubmitError(e.message);
@@ -645,10 +659,7 @@ export const LeverDecreaseForm = ({
   transactionData,
   onClose,
   // TODO: refactor out into react query mutations / store actions
-  setFIATAllowanceForProxy,
-  unsetFIATAllowanceForProxy,
-  setFIATAllowanceForMoneta,
-  sellCollateralAndModifyDebt,
+  sellCollateralAndDecreaseLever,
 }: {
   contextData: any,
   disableActions: boolean,
@@ -656,10 +667,7 @@ export const LeverDecreaseForm = ({
   transactionData: any,
   onClose: () => void,
   // TODO: refactor out into react query mutations / store actions
-  setFIATAllowanceForProxy: (fiat: any, amount: BigNumber) => any;
-  setFIATAllowanceForMoneta: (fiat: any) => any;
-  unsetFIATAllowanceForProxy: (fiat: any) => any;
-  sellCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
+  sellCollateralAndDecreaseLever: (subTokenAmount: BigNumber, subDebt: BigNumber, maxUnderlierToSell: BigNumber, minUnderlierToBuy: BigNumber) => any;
 }) => {
   const [submitError, setSubmitError] = React.useState('');
   const leverStore = useLeverStore(
@@ -750,9 +758,9 @@ export const LeverDecreaseForm = ({
         </Grid.Container>
         <Input
           disabled={disableActions}
-          value={floor2(wadToDec(leverStore.decreaseState.deltaCollateral))}
+          value={floor2(wadToDec(leverStore.decreaseState.subTokenAmount))}
           onChange={(event) => {
-            leverStore.decreaseActions.setDeltaCollateral(contextData.fiat, event.target.value, modifyPositionData);
+            leverStore.decreaseActions.setSubTokenAmount(contextData.fiat, event.target.value, modifyPositionData);
           }}
           placeholder='0'
           inputMode='decimal'
@@ -762,7 +770,7 @@ export const LeverDecreaseForm = ({
           label={
             <InputLabelWithMax
               label='Collateral to withdraw and swap'
-              onMaxClick={() => leverStore.decreaseActions.setMaxDeltaCollateral(contextData.fiat, modifyPositionData)}
+              onMaxClick={() => leverStore.decreaseActions.setMaxSubTokenAmount(contextData.fiat, modifyPositionData)}
             />
           }
           labelRight={modifyPositionData.collateralType.metadata.symbol}
@@ -771,28 +779,23 @@ export const LeverDecreaseForm = ({
           borderWeight='light'
           width={'15rem'}
         />
-        <Input
-          disabled={disableActions}
-          value={floor5(wadToDec(leverStore.decreaseState.deltaDebt))}
-          onChange={(event) => {
-            leverStore.decreaseActions.setDeltaDebt(contextData.fiat, event.target.value,modifyPositionData);
-          }}
-          placeholder='0'
-          inputMode='decimal'
-          // Bypass type warning from passing a custom component instead of a string
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
-          label={
-            <InputLabelWithMax
-              label='FIAT to pay back'
-              onMaxClick={() => leverStore.decreaseActions.setMaxDeltaDebt(contextData.fiat, modifyPositionData)}
-            />
-          }
-          labelRight={'FIAT'}
-          bordered
-          size='sm'
-          borderWeight='light'
-        />
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
         <Text size={'$sm'}>
           Note: When closing your position make sure you have enough FIAT to cover the accrued borrow fees.
         </Text>
@@ -810,7 +813,7 @@ export const LeverDecreaseForm = ({
           value={
             (leverStore.formDataLoading)
               ? ' '
-              : floor2(scaleToDec(leverStore.decreaseState.underlier, modifyPositionData.collateralType.properties.underlierScale))
+              : floor2(scaleToDec(leverStore.decreaseState.maxUnderliersToSell, modifyPositionData.collateralType.properties.underlierScale))
           }
           placeholder='0'
           type='string'
@@ -840,68 +843,6 @@ export const LeverDecreaseForm = ({
       </Modal.Body>
 
       <Modal.Footer justify='space-evenly'>
-        <Text size={'0.875rem'}>Approve FIAT for Proxy</Text>
-        <Switch
-          disabled={disableActions || !hasProxy}
-          // Next UI Switch `checked` type is wrong, this is necessary
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
-          checked={() => (modifyPositionData.proxyFIATAllowance?.gt(0) && modifyPositionData.proxyFIATAllowance?.gte(leverStore.decreaseState.deltaDebt) ?? false)}
-          onChange={async () => {
-            if (leverStore.decreaseState.deltaDebt.gt(0) && modifyPositionData.proxyFIATAllowance.gte(leverStore.decreaseState.deltaDebt)) {
-              try {
-                setSubmitError('');
-                await unsetFIATAllowanceForProxy(contextData.fiat);
-              } catch (e: any) {
-                setSubmitError(e.message);
-              }
-            } else {
-              try {
-                setSubmitError('');
-                await setFIATAllowanceForProxy(contextData.fiat, leverStore.decreaseState.deltaDebt);
-              } catch (e: any) {
-                setSubmitError(e.message);
-              }
-            }
-          }}
-          color='primary'
-          icon={
-            ['setFIATAllowanceForProxy', 'unsetFIATAllowanceForProxy'].includes(currentTxAction || '') && disableActions ? (
-              <Loading size='xs' />
-            ) : null
-          }
-        />
-
-        <Spacer y={3} />
-
-        {modifyPositionData.monetaFIATAllowance?.lt(leverStore.decreaseState.deltaDebt) && (
-          <>
-            <Spacer y={3} />
-            <Button
-              css={{ minWidth: '100%' }}
-              disabled={(() => {
-                if (disableActions || !hasProxy) return true;
-                if (modifyPositionData.monetaFIATAllowance?.gt(0) && modifyPositionData.monetaFIATAllowance?.gte(leverStore.decreaseState.deltaDebt)) return true;
-                return false;
-              })()}
-              icon={(['setFIATAllowanceForMoneta'].includes(currentTxAction || '') && disableActions)
-                ? (<Loading size='xs' />)
-                : null
-              }
-              onPress={async () => {
-                try {
-                  setSubmitError('');
-                  await setFIATAllowanceForMoneta(contextData.fiat);
-                } catch (e: any) {
-                  setSubmitError(e.message);
-                }
-              }}
-            >
-              Approve FIAT for Moneta (One Time Action)
-            </Button>
-          </>
-        )}
-
         { renderFormAlerts() }
 
         <Button
@@ -909,15 +850,14 @@ export const LeverDecreaseForm = ({
           disabled={(() => {
             if (disableActions || !hasProxy) return true;
             if (leverStore.formErrors.length !== 0 || leverStore.formWarnings.length !== 0) return true;
-            if (leverStore.decreaseState.deltaCollateral.isZero() && leverStore.decreaseState.deltaDebt.isZero()) return true;
-            if (!leverStore.decreaseState.deltaDebt.isZero() && modifyPositionData.monetaFIATAllowance?.lt(leverStore.decreaseState.deltaDebt)) return true;
+            if (leverStore.decreaseState.subTokenAmount.isZero() && leverStore.decreaseState.subDebt.isZero()) return true;
             return false;
           })()}
           icon={
             [
-              'buyCollateralAndModifyDebt',
-              'sellCollateralAndModifyDebt',
-              'redeemCollateralAndModifyDebt',
+              'buyCollateralAndIncreaseLever',
+              'sellCollateralAndDecreaseLever',
+              'redeemCollateralAndDecreaseLever'
             ].includes(currentTxAction || '') && disableActions ? (
               <Loading size='xs' />
             ) : null
@@ -925,7 +865,12 @@ export const LeverDecreaseForm = ({
           onPress={async () => {
             try {
               setSubmitError('');
-              await sellCollateralAndModifyDebt(leverStore.decreaseState.deltaCollateral, leverStore.decreaseState.deltaDebt, leverStore.decreaseState.underlier);
+              await sellCollateralAndDecreaseLever(
+                leverStore.decreaseState.subTokenAmount,
+                leverStore.decreaseState.subDebt,
+                leverStore.decreaseState.maxUnderliersToSell,
+                leverStore.decreaseState.minUnderliersToBuy
+              );
               onClose();
             } catch (e: any) {
               setSubmitError(e.message);
@@ -946,10 +891,7 @@ export const LeverRedeemForm = ({
   transactionData,
   onClose,
   // TODO: refactor out into react query mutations / store actions
-  setFIATAllowanceForProxy,
-  unsetFIATAllowanceForProxy,
-  setFIATAllowanceForMoneta,
-  redeemCollateralAndModifyDebt,
+  redeemCollateralAndDecreaseLever,
 }: {
   contextData: any,
   disableActions: boolean,
@@ -957,10 +899,7 @@ export const LeverRedeemForm = ({
   transactionData: any,
   onClose: () => void,
   // TODO: refactor out into react query mutations / store actions
-  setFIATAllowanceForProxy: (fiat: any, amount: BigNumber) => any;
-  setFIATAllowanceForMoneta: (fiat: any) => any;
-  unsetFIATAllowanceForProxy: (fiat: any) => any;
-  redeemCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber) => any;
+  redeemCollateralAndDecreaseLever: (subTokenAmount: BigNumber, subDebt: BigNumber, maxUnderlierToSell: BigNumber) => any;
 }) => {
   const [submitError, setSubmitError] = React.useState('');
   const leverStore = useLeverStore(
@@ -1009,16 +948,16 @@ export const LeverRedeemForm = ({
         </Text>
         <Input
           disabled={disableActions}
-          value={floor2(wadToDec(leverStore.redeemState.deltaCollateral))}
+          value={floor2(wadToDec(leverStore.redeemState.subTokenAmount))}
           onChange={(event) => {
-            leverStore.redeemActions.setDeltaCollateral(contextData.fiat, event.target.value, modifyPositionData);
+            leverStore.redeemActions.setSubTokenAmount(contextData.fiat, event.target.value, modifyPositionData);
           }}
           placeholder='0'
           inputMode='decimal'
           // Bypass type warning from passing a custom component instead of a string
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
-          label={<InputLabelWithMax label='Collateral to withdraw and redeem' onMaxClick={() => leverStore.redeemActions.setMaxDeltaCollateral(contextData.fiat, modifyPositionData)} /> }
+          label={<InputLabelWithMax label='Collateral to withdraw and redeem' onMaxClick={() => leverStore.redeemActions.setMaxSubTokenAmount(contextData.fiat, modifyPositionData)} /> }
           labelRight={modifyPositionData.collateralType.metadata.symbol}
           bordered
           size='sm'
@@ -1048,26 +987,12 @@ export const LeverRedeemForm = ({
             width='11.0rem'
           />
         </Grid.Container>
-        <Input
-          disabled={disableActions}
-          value={floor5(wadToDec(leverStore.redeemState.deltaDebt))}
-          onChange={(event) => {
-            leverStore.redeemActions.setDeltaDebt(contextData.fiat, event.target.value,modifyPositionData);
-          }}
-          placeholder='0'
-          inputMode='decimal'
-          // Bypass type warning from passing a custom component instead of a string
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
-          label={<InputLabelWithMax label='FIAT to pay back' onMaxClick={() => leverStore.redeemActions.setMaxDeltaDebt(contextData.fiat, modifyPositionData)} />}
-          labelRight={'FIAT'}
-          bordered
-          size='sm'
-          borderWeight='light'
-        />
-        <Text size={'$sm'}>
-          Note: When closing your position make sure you have enough FIAT to cover the accrued borrow fees.
-        </Text>
+       
+
+
+        
+
+
       </Modal.Body>
 
       <Spacer y={0.75} />
@@ -1088,68 +1013,6 @@ export const LeverRedeemForm = ({
       </Modal.Body>
 
       <Modal.Footer justify='space-evenly'>
-        <Text size={'0.875rem'}>Approve FIAT for Proxy</Text>
-        <Switch
-          disabled={disableActions || !hasProxy}
-          // Next UI Switch `checked` type is wrong, this is necessary
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
-          checked={() => (modifyPositionData.proxyFIATAllowance?.gt(0) && modifyPositionData.proxyFIATAllowance?.gte(leverStore.redeemState.deltaDebt) ?? false)}
-          onChange={async () => {
-            if (leverStore.redeemState.deltaDebt.gt(0) && modifyPositionData.proxyFIATAllowance.gte(leverStore.redeemState.deltaDebt)) {
-              try {
-                setSubmitError('');
-                await unsetFIATAllowanceForProxy(contextData.fiat);
-              } catch (e: any) {
-                setSubmitError(e.message);
-              }
-            } else {
-              try {
-                setSubmitError('');
-                await setFIATAllowanceForProxy(contextData.fiat, leverStore.redeemState.deltaDebt);
-              } catch (e: any) {
-                setSubmitError(e.message);
-              }
-            }
-          }}
-          color='primary'
-          icon={
-            ['setFIATAllowanceForProxy', 'unsetFIATAllowanceForProxy'].includes(currentTxAction || '') && disableActions ? (
-              <Loading size='xs' />
-          ) : null
-          }
-        />
-
-        <Spacer y={3} />
-
-        {modifyPositionData.monetaFIATAllowance?.lt(leverStore.redeemState.deltaDebt) && (
-          <>
-            <Spacer y={3} />
-            <Button
-              css={{ minWidth: '100%' }}
-              disabled={(() => {
-                if (disableActions || !hasProxy) return true;
-                if (modifyPositionData.monetaFIATAllowance?.gt(0) && modifyPositionData.monetaFIATAllowance?.gte(leverStore.redeemState.deltaDebt)) return true;
-                return false;
-              })()}
-              icon={(['setFIATAllowanceForMoneta'].includes(currentTxAction || '') && disableActions)
-                ? (<Loading size='xs' />)
-                : null
-              }
-              onPress={async () => {
-                try {
-                  setSubmitError('');
-                  await setFIATAllowanceForMoneta(contextData.fiat);
-                } catch (e: any) {
-                  setSubmitError(e.message);
-                }
-              }}
-            >
-              Approve FIAT for Moneta (One Time Action)
-            </Button>
-          </>
-        )}
-
         { renderFormAlerts() }
 
         <Button
@@ -1157,15 +1020,14 @@ export const LeverRedeemForm = ({
           disabled={(() => {
             if (disableActions || !hasProxy) return true;
             if (leverStore.formErrors.length !== 0 || leverStore.formWarnings.length !== 0) return true;
-            if (leverStore.redeemState.deltaCollateral.isZero() && leverStore.redeemState.deltaDebt.isZero()) return true;
-            if (!leverStore.redeemState.deltaDebt.isZero() && modifyPositionData.monetaFIATAllowance?.lt(leverStore.redeemState.deltaDebt)) return true;
+            if (leverStore.redeemState.subTokenAmount.isZero() && leverStore.redeemState.subDebt.isZero()) return true;
             return false;
           })()}
           icon={
             [
-              'buyCollateralAndModifyDebt',
-              'sellCollateralAndModifyDebt',
-              'redeemCollateralAndModifyDebt',
+              'buyCollateralAndIncreaseLever',
+              'sellCollateralAndDecreaseLever',
+              'redeemCollateralAndDecreaseLever'
             ].includes(currentTxAction || '') && disableActions ? (
               <Loading size='xs' />
             ) : null
@@ -1173,7 +1035,11 @@ export const LeverRedeemForm = ({
           onPress={async () => {
             try {
               setSubmitError('');
-              await redeemCollateralAndModifyDebt(leverStore.redeemState.deltaCollateral, leverStore.redeemState.deltaDebt);
+              await redeemCollateralAndDecreaseLever(
+                leverStore.redeemState.subTokenAmount,
+                leverStore.redeemState.subDebt,
+                leverStore.redeemState.maxUnderliersToSell
+              );
               onClose();
             } catch (e: any) {
               setSubmitError(e.message);
