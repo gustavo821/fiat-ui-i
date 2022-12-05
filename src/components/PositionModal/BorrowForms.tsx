@@ -115,7 +115,7 @@ export const CreateForm = ({
     }
 
     if (submitError !== '' && submitError !== 'ACTION_REJECTED' ) {
-      formAlerts.push(<Alert severity='error' message={rpcError} key={'error-submit'}/>);
+      formAlerts.push(<Alert severity='error' message={submitError} key={'error-submit'}/>);
     }
 
     return formAlerts;
@@ -418,7 +418,7 @@ export const IncreaseForm = ({
     }
 
     if (submitError !== '' && submitError !== 'ACTION_REJECTED') {
-      formAlerts.push(<Alert severity='error' message={rpcError} key={'error-submit'}/>);
+      formAlerts.push(<Alert severity='error' message={submitError} key={'error-submit'}/>);
     }
 
     return formAlerts;
@@ -659,7 +659,7 @@ export const DecreaseForm = ({
     }
 
     if (submitError !== '' && submitError !== 'ACTION_REJECTED') {
-      formAlerts.push(<Alert severity='error' message={rpcError} key={'error-submit'}/>);
+      formAlerts.push(<Alert severity='error' message={submitError} key={'error-submit'}/>);
     }
 
     return formAlerts;
@@ -941,7 +941,7 @@ export const RedeemForm = ({
     }
 
     if (submitError !== '' && submitError !== 'ACTION_REJECTED') {
-      formAlerts.push(<Alert severity='error' message={rpcError} key={'error-submit'}/>);
+      formAlerts.push(<Alert severity='error' message={submitError} key={'error-submit'}/>);
     }
 
     return formAlerts;

@@ -114,7 +114,7 @@ export const LeverCreateForm = ({
     }
 
     if (submitError !== '' && submitError !== 'ACTION_REJECTED' ) {
-      formAlerts.push(<Alert severity='error' message={rpcError} key={'error-submit'}/>);
+      formAlerts.push(<Alert severity='error' message={submitError} key={'error-submit'}/>);
     }
 
     return formAlerts;
@@ -417,7 +417,7 @@ export const LeverIncreaseForm = ({
     }
 
     if (submitError !== '' && submitError !== 'ACTION_REJECTED') {
-      formAlerts.push(<Alert severity='error' message={rpcError} key={'error-submit'}/>);
+      formAlerts.push(<Alert severity='error' message={submitError} key={'error-submit'}/>);
     }
 
     return formAlerts;
@@ -658,7 +658,7 @@ export const LeverDecreaseForm = ({
     }
 
     if (submitError !== '' && submitError !== 'ACTION_REJECTED') {
-      formAlerts.push(<Alert severity='error' message={rpcError} key={'error-submit'}/>);
+      formAlerts.push(<Alert severity='error' message={submitError} key={'error-submit'}/>);
     }
 
     return formAlerts;
@@ -940,7 +940,7 @@ export const LeverRedeemForm = ({
     }
 
     if (submitError !== '' && submitError !== 'ACTION_REJECTED') {
-      formAlerts.push(<Alert severity='error' message={rpcError} key={'error-submit'}/>);
+      formAlerts.push(<Alert severity='error' message={submitError} key={'error-submit'}/>);
     }
 
     return formAlerts;
