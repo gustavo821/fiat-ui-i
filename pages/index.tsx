@@ -264,6 +264,7 @@ const Home: NextPage = () => {
       setTransactionData(initialState.transactionData);
       return resp;
     } catch (e: any) {
+      console.error(e);
       setTransactionData({ ...transactionData, status: 'error' });
       if (e && e.code && e.code === 'ACTION_REJECTED') {
         // handle rejected transactions by user

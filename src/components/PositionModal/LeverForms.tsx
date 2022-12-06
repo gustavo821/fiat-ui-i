@@ -59,14 +59,13 @@ export const LeverCreateForm = ({
   const {
     collateralType: {
       metadata: { symbol: tokenSymbol },
-      properties: { underlierScale, underlierSymbol },
+      properties: { underlierScale, underlierSymbol, tokenScale },
       settings: { collybus: { liquidationRatio } }
     },
     underlierAllowance,
     underlierBalance,
     monetaDelegate,
   } = modifyPositionData;
-
   const minCollRatio = minCollRatioWithBuffer(liquidationRatio);
   const { action: currentTxAction } = transactionData;
   const hasProxy = proxies.length > 0;
@@ -253,7 +252,7 @@ export const LeverCreateForm = ({
         </Text>
         <Input
           readOnly
-          value={leverStore.formDataLoading ? ' ' : floor2(wadToDec(leverStore.createState.minTokenToBuy))}
+          value={leverStore.formDataLoading ? ' ' : floor2(scaleToDec(leverStore.createState.minTokenToBuy, tokenScale))}
           placeholder='0'
           type='string'
           label={'Total Collateral to deposit (incl. slippage)'}
@@ -320,7 +319,7 @@ export const LeverCreateForm = ({
           // Next UI Switch `checked` type is wrong, this is necessary
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
-          checked={() => underlierAllowance?.gt(0) && underlierAllowance?.gte(leverStore.createState.underlier) ?? false}
+          checked={() => underlierAllowance?.gt(0) && underlierAllowance?.gte(leverStore.createState.upFrontUnderliers) ?? false}
           onChange={async () => {
             if (
               !leverStore.createState.upFrontUnderliers.isZero()
@@ -420,7 +419,10 @@ export const LeverIncreaseForm = ({
       []
     ), shallow
   );
-
+  const {
+    collateralType: { properties: { tokenScale }, settings: { collybus: { liquidationRatio } } }
+  } = modifyPositionData;
+  const minCollRatio = minCollRatioWithBuffer(liquidationRatio);
   const hasProxy = contextData.proxies.length > 0;
   const { action: currentTxAction } = transactionData;
   
@@ -514,20 +516,57 @@ export const LeverIncreaseForm = ({
           />
         </Grid>
       </Grid.Container>
-      {/* <Input
-        disabled={disableActions}
-        value={floor5(wadToDec(leverStore.increaseState.deltaDebt))}
-        onChange={(event) => {
-          leverStore.increaseActions.setDeltaDebt(contextData.fiat, event.target.value,modifyPositionData);
-        }}
-        placeholder='0'
-        inputMode='decimal'
-        label={'FIAT to borrow'}
-        labelRight={'FIAT'}
-        bordered
-        size='sm'
-        borderWeight='light'
-      /> */}
+      <Text
+        size={'0.75rem'}
+        style={{ paddingLeft: '0.25rem', marginBottom: '0.375rem' }}
+      >
+        Targeted collateralization ratio ({floor2(wadToDec(leverStore.increaseState.targetedCollRatio.mul(100)))}%)
+      </Text>
+      <Card variant='bordered' borderWeight='light' style={{height:'100%'}}>
+        <Card.Body
+          style={{ paddingLeft: '2.25rem', paddingRight: '2.25rem', overflow: 'hidden' }}
+        >
+          <Slider
+            handleStyle={{ borderColor: '#0072F5' }}
+            included={false}
+            disabled={disableActions}
+            value={Number(wadToDec(leverStore.increaseState.targetedCollRatio))}
+            onChange={(value) => {
+              leverStore.increaseActions.setTargetedCollRatio(contextData.fiat, value, modifyPositionData);
+            }}
+            min={floor4(wadToDec(minCollRatio))}
+            max={5.0}
+            step={0.001}
+            reverse
+            marks={{
+              5.0: {
+                style: { color: 'grey', fontSize: '0.75rem' },
+                label: 'Safe',
+              },
+              4.0: {
+                style: { color: 'grey', fontSize: '0.75rem' },
+                label: '400%',
+              },
+              3.0: {
+                style: { color: 'grey', fontSize: '0.75rem' },
+                label: '300%',
+              },
+              2.0: {
+                style: { color: 'grey', fontSize: '0.75rem' },
+                label: '200%',
+              },
+              [floor4(wadToDec(minCollRatio))]: {
+                style: {
+                color: 'grey',
+                fontSize: '0.75rem',
+                borderColor: 'white',
+              },
+              label: 'Unsafe',
+              },
+            }}
+          />
+        </Card.Body>
+      </Card>
     </Modal.Body>
 
     <Spacer y={0.75} />
@@ -542,7 +581,7 @@ export const LeverIncreaseForm = ({
           value={
             leverStore.formDataLoading
               ? ' '
-              : floor2(wadToDec(leverStore.increaseState.minTokenToBuy))
+              : floor2(scaleToDec(leverStore.increaseState.minTokenToBuy, tokenScale))
           }
           placeholder='0'
           type='string'
@@ -682,7 +721,8 @@ export const LeverDecreaseForm = ({
       []
     ), shallow
   );
-
+  const { collateralType: { settings: { collybus: { liquidationRatio } } } } = modifyPositionData;
+  const minCollRatio = minCollRatioWithBuffer(liquidationRatio);
   const hasProxy = contextData.proxies.length > 0;
   const { action: currentTxAction } = transactionData;
   
@@ -780,22 +820,57 @@ export const LeverDecreaseForm = ({
           width={'15rem'}
         />
       
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      
+        <Text
+          size={'0.75rem'}
+          style={{ paddingLeft: '0.25rem', marginBottom: '0.375rem' }}
+        >
+          Targeted collateralization ratio ({floor2(wadToDec(leverStore.decreaseState.targetedCollRatio.mul(100)))}%)
+        </Text>
+        <Card variant='bordered' borderWeight='light' style={{height:'100%'}}>
+          <Card.Body
+            style={{ paddingLeft: '2.25rem', paddingRight: '2.25rem', overflow: 'hidden' }}
+          >
+            <Slider
+              handleStyle={{ borderColor: '#0072F5' }}
+              included={false}
+              disabled={disableActions}
+              value={Number(wadToDec(leverStore.decreaseState.targetedCollRatio))}
+              onChange={(value) => {
+                leverStore.decreaseActions.setTargetedCollRatio(contextData.fiat, value, modifyPositionData);
+              }}
+              min={floor4(wadToDec(minCollRatio))}
+              max={5.0}
+              step={0.001}
+              reverse
+              marks={{
+                5.0: {
+                  style: { color: 'grey', fontSize: '0.75rem' },
+                  label: 'Safe',
+                },
+                4.0: {
+                  style: { color: 'grey', fontSize: '0.75rem' },
+                  label: '400%',
+                },
+                3.0: {
+                  style: { color: 'grey', fontSize: '0.75rem' },
+                  label: '300%',
+                },
+                2.0: {
+                  style: { color: 'grey', fontSize: '0.75rem' },
+                  label: '200%',
+                },
+                [floor4(wadToDec(minCollRatio))]: {
+                  style: {
+                  color: 'grey',
+                  fontSize: '0.75rem',
+                  borderColor: 'white',
+                },
+                label: 'Unsafe',
+                },
+              }}
+            />
+          </Card.Body>
+        </Card>
         <Text size={'$sm'}>
           Note: When closing your position make sure you have enough FIAT to cover the accrued borrow fees.
         </Text>
@@ -914,7 +989,8 @@ export const LeverRedeemForm = ({
       []
     ), shallow
   );
-
+  const { collateralType: { settings: { collybus: { liquidationRatio } } } } = modifyPositionData;
+  const minCollRatio = minCollRatioWithBuffer(liquidationRatio);
   const hasProxy = contextData.proxies.length > 0;
   const { action: currentTxAction } = transactionData;
   
@@ -988,7 +1064,57 @@ export const LeverRedeemForm = ({
           />
         </Grid.Container>
        
-
+        <Text
+          size={'0.75rem'}
+          style={{ paddingLeft: '0.25rem', marginBottom: '0.375rem' }}
+        >
+          Targeted collateralization ratio ({floor2(wadToDec(leverStore.redeemState.targetedCollRatio.mul(100)))}%)
+        </Text>
+        <Card variant='bordered' borderWeight='light' style={{height:'100%'}}>
+          <Card.Body
+            style={{ paddingLeft: '2.25rem', paddingRight: '2.25rem', overflow: 'hidden' }}
+          >
+            <Slider
+              handleStyle={{ borderColor: '#0072F5' }}
+              included={false}
+              disabled={disableActions}
+              value={Number(wadToDec(leverStore.redeemState.targetedCollRatio))}
+              onChange={(value) => {
+                leverStore.redeemActions.setTargetedCollRatio(contextData.fiat, value, modifyPositionData);
+              }}
+              min={floor4(wadToDec(minCollRatio))}
+              max={5.0}
+              step={0.001}
+              reverse
+              marks={{
+                5.0: {
+                  style: { color: 'grey', fontSize: '0.75rem' },
+                  label: 'Safe',
+                },
+                4.0: {
+                  style: { color: 'grey', fontSize: '0.75rem' },
+                  label: '400%',
+                },
+                3.0: {
+                  style: { color: 'grey', fontSize: '0.75rem' },
+                  label: '300%',
+                },
+                2.0: {
+                  style: { color: 'grey', fontSize: '0.75rem' },
+                  label: '200%',
+                },
+                [floor4(wadToDec(minCollRatio))]: {
+                  style: {
+                  color: 'grey',
+                  fontSize: '0.75rem',
+                  borderColor: 'white',
+                },
+                label: 'Unsafe',
+                },
+              }}
+            />
+          </Card.Body>
+        </Card>
 
         
 
