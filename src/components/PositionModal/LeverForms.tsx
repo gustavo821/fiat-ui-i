@@ -2,7 +2,7 @@ import { scaleToDec, wadToDec } from '@fiatdao/sdk';
 import { Button, Card, Grid, Input, Loading, Modal, Spacer, Switch, Text } from '@nextui-org/react';
 import { Slider } from 'antd';
 import 'antd/dist/antd.css';
-import { BigNumber, ethers } from 'ethers';
+import { BigNumber } from 'ethers';
 import React from 'react';
 import shallow from 'zustand/shallow';
 import { useLeverStore } from '../../stores/leverStore';
@@ -164,7 +164,7 @@ export const LeverCreateForm = ({
               step='0.01'
               placeholder='0'
               inputMode='decimal'
-              label='Slippage (FIAT to Underlier swap)'
+              label='Slippage w/ Price Impact (FIAT to Underlier swap)'
               labelRight={'%'}
               bordered
               size='sm'
@@ -182,7 +182,7 @@ export const LeverCreateForm = ({
               step='0.01'
               placeholder='0'
               inputMode='decimal'
-              label='Slippage (Underlier to Collateral swap)'
+              label='Slippage w/ Price Impact (Underlier to Collateral swap)'
               labelRight={'%'}
               bordered
               size='sm'
@@ -252,10 +252,15 @@ export const LeverCreateForm = ({
         </Text>
         <Input
           readOnly
-          value={leverStore.formDataLoading ? ' ' : floor2(scaleToDec(leverStore.createState.minTokenToBuy, tokenScale))}
+          value={(leverStore.formDataLoading)
+            ? ' '
+            : (leverStore.createState.minTokenToBuy.lte(leverStore.createState.estMinTokenToBuy)) 
+              ? `[${floor2(scaleToDec(leverStore.createState.minTokenToBuy, tokenScale))}, ${floor2(scaleToDec(leverStore.createState.estMinTokenToBuy, tokenScale))}]`
+              : `[${floor2(scaleToDec(leverStore.createState.estMinTokenToBuy, tokenScale))}, ${floor2(scaleToDec(leverStore.createState.minTokenToBuy, tokenScale))}]`
+          }
           placeholder='0'
           type='string'
-          label={'Total Collateral to deposit (incl. slippage)'}
+          label={'Total Collateral to deposit ([min., max.])'}
           labelRight={tokenSymbol}
           contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
@@ -271,10 +276,15 @@ export const LeverCreateForm = ({
         </Text>
         <Input
           readOnly
-          value={leverStore.formDataLoading ? ' ' : floor2(wadToDec(leverStore.createState.collateral))}
+          value={(leverStore.formDataLoading)
+            ? ' '
+            : (leverStore.createState.collateral.lte(leverStore.createState.estCollateral)) 
+              ? `[${floor2(wadToDec(leverStore.createState.collateral))}, ${floor2(wadToDec(leverStore.createState.estCollateral))}]`
+              : `[${floor2(wadToDec(leverStore.createState.estCollateral))}, ${floor2(wadToDec(leverStore.createState.collateral))}]`
+          }
           placeholder='0'
           type='string'
-          label={'Collateral'}
+          label={'Collateral ([min., max.])'}
           labelRight={tokenSymbol}
           contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
@@ -294,15 +304,15 @@ export const LeverCreateForm = ({
         <Input
           readOnly
           value={
-            leverStore.formDataLoading
+            (leverStore.formDataLoading)
               ? ' '
-              : leverStore.createState.collRatio.eq(ethers.constants.MaxUint256)
-                ? '∞'
-                : `${floor2(wadToDec(leverStore.createState.collRatio.mul(100)))}%`
+              : (leverStore.createState.collRatio.lte(leverStore.createState.estCollRatio)) 
+                ? `[${floor2(wadToDec(leverStore.createState.collRatio.mul(100)))}%, ${floor2(wadToDec(leverStore.createState.estCollRatio.mul(100)))}%]`
+                : `[${floor2(wadToDec(leverStore.createState.estCollRatio.mul(100)))}%, ${floor2(wadToDec(leverStore.createState.collRatio.mul(100)))}%]`
           }
           placeholder='0'
           type='string'
-          label='Collateralization Ratio'
+          label='Collateralization Ratio ([min., max.])'
           labelRight={'🚦'}
           contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
