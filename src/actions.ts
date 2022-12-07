@@ -1,4 +1,4 @@
-import { debtToNormalDebt, decToWad, scaleToWad, WAD, wadToScale, ZERO } from '@fiatdao/sdk';
+import { debtToNormalDebt, decToWad, scaleToDec, scaleToWad, WAD, wadToDec, wadToScale, ZERO } from '@fiatdao/sdk';
 import { BigNumber, Contract } from 'ethers';
 
 export const underlierToCollateralToken = async (
@@ -593,9 +593,6 @@ export const buildBuyCollateralAndIncreaseLeverArgs = (
 
   const deadline = Math.round(+new Date() / 1000) + 3600;
   const sellFIATSwapParams = [properties.underlierToken, minUnderlierToBuy, deadline];
-
-  // if underlier is zero then min. collateralization can never be met
-  if (upFrontUnderliers.isZero()) throw new Error('Invalid value for `upFrontUnderliers` - Value has to be non-zero');
 
   switch (properties.vaultType) {
     case 'ERC20:EPT': {

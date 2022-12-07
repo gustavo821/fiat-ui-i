@@ -2,7 +2,7 @@ import { scaleToDec, wadToDec } from '@fiatdao/sdk';
 import { Button, Card, Grid, Input, Loading, Modal, Spacer, Switch, Text } from '@nextui-org/react';
 import { Slider } from 'antd';
 import 'antd/dist/antd.css';
-import { BigNumber } from 'ethers';
+import { BigNumber, ethers } from 'ethers';
 import React from 'react';
 import shallow from 'zustand/shallow';
 import { useLeverStore } from '../../stores/leverStore';
@@ -66,6 +66,14 @@ export const LeverCreateForm = ({
     underlierBalance,
     monetaDelegate,
   } = modifyPositionData;
+  const {
+    upFrontUnderliers, collateralSlippagePct, underlierSlippagePct, targetedCollRatio,
+    addDebt, minUnderliersToBuy, minTokenToBuy, 
+    collateral, collRatio, debt, estCollateral, estCollRatio, estMinTokenToBuy
+  } = leverStore.createState;
+  const {
+    setUpFrontUnderliers, setCollateralSlippagePct, setUnderlierSlippagePct, setTargetedCollRatio
+  } = leverStore.createActions;
   const minCollRatio = minCollRatioWithBuffer(liquidationRatio);
   const { action: currentTxAction } = transactionData;
   const hasProxy = proxies.length > 0;
@@ -123,9 +131,7 @@ export const LeverCreateForm = ({
   return (
     <>
       <Modal.Body>
-        <Text b size={'m'}>
-          Inputs
-        </Text>
+        <Text b size={'m'}>Inputs</Text>
         {underlierBalance && (
           <Text size={'$sm'}>
             Wallet:{' '}
@@ -135,11 +141,8 @@ export const LeverCreateForm = ({
         )}
         <Input
           disabled={disableActions}
-          value={floor2(scaleToDec(leverStore.createState.upFrontUnderliers, underlierScale))}
-          onChange={(event) => {
-            leverStore.createActions.setUpFrontUnderliers(
-              contextData.fiat, event.target.value, modifyPositionData);
-          }}
+          value={floor2(scaleToDec(upFrontUnderliers, underlierScale))}
+          onChange={(event) => { setUpFrontUnderliers(contextData.fiat, event.target.value, modifyPositionData) }}
           placeholder='0'
           inputMode='decimal'
           label={'Underlier to swap'}
@@ -147,7 +150,6 @@ export const LeverCreateForm = ({
           bordered
           size='sm'
           borderWeight='light'
-          width='15rem'
         />
         <Grid.Container
           gap={0}
@@ -157,10 +159,8 @@ export const LeverCreateForm = ({
           <Grid>
             <Input
               disabled={disableActions}
-              value={floor2(Number(wadToDec(leverStore.createState.underlierSlippagePct)) * 100)}
-              onChange={(event) => {
-                leverStore.createActions.setUnderlierSlippagePct(contextData.fiat, event.target.value, modifyPositionData);
-              }}
+              value={floor2(Number(wadToDec(underlierSlippagePct)) * 100)}
+              onChange={(event) => { setUnderlierSlippagePct(contextData.fiat, event.target.value, modifyPositionData) }}
               step='0.01'
               placeholder='0'
               inputMode='decimal'
@@ -175,10 +175,8 @@ export const LeverCreateForm = ({
           <Grid>
             <Input
               disabled={disableActions}
-              value={floor2(Number(wadToDec(leverStore.createState.collateralSlippagePct)) * 100)}
-              onChange={(event) => {
-                leverStore.createActions.setCollateralSlippagePct(contextData.fiat, event.target.value, modifyPositionData);
-              }}
+              value={floor2(Number(wadToDec(collateralSlippagePct)) * 100)}
+              onChange={(event) => { setCollateralSlippagePct(contextData.fiat, event.target.value, modifyPositionData) }}
               step='0.01'
               placeholder='0'
               inputMode='decimal'
@@ -195,7 +193,7 @@ export const LeverCreateForm = ({
           size={'0.75rem'}
           style={{ paddingLeft: '0.25rem', marginBottom: '0.375rem' }}
         >
-          Targeted collateralization ratio ({floor2(wadToDec(leverStore.createState.targetedCollRatio.mul(100)))}%)
+          Targeted collateralization ratio ({floor2(wadToDec(targetedCollRatio.mul(100)))}%)
         </Text>
         <Card variant='bordered' borderWeight='light' style={{height:'100%'}}>
           <Card.Body
@@ -205,10 +203,8 @@ export const LeverCreateForm = ({
               handleStyle={{ borderColor: '#0072F5' }}
               included={false}
               disabled={disableActions}
-              value={Number(wadToDec(leverStore.createState.targetedCollRatio))}
-              onChange={(value) => {
-                leverStore.createActions.setTargetedCollRatio(contextData.fiat, value, modifyPositionData);
-              }}
+              value={Number(wadToDec(targetedCollRatio))}
+              onChange={(value) => { setTargetedCollRatio(contextData.fiat, value, modifyPositionData) }}
               min={floor4(wadToDec(minCollRatio))}
               max={5.0}
               step={0.001}
@@ -247,16 +243,14 @@ export const LeverCreateForm = ({
       <Card.Divider />
       <Modal.Body>
         <Spacer y={0} />
-        <Text b size={'m'}>
-          Leveraged Swap Preview
-        </Text>
+        <Text b size={'m'}>Leveraged Swap Preview</Text>
         <Input
           readOnly
           value={(leverStore.formDataLoading)
             ? ' '
-            : (leverStore.createState.minTokenToBuy.lte(leverStore.createState.estMinTokenToBuy)) 
-              ? `[${floor2(scaleToDec(leverStore.createState.minTokenToBuy, tokenScale))}, ${floor2(scaleToDec(leverStore.createState.estMinTokenToBuy, tokenScale))}]`
-              : `[${floor2(scaleToDec(leverStore.createState.estMinTokenToBuy, tokenScale))}, ${floor2(scaleToDec(leverStore.createState.minTokenToBuy, tokenScale))}]`
+            : (minTokenToBuy.lte(estMinTokenToBuy)) 
+              ? `[${floor2(scaleToDec(minTokenToBuy, tokenScale))}, ${floor2(scaleToDec(estMinTokenToBuy, tokenScale))}]`
+              : `[${floor2(scaleToDec(estMinTokenToBuy, tokenScale))}, ${floor2(scaleToDec(minTokenToBuy, tokenScale))}]`
           }
           placeholder='0'
           type='string'
@@ -271,33 +265,31 @@ export const LeverCreateForm = ({
       <Card.Divider />
       <Modal.Body>
         <Spacer y={0} />
-        <Text b size={'m'}>
-          Position Preview
-        </Text>
+        <Text b size={'m'}>Position Preview</Text>
         <Input
           readOnly
           value={(leverStore.formDataLoading)
             ? ' '
-            : (leverStore.createState.collateral.lte(leverStore.createState.estCollateral)) 
-              ? `[${floor2(wadToDec(leverStore.createState.collateral))}, ${floor2(wadToDec(leverStore.createState.estCollateral))}]`
-              : `[${floor2(wadToDec(leverStore.createState.estCollateral))}, ${floor2(wadToDec(leverStore.createState.collateral))}]`
+            : (collateral.lte(estCollateral)) 
+              ? `[${floor2(wadToDec(collateral))}, ${floor2(wadToDec(estCollateral))}]`
+              : `[${floor2(wadToDec(estCollateral))}, ${floor2(wadToDec(collateral))}]`
           }
           placeholder='0'
           type='string'
           label={'Collateral ([min., max.])'}
           labelRight={tokenSymbol}
-          contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
+          contentLeft={(leverStore.formDataLoading) ? <Loading size='xs' /> : null}
           size='sm'
           status='primary'
         />
         <Input
           readOnly
-          value={leverStore.formDataLoading ? ' ' : floor2(wadToDec(leverStore.createState.debt))}
+          value={(leverStore.formDataLoading) ? ' ' : floor2(wadToDec(debt))}
           placeholder='0'
           type='string'
           label='Debt'
           labelRight={'FIAT'}
-          contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
+          contentLeft={(leverStore.formDataLoading) ? <Loading size='xs' /> : null}
           size='sm'
           status='primary'
         />
@@ -306,15 +298,15 @@ export const LeverCreateForm = ({
           value={
             (leverStore.formDataLoading)
               ? ' '
-              : (leverStore.createState.collRatio.lte(leverStore.createState.estCollRatio)) 
-                ? `[${floor2(wadToDec(leverStore.createState.collRatio.mul(100)))}%, ${floor2(wadToDec(leverStore.createState.estCollRatio.mul(100)))}%]`
-                : `[${floor2(wadToDec(leverStore.createState.estCollRatio.mul(100)))}%, ${floor2(wadToDec(leverStore.createState.collRatio.mul(100)))}%]`
+              : (collRatio.lte(estCollRatio)) 
+                ? `[${floor2(wadToDec(collRatio.mul(100)))}%, ${floor2(wadToDec(estCollRatio.mul(100)))}%]`
+                : `[${floor2(wadToDec(estCollRatio.mul(100)))}%, ${floor2(wadToDec(collRatio.mul(100)))}%]`
           }
           placeholder='0'
           type='string'
           label='Collateralization Ratio ([min., max.])'
           labelRight={'🚦'}
-          contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
+          contentLeft={(leverStore.formDataLoading) ? <Loading size='xs' /> : null}
           size='sm'
           status='primary'
         />
@@ -329,12 +321,9 @@ export const LeverCreateForm = ({
           // Next UI Switch `checked` type is wrong, this is necessary
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
-          checked={() => underlierAllowance?.gt(0) && underlierAllowance?.gte(leverStore.createState.upFrontUnderliers) ?? false}
+          checked={() => underlierAllowance?.gt(0) && underlierAllowance?.gte(upFrontUnderliers) ?? false}
           onChange={async () => {
-            if (
-              !leverStore.createState.upFrontUnderliers.isZero()
-              && underlierAllowance?.gte(leverStore.createState.upFrontUnderliers)
-            ) {
+            if (!upFrontUnderliers.isZero() && underlierAllowance?.gte(upFrontUnderliers)) {
               try {
                 setRpcError('');
                 await unsetUnderlierAllowanceForProxy(contextData.fiat);
@@ -344,7 +333,7 @@ export const LeverCreateForm = ({
             } else {
               try {
                 setRpcError('');
-                await setUnderlierAllowanceForProxy(contextData.fiat, leverStore.createState.upFrontUnderliers);
+                await setUnderlierAllowanceForProxy(contextData.fiat, upFrontUnderliers);
               } catch (e: any) {
                 setRpcError(e.message);
               }
@@ -367,21 +356,16 @@ export const LeverCreateForm = ({
             leverStore.formWarnings.length !== 0 ||
             disableActions ||
             !hasProxy ||
-            leverStore.createState.upFrontUnderliers?.isZero() ||
-            leverStore.createState.minTokenToBuy?.isZero() ||
-            underlierAllowance?.lt(leverStore.createState.upFrontUnderliers) ||
+            upFrontUnderliers?.isZero() ||
+            minTokenToBuy?.isZero() ||
+            underlierAllowance?.lt(upFrontUnderliers) ||
             monetaDelegate === false
           }
           icon={(disableActions && currentTxAction === 'createLeveredPosition') ? (<Loading size='xs' />) : null}
           onPress={async () => {
             try {
               setRpcError('');
-              await createLeveredPosition(
-                leverStore.createState.upFrontUnderliers,
-                leverStore.createState.addDebt,
-                leverStore.createState.minUnderliersToBuy,
-                leverStore.createState.minTokenToBuy
-              );
+              await createLeveredPosition(upFrontUnderliers, addDebt, minUnderliersToBuy, minTokenToBuy);
               onClose();
             } catch (e: any) {
               setRpcError(e.message);
@@ -430,8 +414,23 @@ export const LeverIncreaseForm = ({
     ), shallow
   );
   const {
-    collateralType: { properties: { tokenScale }, settings: { collybus: { liquidationRatio } } }
+    collateralType: {
+      metadata: { symbol: tokenSymbol },
+      properties: { underlierScale, underlierSymbol, tokenScale },
+      settings: { collybus: { liquidationRatio } }
+    },
+    underlierAllowance,
+    underlierBalance,
+    monetaDelegate,
   } = modifyPositionData;
+  const {
+    upFrontUnderliers, collateralSlippagePct, underlierSlippagePct,
+    addDebt, minUnderliersToBuy, minTokenToBuy, targetedCollRatio,
+    collateral, collRatio, debt, estCollateral, estCollRatio, estMinTokenToBuy
+  } = leverStore.increaseState;
+  const {
+    setUpFrontUnderliers, setCollateralSlippagePct, setUnderlierSlippagePct, setTargetedCollRatio
+  } = leverStore.increaseActions;
   const minCollRatio = minCollRatioWithBuffer(liquidationRatio);
   const hasProxy = contextData.proxies.length > 0;
   const { action: currentTxAction } = transactionData;
@@ -460,143 +459,134 @@ export const LeverIncreaseForm = ({
 
   return (
     <>
-    <Modal.Body>
-      <Text b size={'m'}>
-        Inputs
-      </Text>
-      {modifyPositionData.underlierBalance && (
-        <Text size={'$sm'}>
-          Wallet: {commifyToDecimalPlaces(modifyPositionData.underlierBalance, modifyPositionData.collateralType.properties.underlierScale, 2)} {modifyPositionData.collateralType.properties.underlierSymbol}
-        </Text>
-      )}
-      <Input
-        label={'Underlier to deposit'}
-        disabled={disableActions}
-        value={floor2(scaleToDec(leverStore.increaseState.upFrontUnderliers, modifyPositionData.collateralType.properties.underlierScale))}
-        onChange={(event) => {
-          leverStore.increaseActions.setUpFrontUnderliers(contextData.fiat, event.target.value, modifyPositionData);
-        }}
-        placeholder='0'
-        inputMode='decimal'
-        labelRight={modifyPositionData.collateralType.properties.underlierSymbol}
-        bordered
-        size='sm'
-        borderWeight='light'
-        width='15rem'
-      />
-      <Grid.Container
-        gap={0}
-        justify='space-between'
-        css={{ marginBottom: '1rem' }}
-      >
-        <Grid>
-          <Input
-            disabled={disableActions}
-            value={floor2(Number(wadToDec(leverStore.increaseState.underlierSlippagePct)) * 100)}
-            onChange={(event) => {
-              leverStore.increaseActions.setUnderlierSlippagePct(contextData.fiat, event.target.value, modifyPositionData);
-            }}
-            step='0.01'
-            placeholder='0'
-            inputMode='decimal'
-            label='Slippage (FIAT to Underlier swap)'
-            labelRight={'%'}
-            bordered
-            size='sm'
-            borderWeight='light'
-            width='11.0rem'
-          />
-        </Grid>
-        <Grid>
-          <Input
-            disabled={disableActions}
-            value={floor2(Number(wadToDec(leverStore.increaseState.collateralSlippagePct)) * 100)}
-            onChange={(event) => {
-              leverStore.increaseActions.setCollateralSlippagePct(contextData.fiat, event.target.value, modifyPositionData);
-            }}
-            step='0.01'
-            placeholder='0'
-            inputMode='decimal'
-            label='Slippage (Underlier to Collateral swap)'
-            labelRight={'%'}
-            bordered
-            size='sm'
-            borderWeight='light'
-            width='11.0rem'
-          />
-        </Grid>
-      </Grid.Container>
-      <Text
-        size={'0.75rem'}
-        style={{ paddingLeft: '0.25rem', marginBottom: '0.375rem' }}
-      >
-        Targeted collateralization ratio ({floor2(wadToDec(leverStore.increaseState.targetedCollRatio.mul(100)))}%)
-      </Text>
-      <Card variant='bordered' borderWeight='light' style={{height:'100%'}}>
-        <Card.Body
-          style={{ paddingLeft: '2.25rem', paddingRight: '2.25rem', overflow: 'hidden' }}
+      <Modal.Body>
+        <Text b size={'m'}>Inputs</Text>
+        {underlierBalance && (
+          <Text size={'$sm'}>
+            Wallet: {commifyToDecimalPlaces(underlierBalance, underlierScale, 2)} {underlierSymbol}
+          </Text>
+        )}
+        <Input
+          label={'Underlier to deposit'}
+          disabled={disableActions}
+          value={floor2(scaleToDec(upFrontUnderliers, underlierScale))}
+          onChange={(event) => { setUpFrontUnderliers(contextData.fiat, event.target.value, modifyPositionData) }}
+          placeholder='0'
+          inputMode='decimal'
+          labelRight={underlierSymbol}
+          bordered
+          size='sm'
+          borderWeight='light'
+        />
+        <Grid.Container
+          gap={0}
+          justify='space-between'
+          css={{ marginBottom: '1rem' }}
         >
-          <Slider
-            handleStyle={{ borderColor: '#0072F5' }}
-            included={false}
-            disabled={disableActions}
-            value={Number(wadToDec(leverStore.increaseState.targetedCollRatio))}
-            onChange={(value) => {
-              leverStore.increaseActions.setTargetedCollRatio(contextData.fiat, value, modifyPositionData);
-            }}
-            min={floor4(wadToDec(minCollRatio))}
-            max={5.0}
-            step={0.001}
-            reverse
-            marks={{
-              5.0: {
-                style: { color: 'grey', fontSize: '0.75rem' },
-                label: 'Safe',
-              },
-              4.0: {
-                style: { color: 'grey', fontSize: '0.75rem' },
-                label: '400%',
-              },
-              3.0: {
-                style: { color: 'grey', fontSize: '0.75rem' },
-                label: '300%',
-              },
-              2.0: {
-                style: { color: 'grey', fontSize: '0.75rem' },
-                label: '200%',
-              },
-              [floor4(wadToDec(minCollRatio))]: {
-                style: {
-                color: 'grey',
-                fontSize: '0.75rem',
-                borderColor: 'white',
-              },
-              label: 'Unsafe',
-              },
-            }}
-          />
-        </Card.Body>
-      </Card>
-    </Modal.Body>
-
-    <Spacer y={0.75} />
-    <Card.Divider />
-
-      <Modal.Body css={{ marginTop: 'var(--nextui-space-8)' }}>
-        <Text b size={'m'}>
-          Swap Preview
+          <Grid>
+            <Input
+              disabled={disableActions}
+              value={floor2(Number(wadToDec(underlierSlippagePct)) * 100)}
+              onChange={(event) => { setUnderlierSlippagePct(contextData.fiat, event.target.value, modifyPositionData) }}
+              step='0.01'
+              placeholder='0'
+              inputMode='decimal'
+              label='Slippage (FIAT to Underlier swap)'
+              labelRight={'%'}
+              bordered
+              size='sm'
+              borderWeight='light'
+              width='11.0rem'
+            />
+          </Grid>
+          <Grid>
+            <Input
+              disabled={disableActions}
+              value={floor2(Number(wadToDec(collateralSlippagePct)) * 100)}
+              onChange={(event) => { setCollateralSlippagePct(contextData.fiat, event.target.value, modifyPositionData) }}
+              step='0.01'
+              placeholder='0'
+              inputMode='decimal'
+              label='Slippage (Underlier to Collateral swap)'
+              labelRight={'%'}
+              bordered
+              size='sm'
+              borderWeight='light'
+              width='11.0rem'
+            />
+          </Grid>
+        </Grid.Container>
+        <Text
+          size={'0.75rem'}
+          style={{ paddingLeft: '0.25rem', marginBottom: '0.375rem' }}
+        >
+          Targeted collateralization ratio ({floor2(wadToDec(targetedCollRatio.mul(100)))}%)
         </Text>
+        <Card variant='bordered' borderWeight='light' style={{height:'100%'}}>
+          <Card.Body
+            style={{ paddingLeft: '2.25rem', paddingRight: '2.25rem', overflow: 'hidden' }}
+          >
+            <Slider
+              handleStyle={{ borderColor: '#0072F5' }}
+              included={false}
+              disabled={disableActions}
+              value={Number(wadToDec(targetedCollRatio))}
+              onChange={(value) => {
+                setTargetedCollRatio(contextData.fiat, value, modifyPositionData);
+              }}
+              min={floor4(wadToDec(minCollRatio))}
+              max={5.0}
+              step={0.001}
+              reverse
+              marks={{
+                5.0: {
+                  style: { color: 'grey', fontSize: '0.75rem' },
+                  label: 'Safe',
+                },
+                4.0: {
+                  style: { color: 'grey', fontSize: '0.75rem' },
+                  label: '400%',
+                },
+                3.0: {
+                  style: { color: 'grey', fontSize: '0.75rem' },
+                  label: '300%',
+                },
+                2.0: {
+                  style: { color: 'grey', fontSize: '0.75rem' },
+                  label: '200%',
+                },
+                [floor4(wadToDec(minCollRatio))]: {
+                  style: {
+                  color: 'grey',
+                  fontSize: '0.75rem',
+                  borderColor: 'white',
+                },
+                label: 'Unsafe',
+                },
+              }}
+            />
+          </Card.Body>
+        </Card>
+      </Modal.Body>
+
+      <Spacer y={0.75} />
+      <Card.Divider />
+
+      <Modal.Body>
+        <Spacer y={0} />
+        <Text b size={'m'}>Leveraged Swap Preview</Text>
         <Input
           readOnly
-          value={
-            leverStore.formDataLoading
-              ? ' '
-              : floor2(scaleToDec(leverStore.increaseState.minTokenToBuy, tokenScale))
+          value={(leverStore.formDataLoading)
+            ? ' '
+            : (minTokenToBuy.lte(estMinTokenToBuy)) 
+              ? `[${floor2(scaleToDec(minTokenToBuy, tokenScale))}, ${floor2(scaleToDec(estMinTokenToBuy, tokenScale))}]`
+              : `[${floor2(scaleToDec(estMinTokenToBuy, tokenScale))}, ${floor2(scaleToDec(minTokenToBuy, tokenScale))}]`
           }
           placeholder='0'
           type='string'
-          label={'Collateral to deposit (incl. slippage)'}
-          labelRight={modifyPositionData.collateralType.metadata.symbol}
+          label={'Total Collateral to deposit ([min., max.])'}
+          labelRight={tokenSymbol}
           contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
           status='primary'
@@ -606,33 +596,68 @@ export const LeverIncreaseForm = ({
       <Spacer y={0.75} />
       <Card.Divider />
 
-      <Modal.Body css={{ marginTop: 'var(--nextui-space-8)' }}>
-        <PositionPreview
-          formDataLoading={leverStore.formDataLoading}
-          positionCollateral={modifyPositionData.position.collateral}
-          positionNormalDebt={modifyPositionData.position.normalDebt}
-          estimatedCollateral={leverStore.increaseState.collateral}
-          estimatedCollateralRatio={leverStore.increaseState.collRatio}
-          estimatedDebt={leverStore.increaseState.debt}
-          virtualRate={modifyPositionData.collateralType.state.codex.virtualRate}
-          fairPrice={modifyPositionData.collateralType.state.collybus.fairPrice}
-          symbol={modifyPositionData.collateralType.metadata.symbol}
+      <Modal.Body>
+        <Spacer y={0} />
+        <Text b size={'m'}>Position Preview</Text>
+        <Input
+          readOnly
+          value={(leverStore.formDataLoading)
+            ? ' '
+            : (collateral.lte(estCollateral)) 
+              ? `[${floor2(wadToDec(collateral))}, ${floor2(wadToDec(estCollateral))}]`
+              : `[${floor2(wadToDec(estCollateral))}, ${floor2(wadToDec(collateral))}]`
+          }
+          placeholder='0'
+          type='string'
+          label={'Collateral ([min., max.])'}
+          labelRight={tokenSymbol}
+          contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
+          size='sm'
+          status='primary'
         />
+        <Input
+          readOnly
+          value={leverStore.formDataLoading ? ' ' : floor2(wadToDec(debt))}
+          placeholder='0'
+          type='string'
+          label='Debt'
+          labelRight={'FIAT'}
+          contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
+          size='sm'
+          status='primary'
+        />
+        <Input
+          readOnly
+          value={
+            (leverStore.formDataLoading)
+              ? ' '
+              : (collRatio.lte(estCollRatio)) 
+                ? `[${floor2(wadToDec(collRatio.mul(100)))}%, ${floor2(wadToDec(estCollRatio.mul(100)))}%]`
+                : `[${floor2(wadToDec(estCollRatio.mul(100)))}%, ${floor2(wadToDec(collRatio.mul(100)))}%]`
+          }
+          placeholder='0'
+          type='string'
+          label='Collateralization Ratio ([min., max.])'
+          labelRight={'🚦'}
+          contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
+          size='sm'
+          status='primary'
+        />
+
+        {/* renderSummary() */}
+
       </Modal.Body>
 
       <Modal.Footer justify='space-evenly'>
-        <Text size={'0.875rem'}>Approve {modifyPositionData.collateralType.properties.underlierSymbol}</Text>
+        <Text size={'0.875rem'}>Approve {underlierSymbol}</Text>
         <Switch
           disabled={disableActions || !hasProxy}
           // Next UI Switch `checked` type is wrong, this is necessary
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
-          checked={() => modifyPositionData.underlierAllowance?.gt(0) && modifyPositionData.underlierAllowance?.gte(leverStore.increaseState.underlier) ?? false}
+          checked={() => underlierAllowance?.gt(0) && underlierAllowance?.gte(upFrontUnderliers) ?? false}
           onChange={async () => {
-            if(
-              !leverStore.increaseState.upFrontUnderliers.isZero()
-              && modifyPositionData.underlierAllowance.gte(leverStore.increaseState.upFrontUnderliers)
-            ) {
+            if(!upFrontUnderliers.isZero() && underlierAllowance.gte(upFrontUnderliers)) {
               try {
                 setSubmitError('');
                 await unsetUnderlierAllowanceForProxy(contextData.fiat);
@@ -642,7 +667,7 @@ export const LeverIncreaseForm = ({
             } else {
               try {
                 setSubmitError('');
-                await setUnderlierAllowanceForProxy(contextData.fiat, leverStore.increaseState.upFrontUnderliers)
+                await setUnderlierAllowanceForProxy(contextData.fiat, upFrontUnderliers)
               } catch (e: any) {
                 setSubmitError(e.message);
               }
@@ -665,9 +690,9 @@ export const LeverIncreaseForm = ({
           disabled={(() => {
             if (disableActions || !hasProxy) return true;
             if (leverStore.formErrors.length !== 0 || leverStore.formWarnings.length !== 0) return true;
-            if (modifyPositionData.monetaDelegate === false) return true;
-            if (leverStore.increaseState.upFrontUnderliers.isZero() && leverStore.increaseState.minTokenToBuy.isZero()) return true;
-            if (!leverStore.increaseState.upFrontUnderliers.isZero() && modifyPositionData.underlierAllowance.lt(leverStore.increaseState.upFrontUnderliers)) return true;
+            if (monetaDelegate === false) return true;
+            if (upFrontUnderliers.isZero() && minTokenToBuy.isZero()) return true;
+            if (!upFrontUnderliers.isZero() && underlierAllowance.lt(upFrontUnderliers)) return true;
             return false;
           })()}
           icon={
@@ -682,12 +707,7 @@ export const LeverIncreaseForm = ({
           onPress={async () => {
             try {
               setSubmitError('');
-              await buyCollateralAndIncreaseLever(
-                leverStore.increaseState.upFrontUnderliers,
-                leverStore.increaseState.addDebt,
-                leverStore.increaseState.minUnderliersToBuy,
-                leverStore.increaseState.minTokenToBuy
-              );
+              await buyCollateralAndIncreaseLever(upFrontUnderliers, addDebt, minUnderliersToBuy, minTokenToBuy);
               onClose();
             } catch (e: any) {
               setSubmitError(e.message);
@@ -731,7 +751,24 @@ export const LeverDecreaseForm = ({
       []
     ), shallow
   );
-  const { collateralType: { settings: { collybus: { liquidationRatio } } } } = modifyPositionData;
+  const {
+    collateralType: {
+      metadata: { symbol: tokenSymbol },
+      properties: { underlierScale, underlierSymbol, tokenScale },
+      settings: { collybus: { liquidationRatio } }
+    },
+    underlierAllowance,
+    underlierBalance,
+    monetaDelegate,
+  } = modifyPositionData;
+  const {
+    subTokenAmount, collateralSlippagePct, underlierSlippagePct,
+    subDebt, maxUnderliersToSell, minUnderliersToBuy, targetedCollRatio,
+    collateral, collRatio, debt, estMinUnderliersToBuy
+  } = leverStore.decreaseState;
+  const {
+    setSubTokenAmount, setMaxSubTokenAmount, setCollateralSlippagePct, setUnderlierSlippagePct, setTargetedCollRatio
+  } = leverStore.decreaseActions;
   const minCollRatio = minCollRatioWithBuffer(liquidationRatio);
   const hasProxy = contextData.proxies.length > 0;
   const { action: currentTxAction } = transactionData;
@@ -761,9 +798,7 @@ export const LeverDecreaseForm = ({
   return (
     <>
       <Modal.Body>
-        <Text b size={'m'}>
-          Inputs
-        </Text>
+        <Text b size={'m'}>Inputs</Text>
         <Grid.Container
           gap={0}
           justify='space-between'
@@ -772,10 +807,8 @@ export const LeverDecreaseForm = ({
           <Grid>
             <Input
               disabled={disableActions}
-              value={floor2(Number(wadToDec(leverStore.decreaseState.underlierSlippagePct)) * 100)}
-              onChange={(event) => {
-                leverStore.decreaseActions.setUnderlierSlippagePct(contextData.fiat, event.target.value, modifyPositionData);
-              }}
+              value={floor2(Number(wadToDec(underlierSlippagePct)) * 100)}
+              onChange={(event) => { setUnderlierSlippagePct(contextData.fiat, event.target.value, modifyPositionData) }}
               step='0.01'
               placeholder='0'
               inputMode='decimal'
@@ -790,10 +823,8 @@ export const LeverDecreaseForm = ({
           <Grid>
             <Input
               disabled={disableActions}
-              value={floor2(Number(wadToDec(leverStore.decreaseState.collateralSlippagePct)) * 100)}
-              onChange={(event) => {
-                leverStore.decreaseActions.setCollateralSlippagePct(contextData.fiat, event.target.value, modifyPositionData);
-              }}
+              value={floor2(Number(wadToDec(collateralSlippagePct)) * 100)}
+              onChange={(event) => { setCollateralSlippagePct(contextData.fiat, event.target.value, modifyPositionData) }}
               step='0.01'
               placeholder='0'
               inputMode='decimal'
@@ -808,10 +839,8 @@ export const LeverDecreaseForm = ({
         </Grid.Container>
         <Input
           disabled={disableActions}
-          value={floor2(wadToDec(leverStore.decreaseState.subTokenAmount))}
-          onChange={(event) => {
-            leverStore.decreaseActions.setSubTokenAmount(contextData.fiat, event.target.value, modifyPositionData);
-          }}
+          value={floor2(scaleToDec(subTokenAmount, tokenScale))}
+          onChange={(event) => { setSubTokenAmount(contextData.fiat, event.target.value, modifyPositionData) }}
           placeholder='0'
           inputMode='decimal'
           // Bypass type warning from passing a custom component instead of a string
@@ -820,21 +849,20 @@ export const LeverDecreaseForm = ({
           label={
             <InputLabelWithMax
               label='Collateral to withdraw and swap'
-              onMaxClick={() => leverStore.decreaseActions.setMaxSubTokenAmount(contextData.fiat, modifyPositionData)}
+              onMaxClick={() => setMaxSubTokenAmount(contextData.fiat, modifyPositionData)}
             />
           }
-          labelRight={modifyPositionData.collateralType.metadata.symbol}
+          labelRight={tokenSymbol}
           bordered
           size='sm'
           borderWeight='light'
-          width={'15rem'}
         />
       
         <Text
           size={'0.75rem'}
           style={{ paddingLeft: '0.25rem', marginBottom: '0.375rem' }}
         >
-          Targeted collateralization ratio ({floor2(wadToDec(leverStore.decreaseState.targetedCollRatio.mul(100)))}%)
+          Targeted collateralization ratio ({floor2(wadToDec(targetedCollRatio.mul(100)))}%)
         </Text>
         <Card variant='bordered' borderWeight='light' style={{height:'100%'}}>
           <Card.Body
@@ -844,10 +872,8 @@ export const LeverDecreaseForm = ({
               handleStyle={{ borderColor: '#0072F5' }}
               included={false}
               disabled={disableActions}
-              value={Number(wadToDec(leverStore.decreaseState.targetedCollRatio))}
-              onChange={(value) => {
-                leverStore.decreaseActions.setTargetedCollRatio(contextData.fiat, value, modifyPositionData);
-              }}
+              value={Number(wadToDec(targetedCollRatio))}
+              onChange={(value) => { setTargetedCollRatio(contextData.fiat, value, modifyPositionData) }}
               min={floor4(wadToDec(minCollRatio))}
               max={5.0}
               step={0.001}
@@ -881,29 +907,26 @@ export const LeverDecreaseForm = ({
             />
           </Card.Body>
         </Card>
-        <Text size={'$sm'}>
-          Note: When closing your position make sure you have enough FIAT to cover the accrued borrow fees.
-        </Text>
       </Modal.Body>
 
       <Spacer y={0.75} />
       <Card.Divider />
 
-      <Modal.Body css={{ marginTop: 'var(--nextui-space-8)' }}>
-        <Text b size={'m'}>
-          Swap Preview
-        </Text>
+      <Modal.Body>
+        <Spacer y={0} />
+        <Text b size={'m'}>Leveraged Swap Preview</Text>
         <Input
           readOnly
-          value={
-            (leverStore.formDataLoading)
-              ? ' '
-              : floor2(scaleToDec(leverStore.decreaseState.maxUnderliersToSell, modifyPositionData.collateralType.properties.underlierScale))
+          value={(leverStore.formDataLoading)
+            ? ' '
+            : (minUnderliersToBuy.lte(estMinUnderliersToBuy)) 
+            ? `[${floor2(scaleToDec(minUnderliersToBuy, tokenScale))}, ${floor2(scaleToDec(estMinUnderliersToBuy, tokenScale))}]`
+            : `[${floor2(scaleToDec(estMinUnderliersToBuy, tokenScale))}, ${floor2(scaleToDec(minUnderliersToBuy, tokenScale))}]`
           }
           placeholder='0'
           type='string'
-          label={'Underliers to withdraw (incl. slippage)'}
-          labelRight={modifyPositionData.collateralType.properties.underlierSymbol}
+          label={'Total Underliers to withdraw ([min., max.])'}
+          labelRight={underlierSymbol}
           contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
           status='primary'
@@ -913,18 +936,50 @@ export const LeverDecreaseForm = ({
       <Spacer y={0.75} />
       <Card.Divider />
 
-      <Modal.Body css={{ marginTop: 'var(--nextui-space-8)' }}>
-        <PositionPreview
-          formDataLoading={leverStore.formDataLoading}
-          positionCollateral={modifyPositionData.position.collateral}
-          positionNormalDebt={modifyPositionData.position.normalDebt}
-          estimatedCollateral={leverStore.decreaseState.collateral}
-          estimatedCollateralRatio={leverStore.decreaseState.collRatio}
-          estimatedDebt={leverStore.decreaseState.debt}
-          virtualRate={modifyPositionData.collateralType.state.codex.virtualRate}
-          fairPrice={modifyPositionData.collateralType.state.collybus.fairPrice}
-          symbol={modifyPositionData.collateralType.metadata.symbol}
+      <Modal.Body>
+        <Spacer y={0} />
+        <Text b size={'m'}>Position Preview</Text>
+        <Input
+          readOnly
+          value={(leverStore.formDataLoading) ? ' ' : floor2(wadToDec(collateral)) }
+          placeholder='0'
+          type='string'
+          label={'Collateral'}
+          labelRight={tokenSymbol}
+          contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
+          size='sm'
+          status='primary'
         />
+        <Input
+          readOnly
+          value={leverStore.formDataLoading ? ' ' : floor2(wadToDec(debt))}
+          placeholder='0'
+          type='string'
+          label='Debt'
+          labelRight={'FIAT'}
+          contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
+          size='sm'
+          status='primary'
+        />
+        <Input
+          readOnly
+          value={
+            (leverStore.formDataLoading)
+              ? ' '
+              : (collRatio.eq(ethers.constants.MaxUint256))
+                ? '∞' : `${floor2(wadToDec(collRatio.mul(100)))}%`
+          }
+          placeholder='0'
+          type='string'
+          label='Collateralization Ratio ([min., max.])'
+          labelRight={'🚦'}
+          contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
+          size='sm'
+          status='primary'
+        />
+
+        {/* renderSummary() */}
+
       </Modal.Body>
 
       <Modal.Footer justify='space-evenly'>
