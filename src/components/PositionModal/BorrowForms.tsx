@@ -5,7 +5,7 @@ import 'antd/dist/antd.css';
 import { BigNumber, ethers } from 'ethers';
 import React, {useMemo} from 'react';
 import shallow from 'zustand/shallow';
-import { useBorrowStore } from '../../stores/borrowStore';
+import { useBorrowStore } from '../../state/stores/borrowStore';
 import { commifyToDecimalPlaces, floor2, floor4, floor5, minCollRatioWithBuffer } from '../../utils';
 import { Alert } from '../Alert';
 import { InputLabelWithMax } from '../InputLabelWithMax';

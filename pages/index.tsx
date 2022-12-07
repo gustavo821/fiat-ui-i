@@ -1,6 +1,6 @@
 import React from 'react';
 import type { NextPage } from 'next';
-import { useAccount, useNetwork, useProvider } from 'wagmi';
+import { chain as chains, useAccount, useNetwork, useProvider } from 'wagmi';
 import shallow from 'zustand/shallow'
 import { useAddRecentTransaction } from '@rainbow-me/rainbowkit';
 import { Container, Spacer } from '@nextui-org/react';
@@ -14,7 +14,9 @@ import {
   decodeCollateralTypeId, decodePositionId, encodePositionId, getCollateralTypeData, getPositionData
 } from '../src/utils';
 import * as userActions from '../src/actions';
-import { useBorrowStore } from '../src/stores/borrowStore';
+import { useBorrowStore } from '../src/state/stores/borrowStore';
+import { collateralTypesKey, useCollateralTypes } from '../src/state/queries/useCollateralTypes';
+import { useQueryClient } from '@tanstack/react-query';
 
 export type TransactionStatus = null | 'error' | 'sent' | 'confirming' | 'confirmed';
 
@@ -34,7 +36,6 @@ const Home: NextPage = () => {
       fiatBalance: '' as string,
     },
     positionsData: [] as Array<any>,
-    collateralTypesData: [] as Array<any>,
     selectedPositionId: null as null | string,
     selectedCollateralTypeId: null as null | string,
     modifyPositionData: {
@@ -62,15 +63,18 @@ const Home: NextPage = () => {
     ), shallow
   );
 
+  const queryClient = useQueryClient();
+
   const [initialPageLoad, setInitialPageLoad] = React.useState<boolean>(true);
   const [setupListeners, setSetupListeners] = React.useState(false);
   const [contextData, setContextData] = React.useState(initialState.contextData);
-  const [collateralTypesData, setCollateralTypesData] = React.useState(initialState.collateralTypesData);
   const [positionsData, setPositionsData] = React.useState(initialState.positionsData);
   const [modifyPositionData, setModifyPositionData] = React.useState(initialState.modifyPositionData);
   const [transactionData, setTransactionData] = React.useState(initialState.transactionData);
   const [selectedPositionId, setSelectedPositionId] = React.useState(initialState.selectedPositionId);
   const [selectedCollateralTypeId, setSelectedCollateralTypeId] = React.useState(initialState.selectedCollateralTypeId);
+
+  const { data: collateralTypesData, isFetching: isFetchingCollateralTypes } = useCollateralTypes(contextData.fiat, chain?.id ?? chains.mainnet.id);
 
   const disableActions = React.useMemo(() => transactionData.status === 'sent', [transactionData.status])
 
@@ -78,7 +82,6 @@ const Home: NextPage = () => {
   function resetState() {
     setSetupListeners(initialState.setupListeners);
     setContextData(initialState.contextData);
-    setCollateralTypesData(initialState.collateralTypesData);
     setPositionsData(initialState.positionsData);
     setModifyPositionData(initialState.modifyPositionData);
     setTransactionData(initialState.transactionData);
@@ -94,7 +97,7 @@ const Home: NextPage = () => {
     setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
     // Refetch data after a reset
     handleFiatBalance();
-    handleCollateralTypesData();
+    queryClient.invalidateQueries(collateralTypesKey.all);
     handlePositionsData();
   }
 
@@ -107,27 +110,6 @@ const Home: NextPage = () => {
       fiatBalance: `${parseFloat(wadToDec(fiatBalance)).toFixed(2)} FIAT`
     }));
   }, [contextData.fiat, contextData.user]);
-
-  const handleCollateralTypesData = React.useCallback(async () => {
-    if (!contextData.fiat) return;
-    const collateralTypesData_ = await contextData.fiat.fetchCollateralTypesAndPrices([]);
-    const earnableRates = await userActions.getEarnableRate(contextData.fiat, collateralTypesData_);
-
-    setCollateralTypesData(collateralTypesData_
-      .filter((collateralType: any) => (collateralType.metadata != undefined))
-      .sort((a: any, b: any) => {
-        if (Number(a.properties.maturity) > Number(b.properties.maturity)) return -1;
-        if (Number(a.properties.maturity) < Number(b.properties.maturity)) return 1;
-        return 0;
-      })
-      .map((collateralType: any) => {
-        const earnableRate = earnableRates.find((item: any)  => item.vault === collateralType.properties.vault)
-        return {
-          ...collateralType,
-          earnableRate: earnableRate?.earnableRate
-        }
-      }));
-  }, [contextData.fiat]);
 
   const handlePositionsData = React.useCallback(async () => {
     if (!contextData || !contextData.fiat) return;
@@ -142,12 +124,6 @@ const Home: NextPage = () => {
     connector.on('change', () => resetState());
     setSetupListeners(true);
   }, [setupListeners, connector, resetState]);
-
-  // Fetch Collateral Types Data
-  React.useEffect(() => {
-    if (collateralTypesData.length !== 0 || !contextData.fiat) return;
-    handleCollateralTypesData();
-  }, [collateralTypesData.length, provider, contextData.fiat, handleCollateralTypesData])
 
   React.useEffect(() => {
     if (!provider || contextData.fiat || connector) return;

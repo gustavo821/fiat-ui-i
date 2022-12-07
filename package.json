@@ -12,6 +12,7 @@
     "@fiatdao/sdk": "0.0.23",
     "@nextui-org/react": "^1.0.0-beta.10",
     "@rainbow-me/rainbowkit": "^0.7.1",
+    "@tanstack/react-query": "^4.19.1",
     "antd": "^4.23.5",
     "ethers": "^5.0.0",
     "next": "^12.1.6",
