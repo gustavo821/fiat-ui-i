@@ -32,5 +32,6 @@ export function useCollateralTypes(fiat: any, chainId: number) {
         });
     },
     initialData: [],
+    enabled: fiat != null,
   });
 }
