@@ -14,7 +14,7 @@ import {
 import { BigNumber } from 'ethers';
 import create from 'zustand';
 import * as userActions from '../actions';
-import { debounce, floor4 } from '../utils';
+import { debounce, floor2, floor4, minCollRatioWithBuffer } from '../utils';
 
 /// A store for setting and getting form values to create and manage positions.
 interface BorrowState {
@@ -281,7 +281,7 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
       calculatePositionValuesAfterCreation: debounce(async function (fiat: any, modifyPositionData: any) {
         const { collateralType } = modifyPositionData;
         const { tokenScale, underlierScale } = collateralType.properties;
-        const { codex: { debtFloor } } = collateralType.settings;
+        const { codex: { debtFloor }, collybus: { liquidationRatio } } = collateralType.settings;
         const { slippagePct, underlier, targetedCollRatio } = get().createState;
         const { codex: { virtualRate: rate }, collybus: { fairPrice } } = collateralType.state;
 
@@ -319,6 +319,7 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
           const collateral = deltaCollateral;
           const debt = deltaDebt;
           const collRatio = computeCollateralizationRatio(collateral, fairPrice, deltaNormalDebt, rate);
+          const minCollRatio = minCollRatioWithBuffer(liquidationRatio);
 
           if (deltaDebt.gt(ZERO) && deltaDebt.lte(debtFloor)) set(() => ({
             formErrors: [
@@ -326,8 +327,10 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
               `This collateral type requires a minimum of ${wadToDec(debtFloor)} FIAT to be borrowed`
             ]
           }));
-          if (debt.gt(0) && collRatio.lte(WAD)) set(() => ({
-            formErrors: [...get().formErrors, 'Collateralization Ratio has to be greater than 100%']
+          if (debt.gt(0) && collRatio.lt(minCollRatio)) set(() => ({
+            formErrors: [
+              ...get().formErrors, 'Collateralization Ratio has to be greater than ' + floor2(wadToDec(minCollRatio))
+            ]
           }));
 
           const newCreateFormState = { collateral, collRatio, debt, deltaCollateral, deltaDebt };
@@ -423,7 +426,7 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
       calculatePositionValuesAfterIncrease: debounce(async (fiat: any, modifyPositionData: any) => {
         const { collateralType, position } = modifyPositionData;
         const { tokenScale, underlierScale } = collateralType.properties;
-        const { codex: { debtFloor } } = collateralType.settings;
+        const { codex: { debtFloor }, collybus: { liquidationRatio } } = collateralType.settings;
         const { slippagePct, underlier } = get().increaseState;
         const { codex: { virtualRate: rate }, collybus: { fairPrice } } = collateralType.state;
 
@@ -461,6 +464,7 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
           const debt = normalDebtToDebt(position.normalDebt, rate).add(deltaDebt);
           const normalDebt = debtToNormalDebt(debt, rate);
           const collRatio = computeCollateralizationRatio(collateral, fairPrice, normalDebt, rate);
+          const minCollRatio = liquidationRatio.add(decToWad(0.025));
 
           if (debt.gt(ZERO) && debt.lte(collateralType.settings.codex.debtFloor) ) set(() => ({
             formErrors: [
@@ -469,8 +473,10 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
             ]
           }));
 
-          if (debt.gt(0) && collRatio.lte(WAD)) set(() => ({
-            formErrors: [...get().formErrors, 'Collateralization Ratio has to be greater than 100%']
+          if (debt.gt(0) && collRatio.lte(minCollRatio)) set(() => ({
+            formErrors: [
+              ...get().formErrors, 'Collateralization Ratio has to be greater than ' + floor2(wadToDec(minCollRatio))
+            ]
           }));
 
           set((state) => ({
@@ -587,7 +593,8 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
       calculatePositionValuesAfterDecrease: debounce(async (fiat: any, modifyPositionData: any) => {
         const { collateralType, position } = modifyPositionData;
         const { tokenScale } = collateralType.properties;
-        const { codex: { debtFloor } } = collateralType.settings;
+        const { codex: { debtFloor }, collybus: { liquidationRatio } } = collateralType.settings;
+
         const { codex: { virtualRate: rate }, collybus: { fairPrice } } = collateralType.state;
 
         // Reset form errors and warnings on new input
@@ -632,8 +639,12 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
           }));
 
           const collRatio = computeCollateralizationRatio(collateral, fairPrice, normalDebt, rate);
-          if (!(collateral.isZero() && normalDebt.isZero()) && collRatio.lte(WAD))
-            set(() => ({ formErrors: [...get().formErrors, 'Collateralization Ratio has to be greater than 100%'] }));
+          const minCollRatio = minCollRatioWithBuffer(liquidationRatio);
+          if (!(collateral.isZero() && normalDebt.isZero()) && collRatio.lte(minCollRatio)) set(() => ({
+            formErrors: [
+              ...get().formErrors, 'Collateralization Ratio has to be greater than ' + floor2(wadToDec(minCollRatio))
+            ]
+          }));
 
           set((state) => ({
             decreaseState: {
@@ -753,7 +764,7 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
 
       calculatePositionValuesAfterRedeem: debounce(async (fiat: any, modifyPositionData: any) => {
         const { collateralType, position } = modifyPositionData;
-        const { codex: { debtFloor } } = collateralType.settings;
+        const { codex: { debtFloor }, collybus: { liquidationRatio } } = collateralType.settings;
         const { codex: { virtualRate: rate }, collybus: { fairPrice } } = collateralType.state;
 
         // Reset form errors and warnings on new input
@@ -782,8 +793,12 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
             ]
           }));
           const collRatio = computeCollateralizationRatio(collateral, fairPrice, normalDebt, rate);
-          if (!(collateral.isZero() && normalDebt.isZero()) && collRatio.lte(WAD))
-            set(() => ({ formErrors: [...get().formErrors, 'Collateralization Ratio has to be greater than 100%'] }));
+          const minCollRatio = minCollRatioWithBuffer(liquidationRatio);
+          if (!(collateral.isZero() && normalDebt.isZero()) && collRatio.lte(minCollRatio)) set(() => ({
+            formErrors: [
+              ...get().formErrors, 'Collateralization Ratio has to be greater than ' + floor2(wadToDec(minCollRatio))
+            ]
+          }));
 
           set((state) => ({
             redeemState: {
