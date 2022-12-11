@@ -254,6 +254,7 @@ const Home: NextPage = () => {
   ): Promise<ContractReceipt> => {
     try {
       setTransactionData({ action, status: 'sent' });
+      console.log(await fiat.encodeViaProxy(contextData.proxies[0], contract, method, ...args));
       // Dryrun every transaction first to catch and decode errors
       const dryrunResp = useProxy
         ? await fiat.dryrunViaProxy(contextData.proxies[0], contract, method, ...args)
@@ -439,7 +440,7 @@ const Home: NextPage = () => {
   const createLeveredPosition = async (
     upFrontUnderlier: BigNumber, addDebt: BigNumber, minUnderlierToBuy: BigNumber, minTokenToBuy: BigNumber
   ) => {
-    const args = userActions.buildBuyCollateralAndIncreaseLeverArgs(
+    const args = await userActions.buildBuyCollateralAndIncreaseLeverArgs(
       contextData, modifyPositionData.collateralType, upFrontUnderlier, addDebt, minUnderlierToBuy, minTokenToBuy
     );
     const response = await sendTransaction(
@@ -452,7 +453,7 @@ const Home: NextPage = () => {
   const buyCollateralAndIncreaseLever = async (
     upFrontUnderlier: BigNumber, addDebt: BigNumber, minUnderlierToBuy: BigNumber, minTokenToBuy: BigNumber
   ) => {
-    const args = userActions.buildBuyCollateralAndIncreaseLeverArgs(
+    const args = await userActions.buildBuyCollateralAndIncreaseLeverArgs(
       contextData, modifyPositionData.collateralType, upFrontUnderlier, addDebt, minUnderlierToBuy, minTokenToBuy
     );
     const response = await sendTransaction(
@@ -469,7 +470,7 @@ const Home: NextPage = () => {
     subTokenAmount: BigNumber, subDebt: BigNumber, maxUnderlierToSell: BigNumber, minUnderlierToBuy: BigNumber
   ) => {
     const { collateralType, position } = modifyPositionData;
-    const args = userActions.buildSellCollateralAndDecreaseLeverArgs(
+    const args = await userActions.buildSellCollateralAndDecreaseLeverArgs(
       contextData, collateralType, subTokenAmount, subDebt, maxUnderlierToSell, minUnderlierToBuy, position
     );
     const response = await sendTransaction(
@@ -486,7 +487,7 @@ const Home: NextPage = () => {
     subTokenAmount: BigNumber, subDebt: BigNumber, maxUnderlierToSell: BigNumber
   ) => {
     const { collateralType, position } = modifyPositionData;
-    const args = userActions.buildRedeemCollateralAndDecreaseLeverArgs(
+    const args = await userActions.buildRedeemCollateralAndDecreaseLeverArgs(
       contextData, collateralType, subTokenAmount, subDebt, maxUnderlierToSell, position
     );
     const response = await sendTransaction(

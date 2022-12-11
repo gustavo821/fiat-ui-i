@@ -1,5 +1,95 @@
-import { debtToNormalDebt, decToWad, scaleToDec, scaleToWad, WAD, wadToDec, wadToScale, ZERO } from '@fiatdao/sdk';
+import { debtToNormalDebt, decToWad, scaleToWad, WAD, wadToScale, ZERO } from '@fiatdao/sdk';
 import { BigNumber, Contract } from 'ethers';
+
+// TODO: remove precision conversion
+export const fiatToUnderlier = async (
+  fiat: any,
+  fiatAmount: BigNumber,
+  collateralType: any
+): Promise<BigNumber> => {
+  if (fiatAmount.isZero()) return ZERO;
+
+  const { vaultType, underlierToken, underlierScale } = collateralType.properties;
+  const { leverEPTActions, leverFYActions, leverSPTActions } = fiat.getContracts();
+
+  switch (vaultType) {
+    case 'ERC20:EPT': {
+      return (await fiat.call(
+        leverEPTActions,
+        'fiatToUnderlier',
+        [leverEPTActions.fiatPoolId()],
+        [underlierToken],
+        fiatAmount
+      )).mul(underlierScale).div(WAD);
+    }
+    case 'ERC20:FY': {
+      return (await fiat.call(
+        leverFYActions,
+        'fiatToUnderlier',
+        [leverFYActions.fiatPoolId()],
+        [underlierToken],
+        fiatAmount
+      ).mul(underlierScale).div(WAD));
+    }
+    case 'ERC20:SPT': {
+      return (await fiat.call(
+        leverSPTActions,
+        'fiatToUnderlier',
+        [leverSPTActions.fiatPoolId()],
+        [underlierToken],
+        fiatAmount
+      )).mul(underlierScale).div(WAD);
+    }
+    default: {
+      throw new Error('Unsupported collateral type');
+    }
+  }
+};
+
+// TODO: remove precision conversion
+export const fiatForUnderlier = async (
+  fiat: any,
+  fiatAmount: BigNumber,
+  collateralType: any
+): Promise<BigNumber> => {
+  if (fiatAmount.isZero()) return ZERO;
+
+  const { vaultType, underlierToken, underlierScale } = collateralType.properties;
+  const { leverEPTActions, leverFYActions, leverSPTActions } = fiat.getContracts();
+
+  switch (vaultType) {
+    case 'ERC20:EPT': {
+      return (await fiat.call(
+        leverEPTActions,
+        'fiatForUnderlier',
+        [leverEPTActions.fiatPoolId()],
+        [underlierToken],
+        fiatAmount
+      )).mul(underlierScale).div(WAD);
+    }
+    case 'ERC20:FY': {
+      return (await fiat.call(
+        leverFYActions,
+        'fiatForUnderlier',
+        [leverFYActions.fiatPoolId()],
+        [underlierToken],
+        fiatAmount
+      )).mul(underlierScale).div(WAD);
+    }
+    case 'ERC20:SPT': {
+      return (await fiat.call(
+        leverSPTActions,
+        'fiatForUnderlier',
+        [leverSPTActions.fiatPoolId()],
+        [underlierToken],
+        fiatAmount
+      )).mul(underlierScale).div(WAD);
+    }
+    default: {
+      throw new Error('Unsupported collateral type');
+    }
+  }
+};
 
 export const underlierToCollateralToken = async (
   fiat: any,
@@ -580,23 +670,24 @@ export const buildRedeemCollateralAndModifyDebtArgs = (contextData: any,
   }
 };
 
-export const buildBuyCollateralAndIncreaseLeverArgs = (
+export const buildBuyCollateralAndIncreaseLeverArgs = async (
   contextData: any,
   collateralTypeData: any,
   upFrontUnderliers: BigNumber,
   addDebt: BigNumber,
   minUnderlierToBuy: BigNumber,
   minTokenToBuy: BigNumber,
-): { contract: Contract, methodName: string, methodArgs: any[] } => {
+): Promise<{ contract: Contract, methodName: string, methodArgs: any[] }> => {
   const { leverEPTActions, leverFYActions, leverSPTActions } = contextData.fiat.getContracts();
   const { properties } = collateralTypeData;
-
   const deadline = Math.round(+new Date() / 1000) + 3600;
-  const sellFIATSwapParams = [properties.underlierToken, minUnderlierToBuy, deadline];
 
   switch (properties.vaultType) {
     case 'ERC20:EPT': {
       if (!properties.eptData) throw new Error('Missing EPT data');
+      const sellFIATSwapParams = await leverEPTActions.buildSellFIATSwapParams(
+        [await leverEPTActions.fiatPoolId()], [properties.underlierToken], minUnderlierToBuy, deadline
+      );
       const args = {
         contract: leverEPTActions,
         methodName: 'buyCollateralAndIncreaseLever',
@@ -621,6 +712,9 @@ export const buildBuyCollateralAndIncreaseLeverArgs = (
     }
     case 'ERC20:FY': {
       if (!properties.fyData) throw new Error('Missing FY data');
+      const sellFIATSwapParams = await leverFYActions.buildSellFIATSwapParams(
+        [await leverFYActions.fiatPoolId()], [properties.underlierToken], minUnderlierToBuy, deadline
+      );
       const args = {
         contract: leverFYActions,
         methodName: 'buyCollateralAndIncreaseLever',
@@ -643,6 +737,9 @@ export const buildBuyCollateralAndIncreaseLeverArgs = (
     }
     case 'ERC20:SPT': {
       if (!properties.sptData) throw new Error('Missing SPT data');
+      const sellFIATSwapParams = await leverSPTActions.buildSellFIATSwapParams(
+        [await leverSPTActions.fiatPoolId()], [properties.underlierToken], minUnderlierToBuy, deadline
+      );
       const args = {
         contract: leverSPTActions,
         methodName: 'buyCollateralAndIncreaseLever',
@@ -671,7 +768,7 @@ export const buildBuyCollateralAndIncreaseLeverArgs = (
   }
 };
 
-export const buildSellCollateralAndDecreaseLeverArgs = (
+export const buildSellCollateralAndDecreaseLeverArgs = async (
   contextData: any,
   collateralTypeData: any,
   subTokenAmount: BigNumber,
@@ -679,21 +776,22 @@ export const buildSellCollateralAndDecreaseLeverArgs = (
   maxUnderliersToSell: BigNumber,
   minUnderliersToBuy: BigNumber,
   position: any
-): { contract: Contract, methodName: string, methodArgs: any[] } => {
+): Promise<{ contract: Contract, methodName: string, methodArgs: any[] }> => {
   const { leverEPTActions, leverFYActions, leverSPTActions } = contextData.fiat.getContracts();
   const { properties } = collateralTypeData;
+  const deadline = Math.round(+new Date() / 1000) + 3600;
 
   let subNormalDebt = addDeltaNormalBuffer(debtToNormalDebt(subDebt, collateralTypeData.state.codex.virtualRate));
   if (position.normalDebt.sub(subNormalDebt).lt(WAD)) subNormalDebt = position.normalDebt;
-  const deadline = Math.round(+new Date() / 1000) + 3600;
-  const buyFIATSwapParams = [properties.underlierToken, maxUnderliersToSell, deadline];
-
   // if subTokenAmount is zero then debt can't be decreased
   if (subTokenAmount.isZero()) throw new Error('Invalid value for `subTokenAmount` - Value has to be non-zero');
 
   switch (properties.vaultType) {
     case 'ERC20:EPT': {
       if (!properties.eptData) throw new Error('Missing EPT data');
+      const buyFIATSwapParams = await leverEPTActions.buildBuyFIATSwapParams(
+        [await leverEPTActions.fiatPoolId()], [properties.underlierToken], maxUnderliersToSell, deadline
+      );
       const args = {
         contract: leverEPTActions,
         methodName: 'sellCollateralAndDecreaseLever',
@@ -718,6 +816,9 @@ export const buildSellCollateralAndDecreaseLeverArgs = (
     }
     case 'ERC20:FY': {
       if (!properties.fyData) throw new Error('Missing FY data');
+      const buyFIATSwapParams = await leverFYActions.buildBuyFIATSwapParams(
+        [await leverFYActions.fiatPoolId()], [properties.underlierToken], maxUnderliersToSell, deadline
+      );
       const args = {
         contract: contextData,
         methodName: leverFYActions,
@@ -741,6 +842,9 @@ export const buildSellCollateralAndDecreaseLeverArgs = (
     }
     case 'ERC20:SPT': {
       if (!properties.sptData) throw new Error('Missing SPT data');
+      const buyFIATSwapParams = await leverSPTActions.buildBuyFIATSwapParams(
+        [await leverSPTActions.fiatPoolId()], [properties.underlierToken], maxUnderliersToSell, deadline
+      );
       const args = {
         contract: contextData,
         methodName: leverSPTActions,
@@ -770,28 +874,29 @@ export const buildSellCollateralAndDecreaseLeverArgs = (
   }
 };
 
-export const buildRedeemCollateralAndDecreaseLeverArgs = (
+export const buildRedeemCollateralAndDecreaseLeverArgs = async (
   contextData: any,
   collateralTypeData: any,
   subTokenAmount: BigNumber,
   subDebt: BigNumber,
   maxUnderliersToSell: BigNumber,
   position: any
-): { contract: Contract, methodName: string, methodArgs: any[] } => {
+): Promise<{ contract: Contract, methodName: string, methodArgs: any[] }> => {
   const { leverEPTActions, leverFYActions, leverSPTActions } = contextData.fiat.getContracts();
   const { properties } = collateralTypeData;
+  const deadline = Math.round(+new Date() / 1000) + 3600;
 
   let subNormalDebt = addDeltaNormalBuffer(debtToNormalDebt(subDebt, collateralTypeData.state.codex.virtualRate));
   if (position.normalDebt.sub(subNormalDebt).lt(WAD)) subNormalDebt = position.normalDebt;
-  const deadline = Math.round(+new Date() / 1000) + 3600;
-  const buyFIATSwapParams = [properties.underlierToken, maxUnderliersToSell, deadline];
-
   // if subTokenAmount is zero then debt can't be decreased
   if (subTokenAmount.isZero()) throw new Error('Invalid value for `subTokenAmount` - Value has to be non-zero');
 
   switch (properties.vaultType) {
     case 'ERC20:EPT': {
       if (!properties.eptData) throw new Error('Missing EPT data');
+      const buyFIATSwapParams = await leverEPTActions.buildBuyFIATSwapParams(
+        [await leverEPTActions.fiatPoolId()], [properties.underlierToken], maxUnderliersToSell, deadline
+      );
       const args = {
         contract: leverEPTActions,
         methodName: 'redeemCollateralAndDecreaseLever',
@@ -808,6 +913,9 @@ export const buildRedeemCollateralAndDecreaseLeverArgs = (
     }
     case 'ERC20:FY': {
       if (!properties.fyData) throw new Error('Missing FY data');
+      const buyFIATSwapParams = await leverFYActions.buildBuyFIATSwapParams(
+        [await leverFYActions.fiatPoolId()], [properties.underlierToken], maxUnderliersToSell, deadline
+      );
       const args = {
         contract: contextData,
         methodName: leverFYActions,
@@ -825,6 +933,9 @@ export const buildRedeemCollateralAndDecreaseLeverArgs = (
     }
     case 'ERC20:SPT': {
       if (!properties.sptData) throw new Error('Missing SPT data');
+      const buyFIATSwapParams = await leverSPTActions.buildBuyFIATSwapParams(
+        [await leverSPTActions.fiatPoolId()], [properties.underlierToken], maxUnderliersToSell, deadline
+      );
       const args = {
         contract: contextData,
         methodName: leverSPTActions,

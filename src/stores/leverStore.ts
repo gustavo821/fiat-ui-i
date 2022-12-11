@@ -3,6 +3,7 @@ import {
   computeCollateralizationRatio,
   computeLeveredDeposit,
   computeLeveredWithdrawal,
+  computeMaxNormalDebt,
   debtToNormalDebt,
   decToScale,
   decToWad,
@@ -429,8 +430,7 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
 
         try {
           // 1.
-          // TODO: use userActions.fiatToUnderlier()
-          const fiatToUnderlierRateIdeal = decToScale(1, underlierScale);
+          const fiatToUnderlierRateIdeal = await userActions.fiatToUnderlier(fiat, decToWad(1), collateralType);
           const underlierToCollateralRateIdeal = await userActions.underlierToCollateralToken(
             fiat, decToScale(1, underlierScale), collateralType
           );
@@ -452,8 +452,9 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           const underlierIn = upFrontUnderliers.add(flashloanIdeal.mul(fiatToUnderlierRateIdeal).div(WAD));
           const collateralOut = await userActions.underlierToCollateralToken(fiat, underlierIn, collateralType);
           const underlierToCollateralRateWithPriceImpact = collateralOut.mul(underlierScale).div(underlierIn);
-          // TODO: use userActions.fiatToUnderlier() with scaleToWad
-          const fiatToUnderlierRateWithPriceImpact = WAD;
+          const fiatToUnderlierRateWithPriceImpact = wadToScale(flashloanIdeal, underlierScale).mul(underlierScale).div(
+            await userActions.fiatToUnderlier(fiat, flashloanIdeal, collateralType)
+          );
 
           // 4.
           const addDebt = flashloanIdeal;
@@ -609,8 +610,7 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
 
         try {
           // 1.
-          // TODO: use userActions.fiatToUnderlier()
-          const fiatToUnderlierRateIdeal = decToScale(1, underlierScale);
+          const fiatToUnderlierRateIdeal = await userActions.fiatToUnderlier(fiat, decToWad(1), collateralType);
           const underlierToCollateralRateIdeal = await userActions.underlierToCollateralToken(
             fiat, decToScale(1, underlierScale), collateralType
           );
@@ -644,8 +644,9 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           const underlierIn = upFrontUnderliers.add(flashloanIdeal.mul(fiatToUnderlierRateIdeal).div(WAD));
           const collateralOut = await userActions.underlierToCollateralToken(fiat, underlierIn, collateralType);
           const underlierToCollateralRateWithPriceImpact = collateralOut.mul(underlierScale).div(underlierIn);
-          // TODO: use userActions.fiatToUnderlier() with scaleToWad
-          const fiatToUnderlierRateWithPriceImpact = WAD;
+          const fiatToUnderlierRateWithPriceImpact = wadToScale(flashloanIdeal, underlierScale).mul(underlierScale).div(
+            await userActions.fiatToUnderlier(fiat, flashloanIdeal, collateralType)
+          );
 
           // 4.
           const addDebt = flashloanIdeal;
@@ -816,8 +817,7 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
 
         try {
           // 1.
-          // TODO: use userActions.fiatToUnderlier()
-          const fiatToUnderlierRateIdeal = decToScale(1, underlierScale);
+          const fiatToUnderlierRateIdeal = await userActions.fiatToUnderlier(fiat, decToWad(1), collateralType);
           const underlierToCollateralRateIdeal = await userActions.underlierToCollateralToken(
             fiat, decToScale(1, underlierScale), collateralType
           );
@@ -834,20 +834,22 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           // if the resulting collateral is 0 than the flashloan amount has to be equal the entire outstanding debt
           const flashloanIdeal = (collateral.isZero())
             ? normalDebtToDebt(position.normalDebt, rate)
-            : computeLeveredWithdrawal(
-              position.collateral,
-              position.normalDebt,
-              fairPrice,
-              rate,
-              scaleToWad(subTokenAmount, tokenScale),
-              targetedCollRatio
-            );
-
+            : position.normalDebt.sub(computeMaxNormalDebt(collateral, rate, fairPrice, targetedCollRatio));
+            // : computeLeveredWithdrawal(
+            //   position.collateral,
+            //   position.normalDebt,
+            //   fairPrice,
+            //   rate,
+            //   scaleToWad(subTokenAmount, tokenScale),
+            //   targetedCollRatio
+            // );
+            
           // 3.
           const underlierOut = await userActions.collateralTokenToUnderlier(fiat, subTokenAmount, collateralType);
           const underlierToCollateralRateWithPriceImpact = subTokenAmount.mul(underlierScale).div(underlierOut);
-          // TODO: use userActions.fiatToUnderlier() with scaleToWad
-          const fiatToUnderlierRateWithPriceImpact = decToScale(1, underlierScale);
+          const fiatToUnderlierRateWithPriceImpact = wadToScale(flashloanIdeal, underlierScale).mul(underlierScale).div(
+            await userActions.fiatToUnderlier(fiat, flashloanIdeal, collateralType)
+          );
 
           // 4.
           const subDebt = flashloanIdeal;
@@ -862,7 +864,7 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
 
           // b.
           const fiatToUnderlierRateWithSlippage = applySwapSlippage(fiatToUnderlierRateIdeal, underlierSlippagePct.mul(-1));
-          const underlierToCollateralRateWithSlippage = applySwapSlippage(underlierToCollateralRateIdeal, collateralSlippagePct);
+          const underlierToCollateralRateWithSlippage = applySwapSlippage(underlierToCollateralRateIdeal, collateralSlippagePct.mul(-1));
           let minCollRatio = minCollRatioWithBuffer(minCRForLeveredWithdrawal(
             position.collateral,
             position.normalDebt,
@@ -875,7 +877,7 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           const maxCollRatio = ethers.constants.MaxUint256;
           
           const maxUnderliersToSell = flashloanIdeal.mul(fiatToUnderlierRateWithSlippage).div(WAD);
-          const minUnderliersToBuy = subTokenAmount.mul(underlierToCollateralRateWithSlippage).div(tokenScale)
+          const minUnderliersToBuy = subTokenAmount.mul(tokenScale).div(underlierToCollateralRateWithSlippage)
             .mul(underlierScale).div(tokenScale);
           const collRatio = computeCollateralizationRatio(collateral, fairPrice, normalDebt, rate);
 
