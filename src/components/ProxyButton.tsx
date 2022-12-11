@@ -1,9 +1,10 @@
 import { Badge, Button, Link, Loading } from '@nextui-org/react';
 import { useState } from 'react';
 import Skeleton from 'react-loading-skeleton';
+import { chain as chains, useNetwork } from 'wagmi';
+import { useUserData } from '../state/queries/useUserData';
 
 interface ProxyCardProps {
-  proxies: Array<string>;
   explorerUrl: null | string;
   fiat: any;
   user: null | string;
@@ -29,25 +30,28 @@ export const connectButtonCSS = {
 
 export const ProxyButton = (props: ProxyCardProps) => {
   const [error, setError] = useState('');
+  const { chain } = useNetwork();
+  const { data: userData } = useUserData(props.fiat, chain?.id ?? chains.mainnet.id, props.user ?? '');
+  const { proxies } = userData as any;
 
-  if (props.user === null || !props.fiat) {
+  if (props.user === null || !props.fiat || !proxies) {
     return <Skeleton count={2} />
   }
 
-  if (props.proxies.length > 0) {
+  if (proxies.length > 0) {
     return (
       <Badge
         css={connectButtonCSS}      
       >
         <Link
           target='_blank'
-          href={`${props.explorerUrl}/address/${props.proxies[0]}`}
+          href={`${props.explorerUrl}/address/${proxies[0]}`}
           isExternal={true}
           css={{
             color: '$connectButtonColor',
           }}
         >
-          Proxy: {`${props.proxies[0].substring(0,4)}...${props.proxies[0].slice(-4)}`}&nbsp;
+          Proxy: {`${proxies[0].substring(0,4)}...${proxies[0].slice(-4)}`}&nbsp;
         </Link>
       </Badge>
 
