@@ -13,8 +13,8 @@ import {
 } from '@fiatdao/sdk';
 import { BigNumber } from 'ethers';
 import create from 'zustand';
-import * as userActions from '../actions';
-import { debounce, floor2, floor4, minCollRatioWithBuffer } from '../utils';
+import * as userActions from '../../actions';
+import { debounce, floor2, floor4, minCollRatioWithBuffer } from '../../utils';
 
 /// A store for setting and getting form values to create and manage positions.
 interface BorrowState {
