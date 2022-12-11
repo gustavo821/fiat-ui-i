@@ -760,7 +760,7 @@ export const LeverDecreaseForm = ({
   const {
     subTokenAmount, collateralSlippagePct, underlierSlippagePct,
     maxUnderliersToSell, minUnderliersToBuy, targetedCollRatio,
-    collateral, collRatio, debt, minCollRatio
+    collateral, collRatio, debt, minCollRatio, maxCollRatio
   } = leverStore.decreaseState;
   const {
     setSubTokenAmount, setMaxSubTokenAmount, setCollateralSlippagePct, setUnderlierSlippagePct, setTargetedCollRatio
@@ -852,56 +852,52 @@ export const LeverDecreaseForm = ({
           size='sm'
           borderWeight='light'
         />
-      
-        <Text
-          size={'0.75rem'}
-          style={{ paddingLeft: '0.25rem', marginBottom: '0.375rem' }}
-        >
-          Targeted collateralization ratio ({floor2(wadToDec(targetedCollRatio.mul(100)))}%)
-        </Text>
-        <Card variant='bordered' borderWeight='light' style={{height:'100%'}}>
-          <Card.Body
-            style={{ paddingLeft: '2.25rem', paddingRight: '2.25rem', overflow: 'hidden' }}
-          >
-            <Slider
-              handleStyle={{ borderColor: '#0072F5' }}
-              included={false}
-              disabled={disableActions}
-              value={Number(wadToDec(targetedCollRatio))}
-              onChange={(value) => { setTargetedCollRatio(contextData.fiat, value, modifyPositionData) }}
-              min={floor4(wadToDec(minCollRatio))}
-              max={5.0}
-              step={0.001}
-              reverse
-              marks={{
-                5.0: {
-                  style: { color: 'grey', fontSize: '0.75rem' },
-                  label: 'Safe',
-                },
-                4.0: {
-                  style: { color: 'grey', fontSize: '0.75rem' },
-                  label: '400%',
-                },
-                3.0: {
-                  style: { color: 'grey', fontSize: '0.75rem' },
-                  label: '300%',
-                },
-                2.0: {
-                  style: { color: 'grey', fontSize: '0.75rem' },
-                  label: '200%',
-                },
-                [floor4(wadToDec(minCollRatio))]: {
-                  style: {
-                  color: 'grey',
-                  fontSize: '0.75rem',
-                  borderColor: 'white',
-                },
-                label: 'Unsafe',
-                },
-              }}
-            />
-          </Card.Body>
-        </Card>
+
+        {(!minCollRatio.isZero() && !maxCollRatio.isZero()) && (
+          <>
+            <Text
+              size={'0.75rem'}
+              style={{ paddingLeft: '0.25rem', marginBottom: '0.375rem' }}
+            >
+              Targeted collateralization ratio ({floor2(wadToDec(targetedCollRatio.mul(100)))}%)
+            </Text>
+            <Card variant='bordered' borderWeight='light' style={{height:'100%'}}>
+              <Card.Body
+                style={{ paddingLeft: '2.25rem', paddingRight: '2.25rem', overflow: 'hidden' }}
+              >
+                <Slider
+                  handleStyle={{ borderColor: '#0072F5' }}
+                  included={false}
+                  disabled={disableActions}
+                  value={Number(wadToDec(targetedCollRatio))}
+                  onChange={(value) => { setTargetedCollRatio(contextData.fiat, value, modifyPositionData) }}
+                  min={floor4(wadToDec(minCollRatio))}
+                  max={(maxCollRatio.eq(ethers.constants.MaxUint256)) ? 5.0 : floor4(wadToDec(maxCollRatio))}
+                  step={0.001}
+                  reverse
+                  marks={{
+                    [(maxCollRatio.eq(ethers.constants.MaxUint256)) ? 5.0 : floor4(wadToDec(maxCollRatio))]: {
+                      style: {
+                      color: 'grey',
+                      fontSize: '0.75rem',
+                      borderColor: 'white',
+                    },
+                    label: 'Safe',
+                    },
+                    [floor4(wadToDec(minCollRatio))]: {
+                      style: {
+                      color: 'grey',
+                      fontSize: '0.75rem',
+                      borderColor: 'white',
+                    },
+                    label: 'Unsafe',
+                    },
+                  }}
+                />
+              </Card.Body>
+            </Card>
+          </>
+        )}
       </Modal.Body>
 
       <Spacer y={0.75} />
