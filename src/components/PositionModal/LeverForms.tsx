@@ -754,22 +754,17 @@ export const LeverDecreaseForm = ({
   const {
     collateralType: {
       metadata: { symbol: tokenSymbol },
-      properties: { underlierScale, underlierSymbol, tokenScale },
-      settings: { collybus: { liquidationRatio } }
+      properties: { underlierScale, underlierSymbol, tokenScale }
     },
-    underlierAllowance,
-    underlierBalance,
-    monetaDelegate,
   } = modifyPositionData;
   const {
     subTokenAmount, collateralSlippagePct, underlierSlippagePct,
-    subDebt, maxUnderliersToSell, minUnderliersToBuy, targetedCollRatio,
-    collateral, collRatio, debt, estMinUnderliersToBuy
+    maxUnderliersToSell, minUnderliersToBuy, targetedCollRatio,
+    collateral, collRatio, debt, minCollRatio
   } = leverStore.decreaseState;
   const {
     setSubTokenAmount, setMaxSubTokenAmount, setCollateralSlippagePct, setUnderlierSlippagePct, setTargetedCollRatio
   } = leverStore.decreaseActions;
-  const minCollRatio = minCollRatioWithBuffer(liquidationRatio);
   const hasProxy = contextData.proxies.length > 0;
   const { action: currentTxAction } = transactionData;
   
@@ -917,15 +912,28 @@ export const LeverDecreaseForm = ({
         <Text b size={'m'}>Leveraged Swap Preview</Text>
         <Input
           readOnly
-          value={(leverStore.formDataLoading)
-            ? ' '
-            : (minUnderliersToBuy.lte(estMinUnderliersToBuy)) 
-            ? `[${floor2(scaleToDec(minUnderliersToBuy, tokenScale))}, ${floor2(scaleToDec(estMinUnderliersToBuy, tokenScale))}]`
-            : `[${floor2(scaleToDec(estMinUnderliersToBuy, tokenScale))}, ${floor2(scaleToDec(minUnderliersToBuy, tokenScale))}]`
-          }
+          value={(() => {
+            if (leverStore.formDataLoading) return ' '
+            return `${floor2(scaleToDec(maxUnderliersToSell, underlierScale))}`;
+          })()}
           placeholder='0'
           type='string'
-          label={'Total Underliers to withdraw ([min., max.])'}
+          label={'Underliers to cover flashloan (includes slippage)'}
+          labelRight={underlierSymbol}
+          contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
+          size='sm'
+          status='primary'
+        />
+        <Input
+          readOnly
+          value={(() => {
+            if (leverStore.formDataLoading) return ' '
+            const underliersToWithdraw = minUnderliersToBuy.sub(maxUnderliersToSell);
+            return `${floor2(scaleToDec(underliersToWithdraw, underlierScale))}`;
+          })()}
+          placeholder='0'
+          type='string'
+          label={'Underliers to withdraw (includes slippage)'}
           labelRight={underlierSymbol}
           contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
@@ -971,7 +979,7 @@ export const LeverDecreaseForm = ({
           }
           placeholder='0'
           type='string'
-          label='Collateralization Ratio ([min., max.])'
+          label='Collateralization Ratio'
           labelRight={'🚦'}
           contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'

@@ -265,7 +265,7 @@ const PositionModalBody = (props: PositionModalProps) => {
                 setLeverModeActive(true)
               }}
             >
-              Lever
+              Leverage
             </Navbar.Link>
           </Navbar.Content>
         </Navbar>

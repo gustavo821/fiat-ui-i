@@ -254,7 +254,6 @@ const Home: NextPage = () => {
   ): Promise<ContractReceipt> => {
     try {
       setTransactionData({ action, status: 'sent' });
-      console.log(await fiat.encodeViaProxy(contextData.proxies[0], contract, method, ...args));
       // Dryrun every transaction first to catch and decode errors
       const dryrunResp = useProxy
         ? await fiat.dryrunViaProxy(contextData.proxies[0], contract, method, ...args)
