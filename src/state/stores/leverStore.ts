@@ -717,28 +717,15 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
     */
     decreaseActions: {
       setSubTokenAmount: (fiat, value, modifyPositionData) => {
-        const { collateralType, position } = modifyPositionData;
-        const { 
-          properties: { tokenScale },
-          settings: { collybus: { liquidationRatio } },
-          state: { codex: { virtualRate: rate }, collybus: { fairPrice } }
-        } = collateralType;
+        const { collateralType } = modifyPositionData;
+        const { properties: { tokenScale } } = collateralType;
         let newSubTokenAmount: BigNumber;
         if (value === null || value === '') newSubTokenAmount = initialState.decreaseState.subTokenAmount;
         else newSubTokenAmount = decToScale(floor4(Number(value) < 0 ? 0 : Number(value)), tokenScale);
-
-        let minCollRatio = minCollRatioWithBuffer(minCRForLeveredWithdrawal(
-          position.collateral, position.normalDebt, fairPrice, rate, scaleToWad(newSubTokenAmount, tokenScale)
-        ));
-        if (minCollRatio.lt(minCollRatioWithBuffer(liquidationRatio)))
-          minCollRatio = minCollRatioWithBuffer(liquidationRatio);
-        const maxCollRatio = ethers.constants.MaxUint256;
-
         set((state) => ({
           decreaseState: {
             ...state.decreaseState,
-            subTokenAmount: newSubTokenAmount,
-            minCollRatio, maxCollRatio
+            subTokenAmount: newSubTokenAmount
           },
           formDataLoading: true,
         }));
@@ -751,7 +738,7 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
         set((state) => ({
           decreaseState: {
             ...state.decreaseState,
-            subTokenAmount,
+            subTokenAmount
           },
           formDataLoading: true,
         }));
@@ -803,11 +790,11 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
         const { collateralType, position } = modifyPositionData;
         const { 
           properties: { tokenScale, underlierScale },
-          settings: { codex: { debtFloor } },
+          settings: { codex: { debtFloor }, collybus: { liquidationRatio } },
           state: { codex: { virtualRate: rate }, collybus: { fairPrice } }
         } = collateralType;
         const {
-          subTokenAmount, collateralSlippagePct, underlierSlippagePct, targetedCollRatio, minCollRatio, maxCollRatio
+          subTokenAmount, collateralSlippagePct, underlierSlippagePct, targetedCollRatio
         } = get().decreaseState;
 
         // Reset form errors and warnings on new input
@@ -823,7 +810,9 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           // TODO: replace with computeLeveredWithdrawal method
           const flashloanIdeal = (collateral.isZero())
             ? normalDebtToDebt(position.normalDebt, rate)
-            : position.normalDebt.sub(computeMaxNormalDebt(collateral, rate, fairPrice, targetedCollRatio));
+            : normalDebtToDebt(
+              position.normalDebt.sub(computeMaxNormalDebt(collateral, rate, fairPrice, targetedCollRatio)), rate
+            );
 
           const underlierOut = await userActions.collateralTokenToUnderlier(fiat, subTokenAmount, collateralType);
           const collateralToUnderlierRateWithSlippage = applySwapSlippage(
@@ -844,6 +833,17 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           const minUnderliersToBuy = subTokenAmount.mul(collateralToUnderlierRateWithSlippage).div(tokenScale);
           const maxUnderliersToSell = flashloanIdeal.mul(fiatForUnderlierRateWithSlippage).div(WAD);
           const collRatio = computeCollateralizationRatio(collateral, fairPrice, normalDebt, rate);
+
+          let minCollRatio = minCollRatioWithBuffer(minCRForLeveredWithdrawal(
+            position.collateral, position.normalDebt, fairPrice, rate, scaleToWad(subTokenAmount, tokenScale)
+          ));
+          if (minCollRatio.lt(minCollRatioWithBuffer(liquidationRatio)))
+            minCollRatio = minCollRatioWithBuffer(liquidationRatio);
+          const maxCollRatio = computeCollateralizationRatio(
+            collateral, fairPrice,
+            // TODO: replace with underliertToFIAT method
+            position.normalDebt.sub(debtToNormalDebt(scaleToWad(underlierOut, underlierScale), rate)), rate
+          );
 
           if (debt.gt(ZERO) && debt.lte(debtFloor)) set(() => ({
             formErrors: [
