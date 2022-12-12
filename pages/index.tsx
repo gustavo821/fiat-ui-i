@@ -5,7 +5,7 @@ import shallow from 'zustand/shallow'
 import { useAddRecentTransaction } from '@rainbow-me/rainbowkit';
 import { Container, Spacer } from '@nextui-org/react';
 import { BigNumber, ContractReceipt, ethers } from 'ethers';
-import { FIAT, WAD, wadToDec } from '@fiatdao/sdk';
+import { FIAT, WAD } from '@fiatdao/sdk';
 import { HeaderBar } from '../src/components/HeaderBar';
 import { CollateralTypesTable } from '../src/components/CollateralTypesTable';
 import { PositionsTable } from '../src/components/PositionsTable';
@@ -72,8 +72,8 @@ const Home: NextPage = () => {
   const [selectedPositionId, setSelectedPositionId] = React.useState(initialState.selectedPositionId);
   const [selectedCollateralTypeId, setSelectedCollateralTypeId] = React.useState(initialState.selectedCollateralTypeId);
 
-  const { data: collateralTypesData, isFetching: isFetchingCollateralTypes } = useCollateralTypes(contextData.fiat, chain?.id ?? chains.mainnet.id);
-  const { data: userData, isFetching: isFetchingPositionsData } = useUserData(contextData.fiat, chain?.id ?? chains.mainnet.id, address ?? '');
+  const { data: collateralTypesData } = useCollateralTypes(contextData.fiat, chain?.id ?? chains.mainnet.id);
+  const { data: userData } = useUserData(contextData.fiat, chain?.id ?? chains.mainnet.id, address ?? '');
   const { positionsData, proxies } = userData as any;
 
   const disableActions = React.useMemo(() => transactionData.status === 'sent', [transactionData.status])
@@ -373,7 +373,7 @@ const Home: NextPage = () => {
     }
     else {
       const args = userActions.buildRedeemCollateralAndModifyDebtArgs(
-        contextData, collateralType, deltaCollateral, deltaDebt, position
+        contextData, proxies, collateralType, deltaCollateral, deltaDebt, position
       );
       const response = await sendTransaction(
         contextData.fiat, true, 'redeemCollateralAndModifyDebt', args.contract, args.methodName, ...args.methodArgs

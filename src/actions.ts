@@ -572,6 +572,7 @@ export const buildSellCollateralAndModifyDebtArgs = (
 
 export const buildRedeemCollateralAndModifyDebtArgs = (contextData: any,
   collateralTypeData: any,
+  proxies: any[],
   deltaCollateral: BigNumber,
   deltaDebt: BigNumber,
   position: any

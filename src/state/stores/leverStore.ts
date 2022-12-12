@@ -10,14 +10,13 @@ import {
   minCRForLeveredDeposit,
   minCRForLeveredWithdrawal,
   normalDebtToDebt,
-  scaleToDec,
   scaleToWad,
   WAD,
   wadToDec,
   wadToScale,
   ZERO,
 } from '@fiatdao/sdk';
-import { BigNumber, ethers } from 'ethers';
+import { BigNumber } from 'ethers';
 import create from 'zustand';
 import * as userActions from '../../actions';
 import { debounce, floor2, floor4, minCollRatioWithBuffer } from '../../utils';

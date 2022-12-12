@@ -20,8 +20,8 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
 
   const { chain } = useNetwork();
   const { address } = useAccount();
-  const { data: collateralTypesData, isFetching: isFetchingCollateralTypes } = useCollateralTypes(props.fiat, chain?.id ?? chains.mainnet.id);
-  const { data: userData, isFetching: isFetchingPositionsData } = useUserData(props.fiat, chain?.id ?? chains.mainnet.id, address ?? '');
+  const { data: collateralTypesData } = useCollateralTypes(props.fiat, chain?.id ?? chains.mainnet.id);
+  const { data: userData } = useUserData(props.fiat, chain?.id ?? chains.mainnet.id, address ?? '');
   const { positionsData } = userData as any;
 
   React.useEffect(() => {
