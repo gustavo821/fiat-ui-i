@@ -278,6 +278,7 @@ const addDeltaNormalBuffer = (deltaNormalDebt: BigNumber): BigNumber => {
 
 export const buildModifyCollateralAndDebtArgs = (
   contextData: any,
+  proxies: any[],
   collateralTypeData: any,
   deltaDebt: BigNumber,
   position: { collateral: BigNumber, normalDebt: BigNumber }
@@ -304,7 +305,7 @@ export const buildModifyCollateralAndDebtArgs = (
       properties.vault,
       properties.token,
       properties.tokenId,
-      contextData.proxies[0],
+      proxies[0],
       contextData.user,
       contextData.user,
       ZERO,
@@ -316,6 +317,7 @@ export const buildModifyCollateralAndDebtArgs = (
 
 export const buildBuyCollateralAndModifyDebtArgs = (
   contextData: any,
+  proxies: any[],
   collateralTypeData: any,
   deltaCollateral: BigNumber,
   deltaDebt: BigNumber,
@@ -341,7 +343,7 @@ export const buildBuyCollateralAndModifyDebtArgs = (
         methodName: 'buyCollateralAndModifyDebt',
         methodArgs: [
           properties.vault,
-          contextData.proxies[0],
+          proxies[0],
           contextData.user,
           contextData.user,
           underlier,
@@ -373,7 +375,7 @@ export const buildBuyCollateralAndModifyDebtArgs = (
           properties.vault,
           properties.token,
           properties.tokenId,
-          contextData.proxies[0],
+          proxies[0],
           contextData.user,
           contextData.user,
           tokenAmount,
@@ -392,7 +394,7 @@ export const buildBuyCollateralAndModifyDebtArgs = (
         methodArgs: [
           'buyCollateralAndModifyDebt',
           properties.vault,
-          contextData.proxies[0],
+          proxies[0],
           contextData.user,
           contextData.user,
           underlier,
@@ -415,7 +417,7 @@ export const buildBuyCollateralAndModifyDebtArgs = (
         methodArgs: [
           'buyCollateralAndModifyDebt',
           properties.vault,
-          contextData.proxies[0],
+          proxies[0],
           contextData.user,
           contextData.user,
           underlier,
@@ -440,6 +442,7 @@ export const buildBuyCollateralAndModifyDebtArgs = (
 
 export const buildSellCollateralAndModifyDebtArgs = (
   contextData: any,
+  proxies: any[],
   collateralTypeData: any,
   deltaCollateral: BigNumber,
   deltaDebt: BigNumber,
@@ -470,7 +473,7 @@ export const buildSellCollateralAndModifyDebtArgs = (
         methodName: 'sellCollateralAndModifyDebt',
         methodArgs: [
           properties.vault,
-          contextData.proxies[0],
+          proxies[0],
           contextData.user,
           contextData.user,
           tokenAmount,
@@ -503,7 +506,7 @@ export const buildSellCollateralAndModifyDebtArgs = (
           properties.vault,
           properties.token,
           properties.tokenId,
-          contextData.proxies[0],
+          proxies[0],
           contextData.user,
           contextData.user,
           tokenAmount,
@@ -521,7 +524,7 @@ export const buildSellCollateralAndModifyDebtArgs = (
         methodName: 'sellCollateralAndModifyDebt',
         methodArgs: [
           properties.vault,
-          contextData.proxies[0],
+          proxies[0],
           contextData.user,
           contextData.user,
           tokenAmount,
@@ -544,7 +547,7 @@ export const buildSellCollateralAndModifyDebtArgs = (
         methodName: 'sellCollateralAndModifyDebt',
         methodArgs: [
           properties.vault,
-          contextData.proxies[0],
+          proxies[0],
           contextData.user,
           contextData.user,
           tokenAmount,
@@ -593,7 +596,7 @@ export const buildRedeemCollateralAndModifyDebtArgs = (contextData: any,
         methodArgs: [
           properties.vault,
           properties.token,
-          contextData.proxies[0],
+          proxies[0],
           contextData.user,
           contextData.user,
           tokenAmount,
@@ -611,7 +614,7 @@ export const buildRedeemCollateralAndModifyDebtArgs = (contextData: any,
           properties.vault,
           properties.token,
           properties.tokenId,
-          contextData.proxies[0],
+          proxies[0],
           contextData.user,
           contextData.user,
           tokenAmount,
@@ -629,7 +632,7 @@ export const buildRedeemCollateralAndModifyDebtArgs = (contextData: any,
         methodArgs: [
           properties.vault,
           properties.token,
-          contextData.proxies[0],
+          proxies[0],
           contextData.user,
           contextData.user,
           tokenAmount,
@@ -647,7 +650,7 @@ export const buildRedeemCollateralAndModifyDebtArgs = (contextData: any,
         methodArgs: [
           properties.vault,
           properties.token,
-          contextData.proxies[0],
+          proxies[0],
           contextData.user,
           contextData.user,
           tokenAmount,
@@ -671,6 +674,7 @@ export const buildRedeemCollateralAndModifyDebtArgs = (contextData: any,
 
 export const buildBuyCollateralAndIncreaseLeverArgs = async (
   contextData: any,
+  proxies: any[],
   collateralTypeData: any,
   upFrontUnderliers: BigNumber,
   addDebt: BigNumber,
@@ -692,7 +696,7 @@ export const buildBuyCollateralAndIncreaseLeverArgs = async (
         methodName: 'buyCollateralAndIncreaseLever',
         methodArgs: [
           properties.vault,
-          contextData.proxies[0],
+          proxies[0],
           contextData.user,
           upFrontUnderliers,
           addDebt,
@@ -719,7 +723,7 @@ export const buildBuyCollateralAndIncreaseLeverArgs = async (
         methodName: 'buyCollateralAndIncreaseLever',
         methodArgs: [
           properties.vault,
-          contextData.proxies[0],
+          proxies[0],
           contextData.user,
           upFrontUnderliers,
           addDebt,
@@ -744,7 +748,7 @@ export const buildBuyCollateralAndIncreaseLeverArgs = async (
         methodName: 'buyCollateralAndIncreaseLever',
         methodArgs: [
           properties.vault,
-          contextData.proxies[0],
+          proxies[0],
           contextData.user,
           upFrontUnderliers,
           addDebt,
@@ -769,6 +773,7 @@ export const buildBuyCollateralAndIncreaseLeverArgs = async (
 
 export const buildSellCollateralAndDecreaseLeverArgs = async (
   contextData: any,
+  proxies: any[],
   collateralTypeData: any,
   subTokenAmount: BigNumber,
   subDebt: BigNumber,
@@ -796,7 +801,7 @@ export const buildSellCollateralAndDecreaseLeverArgs = async (
         methodName: 'sellCollateralAndDecreaseLever',
         methodArgs: [
           properties.vault,
-          contextData.proxies[0],
+          proxies[0],
           contextData.user,
           subTokenAmount,
           subNormalDebt,
@@ -824,7 +829,7 @@ export const buildSellCollateralAndDecreaseLeverArgs = async (
         methodArgs: [
           'sellCollateralAndDecreaseLever',
           properties.vault,
-          contextData.proxies[0],
+          proxies[0],
           contextData.user,
           subTokenAmount,
           subNormalDebt,
@@ -850,7 +855,7 @@ export const buildSellCollateralAndDecreaseLeverArgs = async (
         methodArgs: [
           'sellCollateralAndDecreaseLever',
           properties.vault,
-          contextData.proxies[0],
+          proxies[0],
           contextData.user,
           subTokenAmount,
           subNormalDebt,
@@ -875,6 +880,7 @@ export const buildSellCollateralAndDecreaseLeverArgs = async (
 
 export const buildRedeemCollateralAndDecreaseLeverArgs = async (
   contextData: any,
+  proxies: any[],
   collateralTypeData: any,
   subTokenAmount: BigNumber,
   subDebt: BigNumber,
@@ -901,7 +907,7 @@ export const buildRedeemCollateralAndDecreaseLeverArgs = async (
         methodName: 'redeemCollateralAndDecreaseLever',
         methodArgs: [
           properties.vault,
-          contextData.proxies[0],
+          proxies[0],
           contextData.user,
           subTokenAmount,
           subNormalDebt,
@@ -921,7 +927,7 @@ export const buildRedeemCollateralAndDecreaseLeverArgs = async (
         methodArgs: [
           'redeemCollateralAndDecreaseLever',
           properties.vault,
-          contextData.proxies[0],
+          proxies[0],
           contextData.user,
           subTokenAmount,
           subNormalDebt,
@@ -941,7 +947,7 @@ export const buildRedeemCollateralAndDecreaseLeverArgs = async (
         methodArgs: [
           'redeemCollateralAndDecreaseLever',
           properties.vault,
-          contextData.proxies[0],
+          proxies[0],
           contextData.user,
           subTokenAmount,
           subNormalDebt,

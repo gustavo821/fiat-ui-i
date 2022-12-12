@@ -4,7 +4,9 @@ import { Slider } from 'antd';
 import 'antd/dist/antd.css';
 import { BigNumber, ethers } from 'ethers';
 import React, {useMemo} from 'react';
+import { chain as chains, useAccount, useNetwork } from 'wagmi';
 import shallow from 'zustand/shallow';
+import { useUserData } from '../../state/queries/useUserData';
 import { useBorrowStore } from '../../state/stores/borrowStore';
 import { commifyToDecimalPlaces, floor2, floor4, floor5, minCollRatioWithBuffer } from '../../utils';
 import { Alert } from '../Alert';
@@ -32,7 +34,6 @@ export const CreateForm = ({
   setUnderlierAllowanceForProxy: (fiat: any, amount: BigNumber) => any,
   unsetUnderlierAllowanceForProxy: (fiat: any) => any,
 }) => {
-  const { proxies } = contextData;
   const {
     collateralType: {
       metadata: { symbol: tokenSymbol },
@@ -44,7 +45,11 @@ export const CreateForm = ({
     monetaDelegate,
   } = modifyPositionData;
   const { action: currentTxAction } = transactionData;
-  const hasProxy = proxies.length > 0;
+
+  const { chain } = useNetwork();
+  const { address } = useAccount();
+  const { data: userData } = useUserData(contextData.fiat, chain?.id ?? chains.mainnet.id, address ?? '');
+  const hasProxy = userData.proxies.length > 0;
 
   const borrowStore = useBorrowStore(
     React.useCallback(
@@ -399,7 +404,10 @@ export const IncreaseForm = ({
     ), shallow
   );
 
-  const hasProxy = contextData.proxies.length > 0;
+  const { chain } = useNetwork();
+  const { address } = useAccount();
+  const { data: userData } = useUserData(contextData.fiat, chain?.id ?? chains.mainnet.id, address ?? '');
+  const hasProxy = userData.proxies.length > 0;
   const { action: currentTxAction } = transactionData;
   
   const renderFormAlerts = () => {
@@ -640,7 +648,11 @@ export const DecreaseForm = ({
     ), shallow
   );
 
-  const hasProxy = contextData.proxies.length > 0;
+  const { chain } = useNetwork();
+  const { address } = useAccount();
+  const { data: userData } = useUserData(contextData.fiat, chain?.id ?? chains.mainnet.id, address ?? '');
+  const hasProxy = userData.proxies.length > 0;
+
   const { action: currentTxAction } = transactionData;
   
   const renderFormAlerts = () => {
@@ -922,7 +934,11 @@ export const RedeemForm = ({
     ), shallow
   );
 
-  const hasProxy = contextData.proxies.length > 0;
+  const { chain } = useNetwork();
+  const { address } = useAccount();
+  const { data: userData } = useUserData(contextData.fiat, chain?.id ?? chains.mainnet.id, address ?? '');
+  const hasProxy = userData.proxies.length > 0;
+
   const { action: currentTxAction } = transactionData;
   
   const renderFormAlerts = () => {

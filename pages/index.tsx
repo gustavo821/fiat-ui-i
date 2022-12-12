@@ -18,6 +18,7 @@ import { useBorrowStore } from '../src/state/stores/borrowStore';
 import { collateralTypesKey, useCollateralTypes } from '../src/state/queries/useCollateralTypes';
 import { userDataKey, useUserData } from '../src/state/queries/useUserData';
 import { useQueryClient } from '@tanstack/react-query';
+import { fiatBalanceKey } from '../src/state/queries/useFiatBalance';
 
 export type TransactionStatus = null | 'error' | 'sent' | 'confirming' | 'confirmed';
 
@@ -33,7 +34,6 @@ const Home: NextPage = () => {
       fiat: null as null | FIAT,
       explorerUrl: null as null | string,
       user: null as null | string,
-      fiatBalance: '' as string,
     },
     selectedPositionId: null as null | string,
     selectedCollateralTypeId: null as null | string,
@@ -87,6 +87,7 @@ const Home: NextPage = () => {
     setSelectedPositionId(initialState.selectedPositionId);
     setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
     queryClient.invalidateQueries(userDataKey.all);
+    queryClient.invalidateQueries(fiatBalanceKey.all);
   }
 
   const softReset = () => {
@@ -96,20 +97,10 @@ const Home: NextPage = () => {
     setSelectedPositionId(initialState.selectedPositionId);
     setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
     // Refetch data after a reset
-    handleFiatBalance();
     queryClient.invalidateQueries(collateralTypesKey.all);
     queryClient.invalidateQueries(userDataKey.all);
+    queryClient.invalidateQueries(fiatBalanceKey.all);
   }
-
-  const handleFiatBalance = React.useCallback(async () => {
-    if (!contextData.fiat || !contextData.user) return;
-    const { fiat } = contextData.fiat.getContracts();
-    const fiatBalance = await fiat.balanceOf(contextData.user)
-    setContextData((curContextData) => ({
-      ...curContextData,
-      fiatBalance: `${parseFloat(wadToDec(fiatBalance)).toFixed(2)} FIAT`
-    }));
-  }, [contextData.fiat, contextData.user]);
 
   // Reset state if network or account changes
   React.useEffect(() => {
@@ -137,10 +128,6 @@ const Home: NextPage = () => {
       explorerUrl: chain?.blockExplorers?.etherscan?.url || '',
     }));
   }, [connector, chain?.blockExplorers?.etherscan?.url]);
-  
-  React.useEffect(() => {
-    handleFiatBalance();
-  }, [contextData.fiat, handleFiatBalance])
 
   // Fetch User data, Vault data, and set Fiat SDK in global state
   React.useEffect(() => {
@@ -310,7 +297,7 @@ const Home: NextPage = () => {
 
   const createPosition = async (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => {
     const args = userActions.buildBuyCollateralAndModifyDebtArgs(
-      contextData, modifyPositionData.collateralType, deltaCollateral, deltaDebt, underlier
+      contextData, proxies, modifyPositionData.collateralType, deltaCollateral, deltaDebt, underlier
     );
     const response = await sendTransaction(
       contextData.fiat, true, 'createPosition', args.contract, args.methodName, ...args.methodArgs
@@ -323,7 +310,7 @@ const Home: NextPage = () => {
     const { collateralType, position } = modifyPositionData;
     if (deltaCollateral.isZero()) {
        // increase (mint)
-      const args = userActions.buildModifyCollateralAndDebtArgs(contextData, collateralType, deltaDebt, position);
+      const args = userActions.buildModifyCollateralAndDebtArgs(contextData, proxies, collateralType, deltaDebt, position);
       const response = await sendTransaction(
         contextData.fiat, true, 'modifyCollateralAndDebt', args.contract, args.methodName, ...args.methodArgs
       );
@@ -331,7 +318,7 @@ const Home: NextPage = () => {
       softReset();
     } else {
       const args = userActions.buildBuyCollateralAndModifyDebtArgs(
-        contextData, collateralType, deltaCollateral, deltaDebt, underlier
+        contextData, proxies, collateralType, deltaCollateral, deltaDebt, underlier
       );
       const response = await sendTransaction(
         contextData.fiat, true, 'buyCollateralAndModifyDebt', args.contract, args.methodName, ...args.methodArgs
@@ -349,7 +336,7 @@ const Home: NextPage = () => {
     if (deltaCollateral.isZero()) {
       // decrease (pay back)
       const args = userActions.buildModifyCollateralAndDebtArgs(
-        contextData, collateralType, deltaDebt.mul(-1), position
+        contextData, proxies, collateralType, deltaDebt.mul(-1), position
       );
       const response = await sendTransaction(
         contextData.fiat, true, 'modifyCollateralAndDebt', args.contract, args.methodName, ...args.methodArgs
@@ -359,7 +346,7 @@ const Home: NextPage = () => {
     }
     else {
       const args = userActions.buildSellCollateralAndModifyDebtArgs(
-        contextData, collateralType, deltaCollateral, deltaDebt, underlier, position,
+        contextData, proxies, collateralType, deltaCollateral, deltaDebt, underlier, position,
       );
       const response = await sendTransaction(
         contextData.fiat, true, 'sellCollateralAndModifyDebt', args.contract, args.methodName, ...args.methodArgs
@@ -376,7 +363,7 @@ const Home: NextPage = () => {
     if (deltaCollateral.isZero()) {
        // decrease (pay back)
       const args = userActions.buildModifyCollateralAndDebtArgs(
-        contextData, collateralType, deltaDebt.mul(-1), position
+        contextData, proxies, collateralType, deltaDebt.mul(-1), position
       );
       const response = await sendTransaction(
         contextData.fiat, true, 'modifyCollateralAndDebt', args.contract, args.methodName, ...args.methodArgs
@@ -402,7 +389,7 @@ const Home: NextPage = () => {
     upFrontUnderlier: BigNumber, addDebt: BigNumber, minUnderlierToBuy: BigNumber, minTokenToBuy: BigNumber
   ) => {
     const args = await userActions.buildBuyCollateralAndIncreaseLeverArgs(
-      contextData, modifyPositionData.collateralType, upFrontUnderlier, addDebt, minUnderlierToBuy, minTokenToBuy
+      contextData, proxies, modifyPositionData.collateralType, upFrontUnderlier, addDebt, minUnderlierToBuy, minTokenToBuy
     );
     const response = await sendTransaction(
       contextData.fiat, true, 'createLeveredPosition', args.contract, args.methodName, ...args.methodArgs
@@ -415,7 +402,7 @@ const Home: NextPage = () => {
     upFrontUnderlier: BigNumber, addDebt: BigNumber, minUnderlierToBuy: BigNumber, minTokenToBuy: BigNumber
   ) => {
     const args = await userActions.buildBuyCollateralAndIncreaseLeverArgs(
-      contextData, modifyPositionData.collateralType, upFrontUnderlier, addDebt, minUnderlierToBuy, minTokenToBuy
+      contextData, proxies, modifyPositionData.collateralType, upFrontUnderlier, addDebt, minUnderlierToBuy, minTokenToBuy
     );
     const response = await sendTransaction(
       contextData.fiat, true, 'buyCollateralAndIncreaseLever', args.contract, args.methodName, ...args.methodArgs
@@ -432,7 +419,7 @@ const Home: NextPage = () => {
   ) => {
     const { collateralType, position } = modifyPositionData;
     const args = await userActions.buildSellCollateralAndDecreaseLeverArgs(
-      contextData, collateralType, subTokenAmount, subDebt, maxUnderlierToSell, minUnderlierToBuy, position
+      contextData, proxies, collateralType, subTokenAmount, subDebt, maxUnderlierToSell, minUnderlierToBuy, position
     );
     const response = await sendTransaction(
       contextData.fiat, true, 'sellCollateralAndDecreaseLever', args.contract, args.methodName, ...args.methodArgs
@@ -449,7 +436,7 @@ const Home: NextPage = () => {
   ) => {
     const { collateralType, position } = modifyPositionData;
     const args = await userActions.buildRedeemCollateralAndDecreaseLeverArgs(
-      contextData, collateralType, subTokenAmount, subDebt, maxUnderlierToSell, position
+      contextData, proxies, collateralType, subTokenAmount, subDebt, maxUnderlierToSell, position
     );
     const response = await sendTransaction(
       contextData.fiat, true, 'redeemCollateralAndDecreaseLever', args.contract, args.methodName, ...args.methodArgs

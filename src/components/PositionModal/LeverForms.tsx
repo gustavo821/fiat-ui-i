@@ -4,7 +4,9 @@ import { Slider } from 'antd';
 import 'antd/dist/antd.css';
 import { BigNumber, ethers } from 'ethers';
 import React from 'react';
+import { chain as chains, useAccount, useNetwork } from 'wagmi';
 import shallow from 'zustand/shallow';
+import { useUserData } from '../../state/queries/useUserData';
 import { useLeverStore } from '../../state/stores/leverStore';
 import { commifyToDecimalPlaces, floor2, floor4, minCollRatioWithBuffer } from '../../utils';
 import { Alert } from '../Alert';
@@ -45,6 +47,10 @@ export const LeverCreateForm = ({
     ), shallow
   );
 
+  const { chain } = useNetwork();
+  const { address } = useAccount();
+  const { data: userData } = useUserData(contextData.fiat, chain?.id ?? chains.mainnet.id, address ?? '');
+
   const [submitError, setSubmitError] = React.useState('');
 
   if (
@@ -55,7 +61,6 @@ export const LeverCreateForm = ({
     return null;
   }
 
-  const { proxies } = contextData;
   const {
     collateralType: {
       metadata: { symbol: tokenSymbol },
@@ -76,7 +81,7 @@ export const LeverCreateForm = ({
   } = leverStore.createActions;
   const minCollRatio = minCollRatioWithBuffer(liquidationRatio);
   const { action: currentTxAction } = transactionData;
-  const hasProxy = proxies.length > 0;
+  const hasProxy = userData.proxies.length > 0;
 
   // const renderSummary = () => {
   //   if (leverStore.createState.deltaCollateral.isZero()) {
@@ -413,6 +418,9 @@ export const LeverIncreaseForm = ({
       []
     ), shallow
   );
+  const { chain } = useNetwork();
+  const { address } = useAccount();
+  const { data: userData } = useUserData(contextData.fiat, chain?.id ?? chains.mainnet.id, address ?? '');
   const {
     collateralType: {
       metadata: { symbol: tokenSymbol },
@@ -432,7 +440,7 @@ export const LeverIncreaseForm = ({
     setUpFrontUnderliers, setCollateralSlippagePct, setUnderlierSlippagePct, setTargetedCollRatio
   } = leverStore.increaseActions;
   const minCollRatio = minCollRatioWithBuffer(liquidationRatio);
-  const hasProxy = contextData.proxies.length > 0;
+  const hasProxy = userData.proxies.length > 0;
   const { action: currentTxAction } = transactionData;
   
   const renderFormAlerts = () => {
@@ -751,6 +759,10 @@ export const LeverDecreaseForm = ({
       []
     ), shallow
   );
+  const { chain } = useNetwork();
+  const { address } = useAccount();
+  const { data: userData } = useUserData(contextData.fiat, chain?.id ?? chains.mainnet.id, address ?? '');
+  const hasProxy = userData.proxies.length > 0;
   const {
     collateralType: {
       metadata: { symbol: tokenSymbol },
@@ -765,7 +777,6 @@ export const LeverDecreaseForm = ({
   const {
     setSubTokenAmount, setMaxSubTokenAmount, setCollateralSlippagePct, setUnderlierSlippagePct, setTargetedCollRatio
   } = leverStore.decreaseActions;
-  const hasProxy = contextData.proxies.length > 0;
   const { action: currentTxAction } = transactionData;
   
   const renderFormAlerts = () => {

@@ -5,7 +5,8 @@ import { connectButtonCSS, ProxyButton } from './ProxyButton';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { ResourcesModal } from './ResourcesModal';
 import { queryMeta } from '@fiatdao/sdk';
-import { useBlockNumber } from 'wagmi';
+import { chain as chains, useAccount, useBlockNumber, useNetwork } from 'wagmi';
+import { useFiatBalance } from '../state/queries/useFiatBalance';
 
 interface BlockSyncStatus {
   subgraphBlockNumber: number;
@@ -19,6 +20,10 @@ export const HeaderBar = (props: any) => {
   const [showResourcesModal, setShowResourcesModal] = React.useState<boolean>(false);
   const [syncStatus, setSyncStatus] = React.useState<BlockSyncStatus>();
   const {data: providerBlockNumber, refetch} = useBlockNumber();
+
+  const { chain } = useNetwork();
+  const { address } = useAccount();
+  const { data: fiatBalance } = useFiatBalance(props.contextData.fiat, chain?.id ?? chains.mainnet.id, address ?? '');
 
   const queryBlockNumber = React.useCallback(async () => {
     if (!props.contextData?.fiat) return;
@@ -82,7 +87,7 @@ export const HeaderBar = (props: any) => {
               disableActions={props.disableActions}
               transactionData={props.transactionData}
             />
-            {(props.contextData?.fiatBalance) && 
+            {(fiatBalance) && 
               <Badge css={connectButtonCSS} >
                 <Link
                   href={'https://app.balancer.fi/#/ethereum/pool/0x178e029173417b1f9c8bc16dcec6f697bc32374600000000000000000000025d'}
@@ -90,7 +95,7 @@ export const HeaderBar = (props: any) => {
                   rel='noreferrer noopener'
                   color="text"
                   >
-                    {props.contextData.fiatBalance}
+                    {fiatBalance}
                 </Link>
               </Badge>
             }
