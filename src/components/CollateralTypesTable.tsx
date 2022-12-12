@@ -26,7 +26,7 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
 
   React.useEffect(() => {
     const data = [...collateralTypesData].filter(({ properties: { vault, tokenId } }) => {
-      if (positionsData.find((position) => addressEq(position.vault, vault) && position.tokenId == tokenId)) {
+      if (positionsData.find((position: any) => addressEq(position.vault, vault) && position.tokenId == tokenId)) {
         return false;
       }
       return true;
