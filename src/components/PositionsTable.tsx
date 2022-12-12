@@ -23,8 +23,8 @@ export const PositionsTable = (props: PositionsTableProps) => {
   });
   const { chain } = useNetwork();
   const { address } = useAccount();
-  const { data: collateralTypesData, isFetching: isFetchingCollateralTypes } = useCollateralTypes(props.contextData.fiat, chain?.id ?? chains.mainnet.id);
-  const { data: userData, isFetching: isFetchingPositionsData } = useUserData(props.contextData.fiat, chain?.id ?? chains.mainnet.id, address ?? '');
+  const { data: collateralTypesData } = useCollateralTypes(props.contextData.fiat, chain?.id ?? chains.mainnet.id);
+  const { data: userData } = useUserData(props.contextData.fiat, chain?.id ?? chains.mainnet.id, address ?? '');
   const { positionsData } = userData as any;
 
   React.useEffect(() => {
