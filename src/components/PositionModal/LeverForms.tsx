@@ -59,8 +59,7 @@ export const LeverCreateForm = ({
   const {
     collateralType: {
       metadata: { symbol: tokenSymbol },
-      properties: { underlierScale, underlierSymbol, tokenScale },
-      settings: { collybus: { liquidationRatio } }
+      properties: { underlierScale, underlierSymbol, tokenScale }
     },
     underlierAllowance,
     underlierBalance,
@@ -69,12 +68,11 @@ export const LeverCreateForm = ({
   const {
     upFrontUnderliers, collateralSlippagePct, underlierSlippagePct, targetedCollRatio,
     addDebt, minUnderliersToBuy, minTokenToBuy, 
-    collateral, collRatio, debt, estCollateral, estCollRatio, estMinTokenToBuy
+    collateral, collRatio, debt, estCollateral, estCollRatio, estMinTokenToBuy, minCollRatio, maxCollRatio
   } = leverStore.createState;
   const {
     setUpFrontUnderliers, setCollateralSlippagePct, setUnderlierSlippagePct, setTargetedCollRatio
   } = leverStore.createActions;
-  const minCollRatio = minCollRatioWithBuffer(liquidationRatio);
   const { action: currentTxAction } = transactionData;
   const hasProxy = proxies.length > 0;
 
@@ -206,25 +204,17 @@ export const LeverCreateForm = ({
               value={Number(wadToDec(targetedCollRatio))}
               onChange={(value) => { setTargetedCollRatio(contextData.fiat, value, modifyPositionData) }}
               min={floor4(wadToDec(minCollRatio))}
-              max={5.0}
+              max={(maxCollRatio.eq(ethers.constants.MaxUint256)) ? 5.0 : floor4(wadToDec(maxCollRatio))}
               step={0.001}
               reverse
               marks={{
-                5.0: {
-                  style: { color: 'grey', fontSize: '0.75rem' },
-                  label: 'Safe',
+                [(maxCollRatio.eq(ethers.constants.MaxUint256)) ? 5.0 : floor4(wadToDec(maxCollRatio))]: {
+                  style: {
+                  color: 'grey',
+                  fontSize: '0.75rem',
+                  borderColor: 'white',
                 },
-                4.0: {
-                  style: { color: 'grey', fontSize: '0.75rem' },
-                  label: '400%',
-                },
-                3.0: {
-                  style: { color: 'grey', fontSize: '0.75rem' },
-                  label: '300%',
-                },
-                2.0: {
-                  style: { color: 'grey', fontSize: '0.75rem' },
-                  label: '200%',
+                label: 'Safe',
                 },
                 [floor4(wadToDec(minCollRatio))]: {
                   style: {
@@ -416,8 +406,7 @@ export const LeverIncreaseForm = ({
   const {
     collateralType: {
       metadata: { symbol: tokenSymbol },
-      properties: { underlierScale, underlierSymbol, tokenScale },
-      settings: { collybus: { liquidationRatio } }
+      properties: { underlierScale, underlierSymbol, tokenScale }
     },
     underlierAllowance,
     underlierBalance,
@@ -426,12 +415,11 @@ export const LeverIncreaseForm = ({
   const {
     upFrontUnderliers, collateralSlippagePct, underlierSlippagePct,
     addDebt, minUnderliersToBuy, minTokenToBuy, targetedCollRatio,
-    collateral, collRatio, debt, estCollateral, estCollRatio, estMinTokenToBuy
+    collateral, collRatio, debt, estCollateral, estCollRatio, estMinTokenToBuy, minCollRatio, maxCollRatio
   } = leverStore.increaseState;
   const {
     setUpFrontUnderliers, setCollateralSlippagePct, setUnderlierSlippagePct, setTargetedCollRatio
   } = leverStore.increaseActions;
-  const minCollRatio = minCollRatioWithBuffer(liquidationRatio);
   const hasProxy = contextData.proxies.length > 0;
   const { action: currentTxAction } = transactionData;
   
@@ -535,25 +523,17 @@ export const LeverIncreaseForm = ({
                 setTargetedCollRatio(contextData.fiat, value, modifyPositionData);
               }}
               min={floor4(wadToDec(minCollRatio))}
-              max={5.0}
+              max={(maxCollRatio.eq(ethers.constants.MaxUint256)) ? 5.0 : floor4(wadToDec(maxCollRatio))}
               step={0.001}
               reverse
               marks={{
-                5.0: {
-                  style: { color: 'grey', fontSize: '0.75rem' },
-                  label: 'Safe',
+                [(maxCollRatio.eq(ethers.constants.MaxUint256)) ? 5.0 : floor4(wadToDec(maxCollRatio))]: {
+                  style: {
+                  color: 'grey',
+                  fontSize: '0.75rem',
+                  borderColor: 'white',
                 },
-                4.0: {
-                  style: { color: 'grey', fontSize: '0.75rem' },
-                  label: '400%',
-                },
-                3.0: {
-                  style: { color: 'grey', fontSize: '0.75rem' },
-                  label: '300%',
-                },
-                2.0: {
-                  style: { color: 'grey', fontSize: '0.75rem' },
-                  label: '200%',
+                label: 'Safe',
                 },
                 [floor4(wadToDec(minCollRatio))]: {
                   style: {
@@ -1058,8 +1038,10 @@ export const LeverRedeemForm = ({
       []
     ), shallow
   );
-  const { collateralType: { settings: { collybus: { liquidationRatio } } } } = modifyPositionData;
-  const minCollRatio = minCollRatioWithBuffer(liquidationRatio);
+
+  const {
+    minCollRatio, maxCollRatio
+  } = leverStore.redeemState;
   const hasProxy = contextData.proxies.length > 0;
   const { action: currentTxAction } = transactionData;
   
@@ -1152,25 +1134,17 @@ export const LeverRedeemForm = ({
                 leverStore.redeemActions.setTargetedCollRatio(contextData.fiat, value, modifyPositionData);
               }}
               min={floor4(wadToDec(minCollRatio))}
-              max={5.0}
+              max={(maxCollRatio.eq(ethers.constants.MaxUint256)) ? 5.0 : floor4(wadToDec(maxCollRatio))}
               step={0.001}
               reverse
               marks={{
-                5.0: {
-                  style: { color: 'grey', fontSize: '0.75rem' },
-                  label: 'Safe',
+                [(maxCollRatio.eq(ethers.constants.MaxUint256)) ? 5.0 : floor4(wadToDec(maxCollRatio))]: {
+                  style: {
+                  color: 'grey',
+                  fontSize: '0.75rem',
+                  borderColor: 'white',
                 },
-                4.0: {
-                  style: { color: 'grey', fontSize: '0.75rem' },
-                  label: '400%',
-                },
-                3.0: {
-                  style: { color: 'grey', fontSize: '0.75rem' },
-                  label: '300%',
-                },
-                2.0: {
-                  style: { color: 'grey', fontSize: '0.75rem' },
-                  label: '200%',
+                label: 'Safe',
                 },
                 [floor4(wadToDec(minCollRatio))]: {
                   style: {
