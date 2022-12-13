@@ -1,6 +1,50 @@
 import { debtToNormalDebt, decToWad, scaleToWad, WAD, wadToScale, ZERO } from '@fiatdao/sdk';
 import { BigNumber, Contract } from 'ethers';
 
+export const underlierToFIAT = async (
+  fiat: any,
+  underlierAmount: BigNumber,
+  collateralType: any
+): Promise<BigNumber> => {
+  if (underlierAmount.isZero()) return ZERO;
+
+  const { vaultType, underlierToken } = collateralType.properties;
+  const { leverEPTActions, leverFYActions, leverSPTActions } = fiat.getContracts();
+
+  switch (vaultType) {
+    case 'ERC20:EPT': {
+      return await fiat.call(
+        leverEPTActions,
+        'underlierToFIAT',
+        [leverEPTActions.fiatPoolId()],
+        [underlierToken],
+        underlierAmount
+      );
+    }
+    case 'ERC20:FY': {
+      return await fiat.call(
+        leverFYActions,
+        'underlierToFIAT',
+        [leverFYActions.fiatPoolId()],
+        [underlierToken],
+        underlierAmount
+      );
+    }
+    case 'ERC20:SPT': {
+      return await fiat.call(
+        leverSPTActions,
+        'underlierToFIAT',
+        [leverSPTActions.fiatPoolId()],
+        [underlierToken],
+        underlierAmount
+      );
+    }
+    default: {
+      throw new Error('Unsupported collateral type');
+    }
+  }
+};
+
 // TODO: remove precision conversion
 export const fiatToUnderlier = async (
   fiat: any,
@@ -14,31 +58,31 @@ export const fiatToUnderlier = async (
 
   switch (vaultType) {
     case 'ERC20:EPT': {
-      return (await fiat.call(
+      return await fiat.call(
         leverEPTActions,
         'fiatToUnderlier',
         [leverEPTActions.fiatPoolId()],
         [underlierToken],
         fiatAmount
-      )).mul(underlierScale).div(WAD);
+      );
     }
     case 'ERC20:FY': {
-      return (await fiat.call(
+      return await fiat.call(
         leverFYActions,
         'fiatToUnderlier',
         [leverFYActions.fiatPoolId()],
         [underlierToken],
         fiatAmount
-      ).mul(underlierScale).div(WAD));
+      );
     }
     case 'ERC20:SPT': {
-      return (await fiat.call(
+      return await fiat.call(
         leverSPTActions,
         'fiatToUnderlier',
         [leverSPTActions.fiatPoolId()],
         [underlierToken],
         fiatAmount
-      )).mul(underlierScale).div(WAD);
+      );
     }
     default: {
       throw new Error('Unsupported collateral type');
@@ -58,31 +102,31 @@ export const fiatForUnderlier = async (
 
   switch (vaultType) {
     case 'ERC20:EPT': {
-      return (await fiat.call(
+      return await fiat.call(
         leverEPTActions,
         'fiatForUnderlier',
         [leverEPTActions.fiatPoolId()],
         [underlierToken],
         fiatAmount
-      ));
+      );
     }
     case 'ERC20:FY': {
-      return (await fiat.call(
+      return await fiat.call(
         leverFYActions,
         'fiatForUnderlier',
         [leverFYActions.fiatPoolId()],
         [underlierToken],
         fiatAmount
-      ));
+      );
     }
     case 'ERC20:SPT': {
-      return (await fiat.call(
+      return await fiat.call(
         leverSPTActions,
         'fiatForUnderlier',
         [leverSPTActions.fiatPoolId()],
         [underlierToken],
         fiatAmount
-      ));
+      );
     }
     default: {
       throw new Error('Unsupported collateral type');
