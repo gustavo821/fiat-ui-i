@@ -1048,7 +1048,15 @@ export const LeverRedeemForm = ({
   );
 
   const {
-    minCollRatio, maxCollRatio
+    collateralType: {
+      metadata: { symbol: tokenSymbol },
+      properties: { underlierScale, underlierSymbol, tokenScale }
+    },
+  } = modifyPositionData;
+  const {
+    subTokenAmount, underlierSlippagePct,
+    maxUnderliersToSell, targetedCollRatio, underliersToRedeem,
+    collateral, collRatio, debt, minCollRatio, maxCollRatio
   } = leverStore.redeemState;
   const hasProxy = contextData.proxies.length > 0;
   const { action: currentTxAction } = transactionData;
@@ -1083,7 +1091,7 @@ export const LeverRedeemForm = ({
         </Text>
         <Input
           disabled={disableActions}
-          value={floor2(wadToDec(leverStore.redeemState.subTokenAmount))}
+          value={floor2(scaleToDec(subTokenAmount, tokenScale))}
           onChange={(event) => {
             leverStore.redeemActions.setSubTokenAmount(contextData.fiat, event.target.value, modifyPositionData);
           }}
@@ -1092,7 +1100,12 @@ export const LeverRedeemForm = ({
           // Bypass type warning from passing a custom component instead of a string
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
-          label={<InputLabelWithMax label='Collateral to withdraw and redeem' onMaxClick={() => leverStore.redeemActions.setMaxSubTokenAmount(contextData.fiat, modifyPositionData)} /> }
+          label={
+            <InputLabelWithMax
+              label='Collateral to withdraw and redeem'
+              onMaxClick={() => leverStore.redeemActions.setMaxSubTokenAmount(contextData.fiat, modifyPositionData)}
+            />
+          }
           labelRight={modifyPositionData.collateralType.metadata.symbol}
           bordered
           size='sm'
@@ -1107,7 +1120,7 @@ export const LeverRedeemForm = ({
         >
           <Input
             disabled={disableActions}
-            value={floor2(Number(wadToDec(leverStore.redeemState.underlierSlippagePct)) * 100)}
+            value={floor2(Number(wadToDec(underlierSlippagePct)) * 100)}
             onChange={(event) => {
               leverStore.redeemActions.setUnderlierSlippagePct(contextData.fiat, event.target.value, modifyPositionData);
             }}
@@ -1119,7 +1132,7 @@ export const LeverRedeemForm = ({
             bordered
             size='sm'
             borderWeight='light'
-            width='11.0rem'
+            width='15.0rem'
           />
         </Grid.Container>
         {(!minCollRatio.isZero() && !maxCollRatio.isZero() && !minCollRatio.eq(maxCollRatio)) && (
@@ -1128,7 +1141,7 @@ export const LeverRedeemForm = ({
               size={'0.75rem'}
               style={{ paddingLeft: '0.25rem', marginBottom: '0.375rem' }}
             >
-              Targeted collateralization ratio ({floor2(wadToDec(leverStore.redeemState.targetedCollRatio.mul(100)))}%)
+              Targeted collateralization ratio ({floor2(wadToDec(targetedCollRatio.mul(100)))}%)
             </Text>
             <Card variant='bordered' borderWeight='light' style={{height:'100%'}}>
               <Card.Body
@@ -1138,7 +1151,7 @@ export const LeverRedeemForm = ({
                   handleStyle={{ borderColor: '#0072F5' }}
                   included={false}
                   disabled={disableActions}
-                  value={Number(wadToDec(leverStore.redeemState.targetedCollRatio))}
+                  value={Number(wadToDec(targetedCollRatio))}
                   onChange={(value) => {
                     leverStore.redeemActions.setTargetedCollRatio(contextData.fiat, value, modifyPositionData);
                   }}
@@ -1174,18 +1187,87 @@ export const LeverRedeemForm = ({
       <Spacer y={0.75} />
       <Card.Divider />
 
-      <Modal.Body css={{ marginTop: 'var(--nextui-space-8)' }}>
-        <PositionPreview
-          formDataLoading={leverStore.formDataLoading}
-          positionCollateral={modifyPositionData.position.collateral}
-          positionNormalDebt={modifyPositionData.position.normalDebt}
-          estimatedCollateral={leverStore.redeemState.collateral}
-          estimatedCollateralRatio={leverStore.redeemState.collRatio}
-          estimatedDebt={leverStore.redeemState.debt}
-          virtualRate={modifyPositionData.collateralType.state.codex.virtualRate}
-          fairPrice={modifyPositionData.collateralType.state.collybus.fairPrice}
-          symbol={modifyPositionData.collateralType.metadata.symbol}
+      <Modal.Body>
+        <Spacer y={0} />
+        <Text b size={'m'}>Leveraged Swap Preview</Text>
+        <Input
+          readOnly
+          value={(() => {
+            if (leverStore.formDataLoading) return ' '
+            return `${floor2(scaleToDec(maxUnderliersToSell, underlierScale))}`;
+          })()}
+          placeholder='0'
+          type='string'
+          label={'Underliers to cover flashloan (includes slippage)'}
+          labelRight={underlierSymbol}
+          contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
+          size='sm'
+          status='primary'
         />
+        <Input
+          readOnly
+          value={(() => {
+            if (leverStore.formDataLoading) return ' '
+            const underliersToWithdraw = underliersToRedeem.sub(maxUnderliersToSell);
+            return `${floor2(scaleToDec(underliersToWithdraw, underlierScale))}`;
+          })()}
+          placeholder='0'
+          type='string'
+          label={'Underliers to redeem'}
+          labelRight={underlierSymbol}
+          contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
+          size='sm'
+          status='primary'
+        />
+      </Modal.Body>
+
+      <Spacer y={0.75} />
+      <Card.Divider />
+
+      <Modal.Body>
+        <Spacer y={0} />
+        <Text b size={'m'}>Position Preview</Text>
+        <Input
+          readOnly
+          value={(leverStore.formDataLoading) ? ' ' : floor2(wadToDec(collateral)) }
+          placeholder='0'
+          type='string'
+          label={'Collateral'}
+          labelRight={tokenSymbol}
+          contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
+          size='sm'
+          status='primary'
+        />
+        <Input
+          readOnly
+          value={leverStore.formDataLoading ? ' ' : floor2(wadToDec(debt))}
+          placeholder='0'
+          type='string'
+          label='Debt'
+          labelRight={'FIAT'}
+          contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
+          size='sm'
+          status='primary'
+        />
+        <Input
+          readOnly
+          value={
+            (leverStore.formDataLoading)
+              ? ' '
+              : (collRatio.eq(ethers.constants.MaxUint256))
+                ? '∞' : `${floor2(wadToDec(collRatio.mul(100)))}%`
+          }
+          placeholder='0'
+          type='string'
+          label='Collateralization Ratio'
+          labelRight={'🚦'}
+          contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
+          size='sm'
+          status='primary'
+        />
+
+        {/* renderSummary() */}
+
       </Modal.Body>
 
       <Modal.Footer justify='space-evenly'>

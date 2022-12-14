@@ -97,6 +97,7 @@ export interface LeverState {
     // output
     minCollRatio: BigNumber; // [wad]
     maxCollRatio: BigNumber; // [wad]
+    underliersToRedeem: BigNumber; // [underlierScale]
     maxUnderliersToSell: BigNumber; // [underlierScale]
     // position summary
     collateral: BigNumber; // [wad]
@@ -298,6 +299,7 @@ const initialState = {
     maxCollRatio: ZERO, // [wad]
     subTokenAmount: ZERO, // [tokenScale]
     subDebt: ZERO, // [wad]
+    underliersToRedeem: ZERO, // [underlierScale]
     maxUnderliersToSell: ZERO, // [underlierScale]
     // position summary
     collateral: ZERO, // [wad]
@@ -887,10 +889,11 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
     */
     redeemActions: {
       setSubTokenAmount: (fiat, value, modifyPositionData) => {
+        const { collateralType } = modifyPositionData;
+        const { properties: { tokenScale } } = collateralType;
         let newSubTokenAmount: BigNumber;
         if (value === null || value === '') newSubTokenAmount = initialState.redeemState.subTokenAmount;
-        else newSubTokenAmount = decToWad(floor4(Number(value) < 0 ? 0 : Number(value)));
-
+        else newSubTokenAmount = decToScale(floor4(Number(value) < 0 ? 0 : Number(value)), tokenScale);
         set((state) => ({
           redeemState: {
             ...state.redeemState,
@@ -902,8 +905,8 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
       },
 
       setMaxSubTokenAmount: (fiat, modifyPositionData) => {
-        const subTokenAmount = modifyPositionData.position.collateral;
-
+        const { tokenScale } = modifyPositionData.collateralType.properties;
+        const subTokenAmount = wadToScale(modifyPositionData.position.collateral, tokenScale);
         set((state) => ({
           redeemState: {
             ...state.redeemState,
@@ -964,13 +967,14 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           state: { codex: { virtualRate: rate }, collybus: { fairPrice } }
         } = collateralType;
         const {
-          subTokenAmount, collateralSlippagePct, underlierSlippagePct, targetedCollRatio
+          subTokenAmount, underlierSlippagePct, targetedCollRatio
         } = get().redeemState;
 
         // Reset form errors and warnings on new input
         set(() => ({ formWarnings: [], formErrors: [] }));
 
         try {
+          console.log(subTokenAmount.toString());
           const collateral = position.collateral.sub(scaleToWad(subTokenAmount, tokenScale));
           if (collateral.lt(0)) set(() => ({
             formErrors: [...get().formErrors, 'Can\'t withdraw more collateral than there is deposited']
@@ -984,11 +988,10 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
               position.normalDebt.sub(computeMaxNormalDebt(collateral, rate, fairPrice, targetedCollRatio)), rate
             );
 
-          const underlierOut = await userActions.collateralTokenToUnderlier(fiat, subTokenAmount, collateralType);
-          const collateralToUnderlierRateWithSlippage = applySwapSlippage(
-            underlierOut.mul(tokenScale).div(subTokenAmount).mul(tokenScale).div(underlierScale),
-            collateralSlippagePct
-          );
+          // TODO: assuming 1 to 1 redemption rate
+          const underlierOut = subTokenAmount.mul(underlierScale).div(tokenScale);
+          const collateralToUnderlierRate = underlierOut.mul(tokenScale)
+            .div(subTokenAmount).mul(tokenScale).div(underlierScale);
           const underlierIn = await userActions.fiatForUnderlier(fiat, flashloan, collateralType);
           const fiatForUnderlierRateWithSlippage = applySwapSlippage(
             wadToScale(flashloan, underlierScale).mul(underlierScale).div(underlierIn),
@@ -1000,7 +1003,7 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           const debt = normalDebtToDebt(position.normalDebt, rate).sub(subDebt);
           const normalDebt = position.normalDebt.sub(subNormalDebt);
           
-          const minUnderliersToBuy = subTokenAmount.mul(collateralToUnderlierRateWithSlippage).div(tokenScale);
+          const underliersToRedeem = subTokenAmount.mul(collateralToUnderlierRate).div(tokenScale);
           const maxUnderliersToSell = flashloan.mul(fiatForUnderlierRateWithSlippage).div(WAD);
           const collRatio = computeCollateralizationRatio(collateral, fairPrice, normalDebt, rate);
 
@@ -1030,7 +1033,7 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           set((state) => ({
             redeemState: {
               ...state.redeemState,
-              minCollRatio, maxCollRatio, subDebt, maxUnderliersToSell, minUnderliersToBuy,
+              minCollRatio, maxCollRatio, subDebt, maxUnderliersToSell, underliersToRedeem,
               collateral, collRatio, debt
             },
             formDataLoading: false

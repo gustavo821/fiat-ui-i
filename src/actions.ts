@@ -14,29 +14,17 @@ export const underlierToFIAT = async (
   switch (vaultType) {
     case 'ERC20:EPT': {
       return await fiat.call(
-        leverEPTActions,
-        'underlierToFIAT',
-        [leverEPTActions.fiatPoolId()],
-        [underlierToken],
-        underlierAmount
+        leverEPTActions, 'underlierToFIAT', [leverEPTActions.fiatPoolId()], [underlierToken], underlierAmount
       );
     }
     case 'ERC20:FY': {
       return await fiat.call(
-        leverFYActions,
-        'underlierToFIAT',
-        [leverFYActions.fiatPoolId()],
-        [underlierToken],
-        underlierAmount
+        leverFYActions, 'underlierToFIAT', [leverFYActions.fiatPoolId()], [underlierToken], underlierAmount
       );
     }
     case 'ERC20:SPT': {
       return await fiat.call(
-        leverSPTActions,
-        'underlierToFIAT',
-        [leverSPTActions.fiatPoolId()],
-        [underlierToken],
-        underlierAmount
+        leverSPTActions, 'underlierToFIAT', [leverSPTActions.fiatPoolId()], [underlierToken], underlierAmount
       );
     }
     default: {
@@ -53,35 +41,23 @@ export const fiatToUnderlier = async (
 ): Promise<BigNumber> => {
   if (fiatAmount.isZero()) return ZERO;
 
-  const { vaultType, underlierToken, underlierScale } = collateralType.properties;
+  const { vaultType, underlierToken } = collateralType.properties;
   const { leverEPTActions, leverFYActions, leverSPTActions } = fiat.getContracts();
 
   switch (vaultType) {
     case 'ERC20:EPT': {
       return await fiat.call(
-        leverEPTActions,
-        'fiatToUnderlier',
-        [leverEPTActions.fiatPoolId()],
-        [underlierToken],
-        fiatAmount
+        leverEPTActions, 'fiatToUnderlier', [leverEPTActions.fiatPoolId()], [underlierToken], fiatAmount
       );
     }
     case 'ERC20:FY': {
       return await fiat.call(
-        leverFYActions,
-        'fiatToUnderlier',
-        [leverFYActions.fiatPoolId()],
-        [underlierToken],
-        fiatAmount
+        leverFYActions, 'fiatToUnderlier', [leverFYActions.fiatPoolId()], [underlierToken], fiatAmount
       );
     }
     case 'ERC20:SPT': {
       return await fiat.call(
-        leverSPTActions,
-        'fiatToUnderlier',
-        [leverSPTActions.fiatPoolId()],
-        [underlierToken],
-        fiatAmount
+        leverSPTActions, 'fiatToUnderlier', [leverSPTActions.fiatPoolId()], [underlierToken], fiatAmount
       );
     }
     default: {
@@ -103,29 +79,17 @@ export const fiatForUnderlier = async (
   switch (vaultType) {
     case 'ERC20:EPT': {
       return await fiat.call(
-        leverEPTActions,
-        'fiatForUnderlier',
-        [leverEPTActions.fiatPoolId()],
-        [underlierToken],
-        fiatAmount
+        leverEPTActions, 'fiatForUnderlier', [leverEPTActions.fiatPoolId()], [underlierToken], fiatAmount
       );
     }
     case 'ERC20:FY': {
       return await fiat.call(
-        leverFYActions,
-        'fiatForUnderlier',
-        [leverFYActions.fiatPoolId()],
-        [underlierToken],
-        fiatAmount
+        leverFYActions, 'fiatForUnderlier', [leverFYActions.fiatPoolId()], [underlierToken], fiatAmount
       );
     }
     case 'ERC20:SPT': {
       return await fiat.call(
-        leverSPTActions,
-        'fiatForUnderlier',
-        [leverSPTActions.fiatPoolId()],
-        [underlierToken],
-        fiatAmount
+        leverSPTActions, 'fiatForUnderlier', [leverSPTActions.fiatPoolId()], [underlierToken], fiatAmount
       );
     }
     default: {
@@ -148,42 +112,27 @@ export const underlierToCollateralToken = async (
       if (collateralType.properties.eptData == undefined) throw new Error('Missing EPT data');
       const { eptData: { balancerVault: balancer, poolId: pool } } = collateralType.properties;
       return await fiat.call(
-        vaultEPTActions,
-        'underlierToPToken',
-        vault,
-        balancer,
-        pool,
-        underlier
+        vaultEPTActions, 'underlierToPToken', vault, balancer, pool, underlier
       );
     }
     case 'ERC1155:FC': {
       if (collateralType.properties.fcData == undefined) throw new Error('Missing FC data');
       return await fiat.call(
-        vaultFCActions,
-        'underlierToFCash',
-        tokenId,
-        underlier
+        vaultFCActions, 'underlierToFCash', tokenId, underlier
       );
     }
     case 'ERC20:FY': {
       if (collateralType.properties.fyData == undefined) throw new Error('Missing FY data');
       const { fyData: { yieldSpacePool } } = collateralType.properties;
       return await fiat.call(
-        vaultFYActions,
-        'underlierToFYToken',
-        underlier,
-        yieldSpacePool
+        vaultFYActions, 'underlierToFYToken', underlier, yieldSpacePool
       );
     }
     case 'ERC20:SPT': {
       if (collateralType.properties.sptData == undefined) throw new Error('Missing SPT data');
       const { sptData: { spacePool, balancerVault } } = collateralType.properties;
       return await fiat.call(
-        vaultSPTActions,
-        'underlierToPToken',
-        spacePool,
-        balancerVault,
-        underlier
+        vaultSPTActions, 'underlierToPToken', spacePool, balancerVault, underlier
       );
     }
     default: {
@@ -206,42 +155,27 @@ export const collateralTokenToUnderlier = async (
       if (collateralType.properties.eptData == undefined) throw new Error('Missing EPT data');
       const { eptData: { balancerVault: balancer, poolId: pool } } = collateralType.properties;
       return await fiat.call(
-        vaultEPTActions,
-        'pTokenToUnderlier',
-        vault,
-        balancer,
-        pool,
-        collateral
+        vaultEPTActions, 'pTokenToUnderlier', vault, balancer, pool, collateral
       );
     }
     case 'ERC1155:FC': {
       if (collateralType.properties.fcData == undefined) throw new Error('Missing FC data');
       return await fiat.call(
-        vaultFCActions,
-        'fCashToUnderlier',
-        tokenId,
-        collateral
+        vaultFCActions, 'fCashToUnderlier', tokenId, collateral
       );
     }
     case 'ERC20:FY': {
       if (collateralType.properties.fyData == undefined) throw new Error('Missing FY data');
       const { fyData: { yieldSpacePool } } = collateralType.properties;
       return await fiat.call(
-        vaultFYActions,
-        'fyTokenToUnderlier',
-        collateral,
-        yieldSpacePool
+        vaultFYActions, 'fyTokenToUnderlier', collateral, yieldSpacePool
       );
     }
     case 'ERC20:SPT': {
       if (collateralType.properties.sptData == undefined) throw new Error('Missing SPT data');
       const { sptData: { spacePool, balancerVault } } = collateralType.properties;
       return await fiat.call(
-        vaultSPTActions,
-        'pTokenToUnderlier',
-        spacePool,
-        balancerVault,
-        collateral
+        vaultSPTActions, 'pTokenToUnderlier', spacePool, balancerVault, collateral
       );
     }
     default:
@@ -945,6 +879,7 @@ export const buildRedeemCollateralAndDecreaseLeverArgs = async (
         methodName: 'redeemCollateralAndDecreaseLever',
         methodArgs: [
           properties.vault,
+          properties.token,
           contextData.proxies[0],
           contextData.user,
           subTokenAmount,
@@ -965,6 +900,7 @@ export const buildRedeemCollateralAndDecreaseLeverArgs = async (
         methodArgs: [
           'redeemCollateralAndDecreaseLever',
           properties.vault,
+          properties.token,
           contextData.proxies[0],
           contextData.user,
           subTokenAmount,
@@ -985,6 +921,7 @@ export const buildRedeemCollateralAndDecreaseLeverArgs = async (
         methodArgs: [
           'redeemCollateralAndDecreaseLever',
           properties.vault,
+          properties.token,
           contextData.proxies[0],
           contextData.user,
           subTokenAmount,
