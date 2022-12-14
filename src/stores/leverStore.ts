@@ -653,6 +653,13 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           const collateral = position.collateral.add(scaleToWad(minTokenToBuy, tokenScale));
           const collRatio = computeCollateralizationRatio(collateral, fairPrice, normalDebt, rate);
 
+          if (estMinTokenToBuy.lt(minTokenToBuy) || estMinUnderliersToBuy.lt(minUnderliersToBuy)) set(() => ({
+            formErrors: [
+              ...get().formErrors,
+              'Transaction is likely to fail. Please increase the Slippage tolerance.'
+            ]
+          }));
+
           if (debt.gt(ZERO) && debt.lte(debtFloor)) set(() => ({
             formErrors: [
               ...get().formErrors,
