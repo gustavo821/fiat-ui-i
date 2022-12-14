@@ -277,13 +277,14 @@ const addDeltaNormalBuffer = (deltaNormalDebt: BigNumber): BigNumber => {
 }
 
 export const buildModifyCollateralAndDebtArgs = (
-  contextData: any,
+  fiat: any,
+  user: string,
   proxies: any[],
   collateralTypeData: any,
   deltaDebt: BigNumber,
   position: { collateral: BigNumber, normalDebt: BigNumber }
 ): { contract: Contract, methodName: string, methodArgs: any[] } => {
-  const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = contextData.fiat.getContracts();
+  const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = fiat.getContracts();
   const { properties } = collateralTypeData;
 
   let deltaNormalDebt = addDeltaNormalBuffer(
@@ -306,8 +307,8 @@ export const buildModifyCollateralAndDebtArgs = (
       properties.token,
       properties.tokenId,
       proxies[0],
-      contextData.user,
-      contextData.user,
+      user,
+      user,
       ZERO,
       deltaNormalDebt,
     ],
@@ -316,14 +317,15 @@ export const buildModifyCollateralAndDebtArgs = (
 }
 
 export const buildBuyCollateralAndModifyDebtArgs = (
-  contextData: any,
+  fiat: any,
+  user: string,
   proxies: any[],
   collateralTypeData: any,
   deltaCollateral: BigNumber,
   deltaDebt: BigNumber,
   underlier: BigNumber
 ): { contract: Contract, methodName: string, methodArgs: any[] } => {
-  const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = contextData.fiat.getContracts();
+  const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = fiat.getContracts();
   const { properties } = collateralTypeData;
 
   const deltaNormalDebt = addDeltaNormalBuffer(
@@ -344,8 +346,8 @@ export const buildBuyCollateralAndModifyDebtArgs = (
         methodArgs: [
           properties.vault,
           proxies[0],
-          contextData.user,
-          contextData.user,
+          user,
+          user,
           underlier,
           deltaNormalDebt,
           [
@@ -376,8 +378,8 @@ export const buildBuyCollateralAndModifyDebtArgs = (
           properties.token,
           properties.tokenId,
           proxies[0],
-          contextData.user,
-          contextData.user,
+          user,
+          user,
           tokenAmount,
           deltaNormalDebt,
           minLendRate,
@@ -395,8 +397,8 @@ export const buildBuyCollateralAndModifyDebtArgs = (
           'buyCollateralAndModifyDebt',
           properties.vault,
           proxies[0],
-          contextData.user,
-          contextData.user,
+          user,
+          user,
           underlier,
           deltaNormalDebt,
           [
@@ -418,8 +420,8 @@ export const buildBuyCollateralAndModifyDebtArgs = (
           'buyCollateralAndModifyDebt',
           properties.vault,
           proxies[0],
-          contextData.user,
-          contextData.user,
+          user,
+          user,
           underlier,
           deltaNormalDebt,
           [
@@ -441,7 +443,8 @@ export const buildBuyCollateralAndModifyDebtArgs = (
 };
 
 export const buildSellCollateralAndModifyDebtArgs = (
-  contextData: any,
+  fiat: any,
+  user: string,
   proxies: any[],
   collateralTypeData: any,
   deltaCollateral: BigNumber,
@@ -449,7 +452,7 @@ export const buildSellCollateralAndModifyDebtArgs = (
   underlier: BigNumber,
   position: any
 ): { contract: Contract, methodName: string, methodArgs: any[] } => {
-  const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = contextData.fiat.getContracts();
+  const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = fiat.getContracts();
   const { properties } = collateralTypeData;
 
   let deltaNormalDebt = addDeltaNormalBuffer(
@@ -474,8 +477,8 @@ export const buildSellCollateralAndModifyDebtArgs = (
         methodArgs: [
           properties.vault,
           proxies[0],
-          contextData.user,
-          contextData.user,
+          user,
+          user,
           tokenAmount,
           deltaNormalDebt,
           [
@@ -507,8 +510,8 @@ export const buildSellCollateralAndModifyDebtArgs = (
           properties.token,
           properties.tokenId,
           proxies[0],
-          contextData.user,
-          contextData.user,
+          user,
+          user,
           tokenAmount,
           deltaNormalDebt,
           maxBorrowRate
@@ -525,8 +528,8 @@ export const buildSellCollateralAndModifyDebtArgs = (
         methodArgs: [
           properties.vault,
           proxies[0],
-          contextData.user,
-          contextData.user,
+          user,
+          user,
           tokenAmount,
           deltaNormalDebt,
           [
@@ -548,8 +551,8 @@ export const buildSellCollateralAndModifyDebtArgs = (
         methodArgs: [
           properties.vault,
           proxies[0],
-          contextData.user,
-          contextData.user,
+          user,
+          user,
           tokenAmount,
           deltaNormalDebt,
           [
@@ -570,14 +573,16 @@ export const buildSellCollateralAndModifyDebtArgs = (
   }
 };
 
-export const buildRedeemCollateralAndModifyDebtArgs = (contextData: any,
+export const buildRedeemCollateralAndModifyDebtArgs = (
+  fiat: any,
+  user: string,
   collateralTypeData: any,
   proxies: any[],
   deltaCollateral: BigNumber,
   deltaDebt: BigNumber,
   position: any
 ): { contract: Contract, methodName: string, methodArgs: any[] } => {
-  const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = contextData.fiat.getContracts();
+  const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = fiat.getContracts();
   const { properties } = collateralTypeData;
 
   let deltaNormalDebt = debtToNormalDebt(deltaDebt, collateralTypeData.state.codex.virtualRate)
@@ -598,8 +603,8 @@ export const buildRedeemCollateralAndModifyDebtArgs = (contextData: any,
           properties.vault,
           properties.token,
           proxies[0],
-          contextData.user,
-          contextData.user,
+          user,
+          user,
           tokenAmount,
           deltaNormalDebt
         ]
@@ -616,8 +621,8 @@ export const buildRedeemCollateralAndModifyDebtArgs = (contextData: any,
           properties.token,
           properties.tokenId,
           proxies[0],
-          contextData.user,
-          contextData.user,
+          user,
+          user,
           tokenAmount,
           deltaNormalDebt
         ]
@@ -634,8 +639,8 @@ export const buildRedeemCollateralAndModifyDebtArgs = (contextData: any,
           properties.vault,
           properties.token,
           proxies[0],
-          contextData.user,
-          contextData.user,
+          user,
+          user,
           tokenAmount,
           deltaNormalDebt
         ]
@@ -652,8 +657,8 @@ export const buildRedeemCollateralAndModifyDebtArgs = (contextData: any,
           properties.vault,
           properties.token,
           proxies[0],
-          contextData.user,
-          contextData.user,
+          user,
+          user,
           tokenAmount,
           deltaNormalDebt,
           [
@@ -674,7 +679,8 @@ export const buildRedeemCollateralAndModifyDebtArgs = (contextData: any,
 };
 
 export const buildBuyCollateralAndIncreaseLeverArgs = async (
-  contextData: any,
+  fiat: any,
+  user: string,
   proxies: any[],
   collateralTypeData: any,
   upFrontUnderliers: BigNumber,
@@ -682,7 +688,7 @@ export const buildBuyCollateralAndIncreaseLeverArgs = async (
   minUnderlierToBuy: BigNumber,
   minTokenToBuy: BigNumber,
 ): Promise<{ contract: Contract, methodName: string, methodArgs: any[] }> => {
-  const { leverEPTActions, leverFYActions, leverSPTActions } = contextData.fiat.getContracts();
+  const { leverEPTActions, leverFYActions, leverSPTActions } = fiat.getContracts();
   const { properties } = collateralTypeData;
   const deadline = Math.round(+new Date() / 1000) + 3600;
 
@@ -698,7 +704,7 @@ export const buildBuyCollateralAndIncreaseLeverArgs = async (
         methodArgs: [
           properties.vault,
           proxies[0],
-          contextData.user,
+          user,
           upFrontUnderliers,
           addDebt,
           sellFIATSwapParams,
@@ -725,7 +731,7 @@ export const buildBuyCollateralAndIncreaseLeverArgs = async (
         methodArgs: [
           properties.vault,
           proxies[0],
-          contextData.user,
+          user,
           upFrontUnderliers,
           addDebt,
           sellFIATSwapParams,
@@ -750,7 +756,7 @@ export const buildBuyCollateralAndIncreaseLeverArgs = async (
         methodArgs: [
           properties.vault,
           proxies[0],
-          contextData.user,
+          user,
           upFrontUnderliers,
           addDebt,
           sellFIATSwapParams,
@@ -773,7 +779,8 @@ export const buildBuyCollateralAndIncreaseLeverArgs = async (
 };
 
 export const buildSellCollateralAndDecreaseLeverArgs = async (
-  contextData: any,
+  fiat: any,
+  user: string,
   proxies: any[],
   collateralTypeData: any,
   subTokenAmount: BigNumber,
@@ -782,7 +789,7 @@ export const buildSellCollateralAndDecreaseLeverArgs = async (
   minUnderliersToBuy: BigNumber,
   position: any
 ): Promise<{ contract: Contract, methodName: string, methodArgs: any[] }> => {
-  const { leverEPTActions, leverFYActions, leverSPTActions } = contextData.fiat.getContracts();
+  const { leverEPTActions, leverFYActions, leverSPTActions } = fiat.getContracts();
   const { properties } = collateralTypeData;
   const deadline = Math.round(+new Date() / 1000) + 3600;
 
@@ -803,7 +810,7 @@ export const buildSellCollateralAndDecreaseLeverArgs = async (
         methodArgs: [
           properties.vault,
           proxies[0],
-          contextData.user,
+          user,
           subTokenAmount,
           subNormalDebt,
           buyFIATSwapParams,
@@ -831,7 +838,7 @@ export const buildSellCollateralAndDecreaseLeverArgs = async (
           'sellCollateralAndDecreaseLever',
           properties.vault,
           proxies[0],
-          contextData.user,
+          user,
           subTokenAmount,
           subNormalDebt,
           buyFIATSwapParams,
@@ -857,7 +864,7 @@ export const buildSellCollateralAndDecreaseLeverArgs = async (
           'sellCollateralAndDecreaseLever',
           properties.vault,
           proxies[0],
-          contextData.user,
+          user,
           subTokenAmount,
           subNormalDebt,
           buyFIATSwapParams,
@@ -880,7 +887,8 @@ export const buildSellCollateralAndDecreaseLeverArgs = async (
 };
 
 export const buildRedeemCollateralAndDecreaseLeverArgs = async (
-  contextData: any,
+  fiat: any,
+  user: string,
   proxies: any[],
   collateralTypeData: any,
   subTokenAmount: BigNumber,
@@ -888,7 +896,7 @@ export const buildRedeemCollateralAndDecreaseLeverArgs = async (
   maxUnderliersToSell: BigNumber,
   position: any
 ): Promise<{ contract: Contract, methodName: string, methodArgs: any[] }> => {
-  const { leverEPTActions, leverFYActions, leverSPTActions } = contextData.fiat.getContracts();
+  const { leverEPTActions, leverFYActions, leverSPTActions } = fiat.getContracts();
   const { properties } = collateralTypeData;
   const deadline = Math.round(+new Date() / 1000) + 3600;
 
@@ -909,7 +917,7 @@ export const buildRedeemCollateralAndDecreaseLeverArgs = async (
         methodArgs: [
           properties.vault,
           proxies[0],
-          contextData.user,
+          user,
           subTokenAmount,
           subNormalDebt,
           buyFIATSwapParams
@@ -929,7 +937,7 @@ export const buildRedeemCollateralAndDecreaseLeverArgs = async (
           'redeemCollateralAndDecreaseLever',
           properties.vault,
           proxies[0],
-          contextData.user,
+          user,
           subTokenAmount,
           subNormalDebt,
           buyFIATSwapParams
@@ -949,7 +957,7 @@ export const buildRedeemCollateralAndDecreaseLeverArgs = async (
           'redeemCollateralAndDecreaseLever',
           properties.vault,
           proxies[0],
-          contextData.user,
+          user,
           subTokenAmount,
           subNormalDebt,
           buyFIATSwapParams

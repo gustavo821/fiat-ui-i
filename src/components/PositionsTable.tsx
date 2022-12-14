@@ -9,9 +9,9 @@ import {
 import { ethers } from 'ethers';
 import { useCollateralTypes } from '../state/queries/useCollateralTypes';
 import { useUserData } from '../state/queries/useUserData';
+import useStore from '../state/stores/globalStore';
 
 interface PositionsTableProps {
-  contextData: any,
   onSelectPosition: (positionId: string) => void
 }
 
@@ -21,10 +21,11 @@ export const PositionsTable = (props: PositionsTableProps) => {
     column: 'Maturity',
     direction: 'descending'
   });
+  const fiat = useStore((state) => state.fiat);
   const { chain } = useNetwork();
   const { address } = useAccount();
-  const { data: collateralTypesData } = useCollateralTypes(props.contextData.fiat, chain?.id ?? chains.mainnet.id);
-  const { data: userData } = useUserData(props.contextData.fiat, chain?.id ?? chains.mainnet.id, address ?? '');
+  const { data: collateralTypesData } = useCollateralTypes(fiat, chain?.id ?? chains.mainnet.id);
+  const { data: userData } = useUserData(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
   const { positionsData } = userData as any;
 
   React.useEffect(() => {

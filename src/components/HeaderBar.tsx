@@ -7,6 +7,7 @@ import { ResourcesModal } from './ResourcesModal';
 import { queryMeta } from '@fiatdao/sdk';
 import { chain as chains, useAccount, useBlockNumber, useNetwork } from 'wagmi';
 import { useFiatBalance } from '../state/queries/useFiatBalance';
+import useStore from '../state/stores/globalStore';
 
 interface BlockSyncStatus {
   subgraphBlockNumber: number;
@@ -21,14 +22,15 @@ export const HeaderBar = (props: any) => {
   const [syncStatus, setSyncStatus] = React.useState<BlockSyncStatus>();
   const {data: providerBlockNumber, refetch} = useBlockNumber();
 
+  const fiat = useStore((state) => state.fiat);
+
   const { chain } = useNetwork();
   const { address } = useAccount();
-  const { data: fiatBalance } = useFiatBalance(props.contextData.fiat, chain?.id ?? chains.mainnet.id, address ?? '');
+  const { data: fiatBalance } = useFiatBalance(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
 
   const queryBlockNumber = React.useCallback(async () => {
-    if (!props.contextData?.fiat) return;
+    if (!fiat) return;
     if (!providerBlockNumber) return;
-    const fiat = props.contextData.fiat;
     const { _meta } = await fiat.query(queryMeta);
     const subgraphBlockNumber = _meta?.block.number;
     const blockDiff = providerBlockNumber - subgraphBlockNumber;
@@ -41,7 +43,7 @@ export const HeaderBar = (props: any) => {
       status,
       message,
     });
-  }, [props.contextData.fiat, providerBlockNumber])
+  }, [fiat, providerBlockNumber])
 
   React.useEffect(() => {
     queryBlockNumber();
@@ -50,7 +52,7 @@ export const HeaderBar = (props: any) => {
       queryBlockNumber();
     }, 10000);
     return () => clearInterval(timer);
-  }, [props.contextData.fiat, queryBlockNumber, refetch])
+  }, [fiat, queryBlockNumber, refetch])
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -82,7 +84,6 @@ export const HeaderBar = (props: any) => {
               onPress={()=>setShowResourcesModal(true)}
             />
             <ProxyButton
-              {...props.contextData}
               createProxy={props.createProxy}
               disableActions={props.disableActions}
               transactionData={props.transactionData}

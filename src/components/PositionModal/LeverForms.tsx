@@ -12,9 +12,9 @@ import { commifyToDecimalPlaces, floor2, floor4, minCollRatioWithBuffer } from '
 import { Alert } from '../Alert';
 import { InputLabelWithMax } from '../InputLabelWithMax';
 import { PositionPreview } from './PositionPreview';
+import useStore from '../../state/stores/globalStore';
 
 export const LeverCreateForm = ({
-  contextData,
   disableActions,
   modifyPositionData,
   transactionData,
@@ -24,7 +24,6 @@ export const LeverCreateForm = ({
   setUnderlierAllowanceForProxy,
   unsetUnderlierAllowanceForProxy,
 }: {
-  contextData: any,
   disableActions: boolean,
   modifyPositionData: any,
   transactionData: any,
@@ -47,9 +46,10 @@ export const LeverCreateForm = ({
     ), shallow
   );
 
+  const fiat = useStore(state => state.fiat);
   const { chain } = useNetwork();
   const { address } = useAccount();
-  const { data: userData } = useUserData(contextData.fiat, chain?.id ?? chains.mainnet.id, address ?? '');
+  const { data: userData } = useUserData(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
 
   const [submitError, setSubmitError] = React.useState('');
 
@@ -147,7 +147,7 @@ export const LeverCreateForm = ({
         <Input
           disabled={disableActions}
           value={floor2(scaleToDec(upFrontUnderliers, underlierScale))}
-          onChange={(event) => { setUpFrontUnderliers(contextData.fiat, event.target.value, modifyPositionData) }}
+          onChange={(event) => { setUpFrontUnderliers(fiat, event.target.value, modifyPositionData) }}
           placeholder='0'
           inputMode='decimal'
           label={'Underlier to swap'}
@@ -165,7 +165,7 @@ export const LeverCreateForm = ({
             <Input
               disabled={disableActions}
               value={floor2(Number(wadToDec(underlierSlippagePct)) * 100)}
-              onChange={(event) => { setUnderlierSlippagePct(contextData.fiat, event.target.value, modifyPositionData) }}
+              onChange={(event) => { setUnderlierSlippagePct(fiat, event.target.value, modifyPositionData) }}
               step='0.01'
               placeholder='0'
               inputMode='decimal'
@@ -181,7 +181,7 @@ export const LeverCreateForm = ({
             <Input
               disabled={disableActions}
               value={floor2(Number(wadToDec(collateralSlippagePct)) * 100)}
-              onChange={(event) => { setCollateralSlippagePct(contextData.fiat, event.target.value, modifyPositionData) }}
+              onChange={(event) => { setCollateralSlippagePct(fiat, event.target.value, modifyPositionData) }}
               step='0.01'
               placeholder='0'
               inputMode='decimal'
@@ -209,7 +209,7 @@ export const LeverCreateForm = ({
               included={false}
               disabled={disableActions}
               value={Number(wadToDec(targetedCollRatio))}
-              onChange={(value) => { setTargetedCollRatio(contextData.fiat, value, modifyPositionData) }}
+              onChange={(value) => { setTargetedCollRatio(fiat, value, modifyPositionData) }}
               min={floor4(wadToDec(minCollRatio))}
               max={5.0}
               step={0.001}
@@ -331,14 +331,14 @@ export const LeverCreateForm = ({
             if (!upFrontUnderliers.isZero() && underlierAllowance?.gte(upFrontUnderliers)) {
               try {
                 setSubmitError('');
-                await unsetUnderlierAllowanceForProxy(contextData.fiat);
+                await unsetUnderlierAllowanceForProxy(fiat);
               } catch (e: any) {
                 setSubmitError(e.message);
               }
             } else {
               try {
                 setSubmitError('');
-                await setUnderlierAllowanceForProxy(contextData.fiat, upFrontUnderliers);
+                await setUnderlierAllowanceForProxy(fiat, upFrontUnderliers);
               } catch (e: any) {
                 setSubmitError(e.message);
               }
@@ -385,7 +385,6 @@ export const LeverCreateForm = ({
 }
 
 export const LeverIncreaseForm = ({
-  contextData,
   disableActions,
   modifyPositionData,
   transactionData,
@@ -395,7 +394,6 @@ export const LeverIncreaseForm = ({
   setUnderlierAllowanceForProxy,
   unsetUnderlierAllowanceForProxy,
 }: {
-  contextData: any,
   disableActions: boolean,
   modifyPositionData: any,
   transactionData: any,
@@ -418,9 +416,10 @@ export const LeverIncreaseForm = ({
       []
     ), shallow
   );
+  const fiat = useStore(state => state.fiat);
   const { chain } = useNetwork();
   const { address } = useAccount();
-  const { data: userData } = useUserData(contextData.fiat, chain?.id ?? chains.mainnet.id, address ?? '');
+  const { data: userData } = useUserData(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
   const {
     collateralType: {
       metadata: { symbol: tokenSymbol },
@@ -478,7 +477,7 @@ export const LeverIncreaseForm = ({
           label={'Underlier to deposit'}
           disabled={disableActions}
           value={floor2(scaleToDec(upFrontUnderliers, underlierScale))}
-          onChange={(event) => { setUpFrontUnderliers(contextData.fiat, event.target.value, modifyPositionData) }}
+          onChange={(event) => { setUpFrontUnderliers(fiat, event.target.value, modifyPositionData) }}
           placeholder='0'
           inputMode='decimal'
           labelRight={underlierSymbol}
@@ -495,7 +494,7 @@ export const LeverIncreaseForm = ({
             <Input
               disabled={disableActions}
               value={floor2(Number(wadToDec(underlierSlippagePct)) * 100)}
-              onChange={(event) => { setUnderlierSlippagePct(contextData.fiat, event.target.value, modifyPositionData) }}
+              onChange={(event) => { setUnderlierSlippagePct(fiat, event.target.value, modifyPositionData) }}
               step='0.01'
               placeholder='0'
               inputMode='decimal'
@@ -511,7 +510,7 @@ export const LeverIncreaseForm = ({
             <Input
               disabled={disableActions}
               value={floor2(Number(wadToDec(collateralSlippagePct)) * 100)}
-              onChange={(event) => { setCollateralSlippagePct(contextData.fiat, event.target.value, modifyPositionData) }}
+              onChange={(event) => { setCollateralSlippagePct(fiat, event.target.value, modifyPositionData) }}
               step='0.01'
               placeholder='0'
               inputMode='decimal'
@@ -540,7 +539,7 @@ export const LeverIncreaseForm = ({
               disabled={disableActions}
               value={Number(wadToDec(targetedCollRatio))}
               onChange={(value) => {
-                setTargetedCollRatio(contextData.fiat, value, modifyPositionData);
+                setTargetedCollRatio(fiat, value, modifyPositionData);
               }}
               min={floor4(wadToDec(minCollRatio))}
               max={5.0}
@@ -668,14 +667,14 @@ export const LeverIncreaseForm = ({
             if(!upFrontUnderliers.isZero() && underlierAllowance.gte(upFrontUnderliers)) {
               try {
                 setSubmitError('');
-                await unsetUnderlierAllowanceForProxy(contextData.fiat);
+                await unsetUnderlierAllowanceForProxy(fiat);
               } catch (e: any) {
                 setSubmitError(e.message);
               }
             } else {
               try {
                 setSubmitError('');
-                await setUnderlierAllowanceForProxy(contextData.fiat, upFrontUnderliers)
+                await setUnderlierAllowanceForProxy(fiat, upFrontUnderliers)
               } catch (e: any) {
                 setSubmitError(e.message);
               }
@@ -730,7 +729,6 @@ export const LeverIncreaseForm = ({
 }
 
 export const LeverDecreaseForm = ({
-  contextData,
   disableActions,
   modifyPositionData,
   transactionData,
@@ -738,7 +736,6 @@ export const LeverDecreaseForm = ({
   // TODO: refactor out into react query mutations / store actions
   sellCollateralAndDecreaseLever,
 }: {
-  contextData: any,
   disableActions: boolean,
   modifyPositionData: any,
   transactionData: any,
@@ -759,9 +756,10 @@ export const LeverDecreaseForm = ({
       []
     ), shallow
   );
+  const fiat = useStore(state => state.fiat);
   const { chain } = useNetwork();
   const { address } = useAccount();
-  const { data: userData } = useUserData(contextData.fiat, chain?.id ?? chains.mainnet.id, address ?? '');
+  const { data: userData } = useUserData(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
   const hasProxy = userData.proxies.length > 0;
   const {
     collateralType: {
@@ -814,7 +812,7 @@ export const LeverDecreaseForm = ({
             <Input
               disabled={disableActions}
               value={floor2(Number(wadToDec(underlierSlippagePct)) * 100)}
-              onChange={(event) => { setUnderlierSlippagePct(contextData.fiat, event.target.value, modifyPositionData) }}
+              onChange={(event) => { setUnderlierSlippagePct(fiat, event.target.value, modifyPositionData) }}
               step='0.01'
               placeholder='0'
               inputMode='decimal'
@@ -830,7 +828,7 @@ export const LeverDecreaseForm = ({
             <Input
               disabled={disableActions}
               value={floor2(Number(wadToDec(collateralSlippagePct)) * 100)}
-              onChange={(event) => { setCollateralSlippagePct(contextData.fiat, event.target.value, modifyPositionData) }}
+              onChange={(event) => { setCollateralSlippagePct(fiat, event.target.value, modifyPositionData) }}
               step='0.01'
               placeholder='0'
               inputMode='decimal'
@@ -846,7 +844,7 @@ export const LeverDecreaseForm = ({
         <Input
           disabled={disableActions}
           value={floor2(scaleToDec(subTokenAmount, tokenScale))}
-          onChange={(event) => { setSubTokenAmount(contextData.fiat, event.target.value, modifyPositionData) }}
+          onChange={(event) => { setSubTokenAmount(fiat, event.target.value, modifyPositionData) }}
           placeholder='0'
           inputMode='decimal'
           // Bypass type warning from passing a custom component instead of a string
@@ -855,7 +853,7 @@ export const LeverDecreaseForm = ({
           label={
             <InputLabelWithMax
               label='Collateral to withdraw and swap'
-              onMaxClick={() => setMaxSubTokenAmount(contextData.fiat, modifyPositionData)}
+              onMaxClick={() => setMaxSubTokenAmount(fiat, modifyPositionData)}
             />
           }
           labelRight={tokenSymbol}
@@ -881,7 +879,7 @@ export const LeverDecreaseForm = ({
                   included={false}
                   disabled={disableActions}
                   value={Number(wadToDec(targetedCollRatio))}
-                  onChange={(value) => { setTargetedCollRatio(contextData.fiat, value, modifyPositionData) }}
+                  onChange={(value) => { setTargetedCollRatio(fiat, value, modifyPositionData) }}
                   min={floor4(wadToDec(minCollRatio))}
                   max={(maxCollRatio.eq(ethers.constants.MaxUint256)) ? 5.0 : floor4(wadToDec(maxCollRatio))}
                   step={0.001}
@@ -1040,7 +1038,6 @@ export const LeverDecreaseForm = ({
 }
 
 export const LeverRedeemForm = ({
-  contextData,
   disableActions,
   modifyPositionData,
   transactionData,
@@ -1048,7 +1045,6 @@ export const LeverRedeemForm = ({
   // TODO: refactor out into react query mutations / store actions
   redeemCollateralAndDecreaseLever,
 }: {
-  contextData: any,
   disableActions: boolean,
   modifyPositionData: any,
   transactionData: any,
@@ -1069,9 +1065,16 @@ export const LeverRedeemForm = ({
       []
     ), shallow
   );
+  const fiat = useStore(state => state.fiat);
+
   const { collateralType: { settings: { collybus: { liquidationRatio } } } } = modifyPositionData;
   const minCollRatio = minCollRatioWithBuffer(liquidationRatio);
-  const hasProxy = contextData.proxies.length > 0;
+
+  const { chain } = useNetwork();
+  const { address } = useAccount();
+  const { data: userData } = useUserData(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
+  const hasProxy = userData.proxies.length > 0;
+
   const { action: currentTxAction } = transactionData;
   
   const renderFormAlerts = () => {
@@ -1106,14 +1109,14 @@ export const LeverRedeemForm = ({
           disabled={disableActions}
           value={floor2(wadToDec(leverStore.redeemState.subTokenAmount))}
           onChange={(event) => {
-            leverStore.redeemActions.setSubTokenAmount(contextData.fiat, event.target.value, modifyPositionData);
+            leverStore.redeemActions.setSubTokenAmount(fiat, event.target.value, modifyPositionData);
           }}
           placeholder='0'
           inputMode='decimal'
           // Bypass type warning from passing a custom component instead of a string
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
-          label={<InputLabelWithMax label='Collateral to withdraw and redeem' onMaxClick={() => leverStore.redeemActions.setMaxSubTokenAmount(contextData.fiat, modifyPositionData)} /> }
+          label={<InputLabelWithMax label='Collateral to withdraw and redeem' onMaxClick={() => leverStore.redeemActions.setMaxSubTokenAmount(fiat, modifyPositionData)} /> }
           labelRight={modifyPositionData.collateralType.metadata.symbol}
           bordered
           size='sm'
@@ -1130,7 +1133,7 @@ export const LeverRedeemForm = ({
             disabled={disableActions}
             value={floor2(Number(wadToDec(leverStore.redeemState.underlierSlippagePct)) * 100)}
             onChange={(event) => {
-              leverStore.redeemActions.setUnderlierSlippagePct(contextData.fiat, event.target.value, modifyPositionData);
+              leverStore.redeemActions.setUnderlierSlippagePct(fiat, event.target.value, modifyPositionData);
             }}
             step='0.01'
             placeholder='0'
@@ -1160,7 +1163,7 @@ export const LeverRedeemForm = ({
               disabled={disableActions}
               value={Number(wadToDec(leverStore.redeemState.targetedCollRatio))}
               onChange={(value) => {
-                leverStore.redeemActions.setTargetedCollRatio(contextData.fiat, value, modifyPositionData);
+                leverStore.redeemActions.setTargetedCollRatio(fiat, value, modifyPositionData);
               }}
               min={floor4(wadToDec(minCollRatio))}
               max={5.0}

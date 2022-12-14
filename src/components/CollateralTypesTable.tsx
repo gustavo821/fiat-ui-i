@@ -8,9 +8,9 @@ import {
 import { chain as chains, useAccount, useNetwork, } from 'wagmi';
 import { useCollateralTypes } from '../state/queries/useCollateralTypes';
 import { useUserData } from '../state/queries/useUserData';
+import useStore from '../state/stores/globalStore';
 
 interface CollateralTypesTableProps {
-  fiat: any,
   onSelectCollateralType: (collateralTypeId: string) => void
 }
 
@@ -20,8 +20,10 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
 
   const { chain } = useNetwork();
   const { address } = useAccount();
-  const { data: collateralTypesData } = useCollateralTypes(props.fiat, chain?.id ?? chains.mainnet.id);
-  const { data: userData } = useUserData(props.fiat, chain?.id ?? chains.mainnet.id, address ?? '');
+  const fiat = useStore((state) => state.fiat);
+
+  const { data: collateralTypesData } = useCollateralTypes(fiat, chain?.id ?? chains.mainnet.id);
+  const { data: userData } = useUserData(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
   const { positionsData } = userData as any;
 
   React.useEffect(() => {

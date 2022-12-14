@@ -3,11 +3,9 @@ import { useState } from 'react';
 import Skeleton from 'react-loading-skeleton';
 import { chain as chains, useNetwork } from 'wagmi';
 import { useUserData } from '../state/queries/useUserData';
+import useStore from '../state/stores/globalStore';
 
 interface ProxyCardProps {
-  explorerUrl: null | string;
-  fiat: any;
-  user: null | string;
   disableActions: boolean;
   transactionData: any;
   createProxy: (fiat: any, user: string) => any;
@@ -31,10 +29,15 @@ export const connectButtonCSS = {
 export const ProxyButton = (props: ProxyCardProps) => {
   const [error, setError] = useState('');
   const { chain } = useNetwork();
-  const { data: userData } = useUserData(props.fiat, chain?.id ?? chains.mainnet.id, props.user ?? '');
+
+  const fiat = useStore((state) => state.fiat);
+  const user = useStore((state) => state.user);
+  const explorerUrl = useStore((state) => state.explorerUrl);
+
+  const { data: userData } = useUserData(fiat, chain?.id ?? chains.mainnet.id, user ?? '');
   const { proxies } = userData as any;
 
-  if (props.user === null || !props.fiat || !proxies) {
+  if (user === null || !fiat || !proxies) {
     return <Skeleton count={2} />
   }
 
@@ -45,7 +48,7 @@ export const ProxyButton = (props: ProxyCardProps) => {
       >
         <Link
           target='_blank'
-          href={`${props.explorerUrl}/address/${proxies[0]}`}
+          href={`${explorerUrl}/address/${proxies[0]}`}
           isExternal={true}
           css={{
             color: '$connectButtonColor',
@@ -61,12 +64,12 @@ export const ProxyButton = (props: ProxyCardProps) => {
   return (
     <Button
       onPress={async () => {
-        if (props.user === null) {
+        if (user === null) {
           console.warn('ProxyButton requires a user');
         } else {
           try {
             setError('');
-            await props.createProxy(props.fiat, props.user);
+            await props.createProxy(fiat, user);
           } catch (e: any) {
             setError(e.message);
           }

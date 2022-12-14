@@ -19,6 +19,7 @@ import { collateralTypesKey, useCollateralTypes } from '../src/state/queries/use
 import { userDataKey, useUserData } from '../src/state/queries/useUserData';
 import { useQueryClient } from '@tanstack/react-query';
 import { fiatBalanceKey } from '../src/state/queries/useFiatBalance';
+import useStore from '../src/state/stores/globalStore';
 
 export type TransactionStatus = null | 'error' | 'sent' | 'confirming' | 'confirmed';
 
@@ -30,11 +31,6 @@ const Home: NextPage = () => {
 
   const initialState = React.useMemo(() => ({
     setupListeners: false,
-    contextData: {
-      fiat: null as null | FIAT,
-      explorerUrl: null as null | string,
-      user: null as null | string,
-    },
     selectedPositionId: null as null | string,
     selectedCollateralTypeId: null as null | string,
     modifyPositionData: {
@@ -66,14 +62,21 @@ const Home: NextPage = () => {
 
   const [initialPageLoad, setInitialPageLoad] = React.useState<boolean>(true);
   const [setupListeners, setSetupListeners] = React.useState(false);
-  const [contextData, setContextData] = React.useState(initialState.contextData);
   const [modifyPositionData, setModifyPositionData] = React.useState(initialState.modifyPositionData);
   const [transactionData, setTransactionData] = React.useState(initialState.transactionData);
   const [selectedPositionId, setSelectedPositionId] = React.useState(initialState.selectedPositionId);
   const [selectedCollateralTypeId, setSelectedCollateralTypeId] = React.useState(initialState.selectedCollateralTypeId);
 
-  const { data: collateralTypesData } = useCollateralTypes(contextData.fiat, chain?.id ?? chains.mainnet.id);
-  const { data: userData } = useUserData(contextData.fiat, chain?.id ?? chains.mainnet.id, address ?? '');
+  const fiat = useStore((state) => state.fiat);
+  const fiatFromSigner = useStore((state) => state.fiatFromSigner);
+  const fiatFromProvider = useStore((state) => state.fiatFromProvider);
+  const user = useStore((state) => state.user);
+  const setUser = useStore((state) => state.setUser);
+  const setExplorerUrl = useStore((state) => state.setExplorerUrl);
+  const resetStore = useStore((state) => state.resetStore);
+
+  const { data: collateralTypesData } = useCollateralTypes(fiat, chain?.id ?? chains.mainnet.id);
+  const { data: userData } = useUserData(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
   const { positionsData, proxies } = userData as any;
 
   const disableActions = React.useMemo(() => transactionData.status === 'sent', [transactionData.status])
@@ -81,11 +84,11 @@ const Home: NextPage = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   function resetState() {
     setSetupListeners(initialState.setupListeners);
-    setContextData(initialState.contextData);
     setModifyPositionData(initialState.modifyPositionData);
     setTransactionData(initialState.transactionData);
     setSelectedPositionId(initialState.selectedPositionId);
     setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
+    resetStore();
     queryClient.invalidateQueries(userDataKey.all);
     queryClient.invalidateQueries(fiatBalanceKey.all);
   }
@@ -110,24 +113,15 @@ const Home: NextPage = () => {
   }, [setupListeners, connector, resetState]);
 
   React.useEffect(() => {
-    if (!provider || contextData.fiat || connector) return;
-    (async function () {
-      const fiat = await FIAT.fromProvider(provider, null);
-      setContextData((curContextData) => ({
-        ...curContextData,
-        fiat,
-      }));
-    })();
-  }, [provider, connector, contextData.fiat])
+    if (!provider || fiat || connector || !fiatFromProvider) return;
+    fiatFromProvider(provider)
+  }, [provider, connector, fiat, fiatFromProvider])
 
   // Fetch block explorer data
   React.useEffect(() => {
     if (!chain?.blockExplorers?.etherscan?.url) return;
-    setContextData((curContextData) => ({
-      ...curContextData,
-      explorerUrl: chain?.blockExplorers?.etherscan?.url || '',
-    }));
-  }, [connector, chain?.blockExplorers?.etherscan?.url]);
+    setExplorerUrl(chain?.blockExplorers?.etherscan?.url);
+  }, [connector, chain?.blockExplorers?.etherscan?.url, setExplorerUrl]);
 
   // Fetch User data, Vault data, and set Fiat SDK in global state
   React.useEffect(() => {
@@ -137,16 +131,12 @@ const Home: NextPage = () => {
       const signer = (await connector.getSigner());
       if (!signer || !signer.provider) return;
       const user = await signer.getAddress();
-      const fiat = await FIAT.fromSigner(signer, undefined);
-      setContextData((curContextData) => ({
-        ...curContextData,
-        fiat,
-        user,
-      }));
+      setUser(user);
+      fiatFromSigner(signer)
     })();
     // Address and chain dependencies are needed to recreate FIAT sdk object on account or chain change,
     // even though their values aren't used explicitly.
-  }, [connector, address, chain]);
+  }, [connector, address, chain, fiatFromSigner, setUser]);
 
   // Populate ModifyPosition data
   React.useEffect(() => {
@@ -172,7 +162,7 @@ const Home: NextPage = () => {
       if (proxies.length === 0) return;
       const [proxy] = proxies;
       if (
-        !contextData.fiat ||
+        !fiat ||
         data.collateralType == null ||
         (data.position &&
           data.position.owner.toLowerCase() !== proxy.toLowerCase())
@@ -180,17 +170,17 @@ const Home: NextPage = () => {
         return;
       }
 
-      const { moneta, fiat } = contextData.fiat.getContracts();
-      const underlier = contextData.fiat.getERC20Contract(data.collateralType.properties.underlierToken);
+      const { moneta, fiat: fiatToken } = fiat.getContracts();
+      const underlier = fiat.getERC20Contract(data.collateralType.properties.underlierToken);
 
       const signer = (await connector?.getSigner());
       if (!signer || !signer.provider) return;
       const user = await signer.getAddress();
-      const [underlierAllowance, underlierBalance, monetaFIATAllowance, proxyFIATAllowance] = await contextData.fiat.multicall([
+      const [underlierAllowance, underlierBalance, monetaFIATAllowance, proxyFIATAllowance] = await fiat.multicall([
         { contract: underlier, method: 'allowance', args: [user, proxy] },
         { contract: underlier, method: 'balanceOf', args: [user] },
-        { contract: fiat, method: 'allowance', args: [proxy, moneta.address] },
-        { contract: fiat, method: 'allowance', args: [user, proxy] }
+        { contract: fiatToken, method: 'allowance', args: [proxy, moneta.address] },
+        { contract: fiatToken, method: 'allowance', args: [user, proxy] }
       ]);
 
       setModifyPositionData({
@@ -198,7 +188,7 @@ const Home: NextPage = () => {
       });
     })();
 
-  }, [connector, contextData, collateralTypesData, positionsData, selectedCollateralTypeId, selectedPositionId, modifyPositionData, borrowStore, proxies]);
+  }, [connector, collateralTypesData, positionsData, selectedCollateralTypeId, selectedPositionId, modifyPositionData, borrowStore, proxies, fiat]);
 
   const sendTransaction = async (
     fiat: any, useProxy: boolean, action: string, contract: ethers.Contract, method: string, ...args: any[]
@@ -252,7 +242,7 @@ const Home: NextPage = () => {
       fiat, false, 'setUnderlierAllowanceForProxy', token, 'approve', proxies[0], allowance
     );
     addRecentTransaction({ hash: response.transactionHash, description: 'Set underlier allowance for Proxy' });
-    const underlierAllowance = await token.allowance(contextData.user, proxies[0])
+    const underlierAllowance = await token.allowance(user, proxies[0])
     setModifyPositionData({ ...modifyPositionData, underlierAllowance });
   }
 
@@ -283,7 +273,7 @@ const Home: NextPage = () => {
       fiat, false, 'setFIATAllowanceForProxy', token, 'approve', proxies[0], allowance
     );
     addRecentTransaction({ hash: response.transactionHash, description: 'Set  FIAT allowance for Proxy' });
-    const proxyFIATAllowance = await token.allowance(contextData.user, proxies[0]);
+    const proxyFIATAllowance = await token.allowance(user, proxies[0]);
     setModifyPositionData({ ...modifyPositionData, proxyFIATAllowance });
   }
 
@@ -297,10 +287,10 @@ const Home: NextPage = () => {
 
   const createPosition = async (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => {
     const args = userActions.buildBuyCollateralAndModifyDebtArgs(
-      contextData, proxies, modifyPositionData.collateralType, deltaCollateral, deltaDebt, underlier
+      fiat, user, proxies, modifyPositionData.collateralType, deltaCollateral, deltaDebt, underlier
     );
     const response = await sendTransaction(
-      contextData.fiat, true, 'createPosition', args.contract, args.methodName, ...args.methodArgs
+      fiat, true, 'createPosition', args.contract, args.methodName, ...args.methodArgs
     );
     addRecentTransaction({ hash: response.transactionHash, description: 'Create position' });
     softReset();
@@ -310,18 +300,18 @@ const Home: NextPage = () => {
     const { collateralType, position } = modifyPositionData;
     if (deltaCollateral.isZero()) {
        // increase (mint)
-      const args = userActions.buildModifyCollateralAndDebtArgs(contextData, proxies, collateralType, deltaDebt, position);
+      const args = userActions.buildModifyCollateralAndDebtArgs(fiat, user, proxies, collateralType, deltaDebt, position);
       const response = await sendTransaction(
-        contextData.fiat, true, 'modifyCollateralAndDebt', args.contract, args.methodName, ...args.methodArgs
+        fiat, true, 'modifyCollateralAndDebt', args.contract, args.methodName, ...args.methodArgs
       );
       addRecentTransaction({ hash: response.transactionHash, description: 'Borrow FIAT' });
       softReset();
     } else {
       const args = userActions.buildBuyCollateralAndModifyDebtArgs(
-        contextData, proxies, collateralType, deltaCollateral, deltaDebt, underlier
+        fiat, user, proxies, collateralType, deltaCollateral, deltaDebt, underlier
       );
       const response = await sendTransaction(
-        contextData.fiat, true, 'buyCollateralAndModifyDebt', args.contract, args.methodName, ...args.methodArgs
+        fiat, true, 'buyCollateralAndModifyDebt', args.contract, args.methodName, ...args.methodArgs
       );
       addRecentTransaction({
         hash: response.transactionHash, description: 'Buy and deposit collateral and borrow FIAT'
@@ -336,20 +326,20 @@ const Home: NextPage = () => {
     if (deltaCollateral.isZero()) {
       // decrease (pay back)
       const args = userActions.buildModifyCollateralAndDebtArgs(
-        contextData, proxies, collateralType, deltaDebt.mul(-1), position
+        fiat, user, proxies, collateralType, deltaDebt.mul(-1), position
       );
       const response = await sendTransaction(
-        contextData.fiat, true, 'modifyCollateralAndDebt', args.contract, args.methodName, ...args.methodArgs
+        fiat, true, 'modifyCollateralAndDebt', args.contract, args.methodName, ...args.methodArgs
       );
       addRecentTransaction({ hash: response.transactionHash, description: 'Repay borrowed FIAT' });
       softReset();
     }
     else {
       const args = userActions.buildSellCollateralAndModifyDebtArgs(
-        contextData, proxies, collateralType, deltaCollateral, deltaDebt, underlier, position,
+        fiat, user, proxies, collateralType, deltaCollateral, deltaDebt, underlier, position,
       );
       const response = await sendTransaction(
-        contextData.fiat, true, 'sellCollateralAndModifyDebt', args.contract, args.methodName, ...args.methodArgs
+        fiat, true, 'sellCollateralAndModifyDebt', args.contract, args.methodName, ...args.methodArgs
       );
       addRecentTransaction({
         hash: response.transactionHash, description: 'Withdraw and sell collateral and repay borrowed FIAT'
@@ -363,20 +353,20 @@ const Home: NextPage = () => {
     if (deltaCollateral.isZero()) {
        // decrease (pay back)
       const args = userActions.buildModifyCollateralAndDebtArgs(
-        contextData, proxies, collateralType, deltaDebt.mul(-1), position
+        fiat, user, proxies, collateralType, deltaDebt.mul(-1), position
       );
       const response = await sendTransaction(
-        contextData.fiat, true, 'modifyCollateralAndDebt', args.contract, args.methodName, ...args.methodArgs
+        fiat, true, 'modifyCollateralAndDebt', args.contract, args.methodName, ...args.methodArgs
       );
       addRecentTransaction({ hash: response.transactionHash, description: 'Repay borrowed FIAT' });
       softReset();
     }
     else {
       const args = userActions.buildRedeemCollateralAndModifyDebtArgs(
-        contextData, proxies, collateralType, deltaCollateral, deltaDebt, position
+        fiat, user, proxies, collateralType, deltaCollateral, deltaDebt, position
       );
       const response = await sendTransaction(
-        contextData.fiat, true, 'redeemCollateralAndModifyDebt', args.contract, args.methodName, ...args.methodArgs
+        fiat, true, 'redeemCollateralAndModifyDebt', args.contract, args.methodName, ...args.methodArgs
       );
       addRecentTransaction({
         hash: response.transactionHash, description: 'Withdraw and redeem collateral and repay borrowed FIAT'
@@ -389,10 +379,10 @@ const Home: NextPage = () => {
     upFrontUnderlier: BigNumber, addDebt: BigNumber, minUnderlierToBuy: BigNumber, minTokenToBuy: BigNumber
   ) => {
     const args = await userActions.buildBuyCollateralAndIncreaseLeverArgs(
-      contextData, proxies, modifyPositionData.collateralType, upFrontUnderlier, addDebt, minUnderlierToBuy, minTokenToBuy
+      fiat, user, proxies, modifyPositionData.collateralType, upFrontUnderlier, addDebt, minUnderlierToBuy, minTokenToBuy
     );
     const response = await sendTransaction(
-      contextData.fiat, true, 'createLeveredPosition', args.contract, args.methodName, ...args.methodArgs
+      fiat, true, 'createLeveredPosition', args.contract, args.methodName, ...args.methodArgs
     );
     addRecentTransaction({ hash: response.transactionHash, description: 'Create levered position' });
     softReset();
@@ -402,10 +392,10 @@ const Home: NextPage = () => {
     upFrontUnderlier: BigNumber, addDebt: BigNumber, minUnderlierToBuy: BigNumber, minTokenToBuy: BigNumber
   ) => {
     const args = await userActions.buildBuyCollateralAndIncreaseLeverArgs(
-      contextData, proxies, modifyPositionData.collateralType, upFrontUnderlier, addDebt, minUnderlierToBuy, minTokenToBuy
+      fiat, user, proxies, modifyPositionData.collateralType, upFrontUnderlier, addDebt, minUnderlierToBuy, minTokenToBuy
     );
     const response = await sendTransaction(
-      contextData.fiat, true, 'buyCollateralAndIncreaseLever', args.contract, args.methodName, ...args.methodArgs
+      fiat, true, 'buyCollateralAndIncreaseLever', args.contract, args.methodName, ...args.methodArgs
     );
     addRecentTransaction({
       hash: response.transactionHash, description: 'Buy and deposit collateral and increase leverage'
@@ -419,10 +409,10 @@ const Home: NextPage = () => {
   ) => {
     const { collateralType, position } = modifyPositionData;
     const args = await userActions.buildSellCollateralAndDecreaseLeverArgs(
-      contextData, proxies, collateralType, subTokenAmount, subDebt, maxUnderlierToSell, minUnderlierToBuy, position
+      fiat, user, proxies, collateralType, subTokenAmount, subDebt, maxUnderlierToSell, minUnderlierToBuy, position
     );
     const response = await sendTransaction(
-      contextData.fiat, true, 'sellCollateralAndDecreaseLever', args.contract, args.methodName, ...args.methodArgs
+      fiat, true, 'sellCollateralAndDecreaseLever', args.contract, args.methodName, ...args.methodArgs
     );
     addRecentTransaction({
       hash: response.transactionHash, description: 'Withdraw and sell collateral and decrease leverage'
@@ -436,10 +426,10 @@ const Home: NextPage = () => {
   ) => {
     const { collateralType, position } = modifyPositionData;
     const args = await userActions.buildRedeemCollateralAndDecreaseLeverArgs(
-      contextData, proxies, collateralType, subTokenAmount, subDebt, maxUnderlierToSell, position
+      fiat, user, proxies, collateralType, subTokenAmount, subDebt, maxUnderlierToSell, position
     );
     const response = await sendTransaction(
-      contextData.fiat, true, 'redeemCollateralAndDecreaseLever', args.contract, args.methodName, ...args.methodArgs
+      fiat, true, 'redeemCollateralAndDecreaseLever', args.contract, args.methodName, ...args.methodArgs
     );
     addRecentTransaction({
       hash: response.transactionHash, description: 'Withdraw and redeem collateral and decrease leverage'
@@ -458,7 +448,6 @@ const Home: NextPage = () => {
   return (
     <div>
       <HeaderBar 
-        contextData={contextData} 
         transactionData={transactionData}
         disableActions={disableActions}
         createProxy={createProxy}
@@ -470,7 +459,6 @@ const Home: NextPage = () => {
             : (
               <>
                 <PositionsTable
-                  contextData={contextData}
                   onSelectPosition={(positionId) => {
                     setSelectedPositionId(positionId);
                     setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
@@ -483,7 +471,6 @@ const Home: NextPage = () => {
       </Container>
       <Container lg>
         <CollateralTypesTable
-          fiat={contextData.fiat}
           onSelectCollateralType={(collateralTypeId) => {
             // If user has an existing position for the collateral type then open PositionModal instead
             const { vault, tokenId } = decodeCollateralTypeId(collateralTypeId);
@@ -501,7 +488,6 @@ const Home: NextPage = () => {
       </Container>
 
       <PositionModal
-        contextData={contextData}
         modifyPositionData={modifyPositionData}
         disableActions={disableActions}
         createPosition={createPosition}
