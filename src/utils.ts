@@ -6,8 +6,13 @@ export const formatUnixTimestamp = (unixTimestamp: BigNumberish): string => {
   return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
 };
 
-export function minCollRatioWithBuffer(liquidationRatio: BigNumber): BigNumber {
-  return liquidationRatio.add(decToWad(0.025));
+export function minCollRatioWithBuffer(collRatio: BigNumber): BigNumber {
+  return collRatio.add(decToWad(0.025));
+}
+
+export function maxCollRatioWithBuffer(collRatio: BigNumber): BigNumber {
+  if (collRatio.isZero()) return ZERO;
+  return collRatio.sub(decToWad(0.025));
 }
 
 export function floor2(dec: BigNumberish): number {
