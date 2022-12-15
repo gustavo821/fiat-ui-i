@@ -5,6 +5,7 @@ const useStore = create<any>()((set: any, get: any) => ({
   fiat: null,
   user: '',
   explorerUrl: '',
+  hasProxy: false,
   fiatFromProvider: async (provider: any) => {
     const fiatProvider = await FIAT.fromProvider(provider, null);
     set(() => ({
@@ -31,7 +32,8 @@ const useStore = create<any>()((set: any, get: any) => ({
     set(() => ({
       fiat: null,
       user: '',
-      explorerUrl: ''
+      explorerUrl: '',
+      hasProxy: false,
     }))
   }
 }));

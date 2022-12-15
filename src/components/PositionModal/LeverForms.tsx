@@ -46,9 +46,7 @@ export const LeverCreateForm = ({
   );
 
   const fiat = useStore(state => state.fiat);
-  const { chain } = useNetwork();
-  const { address } = useAccount();
-  const { data: userData } = useUserData(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
+  const hasProxy = useStore(state => state.hasProxy);
 
   const [submitError, setSubmitError] = React.useState('');
 
@@ -78,7 +76,6 @@ export const LeverCreateForm = ({
     setUpFrontUnderliers, setCollateralSlippagePct, setUnderlierSlippagePct, setTargetedCollRatio
   } = leverStore.createActions;
   const { action: currentTxAction } = transactionData;
-  const hasProxy = userData.proxies.length > 0;
 
   const renderFormAlerts = () => {
     const formAlerts = [];
@@ -395,9 +392,8 @@ export const LeverIncreaseForm = ({
     ), shallow
   );
   const fiat = useStore(state => state.fiat);
-  const { chain } = useNetwork();
-  const { address } = useAccount();
-  const { data: userData } = useUserData(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
+  const hasProxy = useStore(state => state.hasProxy);
+
   const {
     collateralType: {
       metadata: { symbol: tokenSymbol },
@@ -417,7 +413,6 @@ export const LeverIncreaseForm = ({
   const {
     setUpFrontUnderliers, setCollateralSlippagePct, setUnderlierSlippagePct, setTargetedCollRatio
   } = leverStore.increaseActions;
-  const hasProxy = userData.proxies.length > 0;
   const { action: currentTxAction } = transactionData;
   
   const renderFormAlerts = () => {
@@ -744,10 +739,8 @@ export const LeverDecreaseForm = ({
     ), shallow
   );
   const fiat = useStore(state => state.fiat);
-  const { chain } = useNetwork();
-  const { address } = useAccount();
-  const { data: userData } = useUserData(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
-  const hasProxy = userData.proxies.length > 0;
+  const hasProxy = useStore(state => state.hasProxy);
+
   const {
     collateralType: {
       metadata: { symbol: tokenSymbol },
@@ -1068,10 +1061,7 @@ export const LeverRedeemForm = ({
     ), shallow
   );
   const fiat = useStore(state => state.fiat);
-  const { chain } = useNetwork();
-  const { address } = useAccount();
-  const { data: userData } = useUserData(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
-  const hasProxy = userData.proxies.length > 0;
+  const hasProxy = useStore(state => state.hasProxy);
   const {
     collateralType: {
       metadata: { symbol: tokenSymbol },
