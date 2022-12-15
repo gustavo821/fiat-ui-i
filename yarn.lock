@@ -516,10 +516,10 @@
     "@ethersproject/properties" "^5.7.0"
     "@ethersproject/strings" "^5.7.0"
 
-"@fiatdao/sdk@0.0.27":
-  version "0.0.27"
-  resolved "https://registry.yarnpkg.com/@fiatdao/sdk/-/sdk-0.0.27.tgz#9ce09ac0181b5b0a19ab846b2009ed67dcda4024"
-  integrity sha512-gFSrRXyPh12B0/0RGsyGUgpu1MADZqAgYeYCZox5ikfPmLrZtN5UdPSbXk6Q9Q4Wnta+8f9rQtOM7JgE/mbiwg==
+"@fiatdao/sdk@0.0.30":
+  version "0.0.30"
+  resolved "https://registry.yarnpkg.com/@fiatdao/sdk/-/sdk-0.0.30.tgz#2ab79ac4ca081eeb42279e5ef323acc85a5c5c52"
+  integrity sha512-LP8BwKVF6FZSGn6zzW5XD/Km3+kd5QEa9MvdwRV5cHvabnnUi7f8iAW44YfX+tguuwioGiZMgNO8txYb8TzLyA==
   dependencies:
     changelog "https://github.com/fiatdao/changelog"
     ethers "^5.7.1"
@@ -2401,9 +2401,9 @@ chalk@^4.0.0, chalk@^4.1.1:
     ansi-styles "^4.1.0"
     supports-color "^7.1.0"
 
-"changelog@https://github.com/fiatdao/changelog":
+"changelog@git+https://github.com/fiatdao/changelog.git":
   version "0.0.0"
-  resolved "https://github.com/fiatdao/changelog#4500971c7c387aa122ff65c12b5138e47f0c71f2"
+  resolved "git+https://github.com/fiatdao/changelog.git#1d19c9f7ffd2a7f9b2983772f56687689fa05788"
 
 cipher-base@^1.0.0, cipher-base@^1.0.1, cipher-base@^1.0.3:
   version "1.0.4"
