@@ -1,4 +1,4 @@
-import { scaleToDec, wadToDec } from '@fiatdao/sdk';
+import { computeCollateralizationRatio, scaleToDec, WAD, wadToDec } from '@fiatdao/sdk';
 import { Button, Card, Grid, Input, Loading, Modal, Spacer, Switch, Text } from '@nextui-org/react';
 import { Slider } from 'antd';
 import 'antd/dist/antd.css';
@@ -11,7 +11,6 @@ import { useLeverStore } from '../../state/stores/leverStore';
 import { commifyToDecimalPlaces, floor2, floor4 } from '../../utils';
 import { Alert } from '../Alert';
 import { InputLabelWithMax } from '../InputLabelWithMax';
-import { PositionPreview } from './PositionPreview';
 import useStore from '../../state/stores/globalStore';
 
 export const LeverCreateForm = ({
@@ -80,24 +79,6 @@ export const LeverCreateForm = ({
   } = leverStore.createActions;
   const { action: currentTxAction } = transactionData;
   const hasProxy = userData.proxies.length > 0;
-
-  // const renderSummary = () => {
-  //   if (leverStore.createState.deltaCollateral.isZero()) {
-  //     return null;
-  //   }
-
-  //   return (
-  //     <>
-  //       <Spacer y={0} />
-  //       <Text b size={'m'}>Summary</Text>
-  //       <Text size='0.75rem'>
-  //         <>
-  //           Swap <b>{floor2(scaleToDec(leverStore.createState.underlier, modifyPositionData.collateralType.properties.underlierScale))} {modifyPositionData.collateralType.properties.underlierSymbol}</b> for<b> ~{floor2(wadToDec(leverStore.createState.deltaCollateral))} {modifyPositionData.collateralType.metadata.symbol}</b>. Deposit <b>~{floor2(wadToDec(leverStore.createState.deltaCollateral))} {modifyPositionData.collateralType.metadata.symbol}</b> as deltaCollateral. Borrow <b>~{floor2(wadToDec(leverStore.createState.deltaDebt))} FIAT</b> against the deltaCollateral.
-  //         </>
-  //       </Text>
-  //     </>
-  //   );
-  // }
 
   const renderFormAlerts = () => {
     const formAlerts = [];
@@ -237,6 +218,9 @@ export const LeverCreateForm = ({
             </Card>
           </>
         )}
+        <Text size={'$sm'}>
+          Note: The fees are due on the total leveraged amounts. Withdrawing collateral before maturity most likely will result in a loss.
+        </Text>
       </Modal.Body>
       <Spacer y={0.75} />
       <Card.Divider />
@@ -417,11 +401,13 @@ export const LeverIncreaseForm = ({
   const {
     collateralType: {
       metadata: { symbol: tokenSymbol },
-      properties: { underlierScale, underlierSymbol, tokenScale }
+      properties: { underlierScale, underlierSymbol, tokenScale },
+      state: { codex: { virtualRate }, collybus: { fairPrice } }
     },
     underlierAllowance,
     underlierBalance,
     monetaDelegate,
+    position
   } = modifyPositionData;
   const {
     upFrontUnderliers, collateralSlippagePct, underlierSlippagePct,
@@ -562,6 +548,9 @@ export const LeverIncreaseForm = ({
             </Card>
           </>
         )}
+        <Text size={'$sm'}>
+          Note: The fees are due on the total leveraged amounts. Withdrawing collateral before maturity most likely will result in a loss.
+        </Text>
       </Modal.Body>
 
       <Spacer y={0.75} />
@@ -599,8 +588,8 @@ export const LeverIncreaseForm = ({
           value={(leverStore.formDataLoading)
             ? ' '
             : (collateral.lte(estCollateral)) 
-              ? `[${floor2(wadToDec(collateral))}, ${floor2(wadToDec(estCollateral))}]`
-              : `[${floor2(wadToDec(estCollateral))}, ${floor2(wadToDec(collateral))}]`
+              ? `${floor2(wadToDec(position.collateral))} → [${floor2(wadToDec(collateral))}, ${floor2(wadToDec(estCollateral))}]`
+              : `${floor2(wadToDec(position.collateral))} → [${floor2(wadToDec(estCollateral))}, ${floor2(wadToDec(collateral))}]`
           }
           placeholder='0'
           type='string'
@@ -612,7 +601,10 @@ export const LeverIncreaseForm = ({
         />
         <Input
           readOnly
-          value={leverStore.formDataLoading ? ' ' : floor2(wadToDec(debt))}
+          value={(leverStore.formDataLoading)
+            ? ' '
+            : `${floor2(wadToDec(position.normalDebt.mul(virtualRate).div(WAD)))} → ${floor2(wadToDec(debt))}`
+          }
           placeholder='0'
           type='string'
           label='Debt'
@@ -623,13 +615,22 @@ export const LeverIncreaseForm = ({
         />
         <Input
           readOnly
-          value={
-            (leverStore.formDataLoading)
-              ? ' '
-              : (collRatio.lte(estCollRatio)) 
-                ? `[${floor2(wadToDec(collRatio.mul(100)))}%, ${floor2(wadToDec(estCollRatio.mul(100)))}%]`
-                : `[${floor2(wadToDec(estCollRatio.mul(100)))}%, ${floor2(wadToDec(collRatio.mul(100)))}%]`
-          }
+          value={(() => {
+            if (leverStore.formDataLoading) return ' ';
+            let collRatioBefore = computeCollateralizationRatio(
+              position.collateral, fairPrice, position.normalDebt, virtualRate
+            );
+            collRatioBefore = (collRatioBefore.eq(ethers.constants.MaxUint256))
+              ? '∞' : `${floor2(wadToDec(collRatioBefore.mul(100)))}%`;
+            const collRatioAfter = (collRatio.eq(ethers.constants.MaxUint256))
+              ? '∞' : `${floor2(wadToDec(collRatio.mul(100)))}%`;
+            const estCollRatioAfter = (estCollRatio.eq(ethers.constants.MaxUint256))
+              ? '∞' : `${floor2(wadToDec(estCollRatio.mul(100)))}%`;
+            if (collRatio.lte(estCollRatio)) 
+              return `${collRatioBefore} → [${collRatioAfter}%, ${estCollRatioAfter}%]`
+            else
+              return `${collRatioBefore} → [${estCollRatioAfter}%, ${collRatioAfter}%]`
+          })()}
           placeholder='0'
           type='string'
           label='Collateralization Ratio ([min., max.])'
@@ -638,9 +639,7 @@ export const LeverIncreaseForm = ({
           size='sm'
           status='primary'
         />
-
         {/* renderSummary() */}
-
       </Modal.Body>
 
       <Modal.Footer justify='space-evenly'>
@@ -752,13 +751,15 @@ export const LeverDecreaseForm = ({
   const {
     collateralType: {
       metadata: { symbol: tokenSymbol },
-      properties: { underlierScale, underlierSymbol, tokenScale }
+      properties: { underlierScale, underlierSymbol, tokenScale },
+      state: { codex: { virtualRate }, collybus: { fairPrice } }
     },
+    position
   } = modifyPositionData;
   const {
     subTokenAmount, collateralSlippagePct, underlierSlippagePct,
     maxUnderliersToSell, minUnderliersToBuy, targetedCollRatio,
-    collateral, collRatio, debt, minCollRatio, maxCollRatio
+    collateral, debt, collRatio, minCollRatio, maxCollRatio
   } = leverStore.decreaseState;
   const {
     setSubTokenAmount, setMaxSubTokenAmount, setCollateralSlippagePct, setUnderlierSlippagePct, setTargetedCollRatio
@@ -849,7 +850,6 @@ export const LeverDecreaseForm = ({
           size='sm'
           borderWeight='light'
         />
-
         {(!minCollRatio.isZero() && !maxCollRatio.isZero() && !minCollRatio.eq(maxCollRatio)) && (
           <>
             <Text
@@ -895,6 +895,9 @@ export const LeverDecreaseForm = ({
             </Card>
           </>
         )}
+        <Text size={'$sm'}>
+          Note: The fees are due on the total leveraged amounts. Withdrawing collateral before maturity most likely will result in a loss.
+        </Text>
       </Modal.Body>
 
       <Spacer y={0.75} />
@@ -942,7 +945,10 @@ export const LeverDecreaseForm = ({
         <Text b size={'m'}>Position Preview</Text>
         <Input
           readOnly
-          value={(leverStore.formDataLoading) ? ' ' : floor2(wadToDec(collateral)) }
+          value={(leverStore.formDataLoading)
+            ? ' '
+            : `${floor2(wadToDec(position.collateral))} → ${floor2(wadToDec(collateral))}`
+          }
           placeholder='0'
           type='string'
           label={'Collateral'}
@@ -953,7 +959,10 @@ export const LeverDecreaseForm = ({
         />
         <Input
           readOnly
-          value={leverStore.formDataLoading ? ' ' : floor2(wadToDec(debt))}
+          value={(leverStore.formDataLoading)
+            ? ' '
+            : `${floor2(wadToDec(position.normalDebt.mul(virtualRate).div(WAD)))} → ${floor2(wadToDec(debt))}`
+          }
           placeholder='0'
           type='string'
           label='Debt'
@@ -964,12 +973,17 @@ export const LeverDecreaseForm = ({
         />
         <Input
           readOnly
-          value={
-            (leverStore.formDataLoading)
-              ? ' '
-              : (collRatio.eq(ethers.constants.MaxUint256))
-                ? '∞' : `${floor2(wadToDec(collRatio.mul(100)))}%`
-          }
+          value={(() => {
+            if (leverStore.formDataLoading) return ' ';
+            let collRatioBefore = computeCollateralizationRatio(
+              position.collateral, fairPrice, position.normalDebt, virtualRate
+            );
+            collRatioBefore = (collRatioBefore.eq(ethers.constants.MaxUint256))
+              ? '∞' : `${floor2(wadToDec(collRatioBefore.mul(100)))}%`;
+            const collRatioAfter = (collRatio.eq(ethers.constants.MaxUint256))
+              ? '∞' : `${floor2(wadToDec(collRatio.mul(100)))}%`;
+            return `${collRatioBefore} → ${collRatioAfter}`
+          })()}
           placeholder='0'
           type='string'
           label='Collateralization Ratio'
@@ -1061,8 +1075,10 @@ export const LeverRedeemForm = ({
   const {
     collateralType: {
       metadata: { symbol: tokenSymbol },
-      properties: { underlierScale, underlierSymbol, tokenScale }
+      properties: { underlierScale, underlierSymbol, tokenScale },
+      state: { codex: { virtualRate }, collybus: { fairPrice } }
     },
+    position
   } = modifyPositionData;
   const {
     subTokenAmount, underlierSlippagePct,
@@ -1240,7 +1256,10 @@ export const LeverRedeemForm = ({
         <Text b size={'m'}>Position Preview</Text>
         <Input
           readOnly
-          value={(leverStore.formDataLoading) ? ' ' : floor2(wadToDec(collateral)) }
+          value={(leverStore.formDataLoading)
+            ? ' '
+            : `${floor2(wadToDec(position.collateral))} → ${floor2(wadToDec(collateral))}`
+          }
           placeholder='0'
           type='string'
           label={'Collateral'}
@@ -1251,7 +1270,10 @@ export const LeverRedeemForm = ({
         />
         <Input
           readOnly
-          value={leverStore.formDataLoading ? ' ' : floor2(wadToDec(debt))}
+          value={(leverStore.formDataLoading)
+            ? ' '
+            : `${floor2(wadToDec(position.normalDebt.mul(virtualRate).div(WAD)))} → ${floor2(wadToDec(debt))}`
+          }
           placeholder='0'
           type='string'
           label='Debt'
@@ -1262,12 +1284,17 @@ export const LeverRedeemForm = ({
         />
         <Input
           readOnly
-          value={
-            (leverStore.formDataLoading)
-              ? ' '
-              : (collRatio.eq(ethers.constants.MaxUint256))
-                ? '∞' : `${floor2(wadToDec(collRatio.mul(100)))}%`
-          }
+          value={(() => {
+            if (leverStore.formDataLoading) return ' ';
+            let collRatioBefore = computeCollateralizationRatio(
+              position.collateral, fairPrice, position.normalDebt, virtualRate
+            );
+            collRatioBefore = (collRatioBefore.eq(ethers.constants.MaxUint256))
+              ? '∞' : `${floor2(wadToDec(collRatioBefore.mul(100)))}%`;
+            const collRatioAfter = (collRatio.eq(ethers.constants.MaxUint256))
+              ? '∞' : `${floor2(wadToDec(collRatio.mul(100)))}%`;
+            return `${collRatioBefore} → ${collRatioAfter}`
+          })()}
           placeholder='0'
           type='string'
           label='Collateralization Ratio'

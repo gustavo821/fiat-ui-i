@@ -369,10 +369,9 @@ export const buildBuyCollateralAndModifyDebtArgs = (
     case 'ERC20:FY': {
       if (!properties.fyData) throw new Error('Missing FY data');
       const args = {
-        contract: contextData,
-        methodName: vaultFYActions,
+        contract: vaultFYActions,
+        methodName: 'buyCollateralAndModifyDebt',
         methodArgs: [
-          'buyCollateralAndModifyDebt',
           properties.vault,
           proxies[0],
           user,
@@ -392,10 +391,9 @@ export const buildBuyCollateralAndModifyDebtArgs = (
     case 'ERC20:SPT': {
       if (!properties.sptData) throw new Error('Missing SPT data');
       const args = {
-        contract: contextData,
-        methodName: vaultSPTActions,
+        contract: vaultSPTActions,
+        methodName: 'buyCollateralAndModifyDebt',
         methodArgs: [
-          'buyCollateralAndModifyDebt',
           properties.vault,
           proxies[0],
           user,
@@ -810,10 +808,9 @@ export const buildSellCollateralAndDecreaseLeverArgs = async (
         [await leverFYActions.fiatPoolId()], [properties.underlierToken], maxUnderliersToSell, deadline
       );
       const args = {
-        contract: contextData,
-        methodName: leverFYActions,
+        contract: leverFYActions,
+        methodName: 'sellCollateralAndDecreaseLever',
         methodArgs: [
-          'sellCollateralAndDecreaseLever',
           properties.vault,
           proxies[0],
           user,
@@ -836,10 +833,9 @@ export const buildSellCollateralAndDecreaseLeverArgs = async (
         [await leverSPTActions.fiatPoolId()], [properties.underlierToken], maxUnderliersToSell, deadline
       );
       const args = {
-        contract: contextData,
-        methodName: leverSPTActions,
+        contract: leverSPTActions,
+        methodName: 'sellCollateralAndDecreaseLever',
         methodArgs: [
-          'sellCollateralAndDecreaseLever',
           properties.vault,
           proxies[0],
           user,
@@ -910,10 +906,9 @@ export const buildRedeemCollateralAndDecreaseLeverArgs = async (
         [await leverFYActions.fiatPoolId()], [properties.underlierToken], maxUnderliersToSell, deadline
       );
       const args = {
-        contract: contextData,
-        methodName: leverFYActions,
+        contract: leverFYActions,
+        methodName: 'redeemCollateralAndDecreaseLever',
         methodArgs: [
-          'redeemCollateralAndDecreaseLever',
           properties.vault,
           properties.token,
           proxies[0],
@@ -931,10 +926,9 @@ export const buildRedeemCollateralAndDecreaseLeverArgs = async (
         [await leverSPTActions.fiatPoolId()], [properties.underlierToken], maxUnderliersToSell, deadline
       );
       const args = {
-        contract: contextData,
-        methodName: leverSPTActions,
+        contract: leverSPTActions,
+        methodName: 'redeemCollateralAndDecreaseLever',
         methodArgs: [
-          'redeemCollateralAndDecreaseLever',
           properties.vault,
           properties.token,
           proxies[0],
