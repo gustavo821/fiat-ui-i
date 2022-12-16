@@ -13,8 +13,8 @@ import {
 } from '@fiatdao/sdk';
 import { BigNumber } from 'ethers';
 import create from 'zustand';
-import * as userActions from '../actions';
-import { debounce, floor2, floor4, minCollRatioWithBuffer } from '../utils';
+import * as userActions from '../../actions';
+import { debounce, floor2, floor4, minCollRatioWithBuffer } from '../../utils';
 
 /// A store for setting and getting form values to create and manage positions.
 interface BorrowState {
@@ -282,7 +282,7 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
         const { collateralType } = modifyPositionData;
         const { tokenScale, underlierScale } = collateralType.properties;
         const { codex: { debtFloor }, collybus: { liquidationRatio } } = collateralType.settings;
-        const { slippagePct, underlier } = get().createState;
+        const { slippagePct, underlier, targetedCollRatio } = get().createState;
         const { codex: { virtualRate: rate }, collybus: { fairPrice } } = collateralType.state;
 
         // Reset form errors and warnings on new input
@@ -314,7 +314,6 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
           }
 
           // For new position, calculate deltaDebt based on targetedCollRatio
-          const { targetedCollRatio } = get().createState;
           const deltaNormalDebt = computeMaxNormalDebt(deltaCollateral, rate, fairPrice, targetedCollRatio);
           const deltaDebt = normalDebtToDebt(deltaNormalDebt, rate);
           const collateral = deltaCollateral;

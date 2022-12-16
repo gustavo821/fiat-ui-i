@@ -1,12 +1,11 @@
 import { Badge, Button, Link, Loading } from '@nextui-org/react';
 import { useState } from 'react';
 import Skeleton from 'react-loading-skeleton';
+import { chain as chains, useNetwork } from 'wagmi';
+import { useUserData } from '../state/queries/useUserData';
+import useStore from '../state/stores/globalStore';
 
 interface ProxyCardProps {
-  proxies: Array<string>;
-  explorerUrl: null | string;
-  fiat: any;
-  user: null | string;
   disableActions: boolean;
   transactionData: any;
   createProxy: (fiat: any, user: string) => any;
@@ -29,25 +28,33 @@ export const connectButtonCSS = {
 
 export const ProxyButton = (props: ProxyCardProps) => {
   const [error, setError] = useState('');
+  const { chain } = useNetwork();
 
-  if (props.user === null || !props.fiat) {
+  const fiat = useStore((state) => state.fiat);
+  const user = useStore((state) => state.user);
+  const explorerUrl = useStore((state) => state.explorerUrl);
+
+  const { data: userData } = useUserData(fiat, chain?.id ?? chains.mainnet.id, user ?? '');
+  const { proxies } = userData as any;
+
+  if (user === null || !fiat || !proxies) {
     return <Skeleton count={2} />
   }
 
-  if (props.proxies.length > 0) {
+  if (proxies.length > 0) {
     return (
       <Badge
         css={connectButtonCSS}      
       >
         <Link
           target='_blank'
-          href={`${props.explorerUrl}/address/${props.proxies[0]}`}
+          href={`${explorerUrl}/address/${proxies[0]}`}
           isExternal={true}
           css={{
             color: '$connectButtonColor',
           }}
         >
-          Proxy: {`${props.proxies[0].substring(0,4)}...${props.proxies[0].slice(-4)}`}&nbsp;
+          Proxy: {`${proxies[0].substring(0,4)}...${proxies[0].slice(-4)}`}&nbsp;
         </Link>
       </Badge>
 
@@ -57,12 +64,12 @@ export const ProxyButton = (props: ProxyCardProps) => {
   return (
     <Button
       onPress={async () => {
-        if (props.user === null) {
+        if (user === null) {
           console.warn('ProxyButton requires a user');
         } else {
           try {
             setError('');
-            await props.createProxy(props.fiat, props.user);
+            await props.createProxy(fiat, user);
           } catch (e: any) {
             setError(e.message);
           }

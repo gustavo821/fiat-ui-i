@@ -4,15 +4,17 @@ import { Slider } from 'antd';
 import 'antd/dist/antd.css';
 import { BigNumber, ethers } from 'ethers';
 import React, {useMemo} from 'react';
+import { chain as chains, useAccount, useNetwork } from 'wagmi';
 import shallow from 'zustand/shallow';
-import { useBorrowStore } from '../../stores/borrowStore';
+import { useUserData } from '../../state/queries/useUserData';
+import { useBorrowStore } from '../../state/stores/borrowStore';
 import { commifyToDecimalPlaces, floor2, floor4, floor5, minCollRatioWithBuffer } from '../../utils';
 import { Alert } from '../Alert';
 import { InputLabelWithMax } from '../InputLabelWithMax';
 import { PositionPreview } from './PositionPreview';
+import useStore from '../../state/stores/globalStore';
 
 export const CreateForm = ({
-  contextData,
   disableActions,
   modifyPositionData,
   transactionData,
@@ -22,7 +24,6 @@ export const CreateForm = ({
   setUnderlierAllowanceForProxy,
   unsetUnderlierAllowanceForProxy,
 }: {
-  contextData: any,
   disableActions: boolean,
   modifyPositionData: any,
   transactionData: any,
@@ -32,7 +33,6 @@ export const CreateForm = ({
   setUnderlierAllowanceForProxy: (fiat: any, amount: BigNumber) => any,
   unsetUnderlierAllowanceForProxy: (fiat: any) => any,
 }) => {
-  const { proxies } = contextData;
   const {
     collateralType: {
       metadata: { symbol: tokenSymbol },
@@ -44,7 +44,13 @@ export const CreateForm = ({
     monetaDelegate,
   } = modifyPositionData;
   const { action: currentTxAction } = transactionData;
-  const hasProxy = proxies.length > 0;
+
+  const fiat = useStore(state => state.fiat);
+
+  const { chain } = useNetwork();
+  const { address } = useAccount();
+  const { data: userData } = useUserData(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
+  const hasProxy = userData.proxies.length > 0;
 
   const borrowStore = useBorrowStore(
     React.useCallback(
@@ -145,7 +151,7 @@ export const CreateForm = ({
               value={floor2(scaleToDec(borrowStore.createState.underlier, underlierScale))}
               onChange={(event) => {
                 borrowStore.createActions.setUnderlier(
-                  contextData.fiat, event.target.value, modifyPositionData);
+                  fiat, event.target.value, modifyPositionData);
               }}
               placeholder='0'
               inputMode='decimal'
@@ -162,7 +168,7 @@ export const CreateForm = ({
               disabled={disableActions}
               value={floor2(Number(wadToDec(borrowStore.createState.slippagePct)) * 100)}
               onChange={(event) => {
-                borrowStore.createActions.setSlippagePct(contextData.fiat, event.target.value, modifyPositionData);
+                borrowStore.createActions.setSlippagePct(fiat, event.target.value, modifyPositionData);
               }}
               step='0.01'
               placeholder='0'
@@ -192,7 +198,7 @@ export const CreateForm = ({
               disabled={disableActions}
               value={Number(wadToDec(borrowStore.createState.targetedCollRatio))}
               onChange={(value) => {
-                borrowStore.createActions.setTargetedCollRatio(contextData.fiat, value, modifyPositionData);
+                borrowStore.createActions.setTargetedCollRatio(fiat, value, modifyPositionData);
               }}
               min={floor4(wadToDec(minCollRatio))}
               max={5.0}
@@ -309,14 +315,14 @@ export const CreateForm = ({
             if (!borrowStore.createState.underlier.isZero() && underlierAllowance?.gte(borrowStore.createState.underlier)) {
               try {
                 setSubmitError('');
-                await unsetUnderlierAllowanceForProxy(contextData.fiat);
+                await unsetUnderlierAllowanceForProxy(fiat);
               } catch (e: any) {
                 setSubmitError(e.message);
               }
             } else {
               try {
                 setSubmitError('');
-                await setUnderlierAllowanceForProxy(contextData.fiat, borrowStore.createState.underlier);
+                await setUnderlierAllowanceForProxy(fiat, borrowStore.createState.underlier);
               } catch (e: any) {
                 setSubmitError(e.message);
               }
@@ -365,7 +371,6 @@ export const CreateForm = ({
 }
 
 export const IncreaseForm = ({
-  contextData,
   disableActions,
   modifyPositionData,
   transactionData,
@@ -375,7 +380,6 @@ export const IncreaseForm = ({
   setUnderlierAllowanceForProxy,
   unsetUnderlierAllowanceForProxy,
 }: {
-  contextData: any,
   disableActions: boolean,
   modifyPositionData: any,
   transactionData: any,
@@ -398,8 +402,12 @@ export const IncreaseForm = ({
       []
     ), shallow
   );
+  const fiat = useStore(state => state.fiat);
 
-  const hasProxy = contextData.proxies.length > 0;
+  const { chain } = useNetwork();
+  const { address } = useAccount();
+  const { data: userData } = useUserData(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
+  const hasProxy = userData.proxies.length > 0;
   const { action: currentTxAction } = transactionData;
   
   const renderFormAlerts = () => {
@@ -446,7 +454,7 @@ export const IncreaseForm = ({
           disabled={disableActions}
           value={floor2(scaleToDec(borrowStore.increaseState.underlier, modifyPositionData.collateralType.properties.underlierScale))}
           onChange={(event) => {
-            borrowStore.increaseActions.setUnderlier(contextData.fiat, event.target.value, modifyPositionData);
+            borrowStore.increaseActions.setUnderlier(fiat, event.target.value, modifyPositionData);
           }}
           placeholder='0'
           inputMode='decimal'
@@ -460,7 +468,7 @@ export const IncreaseForm = ({
           disabled={disableActions}
           value={floor2(Number(wadToDec(borrowStore.increaseState.slippagePct)) * 100)}
           onChange={(event) => {
-            borrowStore.increaseActions.setSlippagePct(contextData.fiat, event.target.value, modifyPositionData);
+            borrowStore.increaseActions.setSlippagePct(fiat, event.target.value, modifyPositionData);
           }}
           step='0.01'
           placeholder='0'
@@ -477,7 +485,7 @@ export const IncreaseForm = ({
         disabled={disableActions}
         value={floor5(wadToDec(borrowStore.increaseState.deltaDebt))}
         onChange={(event) => {
-          borrowStore.increaseActions.setDeltaDebt(contextData.fiat, event.target.value,modifyPositionData);
+          borrowStore.increaseActions.setDeltaDebt(fiat, event.target.value,modifyPositionData);
         }}
         placeholder='0'
         inputMode='decimal'
@@ -542,14 +550,14 @@ export const IncreaseForm = ({
             if(!borrowStore.increaseState.underlier.isZero() && modifyPositionData.underlierAllowance.gte(borrowStore.increaseState.underlier)) {
               try {
                 setSubmitError('');
-                await unsetUnderlierAllowanceForProxy(contextData.fiat);
+                await unsetUnderlierAllowanceForProxy(fiat);
               } catch (e: any) {
                 setSubmitError(e.message);
               }
             } else {
               try {
                 setSubmitError('');
-                await setUnderlierAllowanceForProxy(contextData.fiat, borrowStore.increaseState.underlier)
+                await setUnderlierAllowanceForProxy(fiat, borrowStore.increaseState.underlier)
               } catch (e: any) {
                 setSubmitError(e.message);
               }
@@ -604,7 +612,6 @@ export const IncreaseForm = ({
 }
 
 export const DecreaseForm = ({
-  contextData,
   disableActions,
   modifyPositionData,
   transactionData,
@@ -615,7 +622,6 @@ export const DecreaseForm = ({
   setFIATAllowanceForMoneta,
   sellCollateralAndModifyDebt,
 }: {
-  contextData: any,
   disableActions: boolean,
   modifyPositionData: any,
   transactionData: any,
@@ -639,8 +645,13 @@ export const DecreaseForm = ({
       []
     ), shallow
   );
+  const fiat = useStore(state => state.fiat);
 
-  const hasProxy = contextData.proxies.length > 0;
+  const { chain } = useNetwork();
+  const { address } = useAccount();
+  const { data: userData } = useUserData(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
+  const hasProxy = userData.proxies.length > 0;
+
   const { action: currentTxAction } = transactionData;
   
   const renderFormAlerts = () => {
@@ -681,7 +692,7 @@ export const DecreaseForm = ({
             disabled={disableActions}
             value={floor2(wadToDec(borrowStore.decreaseState.deltaCollateral))}
             onChange={(event) => {
-              borrowStore.decreaseActions.setDeltaCollateral(contextData.fiat, event.target.value, modifyPositionData);
+              borrowStore.decreaseActions.setDeltaCollateral(fiat, event.target.value, modifyPositionData);
             }}
             placeholder='0'
             inputMode='decimal'
@@ -691,7 +702,7 @@ export const DecreaseForm = ({
             label={
               <InputLabelWithMax
                 label='Collateral to withdraw and swap'
-                onMaxClick={() => borrowStore.decreaseActions.setMaxDeltaCollateral(contextData.fiat, modifyPositionData)}
+                onMaxClick={() => borrowStore.decreaseActions.setMaxDeltaCollateral(fiat, modifyPositionData)}
               />
             }
             labelRight={modifyPositionData.collateralType.metadata.symbol}
@@ -704,7 +715,7 @@ export const DecreaseForm = ({
             disabled={disableActions}
             value={floor2(Number(wadToDec(borrowStore.decreaseState.slippagePct)) * 100)}
             onChange={(event) => {
-              borrowStore.decreaseActions.setSlippagePct(contextData.fiat, event.target.value, modifyPositionData);
+              borrowStore.decreaseActions.setSlippagePct(fiat, event.target.value, modifyPositionData);
             }}
             step='0.01'
             placeholder='0'
@@ -721,7 +732,7 @@ export const DecreaseForm = ({
           disabled={disableActions}
           value={floor5(wadToDec(borrowStore.decreaseState.deltaDebt))}
           onChange={(event) => {
-            borrowStore.decreaseActions.setDeltaDebt(contextData.fiat, event.target.value,modifyPositionData);
+            borrowStore.decreaseActions.setDeltaDebt(fiat, event.target.value,modifyPositionData);
           }}
           placeholder='0'
           inputMode='decimal'
@@ -731,7 +742,7 @@ export const DecreaseForm = ({
           label={
             <InputLabelWithMax
               label='FIAT to pay back'
-              onMaxClick={() => borrowStore.decreaseActions.setMaxDeltaDebt(contextData.fiat, modifyPositionData)}
+              onMaxClick={() => borrowStore.decreaseActions.setMaxDeltaDebt(fiat, modifyPositionData)}
             />
           }
           labelRight={'FIAT'}
@@ -797,14 +808,14 @@ export const DecreaseForm = ({
             if (borrowStore.decreaseState.deltaDebt.gt(0) && modifyPositionData.proxyFIATAllowance.gte(borrowStore.decreaseState.deltaDebt)) {
               try {
                 setSubmitError('');
-                await unsetFIATAllowanceForProxy(contextData.fiat);
+                await unsetFIATAllowanceForProxy(fiat);
               } catch (e: any) {
                 setSubmitError(e.message);
               }
             } else {
               try {
                 setSubmitError('');
-                await setFIATAllowanceForProxy(contextData.fiat, borrowStore.decreaseState.deltaDebt);
+                await setFIATAllowanceForProxy(fiat, borrowStore.decreaseState.deltaDebt);
               } catch (e: any) {
                 setSubmitError(e.message);
               }
@@ -837,7 +848,7 @@ export const DecreaseForm = ({
               onPress={async () => {
                 try {
                   setSubmitError('');
-                  await setFIATAllowanceForMoneta(contextData.fiat);
+                  await setFIATAllowanceForMoneta(fiat);
                 } catch (e: any) {
                   setSubmitError(e.message);
                 }
@@ -886,7 +897,6 @@ export const DecreaseForm = ({
 }
 
 export const RedeemForm = ({
-  contextData,
   disableActions,
   modifyPositionData,
   transactionData,
@@ -897,7 +907,6 @@ export const RedeemForm = ({
   setFIATAllowanceForMoneta,
   redeemCollateralAndModifyDebt,
 }: {
-  contextData: any,
   disableActions: boolean,
   modifyPositionData: any,
   transactionData: any,
@@ -921,8 +930,13 @@ export const RedeemForm = ({
       []
     ), shallow
   );
+  const fiat = useStore(state => state.fiat);
+  
+  const { chain } = useNetwork();
+  const { address } = useAccount();
+  const { data: userData } = useUserData(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
+  const hasProxy = userData.proxies.length > 0;
 
-  const hasProxy = contextData.proxies.length > 0;
   const { action: currentTxAction } = transactionData;
   
   const renderFormAlerts = () => {
@@ -963,14 +977,14 @@ export const RedeemForm = ({
             disabled={disableActions}
             value={floor2(wadToDec(borrowStore.redeemState.deltaCollateral))}
             onChange={(event) => {
-              borrowStore.redeemActions.setDeltaCollateral(contextData.fiat, event.target.value, modifyPositionData);
+              borrowStore.redeemActions.setDeltaCollateral(fiat, event.target.value, modifyPositionData);
             }}
             placeholder='0'
             inputMode='decimal'
             // Bypass type warning from passing a custom component instead of a string
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore
-            label={<InputLabelWithMax label='Collateral to withdraw and redeem' onMaxClick={() => borrowStore.redeemActions.setMaxDeltaCollateral(contextData.fiat, modifyPositionData)} /> }
+            label={<InputLabelWithMax label='Collateral to withdraw and redeem' onMaxClick={() => borrowStore.redeemActions.setMaxDeltaCollateral(fiat, modifyPositionData)} /> }
             labelRight={modifyPositionData.collateralType.metadata.symbol}
             bordered
             size='sm'
@@ -982,14 +996,14 @@ export const RedeemForm = ({
           disabled={disableActions}
           value={floor5(wadToDec(borrowStore.redeemState.deltaDebt))}
           onChange={(event) => {
-            borrowStore.redeemActions.setDeltaDebt(contextData.fiat, event.target.value,modifyPositionData);
+            borrowStore.redeemActions.setDeltaDebt(fiat, event.target.value,modifyPositionData);
           }}
           placeholder='0'
           inputMode='decimal'
           // Bypass type warning from passing a custom component instead of a string
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
-          label={<InputLabelWithMax label='FIAT to pay back' onMaxClick={() => borrowStore.redeemActions.setMaxDeltaDebt(contextData.fiat, modifyPositionData)} />}
+          label={<InputLabelWithMax label='FIAT to pay back' onMaxClick={() => borrowStore.redeemActions.setMaxDeltaDebt(fiat, modifyPositionData)} />}
           labelRight={'FIAT'}
           bordered
           size='sm'
@@ -1029,14 +1043,14 @@ export const RedeemForm = ({
             if (borrowStore.redeemState.deltaDebt.gt(0) && modifyPositionData.proxyFIATAllowance.gte(borrowStore.redeemState.deltaDebt)) {
               try {
                 setSubmitError('');
-                await unsetFIATAllowanceForProxy(contextData.fiat);
+                await unsetFIATAllowanceForProxy(fiat);
               } catch (e: any) {
                 setSubmitError(e.message);
               }
             } else {
               try {
                 setSubmitError('');
-                await setFIATAllowanceForProxy(contextData.fiat, borrowStore.redeemState.deltaDebt);
+                await setFIATAllowanceForProxy(fiat, borrowStore.redeemState.deltaDebt);
               } catch (e: any) {
                 setSubmitError(e.message);
               }
@@ -1069,7 +1083,7 @@ export const RedeemForm = ({
               onPress={async () => {
                 try {
                   setSubmitError('');
-                  await setFIATAllowanceForMoneta(contextData.fiat);
+                  await setFIATAllowanceForMoneta(fiat);
                 } catch (e: any) {
                   setSubmitError(e.message);
                 }

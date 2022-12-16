@@ -5,20 +5,30 @@ import {
   earnableRateToAPY, encodeCollateralTypeId, floor2, formatUnixTimestamp,
   interestPerSecondToAPY, interestPerSecondToRateUntilMaturity
 } from '../utils';
+import { chain as chains, useAccount, useNetwork, } from 'wagmi';
+import { useCollateralTypes } from '../state/queries/useCollateralTypes';
+import { useUserData } from '../state/queries/useUserData';
+import useStore from '../state/stores/globalStore';
 
 interface CollateralTypesTableProps {
-  collateralTypesData: Array<any>,
-  positionsData: Array<any>,
   onSelectCollateralType: (collateralTypeId: string) => void
 }
 
 export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
   const [sortedData, setSortedData] = React.useState<any[]>([]);
   const [sortProps, setSortProps] = React.useState<SortDescriptor>({ column: 'Maturity', direction: 'descending' });
-  
+
+  const { chain } = useNetwork();
+  const { address } = useAccount();
+  const fiat = useStore((state) => state.fiat);
+
+  const { data: collateralTypesData } = useCollateralTypes(fiat, chain?.id ?? chains.mainnet.id);
+  const { data: userData } = useUserData(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
+  const { positionsData } = userData as any;
+
   React.useEffect(() => {
-    const data = [...props.collateralTypesData].filter(({ properties: { vault, tokenId } }) => {
-      if (props.positionsData.find((position) => addressEq(position.vault, vault) && position.tokenId == tokenId)) {
+    const data = [...collateralTypesData].filter(({ properties: { vault, tokenId } }) => {
+      if (positionsData.find((position: any) => addressEq(position.vault, vault) && position.tokenId == tokenId)) {
         return false;
       }
       return true;
@@ -30,9 +40,9 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
       return a.properties.maturity.toNumber() > b.properties.maturity.toNumber() ? 1 : -1
     });
     setSortedData(data);
-  }, [props.collateralTypesData, props.positionsData, sortProps.direction])
+  }, [collateralTypesData, positionsData, sortProps.direction])
 
-  if (props.collateralTypesData.length === 0) return null;
+  if (collateralTypesData.length === 0) return null;
 
   return (
     <>

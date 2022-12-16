@@ -516,10 +516,10 @@
     "@ethersproject/properties" "^5.7.0"
     "@ethersproject/strings" "^5.7.0"
 
-"@fiatdao/sdk@0.0.23":
-  version "0.0.23"
-  resolved "https://registry.yarnpkg.com/@fiatdao/sdk/-/sdk-0.0.23.tgz#194ff9ca0753cda60c35a3df01c7dca9b040fc0d"
-  integrity sha512-0wA/T6tTz8ZfW3s7R2NsLniqxuS5mJHS5I/3hxef+fKmLGhscSiY7lFT2/i3dYMDPFyI6jhqza3YZQ4Bj3AFug==
+"@fiatdao/sdk@0.0.30":
+  version "0.0.30"
+  resolved "https://registry.yarnpkg.com/@fiatdao/sdk/-/sdk-0.0.30.tgz#2ab79ac4ca081eeb42279e5ef323acc85a5c5c52"
+  integrity sha512-LP8BwKVF6FZSGn6zzW5XD/Km3+kd5QEa9MvdwRV5cHvabnnUi7f8iAW44YfX+tguuwioGiZMgNO8txYb8TzLyA==
   dependencies:
     changelog "https://github.com/fiatdao/changelog"
     ethers "^5.7.1"
@@ -1513,6 +1513,11 @@
   resolved "https://registry.yarnpkg.com/@tanstack/query-core/-/query-core-4.14.1.tgz#a74c4da03e79a8be07fa5ab2ebc12865146915e2"
   integrity sha512-mUejKoFDe4NZB8jQJR1uuAl6IwvkUpOD2m8NcuTVPOu0pcxeeFPdrnHaljwOEFPtlqXoiiIIQGYy6whjCMN+iQ==
 
+"@tanstack/query-core@4.20.4":
+  version "4.20.4"
+  resolved "https://registry.yarnpkg.com/@tanstack/query-core/-/query-core-4.20.4.tgz#1f7975a2db26a8bc2f382bad8a44cd422c846b17"
+  integrity sha512-lhLtGVNJDsJ/DyZXrLzekDEywQqRVykgBqTmkv0La32a/RleILXy6JMLBb7UmS3QCatg/F/0N9/5b0i5j6IKcA==
+
 "@tanstack/query-persist-client-core@4.14.1":
   version "4.14.1"
   resolved "https://registry.yarnpkg.com/@tanstack/query-persist-client-core/-/query-persist-client-core-4.14.1.tgz#4f010d9ab401bcc1661ac93a127d59fae19947e3"
@@ -1538,6 +1543,14 @@
   integrity sha512-cRgNzigw4GSPwGlTEkXi8hi/xgUnSEt9jCkiC8oAT3PEIdsQ50onZcpXd+JNJcZk2RTh8KM1fGyWz6xYLiY8bg==
   dependencies:
     "@tanstack/query-core" "4.14.1"
+    use-sync-external-store "^1.2.0"
+
+"@tanstack/react-query@^4.19.1":
+  version "4.20.4"
+  resolved "https://registry.yarnpkg.com/@tanstack/react-query/-/react-query-4.20.4.tgz#562b34fb919adea884eccaba2b5be50e8ba7fb16"
+  integrity sha512-SJRxx13k/csb9lXAJfycgVA1N/yU/h3bvRNWP0+aHMfMjmbyX82FdoAcckDBbOdEyAupvb0byelNHNeypCFSyA==
+  dependencies:
+    "@tanstack/query-core" "4.20.4"
     use-sync-external-store "^1.2.0"
 
 "@types/bn.js@^4.11.3":
@@ -2401,9 +2414,9 @@ chalk@^4.0.0, chalk@^4.1.1:
     ansi-styles "^4.1.0"
     supports-color "^7.1.0"
 
-"changelog@https://github.com/fiatdao/changelog":
+"changelog@git+https://github.com/fiatdao/changelog.git":
   version "0.0.0"
-  resolved "https://github.com/fiatdao/changelog#05bb82c644715fa53fb102f2888cd318347f38ea"
+  resolved "git+https://github.com/fiatdao/changelog.git#1d19c9f7ffd2a7f9b2983772f56687689fa05788"
 
 cipher-base@^1.0.0, cipher-base@^1.0.1, cipher-base@^1.0.3:
   version "1.0.4"
