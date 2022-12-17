@@ -15,8 +15,6 @@ import useStore from '../../state/stores/globalStore';
 
 export const LeverCreateForm = ({
   disableActions,
-  modifyPositionData,
-  transactionData,
   onClose,
   // TODO: refactor out into react query mutations / store actions
   createLeveredPosition,
@@ -24,8 +22,6 @@ export const LeverCreateForm = ({
   unsetUnderlierAllowanceForProxy,
 }: {
   disableActions: boolean,
-  modifyPositionData: any,
-  transactionData: any,
   onClose: () => void,
   // TODO: refactor out into react query mutations / store actions
   createLeveredPosition: (upFrontUnderlier: BigNumber, addDebt: BigNumber, minUnderlierToBuy: BigNumber, minTokenToBuy: BigNumber) => any;
@@ -47,7 +43,8 @@ export const LeverCreateForm = ({
 
   const fiat = useStore(state => state.fiat);
   const hasProxy = useStore(state => state.hasProxy);
-
+  const transactionData = useStore((state => state.transactionData));
+  const modifyPositionData = useStore((state) => state.modifyPositionData);
   const [submitError, setSubmitError] = React.useState('');
 
   if (
@@ -361,8 +358,6 @@ export const LeverCreateForm = ({
 
 export const LeverIncreaseForm = ({
   disableActions,
-  modifyPositionData,
-  transactionData,
   onClose,
   // TODO: refactor out into react query mutations / store actions
   buyCollateralAndIncreaseLever,
@@ -370,8 +365,6 @@ export const LeverIncreaseForm = ({
   unsetUnderlierAllowanceForProxy,
 }: {
   disableActions: boolean,
-  modifyPositionData: any,
-  transactionData: any,
   onClose: () => void,
   // TODO: refactor out into react query mutations / store actions
   buyCollateralAndIncreaseLever: (upFrontUnderlier: BigNumber, addDebt: BigNumber, minUnderlierToBuy: BigNumber, minTokenToBuy: BigNumber) => any;
@@ -393,6 +386,8 @@ export const LeverIncreaseForm = ({
   );
   const fiat = useStore(state => state.fiat);
   const hasProxy = useStore(state => state.hasProxy);
+  const transactionData = useStore((state => state.transactionData));
+  const modifyPositionData = useStore((state) => state.modifyPositionData);
 
   const {
     collateralType: {
@@ -712,15 +707,11 @@ export const LeverIncreaseForm = ({
 
 export const LeverDecreaseForm = ({
   disableActions,
-  modifyPositionData,
-  transactionData,
   onClose,
   // TODO: refactor out into react query mutations / store actions
   sellCollateralAndDecreaseLever,
 }: {
   disableActions: boolean,
-  modifyPositionData: any,
-  transactionData: any,
   onClose: () => void,
   // TODO: refactor out into react query mutations / store actions
   sellCollateralAndDecreaseLever: (subTokenAmount: BigNumber, subDebt: BigNumber, maxUnderlierToSell: BigNumber, minUnderlierToBuy: BigNumber) => any;
@@ -740,6 +731,8 @@ export const LeverDecreaseForm = ({
   );
   const fiat = useStore(state => state.fiat);
   const hasProxy = useStore(state => state.hasProxy);
+  const transactionData = useStore((state => state.transactionData));
+  const modifyPositionData = useStore((state) => state.modifyPositionData);
 
   const {
     collateralType: {
@@ -1034,15 +1027,11 @@ export const LeverDecreaseForm = ({
 
 export const LeverRedeemForm = ({
   disableActions,
-  modifyPositionData,
-  transactionData,
   onClose,
   // TODO: refactor out into react query mutations / store actions
   redeemCollateralAndDecreaseLever,
 }: {
   disableActions: boolean,
-  modifyPositionData: any,
-  transactionData: any,
   onClose: () => void,
   // TODO: refactor out into react query mutations / store actions
   redeemCollateralAndDecreaseLever: (subTokenAmount: BigNumber, subDebt: BigNumber, maxUnderlierToSell: BigNumber) => any;
@@ -1062,6 +1051,8 @@ export const LeverRedeemForm = ({
   );
   const fiat = useStore(state => state.fiat);
   const hasProxy = useStore(state => state.hasProxy);
+  const transactionData = useStore((state => state.transactionData));
+  const modifyPositionData = useStore((state) => state.modifyPositionData);
   const {
     collateralType: {
       metadata: { symbol: tokenSymbol },

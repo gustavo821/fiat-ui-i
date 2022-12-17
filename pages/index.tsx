@@ -19,9 +19,7 @@ import { collateralTypesKey, useCollateralTypes } from '../src/state/queries/use
 import { userDataKey, useUserData } from '../src/state/queries/useUserData';
 import { useQueryClient } from '@tanstack/react-query';
 import { fiatBalanceKey } from '../src/state/queries/useFiatBalance';
-import useStore from '../src/state/stores/globalStore';
-
-export type TransactionStatus = null | 'error' | 'sent' | 'confirming' | 'confirmed';
+import useStore, { TransactionStatus } from '../src/state/stores/globalStore';
 
 const Home: NextPage = () => {
   const provider = useProvider();
@@ -29,6 +27,7 @@ const Home: NextPage = () => {
   const { chain } = useNetwork();
   const addRecentTransaction = useAddRecentTransaction();
 
+  // TODO Move all intial state items to global store
   const initialState = React.useMemo(() => ({
     setupListeners: false,
     selectedPositionId: null as null | string,
@@ -62,8 +61,6 @@ const Home: NextPage = () => {
 
   const [initialPageLoad, setInitialPageLoad] = React.useState<boolean>(true);
   const [setupListeners, setSetupListeners] = React.useState(false);
-  const [modifyPositionData, setModifyPositionData] = React.useState(initialState.modifyPositionData);
-  const [transactionData, setTransactionData] = React.useState(initialState.transactionData);
   const [selectedPositionId, setSelectedPositionId] = React.useState(initialState.selectedPositionId);
   const [selectedCollateralTypeId, setSelectedCollateralTypeId] = React.useState(initialState.selectedCollateralTypeId);
 
@@ -73,19 +70,22 @@ const Home: NextPage = () => {
   const user = useStore((state) => state.user);
   const setUser = useStore((state) => state.setUser);
   const setExplorerUrl = useStore((state) => state.setExplorerUrl);
+  const transactionData = useStore((state => state.transactionData));
+  const setTransactionData = useStore((state => state.setTransactionData));
+  const modifyPositionData = useStore((state) => state.modifyPositionData);
+  const setModifyPositionData = useStore((state) => state.setModifyPositionData);
   const resetStore = useStore((state) => state.resetStore);
 
   const { data: collateralTypesData } = useCollateralTypes(fiat, chain?.id ?? chains.mainnet.id);
   const { data: userData } = useUserData(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
   const { positionsData, proxies } = userData as any;
 
+  // TODO move disable Actions to global store
   const disableActions = React.useMemo(() => transactionData.status === 'sent', [transactionData.status])
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   function resetState() {
     setSetupListeners(initialState.setupListeners);
-    setModifyPositionData(initialState.modifyPositionData);
-    setTransactionData(initialState.transactionData);
     setSelectedPositionId(initialState.selectedPositionId);
     setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
     resetStore();
@@ -93,6 +93,7 @@ const Home: NextPage = () => {
     queryClient.invalidateQueries(fiatBalanceKey.all);
   }
 
+  // TODO Move soft reset items to the global store
   const softReset = () => {
     // Soft reset after a transaction
     setModifyPositionData(initialState.modifyPositionData);
@@ -188,7 +189,7 @@ const Home: NextPage = () => {
       });
     })();
 
-  }, [connector, collateralTypesData, positionsData, selectedCollateralTypeId, selectedPositionId, modifyPositionData, borrowStore, proxies, fiat]);
+  }, [connector, collateralTypesData, positionsData, selectedCollateralTypeId, selectedPositionId, modifyPositionData, setModifyPositionData, borrowStore, proxies, fiat]);
 
   const sendTransaction = async (
     fiat: any, useProxy: boolean, action: string, contract: ethers.Contract, method: string, ...args: any[]
@@ -448,7 +449,6 @@ const Home: NextPage = () => {
   return (
     <div>
       <HeaderBar 
-        transactionData={transactionData}
         disableActions={disableActions}
         createProxy={createProxy}
       />
@@ -488,7 +488,6 @@ const Home: NextPage = () => {
       </Container>
 
       <PositionModal
-        modifyPositionData={modifyPositionData}
         disableActions={disableActions}
         createPosition={createPosition}
         buyCollateralAndModifyDebt={buyCollateralAndModifyDebt}
@@ -505,10 +504,6 @@ const Home: NextPage = () => {
         setFIATAllowanceForMoneta={setFIATAllowanceForMoneta}
         setUnderlierAllowanceForProxy={setUnderlierAllowanceForProxy}
         unsetUnderlierAllowanceForProxy={unsetUnderlierAllowanceForProxy}
-        transactionData={transactionData}
-        setTransactionStatus={(status) =>
-          setTransactionData({ ...transactionData, status })
-        }
         open={!!modifyPositionData && (!!selectedCollateralTypeId || !!selectedPositionId)}
         onClose={() => {
           setSelectedPositionId(initialState.selectedPositionId);

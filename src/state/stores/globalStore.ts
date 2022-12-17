@@ -1,11 +1,27 @@
 import create from 'zustand';
 import { FIAT } from '@fiatdao/sdk';
+import { BigNumber } from 'ethers';
+
+export type TransactionStatus = null | 'error' | 'sent' | 'confirming' | 'confirmed'; 
 
 const useStore = create<any>()((set: any, get: any) => ({
   fiat: null,
   user: '',
   explorerUrl: '',
   hasProxy: false,
+  transactionData: {
+    action: null as null | string,
+    status: null as TransactionStatus,
+  },
+  modifyPositionData: {
+    outdated: false,
+    collateralType: null as undefined | null | any,
+    position: null as undefined | null | any,
+    underlierAllowance: null as null | BigNumber, // [underlierScale]
+    underlierBalance: null as null | BigNumber, // [underlierScale]
+    monetaFIATAllowance: null as null | BigNumber, // [wad]
+    proxyFIATAllowance: null as null | BigNumber, // [wad]
+  },
   fiatFromProvider: async (provider: any) => {
     const fiatProvider = await FIAT.fromProvider(provider, null);
     set(() => ({
@@ -28,14 +44,28 @@ const useStore = create<any>()((set: any, get: any) => ({
       explorerUrl: url
     }))
   },
+  setTransactionData: (data: any) => {
+    set(() => ({
+      transactionData: data
+    }))
+  },
+  setModifyPositionData: (data: any) => {
+    set(() => ({
+      setModifyPositionData: data
+    }))
+  },
   resetStore: () => {
     set(() => ({
       fiat: null,
       user: '',
       explorerUrl: '',
       hasProxy: false,
+      transactionData: {
+        action: null as null | string,
+        status: null as TransactionStatus,
+      }
     }))
-  }
+  },
 }));
 
 export default useStore;
