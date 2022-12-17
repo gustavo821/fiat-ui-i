@@ -5,7 +5,7 @@ import shallow from 'zustand/shallow'
 import { useAddRecentTransaction } from '@rainbow-me/rainbowkit';
 import { Container, Spacer } from '@nextui-org/react';
 import { BigNumber, ContractReceipt, ethers } from 'ethers';
-import { FIAT, WAD } from '@fiatdao/sdk';
+import { WAD } from '@fiatdao/sdk';
 import { HeaderBar } from '../src/components/HeaderBar';
 import { CollateralTypesTable } from '../src/components/CollateralTypesTable';
 import { PositionsTable } from '../src/components/PositionsTable';
