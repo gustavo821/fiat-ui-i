@@ -622,9 +622,9 @@ export const LeverIncreaseForm = ({
             const estCollRatioAfter = (estCollRatio.eq(ethers.constants.MaxUint256))
               ? '∞' : `${floor2(wadToDec(estCollRatio.mul(100)))}%`;
             if (collRatio.lte(estCollRatio)) 
-              return `${collRatioBefore} → [${collRatioAfter}%, ${estCollRatioAfter}%]`
+              return `${collRatioBefore} → [${collRatioAfter}, ${estCollRatioAfter}]`
             else
-              return `${collRatioBefore} → [${estCollRatioAfter}%, ${collRatioAfter}%]`
+              return `${collRatioBefore} → [${estCollRatioAfter}, ${collRatioAfter}]`
           })()}
           placeholder='0'
           type='string'
