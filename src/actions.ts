@@ -298,10 +298,9 @@ export const buildBuyCollateralAndModifyDebtArgs = (
     case 'ERC20:FY': {
       if (!properties.fyData) throw new Error('Missing FY data');
       const args = {
-        contract: contextData,
-        methodName: vaultFYActions,
+        contract: vaultFYActions,
+        methodName: 'buyCollateralAndModifyDebt',
         methodArgs: [
-          'buyCollateralAndModifyDebt',
           properties.vault,
           contextData.proxies[0],
           contextData.user,
@@ -321,10 +320,9 @@ export const buildBuyCollateralAndModifyDebtArgs = (
     case 'ERC20:SPT': {
       if (!properties.sptData) throw new Error('Missing SPT data');
       const args = {
-        contract: contextData,
-        methodName: vaultSPTActions,
+        contract: vaultSPTActions,
+        methodName: 'buyCollateralAndModifyDebt',
         methodArgs: [
-          'buyCollateralAndModifyDebt',
           properties.vault,
           contextData.proxies[0],
           contextData.user,
