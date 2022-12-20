@@ -9,6 +9,7 @@ const useStore = create<any>()((set: any, get: any) => ({
   user: '',
   explorerUrl: '',
   hasProxy: false,
+  disableActions: false,
   transactionData: {
     action: null as null | string,
     status: null as TransactionStatus,
@@ -46,8 +47,9 @@ const useStore = create<any>()((set: any, get: any) => ({
   },
   setTransactionData: (data: any) => {
     set(() => ({
+      disableActions: data.status === 'sent',
       transactionData: data
-    }))
+    }));
   },
   setModifyPositionData: (data: any) => {
     set(() => ({
@@ -60,6 +62,7 @@ const useStore = create<any>()((set: any, get: any) => ({
       user: '',
       explorerUrl: '',
       hasProxy: false,
+      disableActions: false,
       transactionData: {
         action: null as null | string,
         status: null as TransactionStatus,

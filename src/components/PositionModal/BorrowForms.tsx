@@ -13,14 +13,12 @@ import { PositionPreview } from './PositionPreview';
 import useStore from '../../state/stores/globalStore';
 
 export const CreateForm = ({
-  disableActions,
   onClose,
   // TODO: refactor out into react query mutations / store actions
   createPosition,
   setUnderlierAllowanceForProxy,
   unsetUnderlierAllowanceForProxy,
 }: {
-  disableActions: boolean,
   onClose: () => void,
   // TODO: refactor out into react query mutations / store actions
   createPosition: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
@@ -40,6 +38,7 @@ export const CreateForm = ({
   } = modifyPositionData;
   const fiat = useStore(state => state.fiat);
   const hasProxy = useStore(state => state.hasProxy);
+  const disableActions = useStore((state) => state.disableActions);
   const transactionData = useStore((state => state.transactionData));
   const { action: currentTxAction } = transactionData;
 
@@ -362,14 +361,12 @@ export const CreateForm = ({
 }
 
 export const IncreaseForm = ({
-  disableActions,
   onClose,
   // TODO: refactor out into react query mutations / store actions
   buyCollateralAndModifyDebt,
   setUnderlierAllowanceForProxy,
   unsetUnderlierAllowanceForProxy,
 }: {
-  disableActions: boolean,
   onClose: () => void,
   // TODO: refactor out into react query mutations / store actions
   buyCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any,
@@ -391,6 +388,7 @@ export const IncreaseForm = ({
   );
   const fiat = useStore(state => state.fiat);
   const hasProxy = useStore(state => state.hasProxy);
+  const disableActions = useStore((state) => state.disableActions);
   const transactionData = useStore(state => state.transactionData);
   const modifyPositionData = useStore((state) => state.modifyPositionData);
   const { action: currentTxAction } = transactionData;
@@ -597,7 +595,6 @@ export const IncreaseForm = ({
 }
 
 export const DecreaseForm = ({
-  disableActions,
   onClose,
   // TODO: refactor out into react query mutations / store actions
   setFIATAllowanceForProxy,
@@ -605,7 +602,6 @@ export const DecreaseForm = ({
   setFIATAllowanceForMoneta,
   sellCollateralAndModifyDebt,
 }: {
-  disableActions: boolean,
   onClose: () => void,
   // TODO: refactor out into react query mutations / store actions
   setFIATAllowanceForProxy: (fiat: any, amount: BigNumber) => any;
@@ -628,6 +624,7 @@ export const DecreaseForm = ({
   );
   const fiat = useStore(state => state.fiat);
   const hasProxy = useStore(state => state.hasProxy);
+  const disableActions = useStore((state) => state.disableActions);
   const modifyPositionData = useStore((state) => state.modifyPositionData);
   const transactionData = useStore(state => state.transactionData);
   const { action: currentTxAction } = transactionData;
@@ -875,7 +872,6 @@ export const DecreaseForm = ({
 }
 
 export const RedeemForm = ({
-  disableActions,
   onClose,
   // TODO: refactor out into react query mutations / store actions
   setFIATAllowanceForProxy,
@@ -883,7 +879,6 @@ export const RedeemForm = ({
   setFIATAllowanceForMoneta,
   redeemCollateralAndModifyDebt,
 }: {
-  disableActions: boolean,
   onClose: () => void,
   // TODO: refactor out into react query mutations / store actions
   setFIATAllowanceForProxy: (fiat: any, amount: BigNumber) => any;
@@ -906,6 +901,7 @@ export const RedeemForm = ({
   );
   const fiat = useStore(state => state.fiat);
   const hasProxy = useStore(state => state.hasProxy);
+  const disableActions = useStore((state) => state.disableActions);
   const modifyPositionData = useStore((state) => state.modifyPositionData);
   const transactionData = useStore(state => state.transactionData);
   const { action: currentTxAction } = transactionData;

@@ -80,9 +80,6 @@ const Home: NextPage = () => {
   const { data: userData } = useUserData(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
   const { positionsData, proxies } = userData as any;
 
-  // TODO move disable Actions to global store
-  const disableActions = React.useMemo(() => transactionData.status === 'sent', [transactionData.status])
-
   // eslint-disable-next-line react-hooks/exhaustive-deps
   function resetState() {
     setSetupListeners(initialState.setupListeners);
@@ -448,8 +445,7 @@ const Home: NextPage = () => {
 
   return (
     <div>
-      <HeaderBar 
-        disableActions={disableActions}
+      <HeaderBar
         createProxy={createProxy}
       />
       <Container lg>
@@ -488,7 +484,6 @@ const Home: NextPage = () => {
       </Container>
 
       <PositionModal
-        disableActions={disableActions}
         createPosition={createPosition}
         buyCollateralAndModifyDebt={buyCollateralAndModifyDebt}
         sellCollateralAndModifyDebt={sellCollateralAndModifyDebt}

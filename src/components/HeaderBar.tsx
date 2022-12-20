@@ -85,7 +85,6 @@ export const HeaderBar = (props: any) => {
             />
             <ProxyButton
               createProxy={props.createProxy}
-              disableActions={props.disableActions}
             />
             {(fiatBalance) && 
               <Badge css={connectButtonCSS} >

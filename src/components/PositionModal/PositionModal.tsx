@@ -28,7 +28,6 @@ interface PositionModalProps {
   unsetFIATAllowanceForProxy: (fiat: any) => any;
   setUnderlierAllowanceForProxy: (fiat: any, amount: BigNumber) => any;
   unsetUnderlierAllowanceForProxy: (fiat: any) => any;
-  disableActions: boolean;
   selectedCollateralTypeId: string | null;
   selectedPositionId: string | null;
   open: boolean;
@@ -36,10 +35,11 @@ interface PositionModalProps {
 }
 
 export const PositionModal = (props: PositionModalProps) => {
+  const disableActions = useStore((state) => state.disableActions);
   return (
     <Modal
       preventClose
-      closeButton={!props.disableActions}
+      closeButton={!disableActions}
       blur
       open={props.open}
       onClose={() => props.onClose()}
@@ -55,6 +55,7 @@ const PositionModalBody = (props: PositionModalProps) => {
   const [ actionMode, setActionMode ] = useState(Mode.INCREASE);
 
   const user = useStore((state) => state.user);
+  const disableActions = useStore((state) => state.disableActions);
   const modifyPositionData = useStore((state) => state.modifyPositionData);
 
   const matured = React.useMemo(() => {
@@ -80,27 +81,27 @@ const PositionModalBody = (props: PositionModalProps) => {
 
   const renderNavbarLinks = () => {
     if (!modifyPositionData.position) {
-      return <Navbar.Link isDisabled={props.disableActions} isActive>Create</Navbar.Link>
+      return <Navbar.Link isDisabled={disableActions} isActive>Create</Navbar.Link>
     }
 
     if (!matured) {
       return (
         <>
           <Navbar.Link
-            isDisabled={props.disableActions}
+            isDisabled={disableActions}
             isActive={actionMode === Mode.INCREASE}
             onClick={() => {
-              if (props.disableActions) return;
+              if (disableActions) return;
               setActionMode(Mode.INCREASE);
             }}
           >
             Increase
           </Navbar.Link>
           <Navbar.Link
-            isDisabled={props.disableActions}
+            isDisabled={disableActions}
             isActive={actionMode === Mode.DECREASE}
             onClick={() => {
-              if (props.disableActions) return;
+              if (disableActions) return;
               setActionMode(Mode.DECREASE);
             }}
           >
@@ -110,7 +111,7 @@ const PositionModalBody = (props: PositionModalProps) => {
       );
     } else {
       return (
-        <Navbar.Link isDisabled={props.disableActions || !matured} isActive={actionMode === Mode.REDEEM}>
+        <Navbar.Link isDisabled={disableActions || !matured} isActive={actionMode === Mode.REDEEM}>
           Redeem
         </Navbar.Link>
       );
@@ -124,7 +125,6 @@ const PositionModalBody = (props: PositionModalProps) => {
               createLeveredPosition={props.createLeveredPosition}
               setUnderlierAllowanceForProxy={props.setUnderlierAllowanceForProxy}
               unsetUnderlierAllowanceForProxy={props.unsetUnderlierAllowanceForProxy}
-              disableActions={props.disableActions}
               onClose={props.onClose}
           />
           : !!props.selectedPositionId && actionMode === Mode.INCREASE
@@ -132,26 +132,22 @@ const PositionModalBody = (props: PositionModalProps) => {
               buyCollateralAndIncreaseLever={props.buyCollateralAndIncreaseLever}
               setUnderlierAllowanceForProxy={props.setUnderlierAllowanceForProxy}
               unsetUnderlierAllowanceForProxy={props.unsetUnderlierAllowanceForProxy}
-              disableActions={props.disableActions}
               onClose={props.onClose}
             />
           : !!props.selectedPositionId && actionMode === Mode.DECREASE
           ? <LeverDecreaseForm
               sellCollateralAndDecreaseLever={props.sellCollateralAndDecreaseLever}
-              disableActions={props.disableActions}
               onClose={props.onClose}
             />
           : !!props.selectedPositionId && actionMode === Mode.REDEEM
           ? <LeverRedeemForm
               redeemCollateralAndDecreaseLever={props.redeemCollateralAndDecreaseLever}
-              disableActions={props.disableActions}
               onClose={props.onClose}
             />
           : null
     } else {
       return !!props.selectedCollateralTypeId && actionMode === Mode.CREATE
           ? <CreateForm
-              disableActions={props.disableActions}
               onClose={props.onClose}
               createPosition={props.createPosition}
               setUnderlierAllowanceForProxy={props.setUnderlierAllowanceForProxy}
@@ -159,7 +155,6 @@ const PositionModalBody = (props: PositionModalProps) => {
           />
           : !!props.selectedPositionId && actionMode === Mode.INCREASE
           ? <IncreaseForm
-              disableActions={props.disableActions}
               onClose={props.onClose}
               buyCollateralAndModifyDebt={props.buyCollateralAndModifyDebt}
               setUnderlierAllowanceForProxy={props.setUnderlierAllowanceForProxy}
@@ -168,7 +163,6 @@ const PositionModalBody = (props: PositionModalProps) => {
             />
           : !!props.selectedPositionId && actionMode === Mode.DECREASE
           ? <DecreaseForm
-              disableActions={props.disableActions}
               onClose={props.onClose}
               setFIATAllowanceForProxy={props.setFIATAllowanceForProxy}
               unsetFIATAllowanceForProxy={props.unsetFIATAllowanceForProxy}
@@ -177,7 +171,6 @@ const PositionModalBody = (props: PositionModalProps) => {
             />
           : !!props.selectedPositionId && actionMode === Mode.REDEEM
           ? <RedeemForm
-              disableActions={props.disableActions}
               onClose={props.onClose}
               setFIATAllowanceForProxy={props.setFIATAllowanceForProxy}
               unsetFIATAllowanceForProxy={props.unsetFIATAllowanceForProxy}
@@ -205,7 +198,7 @@ const PositionModalBody = (props: PositionModalProps) => {
   return (
     <>
       <Modal.Header justify='center'>
-        <Dropdown isDisabled={props.disableActions} >
+        <Dropdown isDisabled={disableActions} >
           <Dropdown.Button css={{ width: '50%' }} >{`Mode: ${(!leverModeActive) ? 'Borrow' : 'Leverage'}`}</Dropdown.Button>
           <Dropdown.Menu
             aria-label="Static Actions"
