@@ -1,4 +1,4 @@
-import { Modal, Navbar, Text } from '@nextui-org/react';
+import { Dropdown, Modal, Navbar, Text } from '@nextui-org/react';
 import 'antd/dist/antd.css';
 import { BigNumber } from 'ethers';
 import React, { useState } from 'react';
@@ -224,47 +224,29 @@ const PositionModalBody = (props: PositionModalProps) => {
 
   return (
     <>
-      <Modal.Header>
-        <Text id='modal-title' size={18}>
-          <Text b size={18}>
-            {actionMode === Mode.CREATE ? 'Create' : 'Modify'} Position
+      <Modal.Header justify='center'>
+        <Dropdown isDisabled={props.disableActions} >
+          <Dropdown.Button css={{ width: '50%' }} >{`Mode: ${(!leverModeActive) ? 'Borrow' : 'Leverage'}`}</Dropdown.Button>
+          <Dropdown.Menu
+            aria-label="Static Actions"
+            onAction={(key) => setLeverModeActive(key === 'Leverage')}
+          >
+            <Dropdown.Item key="Borrow">Borrow</Dropdown.Item>
+            <Dropdown.Item key="Leverage">Leverage</Dropdown.Item>
+          </Dropdown.Menu>
+        </Dropdown>
+        </Modal.Header>
+        <Modal.Header>
+          <Text id='modal-title' size={18}>
+            <Text b size={18}>
+              {actionMode === Mode.CREATE ? 'Create' : 'Modify'} Position
+            </Text>
+            <br />
+            <Text b size={16}>{`${props.modifyPositionData.collateralType.metadata.protocol} - ${props.modifyPositionData.collateralType.metadata.asset}`}</Text>
+            <br />
+            <Text b size={14}>{`${formatUnixTimestamp(props.modifyPositionData.collateralType?.properties.maturity)}`}</Text>
           </Text>
-          <br />
-          <Text b size={16}>{`${props.modifyPositionData.collateralType.metadata.protocol} - ${props.modifyPositionData.collateralType.metadata.asset}`}</Text>
-          <br />
-          <Text b size={14}>{`${formatUnixTimestamp(props.modifyPositionData.collateralType?.properties.maturity)}`}</Text>
-        </Text>
-      </Modal.Header>
-      <Modal.Body>
-        <Navbar
-          variant='static'
-          isCompact
-          disableShadow
-          disableBlur
-          containerCss={{ justifyContent: 'center', background: 'transparent' }}
-        >
-          <Navbar.Content enableCursorHighlight variant='highlight-rounded'>
-            <Navbar.Link
-              isDisabled={props.disableActions}
-              isActive={!leverModeActive}
-              onClick={() => {
-                setLeverModeActive(false)
-              }}
-            >
-              Borrow
-            </Navbar.Link>
-            <Navbar.Link
-              isDisabled={props.disableActions}
-              isActive={leverModeActive}
-              onClick={() => {
-                setLeverModeActive(true)
-              }}
-            >
-              Leverage
-            </Navbar.Link>
-          </Navbar.Content>
-        </Navbar>
-      </Modal.Body>
+        </Modal.Header>
       <Modal.Body>
         <Navbar
           variant='static'
