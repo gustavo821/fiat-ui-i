@@ -1,4 +1,4 @@
-import { scaleToDec, wadToDec } from '@fiatdao/sdk';
+import { decToScale, decToWad, normalDebtToDebt, scaleToDec, wadToDec, ZERO } from '@fiatdao/sdk';
 import { Button, Card, Grid, Input, Loading, Modal, Row, Spacer, Switch, Text } from '@nextui-org/react';
 import { Slider } from 'antd';
 import 'antd/dist/antd.css';
@@ -6,9 +6,10 @@ import { BigNumber, ethers } from 'ethers';
 import React, {useMemo} from 'react';
 import shallow from 'zustand/shallow';
 import { useBorrowStore } from '../../state/stores/borrowStore';
-import { commifyToDecimalPlaces, floor2, floor4, floor5, minCollRatioWithBuffer } from '../../utils';
+import { commifyToDecimalPlaces, floor2, floor4, minCollRatioWithBuffer } from '../../utils';
 import { Alert } from '../Alert';
 import { InputLabelWithMax } from '../InputLabelWithMax';
+import { NumericInput } from '../NumericInput/NumericInput';
 import { PositionPreview } from './PositionPreview';
 import useStore from '../../state/stores/globalStore';
 
@@ -54,6 +55,10 @@ export const CreateForm = ({
       []
     ), shallow
   );
+
+  const underlierBN = useMemo(() => {
+    return borrowStore.createState.underlier === '' ? ZERO : decToScale(borrowStore.createState.underlier, underlierScale)
+  }, [borrowStore.createState.underlier, underlierScale])
 
   const [submitError, setSubmitError] = React.useState('');
 
@@ -136,39 +141,31 @@ export const CreateForm = ({
           css={{ marginBottom: '1rem' }}
         >
           <Grid>
-            <Input
+            <NumericInput
               disabled={disableActions}
-              value={floor2(scaleToDec(borrowStore.createState.underlier, underlierScale))}
+              value={borrowStore.createState.underlier.toString()}
               onChange={(event) => {
                 borrowStore.createActions.setUnderlier(
                   fiat, event.target.value, modifyPositionData);
               }}
-              placeholder='0'
-              inputMode='decimal'
               label={'Underlier to swap'}
-              labelRight={underlierSymbol}
-              bordered
-              size='sm'
-              borderWeight='light'
-              width='15rem'
+              placeholder='0'
+              style={{ width: '15rem' }}
+              rightAdornment={underlierSymbol}
             />
           </Grid>
           <Grid>
-            <Input
+            <NumericInput
               disabled={disableActions}
-              value={floor2(Number(wadToDec(borrowStore.createState.slippagePct)) * 100)}
+              value={borrowStore.createState.slippagePct.toString()}
               onChange={(event) => {
                 borrowStore.createActions.setSlippagePct(fiat, event.target.value, modifyPositionData);
               }}
-              step='0.01'
-              placeholder='0'
+              placeholder='0.01'
               inputMode='decimal'
               label='Slippage'
-              labelRight={'%'}
-              bordered
-              size='sm'
-              borderWeight='light'
-              width='7.5rem'
+              rightAdornment={'%'}
+              style={{ width: '7.5rem' }}
             />
           </Grid>
         </Grid.Container>
@@ -294,44 +291,45 @@ export const CreateForm = ({
 
       </Modal.Body>
       <Modal.Footer justify='space-evenly'>
-        <Card variant='bordered'>
-          <Card.Body>
-          <Row justify='flex-start'>
-            <Switch
-              disabled={disableActions || !hasProxy}
-              // Next UI Switch `checked` type is wrong, this is necessary
-              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-              // @ts-ignore
-              checked={() => underlierAllowance?.gt(0) && underlierAllowance?.gte(borrowStore.createState.underlier) ?? false}
-              onChange={async () => {
-                if (!borrowStore.createState.underlier.isZero() && underlierAllowance?.gte(borrowStore.createState.underlier)) {
-                  try {
-                    setSubmitError('');
-                    await unsetUnderlierAllowanceForProxy(fiat);
-                  } catch (e: any) {
-                    setSubmitError(e.message);
-                  }
-                } else {
-                  try {
-                    setSubmitError('');
-                    await setUnderlierAllowanceForProxy(fiat, borrowStore.createState.underlier);
-                  } catch (e: any) {
-                    setSubmitError(e.message);
-                  }
+      <Card variant='bordered'>
+        <Card.Body>
+        <Row justify='flex-start'>
+          <Switch
+            disabled={disableActions || !hasProxy}
+            // Next UI Switch `checked` type is wrong, this is necessary
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
+            checked={() => underlierAllowance?.gt(0) && underlierAllowance?.gte(underlierBN) ?? false}
+            onChange={async () => {
+              if (!underlierBN.isZero() && underlierAllowance?.gte(underlierBN)) {
+                try {
+                  setSubmitError('');
+                  await unsetUnderlierAllowanceForProxy(fiat);
+                } catch (e: any) {
+                  setSubmitError(e.message);
                 }
-              }}
-              color='primary'
-              icon={
-                ['setUnderlierAllowanceForProxy', 'unsetUnderlierAllowanceForProxy'].includes(currentTxAction || '') && disableActions ? (
-                  <Loading size='xs' />
-              ) : null
+              } else {
+                try {
+                  setSubmitError('');
+                  await setUnderlierAllowanceForProxy(fiat, underlierBN);
+                } catch (e: any) {
+                  setSubmitError(e.message);
+                }
               }
-            />
-            <Spacer x={0.5} />
-            <Text>Allow <code>FIAT I</code> to transfer your {underlierSymbol}</Text>
+            }}
+            color='primary'
+            icon={
+              ['setUnderlierAllowanceForProxy', 'unsetUnderlierAllowanceForProxy'].includes(currentTxAction || '') && disableActions ? (
+                <Loading size='xs' />
+            ) : null
+            }
+          />
+          <Spacer x={0.5} />
+          <Text>Allow <code>FIAT I</code> to transfer your {underlierSymbol}</Text>
           </Row>
           </Card.Body>
         </Card>
+        { renderFormAlerts() }
         <Spacer y={0.5} />
         { renderFormAlerts() }
         <Button
@@ -341,9 +339,9 @@ export const CreateForm = ({
             borrowStore.formWarnings.length !== 0 ||
             disableActions ||
             !hasProxy ||
-            borrowStore.createState.underlier?.isZero() ||
+            underlierBN.isZero() ||
             borrowStore.createState.deltaCollateral?.isZero() ||
-            underlierAllowance?.lt(borrowStore.createState.underlier) ||
+            underlierAllowance?.lt(underlierBN) ||
             monetaDelegate === false
           }
           icon={(disableActions && currentTxAction === 'createPosition') ? (<Loading size='xs' />) : null}
@@ -351,7 +349,7 @@ export const CreateForm = ({
             try {
               setSubmitError('');
               await createPosition(
-                borrowStore.createState.deltaCollateral, borrowStore.createState.deltaDebt, borrowStore.createState.underlier
+                borrowStore.createState.deltaCollateral, borrowStore.createState.deltaDebt, underlierBN
               );
               onClose();
             } catch (e: any) {
@@ -397,6 +395,15 @@ export const IncreaseForm = ({
   const disableActions = useStore((state) => state.disableActions);
   const transactionData = useStore(state => state.transactionData);
   const modifyPositionData = useStore((state) => state.modifyPositionData);
+
+  const underlierBN = useMemo(() => {
+    return borrowStore.increaseState.underlier === '' ? ZERO : decToScale(borrowStore.increaseState.underlier, modifyPositionData.collateralType.properties.underlierScale)
+  }, [borrowStore.increaseState.underlier, modifyPositionData.collateralType.properties.underlierScale])
+
+  const deltaDebtBN = useMemo(() => {
+    return borrowStore.increaseState.deltaDebt === '' ? ZERO : decToWad(borrowStore.increaseState.deltaDebt)
+  }, [borrowStore.increaseState.deltaDebt])
+
   const { action: currentTxAction } = transactionData;
   
   const renderFormAlerts = () => {
@@ -438,51 +445,39 @@ export const IncreaseForm = ({
         wrap='wrap'
         css={{ marginBottom: '1rem' }}
       >
-        <Input
-          label={'Underlier to deposit'}
+        <NumericInput
           disabled={disableActions}
-          value={floor2(scaleToDec(borrowStore.increaseState.underlier, modifyPositionData.collateralType.properties.underlierScale))}
+          value={borrowStore.increaseState.underlier.toString()}
           onChange={(event) => {
             borrowStore.increaseActions.setUnderlier(fiat, event.target.value, modifyPositionData);
           }}
+          label={'Underlier to deposit'}
           placeholder='0'
-          inputMode='decimal'
-          labelRight={modifyPositionData.collateralType.properties.underlierSymbol}
-          bordered
-          size='sm'
-          borderWeight='light'
-          width='15rem'
+          style={{ width: '15rem' }}
+          rightAdornment={modifyPositionData.collateralType.properties.underlierSymbol}
         />
-        <Input
+
+        <NumericInput
           disabled={disableActions}
-          value={floor2(Number(wadToDec(borrowStore.increaseState.slippagePct)) * 100)}
+          value={borrowStore.increaseState.slippagePct.toString()}
           onChange={(event) => {
             borrowStore.increaseActions.setSlippagePct(fiat, event.target.value, modifyPositionData);
           }}
-          step='0.01'
-          placeholder='0'
-          inputMode='decimal'
+          placeholder='0.01'
           label='Slippage'
-          labelRight={'%'}
-          bordered
-          size='sm'
-          borderWeight='light'
-          width='7.5rem'
+          rightAdornment={'%'}
+          style={{ width: '7.5rem' }}
         />
       </Grid.Container>
-      <Input
+      <NumericInput
         disabled={disableActions}
-        value={floor5(wadToDec(borrowStore.increaseState.deltaDebt))}
+        value={borrowStore.increaseState.deltaDebt.toString()}
         onChange={(event) => {
-          borrowStore.increaseActions.setDeltaDebt(fiat, event.target.value,modifyPositionData);
+          borrowStore.increaseActions.setDeltaDebt(fiat, event.target.value, modifyPositionData);
         }}
         placeholder='0'
-        inputMode='decimal'
         label={'FIAT to borrow'}
-        labelRight={'FIAT'}
-        bordered
-        size='sm'
-        borderWeight='light'
+        rightAdornment={'FIAT'}
       />
     </Modal.Body>
 
@@ -536,9 +531,9 @@ export const IncreaseForm = ({
               // Next UI Switch `checked` type is wrong, this is necessary
               // eslint-disable-next-line @typescript-eslint/ban-ts-comment
               // @ts-ignore
-              checked={() => modifyPositionData.underlierAllowance?.gt(0) && modifyPositionData.underlierAllowance?.gte(borrowStore.increaseState.underlier) ?? false}
+              checked={() => modifyPositionData.underlierAllowance?.gt(0) && modifyPositionData.underlierAllowance?.gte(underlierBN) ?? false}
               onChange={async () => {
-                if(!borrowStore.increaseState.underlier.isZero() && modifyPositionData.underlierAllowance.gte(borrowStore.increaseState.underlier)) {
+                if(!underlierBN.isZero() && modifyPositionData.underlierAllowance.gte(underlierBN)) {
                   try {
                     setSubmitError('');
                     await unsetUnderlierAllowanceForProxy(fiat);
@@ -548,7 +543,7 @@ export const IncreaseForm = ({
                 } else {
                   try {
                     setSubmitError('');
-                    await setUnderlierAllowanceForProxy(fiat, borrowStore.increaseState.underlier)
+                    await setUnderlierAllowanceForProxy(fiat, underlierBN)
                   } catch (e: any) {
                     setSubmitError(e.message);
                   }
@@ -574,8 +569,8 @@ export const IncreaseForm = ({
             if (disableActions || !hasProxy) return true;
             if (borrowStore.formErrors.length !== 0 || borrowStore.formWarnings.length !== 0) return true;
             if (modifyPositionData.monetaDelegate === false) return true;
-            if (borrowStore.increaseState.underlier.isZero() && borrowStore.increaseState.deltaDebt.isZero()) return true;
-            if (!borrowStore.increaseState.underlier.isZero() && modifyPositionData.underlierAllowance.lt(borrowStore.increaseState.underlier)) return true;
+            if (underlierBN.isZero() && deltaDebtBN.isZero()) return true;
+            if (!underlierBN.isZero() && modifyPositionData.underlierAllowance.lt(underlierBN)) return true;
             return false;
           })()}
           icon={
@@ -590,7 +585,7 @@ export const IncreaseForm = ({
           onPress={async () => {
             try {
               setSubmitError('');
-              await buyCollateralAndModifyDebt(borrowStore.increaseState.deltaCollateral, borrowStore.increaseState.deltaDebt, borrowStore.increaseState.underlier);
+              await buyCollateralAndModifyDebt(borrowStore.increaseState.deltaCollateral, deltaDebtBN, underlierBN);
               onClose();
             } catch (e: any) {
               setSubmitError(e.message);
@@ -637,6 +632,15 @@ export const DecreaseForm = ({
   const disableActions = useStore((state) => state.disableActions);
   const modifyPositionData = useStore((state) => state.modifyPositionData);
   const transactionData = useStore(state => state.transactionData);
+
+  const deltaCollateralBN = useMemo(() => {
+    return borrowStore.decreaseState.deltaCollateral === '' ? ZERO : decToWad(borrowStore.decreaseState.deltaCollateral)
+  }, [borrowStore.decreaseState.deltaCollateral])
+
+  const deltaDebtBN = useMemo(() => {
+    return borrowStore.decreaseState.deltaDebt === '' ? ZERO : decToWad(borrowStore.decreaseState.deltaDebt)
+  }, [borrowStore.decreaseState.deltaDebt])
+
   const { action: currentTxAction } = transactionData;
   
   const renderFormAlerts = () => {
@@ -673,67 +677,50 @@ export const DecreaseForm = ({
           wrap='wrap'
           css={{ marginBottom: '1rem' }}
         >
-          <Input
+          <NumericInput
             disabled={disableActions}
-            value={floor2(wadToDec(borrowStore.decreaseState.deltaCollateral))}
+            value={borrowStore.decreaseState.deltaCollateral.toString()}
             onChange={(event) => {
               borrowStore.decreaseActions.setDeltaCollateral(fiat, event.target.value, modifyPositionData);
             }}
             placeholder='0'
             inputMode='decimal'
-            // Bypass type warning from passing a custom component instead of a string
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-ignore
             label={
               <InputLabelWithMax
                 label='Collateral to withdraw and swap'
-                onMaxClick={() => borrowStore.decreaseActions.setMaxDeltaCollateral(fiat, modifyPositionData)}
+                onMaxClick={() => borrowStore.decreaseActions.setDeltaCollateral(fiat, floor4(wadToDec(modifyPositionData.position.collateral)).toString(), modifyPositionData)}
               />
             }
-            labelRight={modifyPositionData.collateralType.metadata.symbol}
-            bordered
-            size='sm'
-            borderWeight='light'
-            width={'15rem'}
+            rightAdornment={modifyPositionData.collateralType.metadata.symbol}
+            style={{ width: '15rem' }}
           />
-          <Input
+          <NumericInput
             disabled={disableActions}
-            value={floor2(Number(wadToDec(borrowStore.decreaseState.slippagePct)) * 100)}
+            value={borrowStore.decreaseState.slippagePct.toString()}
             onChange={(event) => {
               borrowStore.decreaseActions.setSlippagePct(fiat, event.target.value, modifyPositionData);
             }}
-            step='0.01'
-            placeholder='0'
+            placeholder='0.01'
             inputMode='decimal'
             label='Slippage'
-            labelRight={'%'}
-            bordered
-            size='sm'
-            borderWeight='light'
-            width='7.5rem'
+            rightAdornment={'%'}
+            style={{ width: '7.5rem' }}
           />
         </Grid.Container>
-        <Input
+        <NumericInput
           disabled={disableActions}
-          value={floor5(wadToDec(borrowStore.decreaseState.deltaDebt))}
+          value={borrowStore.decreaseState.deltaDebt.toString()}
           onChange={(event) => {
-            borrowStore.decreaseActions.setDeltaDebt(fiat, event.target.value,modifyPositionData);
+            borrowStore.decreaseActions.setDeltaDebt(fiat, event.target.value, modifyPositionData);
           }}
           placeholder='0'
-          inputMode='decimal'
-          // Bypass type warning from passing a custom component instead of a string
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
           label={
             <InputLabelWithMax
               label='FIAT to pay back'
-              onMaxClick={() => borrowStore.decreaseActions.setMaxDeltaDebt(fiat, modifyPositionData)}
+              onMaxClick={() => borrowStore.decreaseActions.setDeltaDebt(fiat, floor4(wadToDec(normalDebtToDebt(modifyPositionData.position.normalDebt, modifyPositionData.collateralType.state.codex.virtualRate))).toString(), modifyPositionData)}
             />
           }
-          labelRight={'FIAT'}
-          bordered
-          size='sm'
-          borderWeight='light'
+          rightAdornment={'FIAT'}
         />
         <Text size={'$sm'}>
           Note: When closing your position make sure you have enough FIAT to cover the accrued borrow fees.
@@ -790,9 +777,9 @@ export const DecreaseForm = ({
                 // Next UI Switch `checked` type is wrong, this is necessary
                 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                 // @ts-ignore
-                checked={() => (modifyPositionData.proxyFIATAllowance?.gt(0) && modifyPositionData.proxyFIATAllowance?.gte(borrowStore.decreaseState.deltaDebt) ?? false)}
+                checked={() => (modifyPositionData.proxyFIATAllowance?.gt(0) && modifyPositionData.proxyFIATAllowance?.gte(deltaDebtBN) ?? false)}
                 onChange={async () => {
-                  if (borrowStore.decreaseState.deltaDebt.gt(0) && modifyPositionData.proxyFIATAllowance.gte(borrowStore.decreaseState.deltaDebt)) {
+                  if (deltaDebtBN.gt(0) && modifyPositionData.proxyFIATAllowance.gte(deltaDebtBN)) {
                     try {
                       setSubmitError('');
                       await unsetFIATAllowanceForProxy(fiat);
@@ -802,7 +789,7 @@ export const DecreaseForm = ({
                   } else {
                     try {
                       setSubmitError('');
-                      await setFIATAllowanceForProxy(fiat, borrowStore.decreaseState.deltaDebt);
+                      await setFIATAllowanceForProxy(fiat, deltaDebtBN);
                     } catch (e: any) {
                       setSubmitError(e.message);
                     }
@@ -818,7 +805,7 @@ export const DecreaseForm = ({
               <Spacer x={0.5} />
               <Text>Allow <code>Proxy</code> to transfer your FIAT</Text>
             </Row>
-            {modifyPositionData.monetaFIATAllowance?.lt(borrowStore.decreaseState.deltaDebt) && (
+            {modifyPositionData.monetaFIATAllowance?.lt(deltaDebtBN) && (
               <>
                 <Spacer x={0.5} />
                 <Row justify='flex-start'>
@@ -827,9 +814,9 @@ export const DecreaseForm = ({
                     // Next UI Switch `checked` type is wrong, this is necessary
                     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                     // @ts-ignore
-                    checked={() => (modifyPositionData.monetaFIATAllowance?.gt(0) && modifyPositionData.monetaFIATAllowance?.gte(borrowStore.decreaseState.deltaDebt) ?? false)}
+                    checked={() => (modifyPositionData.monetaFIATAllowance?.gt(0) && modifyPositionData.monetaFIATAllowance?.gte(deltaDebtBN) ?? false)}
                     onChange={async () => {
-                      if (borrowStore.decreaseState.deltaDebt.gt(0) && modifyPositionData.monetaFIATAllowance.gte(borrowStore.decreaseState.deltaDebt)) {
+                      if (deltaDebtBN.gt(0) && modifyPositionData.monetaFIATAllowance.gte(deltaDebtBN)) {
                         try {
                           setSubmitError('');
                           // await unsetFIATAllowanceForMoneta(fiat);
@@ -866,8 +853,8 @@ export const DecreaseForm = ({
           disabled={(() => {
             if (disableActions || !hasProxy) return true;
             if (borrowStore.formErrors.length !== 0 || borrowStore.formWarnings.length !== 0) return true;
-            if (borrowStore.decreaseState.deltaCollateral.isZero() && borrowStore.decreaseState.deltaDebt.isZero()) return true;
-            if (!borrowStore.decreaseState.deltaDebt.isZero() && modifyPositionData.monetaFIATAllowance?.lt(borrowStore.decreaseState.deltaDebt)) return true;
+            if (deltaCollateralBN.isZero() && deltaDebtBN.isZero()) return true;
+            if (!deltaDebtBN.isZero() && modifyPositionData.monetaFIATAllowance?.lt(deltaDebtBN)) return true;
             return false;
           })()}
           icon={
@@ -882,7 +869,7 @@ export const DecreaseForm = ({
           onPress={async () => {
             try {
               setSubmitError('');
-              await sellCollateralAndModifyDebt(borrowStore.decreaseState.deltaCollateral, borrowStore.decreaseState.deltaDebt, borrowStore.decreaseState.underlier);
+              await sellCollateralAndModifyDebt(deltaCollateralBN, deltaDebtBN, borrowStore.decreaseState.underlier);
               onClose();
             } catch (e: any) {
               setSubmitError(e.message);
@@ -929,6 +916,15 @@ export const RedeemForm = ({
   const disableActions = useStore((state) => state.disableActions);
   const modifyPositionData = useStore((state) => state.modifyPositionData);
   const transactionData = useStore(state => state.transactionData);
+
+  const deltaCollateralBN = useMemo(() => {
+    return borrowStore.redeemState.deltaCollateral === '' ? ZERO : decToWad(borrowStore.redeemState.deltaCollateral)
+  }, [borrowStore.redeemState.deltaCollateral])
+
+  const deltaDebtBN = useMemo(() => {
+    return borrowStore.redeemState.deltaDebt === '' ? ZERO : decToWad(borrowStore.redeemState.deltaDebt)
+  }, [borrowStore.redeemState.deltaDebt])
+
   const { action: currentTxAction } = transactionData;
   
   const renderFormAlerts = () => {
@@ -965,41 +961,27 @@ export const RedeemForm = ({
           wrap='wrap'
           css={{ marginBottom: '1rem' }}
         >
-          <Input
+          <NumericInput
             disabled={disableActions}
-            value={floor2(wadToDec(borrowStore.redeemState.deltaCollateral))}
+            value={deltaCollateralBN.toString()}
             onChange={(event) => {
               borrowStore.redeemActions.setDeltaCollateral(fiat, event.target.value, modifyPositionData);
             }}
             placeholder='0'
-            inputMode='decimal'
-            // Bypass type warning from passing a custom component instead of a string
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-ignore
-            label={<InputLabelWithMax label='Collateral to withdraw and redeem' onMaxClick={() => borrowStore.redeemActions.setMaxDeltaCollateral(fiat, modifyPositionData)} /> }
-            labelRight={modifyPositionData.collateralType.metadata.symbol}
-            bordered
-            size='sm'
-            borderWeight='light'
-            width={'100%'}
+            label={<InputLabelWithMax label='Collateral to withdraw and redeem' onMaxClick={() => borrowStore.redeemActions.setDeltaCollateral(fiat, floor4(wadToDec(modifyPositionData.position.collateral)).toString(), modifyPositionData)} /> }
+            rightAdornment={modifyPositionData.collateralType.metadata.symbol}
+            style={{ width: '100%' }}
           />
         </Grid.Container>
-        <Input
+        <NumericInput
           disabled={disableActions}
-          value={floor5(wadToDec(borrowStore.redeemState.deltaDebt))}
+          value={deltaDebtBN.toString()}
           onChange={(event) => {
             borrowStore.redeemActions.setDeltaDebt(fiat, event.target.value,modifyPositionData);
           }}
           placeholder='0'
-          inputMode='decimal'
-          // Bypass type warning from passing a custom component instead of a string
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
-          label={<InputLabelWithMax label='FIAT to pay back' onMaxClick={() => borrowStore.redeemActions.setMaxDeltaDebt(fiat, modifyPositionData)} />}
-          labelRight={'FIAT'}
-          bordered
-          size='sm'
-          borderWeight='light'
+          label={<InputLabelWithMax label='FIAT to pay back' onMaxClick={() => borrowStore.redeemActions.setDeltaDebt(fiat, floor4(wadToDec(normalDebtToDebt(modifyPositionData.position.normalDebt, modifyPositionData.collateralType.state.codex.virtualRate))).toString(), modifyPositionData)} />}
+          rightAdornment={'FIAT'}
         />
         <Text size={'$sm'}>
           Note: When closing your position make sure you have enough FIAT to cover the accrued borrow fees.
@@ -1032,9 +1014,9 @@ export const RedeemForm = ({
                 // Next UI Switch `checked` type is wrong, this is necessary
                 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                 // @ts-ignore
-                checked={() => (modifyPositionData.proxyFIATAllowance?.gt(0) && modifyPositionData.proxyFIATAllowance?.gte(borrowStore.redeemState.deltaDebt) ?? false)}
+                checked={() => (modifyPositionData.proxyFIATAllowance?.gt(0) && modifyPositionData.proxyFIATAllowance?.gte(deltaDebtBN) ?? false)}
                 onChange={async () => {
-                  if (borrowStore.redeemState.deltaDebt.gt(0) && modifyPositionData.proxyFIATAllowance.gte(borrowStore.redeemState.deltaDebt)) {
+                  if (deltaDebtBN.gt(0) && modifyPositionData.proxyFIATAllowance.gte(deltaDebtBN)) {
                     try {
                       setSubmitError('');
                       await unsetFIATAllowanceForProxy(fiat);
@@ -1044,7 +1026,7 @@ export const RedeemForm = ({
                   } else {
                     try {
                       setSubmitError('');
-                      await setFIATAllowanceForProxy(fiat, borrowStore.redeemState.deltaDebt);
+                      await setFIATAllowanceForProxy(fiat, deltaDebtBN);
                     } catch (e: any) {
                       setSubmitError(e.message);
                     }
@@ -1060,7 +1042,7 @@ export const RedeemForm = ({
               <Spacer x={0.5} />
               <Text>Allow <code>Proxy</code> to transfer your FIAT</Text>
             </Row>
-            {modifyPositionData.monetaFIATAllowance?.lt(borrowStore.redeemState.deltaDebt) && (
+            {modifyPositionData.monetaFIATAllowance?.lt(deltaDebtBN) && (
               <>
                 <Spacer x={0.5} />
                 <Row justify='flex-start'>
@@ -1069,9 +1051,9 @@ export const RedeemForm = ({
                     // Next UI Switch `checked` type is wrong, this is necessary
                     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                     // @ts-ignore
-                    checked={() => (modifyPositionData.monetaFIATAllowance?.gt(0) && modifyPositionData.monetaFIATAllowance?.gte(borrowStore.redeemState.deltaDebt) ?? false)}
+                    checked={() => (modifyPositionData.monetaFIATAllowance?.gt(0) && modifyPositionData.monetaFIATAllowance?.gte(deltaDebtBN) ?? false)}
                     onChange={async () => {
-                      if (borrowStore.redeemState.deltaDebt.gt(0) && modifyPositionData.monetaFIATAllowance.gte(borrowStore.redeemState.deltaDebt)) {
+                      if (deltaDebtBN.gt(0) && modifyPositionData.monetaFIATAllowance.gte(deltaDebtBN)) {
                         try {
                           setSubmitError('');
                           // await unsetFIATAllowanceForMoneta(fiat);
@@ -1110,8 +1092,8 @@ export const RedeemForm = ({
           disabled={(() => {
             if (disableActions || !hasProxy) return true;
             if (borrowStore.formErrors.length !== 0 || borrowStore.formWarnings.length !== 0) return true;
-            if (borrowStore.redeemState.deltaCollateral.isZero() && borrowStore.redeemState.deltaDebt.isZero()) return true;
-            if (!borrowStore.redeemState.deltaDebt.isZero() && modifyPositionData.monetaFIATAllowance?.lt(borrowStore.redeemState.deltaDebt)) return true;
+            if (deltaCollateralBN.isZero() && deltaDebtBN.isZero()) return true;
+            if (!deltaDebtBN.isZero() && modifyPositionData.monetaFIATAllowance?.lt(deltaDebtBN)) return true;
             return false;
           })()}
           icon={
@@ -1126,7 +1108,7 @@ export const RedeemForm = ({
           onPress={async () => {
             try {
               setSubmitError('');
-              await redeemCollateralAndModifyDebt(borrowStore.redeemState.deltaCollateral, borrowStore.redeemState.deltaDebt);
+              await redeemCollateralAndModifyDebt(deltaCollateralBN, deltaDebtBN);
               onClose();
             } catch (e: any) {
               setSubmitError(e.message);

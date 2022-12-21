@@ -210,7 +210,7 @@ const Home: NextPage = () => {
   const setUnderlierAllowanceForProxy = async (fiat: any, amount: BigNumber) => {
     const token = fiat.getERC20Contract(modifyPositionData.collateralType.properties.underlierToken);
     // add 1 unit has a buffer in case user refreshes the page and the value becomes outdated
-    const allowance = amount.add(modifyPositionData.collateralType.properties.underlierScale);
+    const allowance = BigNumber.from(amount).add(modifyPositionData.collateralType.properties.underlierScale);
     const response = await sendTransaction(
       fiat, false, 'setUnderlierAllowanceForProxy', token, 'approve', proxies[0], allowance
     );
