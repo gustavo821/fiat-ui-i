@@ -4,18 +4,14 @@ import { BigNumber } from 'ethers';
 
 export type TransactionStatus = null | 'error' | 'sent' | 'confirming' | 'confirmed'; 
 
-const useStore = create<any>()((set: any, get: any) => ({
+export const initialState = {
   fiat: null,
   user: '',
   explorerUrl: '',
   hasProxy: false,
   disableActions: false,
-  selectedCollateralTypeId: null,
-  selectedPositionId: null,
-  transactionData: {
-    action: null as null | string,
-    status: null as TransactionStatus,
-  },
+  selectedPositionId: null as null | string,
+  selectedCollateralTypeId: null as null | string,
   modifyPositionData: {
     outdated: false,
     collateralType: null as undefined | null | any,
@@ -25,6 +21,22 @@ const useStore = create<any>()((set: any, get: any) => ({
     monetaFIATAllowance: null as null | BigNumber, // [wad]
     proxyFIATAllowance: null as null | BigNumber, // [wad]
   },
+  transactionData: {
+    action: null as null | string,
+    status: null as TransactionStatus,
+  },
+}
+
+const useStore = create<any>()((set: any, get: any) => ({
+  fiat: initialState.fiat,
+  user: initialState.user,
+  explorerUrl: initialState.explorerUrl,
+  hasProxy: initialState.hasProxy,
+  disableActions: initialState.disableActions,
+  selectedCollateralTypeId: initialState.selectedCollateralTypeId,
+  selectedPositionId: initialState.selectedPositionId,
+  transactionData: initialState.transactionData,
+  modifyPositionData: initialState.modifyPositionData,
   fiatFromProvider: async (provider: any) => {
     const fiatProvider = await FIAT.fromProvider(provider, null);
     set(() => ({
@@ -68,17 +80,18 @@ const useStore = create<any>()((set: any, get: any) => ({
       modifyPositionData: data
     }))
   },
+  softResetStore: () => {
+    set(() => ({
+      disableActions: initialState.disableActions,
+      modifyPositionData: initialState.modifyPositionData,
+      transactionData: initialState.transactionData,
+      selectedPositionId: initialState.selectedPositionId,
+      selectedCollateralTypeId: initialState.selectedCollateralTypeId
+    }))
+  },
   resetStore: () => {
     set(() => ({
-      fiat: null,
-      user: '',
-      explorerUrl: '',
-      hasProxy: false,
-      disableActions: false,
-      transactionData: {
-        action: null as null | string,
-        status: null as TransactionStatus,
-      }
+      ...initialState
     }))
   },
 }));

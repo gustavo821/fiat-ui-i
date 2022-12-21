@@ -19,32 +19,13 @@ import { collateralTypesKey, useCollateralTypes } from '../src/state/queries/use
 import { userDataKey, useUserData } from '../src/state/queries/useUserData';
 import { useQueryClient } from '@tanstack/react-query';
 import { fiatBalanceKey } from '../src/state/queries/useFiatBalance';
-import useStore, { TransactionStatus } from '../src/state/stores/globalStore';
+import useStore, { initialState } from '../src/state/stores/globalStore';
 
 const Home: NextPage = () => {
   const provider = useProvider();
   const { address, connector } = useAccount({ onConnect: () => resetState(), onDisconnect: () => resetState() });
   const { chain } = useNetwork();
   const addRecentTransaction = useAddRecentTransaction();
-
-  const initialState = React.useMemo(() => ({
-    setupListeners: false,
-    selectedPositionId: null as null | string,
-    selectedCollateralTypeId: null as null | string,
-    modifyPositionData: {
-      outdated: false,
-      collateralType: null as undefined | null | any,
-      position: null as undefined | null | any,
-      underlierAllowance: null as null | BigNumber, // [underlierScale]
-      underlierBalance: null as null | BigNumber, // [underlierScale]
-      monetaFIATAllowance: null as null | BigNumber, // [wad]
-      proxyFIATAllowance: null as null | BigNumber, // [wad]
-    },
-    transactionData: {
-      action: null as null | string,
-      status: null as TransactionStatus,
-    },
-  }), []) 
 
   // Only select necessary actions off of the store to minimize re-renders
   const borrowStore = useBorrowStore(
@@ -75,6 +56,7 @@ const Home: NextPage = () => {
   const setSelectedCollateralTypeId = useStore((state) => state.setSelectedCollateralTypeId);
   const selectedPositionId = useStore((state) => state.selectedPositionId);
   const setSelectedPositionId = useStore((state) => state.setSelectedPositionId);
+  const softResetStore = useStore((state) => state.softResetStore);
   const resetStore = useStore((state) => state.resetStore);
 
   const { data: collateralTypesData } = useCollateralTypes(fiat, chain?.id ?? chains.mainnet.id);
@@ -83,21 +65,15 @@ const Home: NextPage = () => {
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   function resetState() {
-    setSetupListeners(initialState.setupListeners);
-    setSelectedPositionId(initialState.selectedPositionId);
-    setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
+    setSetupListeners(false);
     resetStore();
     queryClient.invalidateQueries(userDataKey.all);
     queryClient.invalidateQueries(fiatBalanceKey.all);
   }
 
-  // TODO Move soft reset items to the global store
   const softReset = () => {
     // Soft reset after a transaction
-    setModifyPositionData(initialState.modifyPositionData);
-    setTransactionData(initialState.transactionData);
-    setSelectedPositionId(initialState.selectedPositionId);
-    setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
+    softResetStore();
     // Refetch data after a reset
     queryClient.invalidateQueries(collateralTypesKey.all);
     queryClient.invalidateQueries(userDataKey.all);
