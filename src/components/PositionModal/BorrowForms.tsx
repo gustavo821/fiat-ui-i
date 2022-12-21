@@ -688,7 +688,7 @@ export const DecreaseForm = ({
             label={
               <InputLabelWithMax
                 label='Collateral to withdraw and swap'
-                onMaxClick={() => borrowStore.decreaseActions.setDeltaCollateral(fiat, floor4(wadToDec(modifyPositionData.position.collateral)).toString(), modifyPositionData)}
+                onMaxClick={() => borrowStore.decreaseActions.setDeltaCollateral(fiat, wadToDec(modifyPositionData.position.collateral).toString(), modifyPositionData)}
               />
             }
             rightAdornment={modifyPositionData.collateralType.metadata.symbol}
@@ -717,7 +717,7 @@ export const DecreaseForm = ({
           label={
             <InputLabelWithMax
               label='FIAT to pay back'
-              onMaxClick={() => borrowStore.decreaseActions.setDeltaDebt(fiat, floor4(wadToDec(normalDebtToDebt(modifyPositionData.position.normalDebt, modifyPositionData.collateralType.state.codex.virtualRate))).toString(), modifyPositionData)}
+              onMaxClick={() => borrowStore.decreaseActions.setDeltaDebt(fiat, wadToDec(normalDebtToDebt(modifyPositionData.position.normalDebt, modifyPositionData.collateralType.state.codex.virtualRate)).toString(), modifyPositionData)}
             />
           }
           rightAdornment={'FIAT'}
@@ -963,24 +963,32 @@ export const RedeemForm = ({
         >
           <NumericInput
             disabled={disableActions}
-            value={deltaCollateralBN.toString()}
+            value={borrowStore.redeemState.deltaCollateral.toString()}
             onChange={(event) => {
               borrowStore.redeemActions.setDeltaCollateral(fiat, event.target.value, modifyPositionData);
             }}
             placeholder='0'
-            label={<InputLabelWithMax label='Collateral to withdraw and redeem' onMaxClick={() => borrowStore.redeemActions.setDeltaCollateral(fiat, floor4(wadToDec(modifyPositionData.position.collateral)).toString(), modifyPositionData)} /> }
+            label={
+              <InputLabelWithMax
+                label='Collateral to withdraw and redeem'
+                onMaxClick={() => borrowStore.redeemActions.setDeltaCollateral(fiat, wadToDec(modifyPositionData.position.collateral).toString(), modifyPositionData)} />
+            }
             rightAdornment={modifyPositionData.collateralType.metadata.symbol}
             style={{ width: '100%' }}
           />
         </Grid.Container>
         <NumericInput
           disabled={disableActions}
-          value={deltaDebtBN.toString()}
+          value={borrowStore.redeemState.deltaDebt.toString()}
           onChange={(event) => {
             borrowStore.redeemActions.setDeltaDebt(fiat, event.target.value,modifyPositionData);
           }}
           placeholder='0'
-          label={<InputLabelWithMax label='FIAT to pay back' onMaxClick={() => borrowStore.redeemActions.setDeltaDebt(fiat, floor4(wadToDec(normalDebtToDebt(modifyPositionData.position.normalDebt, modifyPositionData.collateralType.state.codex.virtualRate))).toString(), modifyPositionData)} />}
+          label={
+            <InputLabelWithMax
+              label='FIAT to pay back'
+              onMaxClick={() => borrowStore.redeemActions.setDeltaDebt(fiat, wadToDec(normalDebtToDebt(modifyPositionData.position.normalDebt, modifyPositionData.collateralType.state.codex.virtualRate)).toString(), modifyPositionData)} />
+          }
           rightAdornment={'FIAT'}
         />
         <Text size={'$sm'}>

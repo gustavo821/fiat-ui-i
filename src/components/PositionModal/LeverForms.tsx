@@ -1,15 +1,16 @@
-import { computeCollateralizationRatio, scaleToDec, WAD, wadToDec } from '@fiatdao/sdk';
+import { computeCollateralizationRatio, decToScale, scaleToDec, WAD, wadToDec, ZERO } from '@fiatdao/sdk';
 import { Button, Card, Grid, Input, Loading, Modal, Row, Spacer, Switch, Text } from '@nextui-org/react';
 import { Slider } from 'antd';
 import 'antd/dist/antd.css';
 import { BigNumber, ethers } from 'ethers';
-import React from 'react';
+import React, { useMemo } from 'react';
 import shallow from 'zustand/shallow';
 import { useLeverStore } from '../../state/stores/leverStore';
 import { commifyToDecimalPlaces, floor2, floor4 } from '../../utils';
 import { Alert } from '../Alert';
 import { InputLabelWithMax } from '../InputLabelWithMax';
 import useStore from '../../state/stores/globalStore';
+import { NumericInput } from '../NumericInput/NumericInput';
 
 export const LeverCreateForm = ({
   onClose,
@@ -44,14 +45,6 @@ export const LeverCreateForm = ({
   const modifyPositionData = useStore((state) => state.modifyPositionData);
   const [submitError, setSubmitError] = React.useState('');
 
-  if (
-    !modifyPositionData.collateralType ||
-    !modifyPositionData.collateralType.metadata
-  ) {
-    // TODO: add skeleton components instead of loading
-    return null;
-  }
-
   const {
     collateralType: {
       metadata: { symbol: tokenSymbol },
@@ -70,6 +63,10 @@ export const LeverCreateForm = ({
     setUpFrontUnderliers, setCollateralSlippagePct, setUnderlierSlippagePct, setTargetedCollRatio
   } = leverStore.createActions;
   const { action: currentTxAction } = transactionData;
+
+  const upFrontUnderliersBN = useMemo(() => {
+    return leverStore.createState.upFrontUnderliers === '' ? ZERO : decToScale(leverStore.createState.upFrontUnderliers, underlierScale)
+  }, [leverStore.createState.upFrontUnderliers, underlierScale])
 
   const renderFormAlerts = () => {
     const formAlerts = [];
@@ -103,6 +100,14 @@ export const LeverCreateForm = ({
     return formAlerts;
   }
 
+  if (
+    !modifyPositionData.collateralType ||
+    !modifyPositionData.collateralType.metadata
+  ) {
+    // TODO: add skeleton components instead of loading
+    return null;
+  }
+
   return (
     <>
       <Modal.Body>
@@ -114,17 +119,13 @@ export const LeverCreateForm = ({
             {underlierSymbol}
           </Text>
         )}
-        <Input
+        <NumericInput
           disabled={disableActions}
-          value={floor2(scaleToDec(upFrontUnderliers, underlierScale))}
+          value={upFrontUnderliers.toString()}
           onChange={(event) => { setUpFrontUnderliers(fiat, event.target.value, modifyPositionData) }}
           placeholder='0'
-          inputMode='decimal'
           label={'Underlier to swap'}
-          labelRight={underlierSymbol}
-          bordered
-          size='sm'
-          borderWeight='light'
+          rightAdornment={underlierSymbol}
         />
         <Grid.Container
           gap={0}
@@ -132,35 +133,27 @@ export const LeverCreateForm = ({
           css={{ marginBottom: '1rem' }}
         >
           <Grid>
-            <Input
+            <NumericInput
               disabled={disableActions}
-              value={floor2(Number(wadToDec(underlierSlippagePct)) * 100)}
+              value={underlierSlippagePct.toString()}
               onChange={(event) => { setUnderlierSlippagePct(fiat, event.target.value, modifyPositionData) }}
               step='0.01'
-              placeholder='0'
-              inputMode='decimal'
+              placeholder='1.00'
               label='Slippage w/ Price Impact (FIAT to Underlier swap)'
-              labelRight={'%'}
-              bordered
-              size='sm'
-              borderWeight='light'
-              width='11.0rem'
+              rightAdornment={'%'}
+              style={{ width: '11.0rem' }}
             />
           </Grid>
           <Grid>
-            <Input
+            <NumericInput
               disabled={disableActions}
-              value={floor2(Number(wadToDec(collateralSlippagePct)) * 100)}
+              value={collateralSlippagePct.toString()}
               onChange={(event) => { setCollateralSlippagePct(fiat, event.target.value, modifyPositionData) }}
               step='0.01'
-              placeholder='0'
-              inputMode='decimal'
+              placeholder='1.00'
               label='Slippage w/ Price Impact (Underlier to Collateral swap)'
-              labelRight={'%'}
-              bordered
-              size='sm'
-              borderWeight='light'
-              width='11.0rem'
+              rightAdornment={'%'}
+              style={{ width: '11.0rem' }}
             />
           </Grid>
         </Grid.Container>
@@ -297,9 +290,9 @@ export const LeverCreateForm = ({
               // Next UI Switch `checked` type is wrong, this is necessary
               // eslint-disable-next-line @typescript-eslint/ban-ts-comment
               // @ts-ignore
-              checked={() => underlierAllowance?.gt(0) && underlierAllowance?.gte(upFrontUnderliers) ?? false}
+              checked={() => underlierAllowance?.gt(0) && underlierAllowance?.gte(upFrontUnderliersBN) ?? false}
               onChange={async () => {
-                if (!upFrontUnderliers.isZero() && underlierAllowance?.gte(upFrontUnderliers)) {
+                if (!upFrontUnderliersBN.isZero() && underlierAllowance?.gte(upFrontUnderliersBN)) {
                   try {
                     setSubmitError('');
                     await unsetUnderlierAllowanceForProxy(fiat);
@@ -309,7 +302,7 @@ export const LeverCreateForm = ({
                 } else {
                   try {
                     setSubmitError('');
-                    await setUnderlierAllowanceForProxy(fiat, upFrontUnderliers);
+                    await setUnderlierAllowanceForProxy(fiat, upFrontUnderliersBN);
                   } catch (e: any) {
                     setSubmitError(e.message);
                   }
@@ -336,16 +329,16 @@ export const LeverCreateForm = ({
             leverStore.formWarnings.length !== 0 ||
             disableActions ||
             !hasProxy ||
-            upFrontUnderliers?.isZero() ||
+            upFrontUnderliersBN?.isZero() ||
             minTokenToBuy?.isZero() ||
-            underlierAllowance?.lt(upFrontUnderliers) ||
+            underlierAllowance?.lt(upFrontUnderliersBN) ||
             monetaDelegate === false
           }
           icon={(disableActions && currentTxAction === 'createLeveredPosition') ? (<Loading size='xs' />) : null}
           onPress={async () => {
             try {
               setSubmitError('');
-              await createLeveredPosition(upFrontUnderliers, addDebt, minUnderliersToBuy, minTokenToBuy);
+              await createLeveredPosition(upFrontUnderliersBN, addDebt, minUnderliersToBuy, minTokenToBuy);
               onClose();
             } catch (e: any) {
               setSubmitError(e.message);
@@ -411,6 +404,10 @@ export const LeverIncreaseForm = ({
     setUpFrontUnderliers, setCollateralSlippagePct, setUnderlierSlippagePct, setTargetedCollRatio
   } = leverStore.increaseActions;
   const { action: currentTxAction } = transactionData;
+
+  const upFrontUnderliersBN = useMemo(() => {
+    return leverStore.increaseState.upFrontUnderliers === '' ? ZERO : decToScale(leverStore.increaseState.upFrontUnderliers, underlierScale)
+  }, [leverStore.increaseState.upFrontUnderliers, underlierScale])
   
   const renderFormAlerts = () => {
     const formAlerts = [];
@@ -443,17 +440,14 @@ export const LeverIncreaseForm = ({
             Wallet: {commifyToDecimalPlaces(underlierBalance, underlierScale, 2)} {underlierSymbol}
           </Text>
         )}
-        <Input
+        <NumericInput
           label={'Underlier to deposit'}
           disabled={disableActions}
-          value={floor2(scaleToDec(upFrontUnderliers, underlierScale))}
+          value={upFrontUnderliers.toString()}
           onChange={(event) => { setUpFrontUnderliers(fiat, event.target.value, modifyPositionData) }}
           placeholder='0'
           inputMode='decimal'
-          labelRight={underlierSymbol}
-          bordered
-          size='sm'
-          borderWeight='light'
+          rightAdornment={underlierSymbol}
         />
         <Grid.Container
           gap={0}
@@ -461,35 +455,25 @@ export const LeverIncreaseForm = ({
           css={{ marginBottom: '1rem' }}
         >
           <Grid>
-            <Input
+            <NumericInput
               disabled={disableActions}
-              value={floor2(Number(wadToDec(underlierSlippagePct)) * 100)}
+              value={underlierSlippagePct.toString()}
               onChange={(event) => { setUnderlierSlippagePct(fiat, event.target.value, modifyPositionData) }}
-              step='0.01'
-              placeholder='0'
-              inputMode='decimal'
+              placeholder='1.00'
               label='Slippage (FIAT to Underlier swap)'
-              labelRight={'%'}
-              bordered
-              size='sm'
-              borderWeight='light'
-              width='11.0rem'
+              rightAdornment={'%'}
+              style={{ width: '11.0rem' }}
             />
           </Grid>
           <Grid>
-            <Input
+            <NumericInput
               disabled={disableActions}
-              value={floor2(Number(wadToDec(collateralSlippagePct)) * 100)}
+              value={collateralSlippagePct.toString()}
               onChange={(event) => { setCollateralSlippagePct(fiat, event.target.value, modifyPositionData) }}
-              step='0.01'
-              placeholder='0'
-              inputMode='decimal'
+              placeholder='1.00'
               label='Slippage (Underlier to Collateral swap)'
-              labelRight={'%'}
-              bordered
-              size='sm'
-              borderWeight='light'
-              width='11.0rem'
+              rightAdornment={'%'}
+              style={{ width: '11.0rem' }}
             />
           </Grid>
         </Grid.Container>
@@ -643,9 +627,9 @@ export const LeverIncreaseForm = ({
               // Next UI Switch `checked` type is wrong, this is necessary
               // eslint-disable-next-line @typescript-eslint/ban-ts-comment
               // @ts-ignore
-              checked={() => underlierAllowance?.gt(0) && underlierAllowance?.gte(upFrontUnderliers) ?? false}
+              checked={() => underlierAllowance?.gt(0) && underlierAllowance?.gte(upFrontUnderliersBN) ?? false}
               onChange={async () => {
-                if(!upFrontUnderliers.isZero() && underlierAllowance.gte(upFrontUnderliers)) {
+                if(!upFrontUnderliersBN.isZero() && underlierAllowance.gte(upFrontUnderliersBN)) {
                   try {
                     setSubmitError('');
                     await unsetUnderlierAllowanceForProxy(fiat);
@@ -655,7 +639,7 @@ export const LeverIncreaseForm = ({
                 } else {
                   try {
                     setSubmitError('');
-                    await setUnderlierAllowanceForProxy(fiat, upFrontUnderliers)
+                    await setUnderlierAllowanceForProxy(fiat, upFrontUnderliersBN)
                   } catch (e: any) {
                     setSubmitError(e.message);
                   }
@@ -681,8 +665,8 @@ export const LeverIncreaseForm = ({
             if (disableActions || !hasProxy) return true;
             if (leverStore.formErrors.length !== 0 || leverStore.formWarnings.length !== 0) return true;
             if (monetaDelegate === false) return true;
-            if (upFrontUnderliers.isZero() && minTokenToBuy.isZero()) return true;
-            if (!upFrontUnderliers.isZero() && underlierAllowance.lt(upFrontUnderliers)) return true;
+            if (upFrontUnderliersBN.isZero() && minTokenToBuy.isZero()) return true;
+            if (!upFrontUnderliersBN.isZero() && underlierAllowance.lt(upFrontUnderliersBN)) return true;
             return false;
           })()}
           icon={
@@ -697,7 +681,7 @@ export const LeverIncreaseForm = ({
           onPress={async () => {
             try {
               setSubmitError('');
-              await buyCollateralAndIncreaseLever(upFrontUnderliers, addDebt, minUnderliersToBuy, minTokenToBuy);
+              await buyCollateralAndIncreaseLever(upFrontUnderliersBN, addDebt, minUnderliersToBuy, minTokenToBuy);
               onClose();
             } catch (e: any) {
               setSubmitError(e.message);
@@ -756,6 +740,10 @@ export const LeverDecreaseForm = ({
     setSubTokenAmount, setMaxSubTokenAmount, setCollateralSlippagePct, setUnderlierSlippagePct, setTargetedCollRatio
   } = leverStore.decreaseActions;
   const { action: currentTxAction } = transactionData;
+
+  const subTokenAmountBN = useMemo(() => {
+    return leverStore.decreaseState.subTokenAmount === '' ? ZERO : decToScale(leverStore.decreaseState.subTokenAmount, tokenScale)
+  }, [leverStore.decreaseState.subTokenAmount, tokenScale])
   
   const renderFormAlerts = () => {
     const formAlerts = [];
@@ -789,57 +777,42 @@ export const LeverDecreaseForm = ({
           css={{ marginBottom: '1rem' }}
         >
           <Grid>
-            <Input
+            <NumericInput
               disabled={disableActions}
-              value={floor2(Number(wadToDec(underlierSlippagePct)) * 100)}
+              value={underlierSlippagePct.toString()}
               onChange={(event) => { setUnderlierSlippagePct(fiat, event.target.value, modifyPositionData) }}
-              step='0.01'
-              placeholder='0'
-              inputMode='decimal'
+              placeholder='0.01'
               label='Slippage (Underlier to FIAT swap)'
-              labelRight={'%'}
-              bordered
-              size='sm'
-              borderWeight='light'
-              width='11.0rem'
+              rightAdornment={'%'}
+              style={{ width: '11.0rem' }}
             />
           </Grid>
           <Grid>
-            <Input
+            <NumericInput
               disabled={disableActions}
-              value={floor2(Number(wadToDec(collateralSlippagePct)) * 100)}
+              value={collateralSlippagePct.toString()}
               onChange={(event) => { setCollateralSlippagePct(fiat, event.target.value, modifyPositionData) }}
-              step='0.01'
-              placeholder='0'
-              inputMode='decimal'
+              placeholder='0.01'
               label='Slippage (Collateral to Underlier swap)'
-              labelRight={'%'}
-              bordered
-              size='sm'
-              borderWeight='light'
-              width='11.0rem'
+              rightAdornment={'%'}
+              style={{ width: '11.0rem' }}
             />
           </Grid>
         </Grid.Container>
-        <Input
+        <NumericInput
           disabled={disableActions}
-          value={floor2(scaleToDec(subTokenAmount, tokenScale))}
+          value={subTokenAmount.toString()}
           onChange={(event) => { setSubTokenAmount(fiat, event.target.value, modifyPositionData) }}
           placeholder='0'
-          inputMode='decimal'
-          // Bypass type warning from passing a custom component instead of a string
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
           label={
             <InputLabelWithMax
               label='Collateral to withdraw and swap'
-              onMaxClick={() => setMaxSubTokenAmount(fiat, modifyPositionData)}
+              onMaxClick={() => {
+                setSubTokenAmount(fiat, wadToDec(modifyPositionData.position.collateral).toString(), modifyPositionData)
+              }}
             />
           }
-          labelRight={tokenSymbol}
-          bordered
-          size='sm'
-          borderWeight='light'
+          rightAdornment={tokenSymbol}
         />
         {(!minCollRatio.isZero() && !maxCollRatio.isZero() && !minCollRatio.eq(maxCollRatio)) && (
           <>
@@ -993,7 +966,7 @@ export const LeverDecreaseForm = ({
           disabled={(() => {
             if (disableActions || !hasProxy) return true;
             if (leverStore.formErrors.length !== 0 || leverStore.formWarnings.length !== 0) return true;
-            if (leverStore.decreaseState.subTokenAmount.isZero() && leverStore.decreaseState.subDebt.isZero()) return true;
+            if (subTokenAmountBN.isZero() && leverStore.decreaseState.subDebt.isZero()) return true;
             return false;
           })()}
           icon={
@@ -1009,7 +982,7 @@ export const LeverDecreaseForm = ({
             try {
               setSubmitError('');
               await sellCollateralAndDecreaseLever(
-                leverStore.decreaseState.subTokenAmount,
+                subTokenAmountBN,
                 leverStore.decreaseState.subDebt,
                 leverStore.decreaseState.maxUnderliersToSell,
                 leverStore.decreaseState.minUnderliersToBuy
@@ -1070,6 +1043,10 @@ export const LeverRedeemForm = ({
   
   const { action: currentTxAction } = transactionData;
   
+  const subTokenAmountBN = useMemo(() => {
+    return leverStore.redeemState.subTokenAmount === '' ? ZERO : decToScale(leverStore.redeemState.subTokenAmount, tokenScale)
+  }, [leverStore.redeemState.subTokenAmount, tokenScale])
+
   const renderFormAlerts = () => {
     const formAlerts = [];
 
@@ -1098,28 +1075,21 @@ export const LeverRedeemForm = ({
         <Text b size={'m'}>
           Inputs
         </Text>
-        <Input
+        <NumericInput
           disabled={disableActions}
-          value={floor2(scaleToDec(subTokenAmount, tokenScale))}
+          value={subTokenAmount.toString()}
           onChange={(event) => {
             leverStore.redeemActions.setSubTokenAmount(fiat, event.target.value, modifyPositionData);
           }}
           placeholder='0'
-          inputMode='decimal'
-          // Bypass type warning from passing a custom component instead of a string
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
           label={
             <InputLabelWithMax
               label='Collateral to withdraw and redeem'
-              onMaxClick={() => leverStore.redeemActions.setMaxSubTokenAmount(fiat, modifyPositionData)}
+              onMaxClick={() => leverStore.redeemActions.setSubTokenAmount(fiat, wadToDec(modifyPositionData.position.collateral).toString(), modifyPositionData)}
             />
           }
-          labelRight={modifyPositionData.collateralType.metadata.symbol}
-          bordered
-          size='sm'
-          borderWeight='light'
-          width={'100%'}
+          rightAdornment={modifyPositionData.collateralType.metadata.symbol}
+          style={{ width: '100%' }}
         />
         <Grid.Container
           gap={0}
@@ -1127,21 +1097,16 @@ export const LeverRedeemForm = ({
           wrap='wrap'
           css={{ marginBottom: '1rem' }}
         >
-          <Input
+          <NumericInput
             disabled={disableActions}
-            value={floor2(Number(wadToDec(underlierSlippagePct)) * 100)}
+            value={underlierSlippagePct.toString()}
             onChange={(event) => {
               leverStore.redeemActions.setUnderlierSlippagePct(fiat, event.target.value, modifyPositionData);
             }}
-            step='0.01'
             placeholder='0'
-            inputMode='decimal'
             label='Slippage (Underlier to FIAT swap)'
-            labelRight={'%'}
-            bordered
-            size='sm'
-            borderWeight='light'
-            width='15.0rem'
+            rightAdornment={'%'}
+            style={{ width: '15.0rem' }}
           />
         </Grid.Container>
         {(!minCollRatio.isZero() && !maxCollRatio.isZero() && !minCollRatio.eq(maxCollRatio)) && (
@@ -1295,7 +1260,7 @@ export const LeverRedeemForm = ({
           disabled={(() => {
             if (disableActions || !hasProxy) return true;
             if (leverStore.formErrors.length !== 0 || leverStore.formWarnings.length !== 0) return true;
-            if (leverStore.redeemState.subTokenAmount.isZero() && leverStore.redeemState.subDebt.isZero()) return true;
+            if (subTokenAmountBN.isZero() && leverStore.redeemState.subDebt.isZero()) return true;
             return false;
           })()}
           icon={
@@ -1311,7 +1276,7 @@ export const LeverRedeemForm = ({
             try {
               setSubmitError('');
               await redeemCollateralAndDecreaseLever(
-                leverStore.redeemState.subTokenAmount,
+                subTokenAmountBN,
                 leverStore.redeemState.subDebt,
                 leverStore.redeemState.maxUnderliersToSell
               );
