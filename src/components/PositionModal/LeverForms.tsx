@@ -57,7 +57,7 @@ export const LeverCreateForm = ({
   const {
     upFrontUnderliers, collateralSlippagePct, underlierSlippagePct, targetedCollRatio,
     addDebt, minUnderliersToBuy, minTokenToBuy, 
-    collateral, collRatio, debt, estCollateral, estCollRatio, estMinTokenToBuy, minCollRatio, maxCollRatio
+    collateral, collRatio, debt, minCollRatio, maxCollRatio
   } = leverStore.createState;
   const {
     setUpFrontUnderliers, setCollateralSlippagePct, setUnderlierSlippagePct, setTargetedCollRatio
@@ -215,13 +215,11 @@ export const LeverCreateForm = ({
           readOnly
           value={(leverStore.formDataLoading)
             ? ' '
-            : (minTokenToBuy.lte(estMinTokenToBuy)) 
-              ? `[${floor2(scaleToDec(minTokenToBuy, tokenScale))}, ${floor2(scaleToDec(estMinTokenToBuy, tokenScale))}]`
-              : `[${floor2(scaleToDec(estMinTokenToBuy, tokenScale))}, ${floor2(scaleToDec(minTokenToBuy, tokenScale))}]`
+            : `${floor2(scaleToDec(minTokenToBuy, tokenScale))}`
           }
           placeholder='0'
           type='string'
-          label={'Total Collateral to deposit ([min., max.])'}
+          label={'Total Collateral to deposit (incl. slippage)'}
           labelRight={tokenSymbol}
           contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
@@ -237,13 +235,11 @@ export const LeverCreateForm = ({
           readOnly
           value={(leverStore.formDataLoading)
             ? ' '
-            : (collateral.lte(estCollateral)) 
-              ? `[${floor2(wadToDec(collateral))}, ${floor2(wadToDec(estCollateral))}]`
-              : `[${floor2(wadToDec(estCollateral))}, ${floor2(wadToDec(collateral))}]`
+            : `${floor2(wadToDec(collateral))}`
           }
           placeholder='0'
           type='string'
-          label={'Collateral ([min., max.])'}
+          label={'Collateral (incl. slippage)'}
           labelRight={tokenSymbol}
           contentLeft={(leverStore.formDataLoading) ? <Loading size='xs' /> : null}
           size='sm'
@@ -254,7 +250,7 @@ export const LeverCreateForm = ({
           value={(leverStore.formDataLoading) ? ' ' : floor2(wadToDec(debt))}
           placeholder='0'
           type='string'
-          label='Debt'
+          label='Debt (incl. slippage)'
           labelRight={'FIAT'}
           contentLeft={(leverStore.formDataLoading) ? <Loading size='xs' /> : null}
           size='sm'
@@ -265,13 +261,11 @@ export const LeverCreateForm = ({
           value={
             (leverStore.formDataLoading)
               ? ' '
-              : (collRatio.lte(estCollRatio)) 
-                ? `[${floor2(wadToDec(collRatio.mul(100)))}%, ${floor2(wadToDec(estCollRatio.mul(100)))}%]`
-                : `[${floor2(wadToDec(estCollRatio.mul(100)))}%, ${floor2(wadToDec(collRatio.mul(100)))}%]`
+              : `${floor2(wadToDec(collRatio.mul(100)))}%`
           }
           placeholder='0'
           type='string'
-          label='Collateralization Ratio ([min., max.])'
+          label='Collateralization Ratio (incl. slippage)'
           labelRight={'🚦'}
           contentLeft={(leverStore.formDataLoading) ? <Loading size='xs' /> : null}
           size='sm'
@@ -398,7 +392,7 @@ export const LeverIncreaseForm = ({
   const {
     upFrontUnderliers, collateralSlippagePct, underlierSlippagePct,
     addDebt, minUnderliersToBuy, minTokenToBuy, targetedCollRatio,
-    collateral, collRatio, debt, estCollateral, estCollRatio, estMinTokenToBuy, minCollRatio, maxCollRatio
+    collateral, collRatio, debt, minCollRatio, maxCollRatio
   } = leverStore.increaseState;
   const {
     setUpFrontUnderliers, setCollateralSlippagePct, setUnderlierSlippagePct, setTargetedCollRatio
@@ -539,13 +533,11 @@ export const LeverIncreaseForm = ({
           readOnly
           value={(leverStore.formDataLoading)
             ? ' '
-            : (minTokenToBuy.lte(estMinTokenToBuy)) 
-              ? `[${floor2(scaleToDec(minTokenToBuy, tokenScale))}, ${floor2(scaleToDec(estMinTokenToBuy, tokenScale))}]`
-              : `[${floor2(scaleToDec(estMinTokenToBuy, tokenScale))}, ${floor2(scaleToDec(minTokenToBuy, tokenScale))}]`
+            : `${floor2(scaleToDec(minTokenToBuy, tokenScale))}`
           }
           placeholder='0'
           type='string'
-          label={'Total Collateral to deposit ([min., max.])'}
+          label={'Total Collateral to deposit (incl. slippage)'}
           labelRight={tokenSymbol}
           contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
@@ -563,13 +555,11 @@ export const LeverIncreaseForm = ({
           readOnly
           value={(leverStore.formDataLoading)
             ? ' '
-            : (collateral.lte(estCollateral)) 
-              ? `${floor2(wadToDec(position.collateral))} → [${floor2(wadToDec(collateral))}, ${floor2(wadToDec(estCollateral))}]`
-              : `${floor2(wadToDec(position.collateral))} → [${floor2(wadToDec(estCollateral))}, ${floor2(wadToDec(collateral))}]`
+            : `${floor2(wadToDec(position.collateral))} → ${floor2(wadToDec(collateral))}`
           }
           placeholder='0'
           type='string'
-          label={'Collateral ([min., max.])'}
+          label={'Collateral (incl. slippage)'}
           labelRight={tokenSymbol}
           contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
@@ -583,7 +573,7 @@ export const LeverIncreaseForm = ({
           }
           placeholder='0'
           type='string'
-          label='Debt'
+          label='Debt (incl. slippage)'
           labelRight={'FIAT'}
           contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
@@ -600,16 +590,11 @@ export const LeverIncreaseForm = ({
               ? '∞' : `${floor2(wadToDec(collRatioBefore.mul(100)))}%`;
             const collRatioAfter = (collRatio.eq(ethers.constants.MaxUint256))
               ? '∞' : `${floor2(wadToDec(collRatio.mul(100)))}%`;
-            const estCollRatioAfter = (estCollRatio.eq(ethers.constants.MaxUint256))
-              ? '∞' : `${floor2(wadToDec(estCollRatio.mul(100)))}%`;
-            if (collRatio.lte(estCollRatio)) 
-              return `${collRatioBefore} → [${collRatioAfter}, ${estCollRatioAfter}]`
-            else
-              return `${collRatioBefore} → [${estCollRatioAfter}, ${collRatioAfter}]`
+            return `${collRatioBefore} → ${collRatioAfter}`
           })()}
           placeholder='0'
           type='string'
-          label='Collateralization Ratio ([min., max.])'
+          label='Collateralization Ratio (incl. slippage)'
           labelRight={'🚦'}
           contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
