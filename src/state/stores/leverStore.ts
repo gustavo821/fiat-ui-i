@@ -10,6 +10,7 @@ import {
   minCRForLeveredDeposit,
   minCRForLeveredWithdrawal,
   normalDebtToDebt,
+  scaleToDec,
   scaleToWad,
   WAD,
   wadToDec,
@@ -231,8 +232,8 @@ const initialState = {
   createState: {
     // input
     upFrontUnderliers: ZERO, // [underlierScale]
-    collateralSlippagePct: decToWad('0.01'),
-    underlierSlippagePct: decToWad('0.01'),
+    collateralSlippagePct: decToWad('0.001'),
+    underlierSlippagePct: decToWad('0.001'),
     targetedCollRatio: decToWad('1.2'),
     // output
     minCollRatio: ZERO, // [wad]
@@ -253,8 +254,8 @@ const initialState = {
   increaseState: {
     // input
     upFrontUnderliers: ZERO, // [underlierScale]
-    collateralSlippagePct: decToWad('0.01'),
-    underlierSlippagePct: decToWad('0.01'),
+    collateralSlippagePct: decToWad('0.001'),
+    underlierSlippagePct: decToWad('0.001'),
     targetedCollRatio: decToWad('1.2'),
     // output
     minCollRatio: ZERO, // [wad]
@@ -386,6 +387,8 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
       },
 
       // Calculate Levered Deposit:
+      // tldr: - calculates the price impact for the exchange rates using an ideal flashloan amount derived
+      //         from ideal exchange rates (no price impact or slippage)
       // 1. fetch ideal exchange rates excluding price impact and slippage
       //    - using the preview methods of LeverActions for:
       //      a. FIAT to Underliers swap by swapping 1 FIAT
@@ -396,10 +399,10 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
       // 3. compute estimated exchange rates including price impact (without slippage)
       //    - using the preview methods of LeverActions for:
       //      a. FIAT to Underliers swap using the ideal flashloan amount
-      //      b. Underliers to Collateral tokens swap using the total amount of Underliers (upfront + swapped)
+      //      b. Underliers to Collateral tokens swap using the total amount of Underliers (upfront + swapped (a.))
       // 4. compute estimated and worsed case outputs
-      //      a. estimated values based on estimated exchange rates with price impact (without slippage)
-      //      b. worsed case values based on slippage adjusted ideal exchange rates 
+      //      a. estimated values based on estimated exchange rates with price impact without slippage
+      //      b. worsed case values based on slippage adjusted estimated exchange rates with slippage
       calculatePositionValuesAfterCreation: debounce(async function (fiat: any, modifyPositionData: any) {
         const { collateralType } = modifyPositionData;
         const { 
@@ -430,7 +433,7 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
             scaleToWad(fiatToUnderlierRateIdeal, underlierScale),
             scaleToWad(underlierToCollateralRateIdeal, tokenScale),
             scaleToWad(upFrontUnderliers, underlierScale),
-            targetedCollRatio
+            targetedCollRatio.add(decToWad(0.0025)) // error compensation
           );
           
           // 3.
@@ -438,9 +441,9 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           const underlierIn = upFrontUnderliers.add(flashloanIdeal.mul(fiatToUnderlierRateIdeal).div(WAD));
           const collateralOut = await userActions.underlierToCollateralToken(fiat, underlierIn, collateralType);
           const underlierToCollateralRateWithPriceImpact = collateralOut.mul(underlierScale).div(underlierIn);
-          const fiatToUnderlierRateWithPriceImpact = wadToScale(flashloanIdeal, underlierScale).mul(underlierScale).div(
-            await userActions.fiatToUnderlier(fiat, flashloanIdeal, collateralType)
-          );
+          const fiatToUnderlierRateWithPriceImpact = (await userActions.fiatToUnderlier(
+            fiat, flashloanIdeal, collateralType)
+          ).mul(WAD).div(flashloanIdeal);
 
           // 4.
           const addDebt = flashloanIdeal;
@@ -455,8 +458,12 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           const estCollRatio = computeCollateralizationRatio(estCollateral, fairPrice, normalDebt, rate);
 
           // b.
-          const fiatToUnderlierRateWithSlippage = applySwapSlippage(fiatToUnderlierRateIdeal, underlierSlippagePct);
-          const underlierToCollateralRateWithSlippage = applySwapSlippage(underlierToCollateralRateIdeal, collateralSlippagePct);
+          const fiatToUnderlierRateWithSlippage = applySwapSlippage(
+            fiatToUnderlierRateWithPriceImpact, underlierSlippagePct
+          );
+          const underlierToCollateralRateWithSlippage = applySwapSlippage(
+            underlierToCollateralRateWithPriceImpact, collateralSlippagePct
+          );
           let minCollRatio = minCollRatioWithBuffer(minCRForLeveredDeposit(
             fairPrice,
             scaleToWad(fiatToUnderlierRateWithSlippage, underlierScale),
@@ -610,7 +617,7 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
             scaleToWad(fiatToUnderlierRateIdeal, underlierScale),
             scaleToWad(underlierToCollateralRateIdeal, tokenScale),
             scaleToWad(upFrontUnderliers, underlierScale),
-            targetedCollRatio
+            targetedCollRatio.add(decToWad(0.0025)) // error compensation
           );
           
           // 3.
@@ -618,9 +625,9 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           const underlierIn = upFrontUnderliers.add(flashloanIdeal.mul(fiatToUnderlierRateIdeal).div(WAD));
           const collateralOut = await userActions.underlierToCollateralToken(fiat, underlierIn, collateralType);
           const underlierToCollateralRateWithPriceImpact = collateralOut.mul(underlierScale).div(underlierIn);
-          const fiatToUnderlierRateWithPriceImpact = wadToScale(flashloanIdeal, underlierScale).mul(underlierScale).div(
-            await userActions.fiatToUnderlier(fiat, flashloanIdeal, collateralType)
-          );
+          const fiatToUnderlierRateWithPriceImpact = (await userActions.fiatToUnderlier(
+            fiat, flashloanIdeal, collateralType)
+          ).mul(WAD).div(flashloanIdeal);
 
           // 4.
           const addDebt = flashloanIdeal;
@@ -635,8 +642,12 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           const estCollRatio = computeCollateralizationRatio(estCollateral, fairPrice, normalDebt, rate);
 
           // b.
-          const fiatToUnderlierRateWithSlippage = applySwapSlippage(fiatToUnderlierRateIdeal, underlierSlippagePct);
-          const underlierToCollateralRateWithSlippage = applySwapSlippage(underlierToCollateralRateIdeal, collateralSlippagePct);
+          const fiatToUnderlierRateWithSlippage = applySwapSlippage(
+            fiatToUnderlierRateWithPriceImpact, underlierSlippagePct
+          );
+          const underlierToCollateralRateWithSlippage = applySwapSlippage(
+            underlierToCollateralRateWithPriceImpact, collateralSlippagePct
+          );
           let minCollRatio = minCollRatioWithBuffer(minCRForLeveredDeposit(
             fairPrice,
             scaleToWad(fiatToUnderlierRateWithSlippage, underlierScale),
@@ -821,7 +832,7 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           );
           const underlierIn = await userActions.fiatForUnderlier(fiat, flashloan, collateralType);
           const fiatForUnderlierRateWithSlippage = applySwapSlippage(
-            wadToScale(flashloan, underlierScale).mul(underlierScale).div(underlierIn),
+            underlierIn.mul(underlierScale).div(wadToScale(flashloan, underlierScale)),
             underlierSlippagePct.mul(-1) // apply positive slippage for max. == worsed price
           );
 
@@ -1001,7 +1012,7 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
             .div(subTokenAmount).mul(tokenScale).div(underlierScale);
           const underlierIn = await userActions.fiatForUnderlier(fiat, flashloan, collateralType);
           const fiatForUnderlierRateWithSlippage = applySwapSlippage(
-            wadToScale(flashloan, underlierScale).mul(underlierScale).div(underlierIn),
+            underlierIn.mul(underlierScale).div(wadToScale(flashloan, underlierScale)),
             underlierSlippagePct.mul(-1) // apply positive slippage for max. == worsed price
           );
 
