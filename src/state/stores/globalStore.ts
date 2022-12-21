@@ -65,7 +65,7 @@ const useStore = create<any>()((set: any, get: any) => ({
   },
   setModifyPositionData: (data: any) => {
     set(() => ({
-      setModifyPositionData: data
+      modifyPositionData: data
     }))
   },
   resetStore: () => {
