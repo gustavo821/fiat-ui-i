@@ -28,8 +28,6 @@ interface PositionModalProps {
   unsetFIATAllowanceForProxy: (fiat: any) => any;
   setUnderlierAllowanceForProxy: (fiat: any, amount: BigNumber) => any;
   unsetUnderlierAllowanceForProxy: (fiat: any) => any;
-  selectedCollateralTypeId: string | null;
-  selectedPositionId: string | null;
   open: boolean;
   onClose: () => void;
 }
@@ -57,6 +55,8 @@ const PositionModalBody = (props: PositionModalProps) => {
   const user = useStore((state) => state.user);
   const disableActions = useStore((state) => state.disableActions);
   const modifyPositionData = useStore((state) => state.modifyPositionData);
+  const selectedCollateralTypeId = useStore((state) => state.selectedCollateralTypeId);
+  const selectedPositionId = useStore((state) => state.selectedPositionId);
 
   const matured = React.useMemo(() => {
     const maturity = modifyPositionData.collateralType?.properties.maturity.toString();
@@ -65,14 +65,14 @@ const PositionModalBody = (props: PositionModalProps) => {
 
   React.useEffect(() => {
     // Set initial mode of modal depending on props
-    if (!!props.selectedCollateralTypeId && actionMode !== Mode.CREATE) {
+    if (!!selectedCollateralTypeId && actionMode !== Mode.CREATE) {
       setActionMode(Mode.CREATE);
     } else if (modifyPositionData.position && matured && actionMode !== Mode.REDEEM) {
       setActionMode(Mode.REDEEM);
     }  
     // these deps _are_ exhaustive
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [modifyPositionData.position, actionMode, setActionMode, props.selectedCollateralTypeId, matured])
+  }, [modifyPositionData.position, actionMode, setActionMode, selectedCollateralTypeId, matured])
 
   if (!user || !modifyPositionData.collateralType || !modifyPositionData.collateralType.metadata ) {
     // TODO: add skeleton components instead of null
@@ -120,40 +120,40 @@ const PositionModalBody = (props: PositionModalProps) => {
 
   const renderForm = () => {
     if (leverModeActive) {
-      return !!props.selectedCollateralTypeId && actionMode === Mode.CREATE
+      return !!selectedCollateralTypeId && actionMode === Mode.CREATE
           ? <LeverCreateForm
               createLeveredPosition={props.createLeveredPosition}
               setUnderlierAllowanceForProxy={props.setUnderlierAllowanceForProxy}
               unsetUnderlierAllowanceForProxy={props.unsetUnderlierAllowanceForProxy}
               onClose={props.onClose}
           />
-          : !!props.selectedPositionId && actionMode === Mode.INCREASE
+          : !!selectedPositionId && actionMode === Mode.INCREASE
           ? <LeverIncreaseForm
               buyCollateralAndIncreaseLever={props.buyCollateralAndIncreaseLever}
               setUnderlierAllowanceForProxy={props.setUnderlierAllowanceForProxy}
               unsetUnderlierAllowanceForProxy={props.unsetUnderlierAllowanceForProxy}
               onClose={props.onClose}
             />
-          : !!props.selectedPositionId && actionMode === Mode.DECREASE
+          : !!selectedPositionId && actionMode === Mode.DECREASE
           ? <LeverDecreaseForm
               sellCollateralAndDecreaseLever={props.sellCollateralAndDecreaseLever}
               onClose={props.onClose}
             />
-          : !!props.selectedPositionId && actionMode === Mode.REDEEM
+          : !!selectedPositionId && actionMode === Mode.REDEEM
           ? <LeverRedeemForm
               redeemCollateralAndDecreaseLever={props.redeemCollateralAndDecreaseLever}
               onClose={props.onClose}
             />
           : null
     } else {
-      return !!props.selectedCollateralTypeId && actionMode === Mode.CREATE
+      return !!selectedCollateralTypeId && actionMode === Mode.CREATE
           ? <CreateForm
               onClose={props.onClose}
               createPosition={props.createPosition}
               setUnderlierAllowanceForProxy={props.setUnderlierAllowanceForProxy}
               unsetUnderlierAllowanceForProxy={props.unsetUnderlierAllowanceForProxy}
           />
-          : !!props.selectedPositionId && actionMode === Mode.INCREASE
+          : !!selectedPositionId && actionMode === Mode.INCREASE
           ? <IncreaseForm
               onClose={props.onClose}
               buyCollateralAndModifyDebt={props.buyCollateralAndModifyDebt}
@@ -161,7 +161,7 @@ const PositionModalBody = (props: PositionModalProps) => {
               unsetUnderlierAllowanceForProxy={props.unsetUnderlierAllowanceForProxy}
               
             />
-          : !!props.selectedPositionId && actionMode === Mode.DECREASE
+          : !!selectedPositionId && actionMode === Mode.DECREASE
           ? <DecreaseForm
               onClose={props.onClose}
               setFIATAllowanceForProxy={props.setFIATAllowanceForProxy}
@@ -169,7 +169,7 @@ const PositionModalBody = (props: PositionModalProps) => {
               setFIATAllowanceForMoneta={props.setFIATAllowanceForMoneta}
               sellCollateralAndModifyDebt={props.sellCollateralAndModifyDebt}
             />
-          : !!props.selectedPositionId && actionMode === Mode.REDEEM
+          : !!selectedPositionId && actionMode === Mode.REDEEM
           ? <RedeemForm
               onClose={props.onClose}
               setFIATAllowanceForProxy={props.setFIATAllowanceForProxy}

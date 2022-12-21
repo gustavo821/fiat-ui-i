@@ -10,6 +10,8 @@ const useStore = create<any>()((set: any, get: any) => ({
   explorerUrl: '',
   hasProxy: false,
   disableActions: false,
+  selectedCollateralTypeId: null,
+  selectedPositionId: null,
   transactionData: {
     action: null as null | string,
     status: null as TransactionStatus,
@@ -43,6 +45,16 @@ const useStore = create<any>()((set: any, get: any) => ({
   setExplorerUrl: (url: string) => {
     set(() => ({
       explorerUrl: url
+    }))
+  },
+  setSelectedCollateralTypeId: (id: string) => {
+    set(() => ({
+      selectedCollateralTypeId: id
+    }))
+  },
+  setSelectedPositionId: (id: string) => {
+    set(() => ({
+      selectedPositionId: id
     }))
   },
   setTransactionData: (data: any) => {

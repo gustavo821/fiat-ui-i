@@ -27,7 +27,6 @@ const Home: NextPage = () => {
   const { chain } = useNetwork();
   const addRecentTransaction = useAddRecentTransaction();
 
-  // TODO Move all intial state items to global store
   const initialState = React.useMemo(() => ({
     setupListeners: false,
     selectedPositionId: null as null | string,
@@ -61,8 +60,6 @@ const Home: NextPage = () => {
 
   const [initialPageLoad, setInitialPageLoad] = React.useState<boolean>(true);
   const [setupListeners, setSetupListeners] = React.useState(false);
-  const [selectedPositionId, setSelectedPositionId] = React.useState(initialState.selectedPositionId);
-  const [selectedCollateralTypeId, setSelectedCollateralTypeId] = React.useState(initialState.selectedCollateralTypeId);
 
   const fiat = useStore((state) => state.fiat);
   const fiatFromSigner = useStore((state) => state.fiatFromSigner);
@@ -74,6 +71,10 @@ const Home: NextPage = () => {
   const setTransactionData = useStore((state => state.setTransactionData));
   const modifyPositionData = useStore((state) => state.modifyPositionData);
   const setModifyPositionData = useStore((state) => state.setModifyPositionData);
+  const selectedCollateralTypeId = useStore((state) => state.selectedCollateralTypeId);
+  const setSelectedCollateralTypeId = useStore((state) => state.setSelectedCollateralTypeId);
+  const selectedPositionId = useStore((state) => state.selectedPositionId);
+  const setSelectedPositionId = useStore((state) => state.setSelectedPositionId);
   const resetStore = useStore((state) => state.resetStore);
 
   const { data: collateralTypesData } = useCollateralTypes(fiat, chain?.id ?? chains.mainnet.id);
@@ -454,33 +455,14 @@ const Home: NextPage = () => {
             ? null
             : (
               <>
-                <PositionsTable
-                  onSelectPosition={(positionId) => {
-                    setSelectedPositionId(positionId);
-                    setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
-                  }}
-                />
+                <PositionsTable />
                 <Spacer y={2} />
               </>
             )
         }
       </Container>
       <Container lg>
-        <CollateralTypesTable
-          onSelectCollateralType={(collateralTypeId) => {
-            // If user has an existing position for the collateral type then open PositionModal instead
-            const { vault, tokenId } = decodeCollateralTypeId(collateralTypeId);
-            const positionData = getPositionData(positionsData, vault, tokenId, proxies[0]);
-            if (positionData !== undefined) {
-              const positionId = encodePositionId(vault, tokenId, positionData.owner);
-              setSelectedPositionId(positionId);
-              setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
-            } else {
-              setSelectedPositionId(initialState.selectedPositionId);
-              setSelectedCollateralTypeId(collateralTypeId);
-            }
-          }}
-        />
+        <CollateralTypesTable />
       </Container>
 
       <PositionModal
@@ -492,8 +474,6 @@ const Home: NextPage = () => {
         buyCollateralAndIncreaseLever={buyCollateralAndIncreaseLever}
         sellCollateralAndDecreaseLever={sellCollateralAndDecreaseLever}
         redeemCollateralAndDecreaseLever={redeemCollateralAndDecreaseLever}
-        selectedPositionId={selectedPositionId}
-        selectedCollateralTypeId={selectedCollateralTypeId}
         setFIATAllowanceForProxy={setFIATAllowanceForProxy}
         unsetFIATAllowanceForProxy={unsetFIATAllowanceForProxy}
         setFIATAllowanceForMoneta={setFIATAllowanceForMoneta}
