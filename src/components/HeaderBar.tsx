@@ -64,11 +64,11 @@ export const HeaderBar = (props: any) => {
         justifyContent: 'space-between'
       }}>
         <Link href={'https://fiatdao.com'} target='_blank' rel='noreferrer noopener' >
-         <Text size="$xs">FIAT DAO - FIAT I</Text>
+         <Text size='$xs'>FIAT DAO - FIAT I</Text>
         </Link>
         <Tooltip content={syncStatus?.message} placement='left' css={{ whiteSpace: 'nowrap' }}>
-          <Badge color={syncStatus?.status ?? 'default'} variant="dot" css={{ alignSelf: 'center', marginRight: '3px' }}/>
-          <Text size="$xs">
+          <Badge color={syncStatus?.status ?? 'default'} variant='dot' css={{ alignSelf: 'center', marginRight: '3px' }}/>
+          <Text size='$xs'>
             {syncStatus?.subgraphBlockNumber}
           </Text>
         </Tooltip>
@@ -92,7 +92,7 @@ export const HeaderBar = (props: any) => {
                   href={'https://app.balancer.fi/#/ethereum/pool/0x178e029173417b1f9c8bc16dcec6f697bc32374600000000000000000000025d'}
                   target='_blank'
                   rel='noreferrer noopener'
-                  color="text"
+                  color='text'
                   >
                     {fiatBalance}
                 </Link>

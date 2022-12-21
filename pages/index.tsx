@@ -10,9 +10,7 @@ import { HeaderBar } from '../src/components/HeaderBar';
 import { CollateralTypesTable } from '../src/components/CollateralTypesTable';
 import { PositionsTable } from '../src/components/PositionsTable';
 import { PositionModal } from '../src/components/PositionModal/PositionModal';
-import {
-  decodeCollateralTypeId, decodePositionId, encodePositionId, getCollateralTypeData, getPositionData
-} from '../src/utils';
+import { decodeCollateralTypeId, decodePositionId, getCollateralTypeData, getPositionData } from '../src/utils';
 import * as userActions from '../src/actions';
 import { useBorrowStore } from '../src/state/stores/borrowStore';
 import { collateralTypesKey, useCollateralTypes } from '../src/state/queries/useCollateralTypes';

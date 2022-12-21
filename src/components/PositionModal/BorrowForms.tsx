@@ -1,5 +1,5 @@
 import { scaleToDec, wadToDec } from '@fiatdao/sdk';
-import { Button, Card, Grid, Input, Loading, Modal, Spacer, Switch, Text } from '@nextui-org/react';
+import { Button, Card, Grid, Input, Loading, Modal, Row, Spacer, Switch, Text } from '@nextui-org/react';
 import { Slider } from 'antd';
 import 'antd/dist/antd.css';
 import { BigNumber, ethers } from 'ethers';
@@ -294,40 +294,46 @@ export const CreateForm = ({
 
       </Modal.Body>
       <Modal.Footer justify='space-evenly'>
-        <Text size={'0.875rem'}>Approve {underlierSymbol}</Text>
-        <Switch
-          disabled={disableActions || !hasProxy}
-          // Next UI Switch `checked` type is wrong, this is necessary
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
-          checked={() => underlierAllowance?.gt(0) && underlierAllowance?.gte(borrowStore.createState.underlier) ?? false}
-          onChange={async () => {
-            if (!borrowStore.createState.underlier.isZero() && underlierAllowance?.gte(borrowStore.createState.underlier)) {
-              try {
-                setSubmitError('');
-                await unsetUnderlierAllowanceForProxy(fiat);
-              } catch (e: any) {
-                setSubmitError(e.message);
+        <Card variant='bordered'>
+          <Card.Body>
+          <Row justify='flex-start'>
+            <Switch
+              disabled={disableActions || !hasProxy}
+              // Next UI Switch `checked` type is wrong, this is necessary
+              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+              // @ts-ignore
+              checked={() => underlierAllowance?.gt(0) && underlierAllowance?.gte(borrowStore.createState.underlier) ?? false}
+              onChange={async () => {
+                if (!borrowStore.createState.underlier.isZero() && underlierAllowance?.gte(borrowStore.createState.underlier)) {
+                  try {
+                    setSubmitError('');
+                    await unsetUnderlierAllowanceForProxy(fiat);
+                  } catch (e: any) {
+                    setSubmitError(e.message);
+                  }
+                } else {
+                  try {
+                    setSubmitError('');
+                    await setUnderlierAllowanceForProxy(fiat, borrowStore.createState.underlier);
+                  } catch (e: any) {
+                    setSubmitError(e.message);
+                  }
+                }
+              }}
+              color='primary'
+              icon={
+                ['setUnderlierAllowanceForProxy', 'unsetUnderlierAllowanceForProxy'].includes(currentTxAction || '') && disableActions ? (
+                  <Loading size='xs' />
+              ) : null
               }
-            } else {
-              try {
-                setSubmitError('');
-                await setUnderlierAllowanceForProxy(fiat, borrowStore.createState.underlier);
-              } catch (e: any) {
-                setSubmitError(e.message);
-              }
-            }
-          }}
-          color='primary'
-          icon={
-            ['setUnderlierAllowanceForProxy', 'unsetUnderlierAllowanceForProxy'].includes(currentTxAction || '') && disableActions ? (
-              <Loading size='xs' />
-          ) : null
-          }
-        />
-        <Spacer y={3} />
-        { renderFormAlerts() }
+            />
+            <Spacer x={0.5} />
+            <Text>Allow <code>FIAT I</code> to transfer your {underlierSymbol}</Text>
+          </Row>
+          </Card.Body>
+        </Card>
         <Spacer y={0.5} />
+        { renderFormAlerts() }
         <Button
           css={{ minWidth: '100%' }}
           disabled={
@@ -522,42 +528,46 @@ export const IncreaseForm = ({
       </Modal.Body>
 
       <Modal.Footer justify='space-evenly'>
-        <Text size={'0.875rem'}>Approve {modifyPositionData.collateralType.properties.underlierSymbol}</Text>
-        <Switch
-          disabled={disableActions || !hasProxy}
-          // Next UI Switch `checked` type is wrong, this is necessary
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
-          checked={() => modifyPositionData.underlierAllowance?.gt(0) && modifyPositionData.underlierAllowance?.gte(borrowStore.increaseState.underlier) ?? false}
-          onChange={async () => {
-            if(!borrowStore.increaseState.underlier.isZero() && modifyPositionData.underlierAllowance.gte(borrowStore.increaseState.underlier)) {
-              try {
-                setSubmitError('');
-                await unsetUnderlierAllowanceForProxy(fiat);
-              } catch (e: any) {
-                setSubmitError(e.message);
+        <Card variant='bordered'>
+          <Card.Body>
+          <Row justify='flex-start'>
+            <Switch
+              disabled={disableActions || !hasProxy}
+              // Next UI Switch `checked` type is wrong, this is necessary
+              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+              // @ts-ignore
+              checked={() => modifyPositionData.underlierAllowance?.gt(0) && modifyPositionData.underlierAllowance?.gte(borrowStore.increaseState.underlier) ?? false}
+              onChange={async () => {
+                if(!borrowStore.increaseState.underlier.isZero() && modifyPositionData.underlierAllowance.gte(borrowStore.increaseState.underlier)) {
+                  try {
+                    setSubmitError('');
+                    await unsetUnderlierAllowanceForProxy(fiat);
+                  } catch (e: any) {
+                    setSubmitError(e.message);
+                  }
+                } else {
+                  try {
+                    setSubmitError('');
+                    await setUnderlierAllowanceForProxy(fiat, borrowStore.increaseState.underlier)
+                  } catch (e: any) {
+                    setSubmitError(e.message);
+                  }
+                }
+              }}
+              color='primary'
+              icon={
+                ['setUnderlierAllowanceForProxy', 'unsetUnderlierAllowanceForProxy'].includes(currentTxAction || '') && disableActions ? (
+                  <Loading size='xs' />
+                ) : null
               }
-            } else {
-              try {
-                setSubmitError('');
-                await setUnderlierAllowanceForProxy(fiat, borrowStore.increaseState.underlier)
-              } catch (e: any) {
-                setSubmitError(e.message);
-              }
-            }
-          }}
-          color='primary'
-          icon={
-            ['setUnderlierAllowanceForProxy', 'unsetUnderlierAllowanceForProxy'].includes(currentTxAction || '') && disableActions ? (
-              <Loading size='xs' />
-            ) : null
-          }
-        />
-
-        <Spacer y={3} />
-
+            />
+            <Spacer x={0.5} />
+            <Text>Allow <code>FIAT I</code> to transfer your {modifyPositionData.collateralType.properties.underlierSymbol}</Text>
+          </Row>
+          </Card.Body>
+        </Card>
+        <Spacer y={0.5} />
         { renderFormAlerts() }
-
         <Button
           css={{ minWidth: '100%' }}
           disabled={(() => {
@@ -772,70 +782,85 @@ export const DecreaseForm = ({
       </Modal.Body>
 
       <Modal.Footer justify='space-evenly'>
-        <Text size={'0.875rem'}>Approve FIAT for Proxy</Text>
-        <Switch
-          disabled={disableActions || !hasProxy}
-          // Next UI Switch `checked` type is wrong, this is necessary
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
-          checked={() => (modifyPositionData.proxyFIATAllowance?.gt(0) && modifyPositionData.proxyFIATAllowance?.gte(borrowStore.decreaseState.deltaDebt) ?? false)}
-          onChange={async () => {
-            if (borrowStore.decreaseState.deltaDebt.gt(0) && modifyPositionData.proxyFIATAllowance.gte(borrowStore.decreaseState.deltaDebt)) {
-              try {
-                setSubmitError('');
-                await unsetFIATAllowanceForProxy(fiat);
-              } catch (e: any) {
-                setSubmitError(e.message);
-              }
-            } else {
-              try {
-                setSubmitError('');
-                await setFIATAllowanceForProxy(fiat, borrowStore.decreaseState.deltaDebt);
-              } catch (e: any) {
-                setSubmitError(e.message);
-              }
-            }
-          }}
-          color='primary'
-          icon={
-            ['setFIATAllowanceForProxy', 'unsetFIATAllowanceForProxy'].includes(currentTxAction || '') && disableActions ? (
-              <Loading size='xs' />
-            ) : null
-          }
-        />
-
-        <Spacer y={3} />
-
-        {modifyPositionData.monetaFIATAllowance?.lt(borrowStore.decreaseState.deltaDebt) && (
-          <>
-            <Spacer y={3} />
-            <Button
-              css={{ minWidth: '100%' }}
-              disabled={(() => {
-                if (disableActions || !hasProxy) return true;
-                if (modifyPositionData.monetaFIATAllowance?.gt(0) && modifyPositionData.monetaFIATAllowance?.gte(borrowStore.decreaseState.deltaDebt)) return true;
-                return false;
-              })()}
-              icon={(['setFIATAllowanceForMoneta'].includes(currentTxAction || '') && disableActions)
-                ? (<Loading size='xs' />)
-                : null
-              }
-              onPress={async () => {
-                try {
-                  setSubmitError('');
-                  await setFIATAllowanceForMoneta(fiat);
-                } catch (e: any) {
-                  setSubmitError(e.message);
+        <Card variant='bordered'>
+          <Card.Body>
+            <Row justify='flex-start'>
+              <Switch
+                disabled={disableActions || !hasProxy}
+                // Next UI Switch `checked` type is wrong, this is necessary
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-ignore
+                checked={() => (modifyPositionData.proxyFIATAllowance?.gt(0) && modifyPositionData.proxyFIATAllowance?.gte(borrowStore.decreaseState.deltaDebt) ?? false)}
+                onChange={async () => {
+                  if (borrowStore.decreaseState.deltaDebt.gt(0) && modifyPositionData.proxyFIATAllowance.gte(borrowStore.decreaseState.deltaDebt)) {
+                    try {
+                      setSubmitError('');
+                      await unsetFIATAllowanceForProxy(fiat);
+                    } catch (e: any) {
+                      setSubmitError(e.message);
+                    }
+                  } else {
+                    try {
+                      setSubmitError('');
+                      await setFIATAllowanceForProxy(fiat, borrowStore.decreaseState.deltaDebt);
+                    } catch (e: any) {
+                      setSubmitError(e.message);
+                    }
+                  }
+                }}
+                color='primary'
+                icon={
+                  ['setFIATAllowanceForProxy', 'unsetFIATAllowanceForProxy'].includes(currentTxAction || '') && disableActions ? (
+                    <Loading size='xs' />
+                  ) : null
                 }
-              }}
-            >
-              Approve FIAT for Moneta (One Time Action)
-            </Button>
-          </>
-        )}
-
+              />
+              <Spacer x={0.5} />
+              <Text>Allow <code>Proxy</code> to transfer your FIAT</Text>
+            </Row>
+            {modifyPositionData.monetaFIATAllowance?.lt(borrowStore.decreaseState.deltaDebt) && (
+              <>
+                <Spacer x={0.5} />
+                <Row justify='flex-start'>
+                  <Switch
+                    disabled={disableActions || !hasProxy}
+                    // Next UI Switch `checked` type is wrong, this is necessary
+                    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                    // @ts-ignore
+                    checked={() => (modifyPositionData.monetaFIATAllowance?.gt(0) && modifyPositionData.monetaFIATAllowance?.gte(borrowStore.decreaseState.deltaDebt) ?? false)}
+                    onChange={async () => {
+                      if (borrowStore.decreaseState.deltaDebt.gt(0) && modifyPositionData.monetaFIATAllowance.gte(borrowStore.decreaseState.deltaDebt)) {
+                        try {
+                          setSubmitError('');
+                          // await unsetFIATAllowanceForMoneta(fiat);
+                        } catch (e: any) {
+                          setSubmitError(e.message);
+                        }
+                      } else {
+                        try {
+                          setSubmitError('');
+                          await setFIATAllowanceForMoneta(fiat);
+                        } catch (e: any) {
+                          setSubmitError(e.message);
+                        }
+                      }
+                    }}
+                    color='primary'
+                    icon={
+                      ['setFIATAllowanceForMoneta', 'unsetFIATAllowanceForMoneta'].includes(currentTxAction || '') && disableActions ? (
+                        <Loading size='xs' />
+                      ) : null
+                    }
+                  />
+                  <Spacer x={0.5} />
+                  <Text>Allow <code>FIAT I</code> to transfer your FIAT (One Time)</Text>
+                </Row>
+              </>
+            )}
+          </Card.Body>
+        </Card>
+        <Spacer y={0.5} />
         { renderFormAlerts() }
-
         <Button
           css={{ minWidth: '100%' }}
           disabled={(() => {
@@ -999,68 +1024,85 @@ export const RedeemForm = ({
       </Modal.Body>
 
       <Modal.Footer justify='space-evenly'>
-        <Text size={'0.875rem'}>Approve FIAT for Proxy</Text>
-        <Switch
-          disabled={disableActions || !hasProxy}
-          // Next UI Switch `checked` type is wrong, this is necessary
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
-          checked={() => (modifyPositionData.proxyFIATAllowance?.gt(0) && modifyPositionData.proxyFIATAllowance?.gte(borrowStore.redeemState.deltaDebt) ?? false)}
-          onChange={async () => {
-            if (borrowStore.redeemState.deltaDebt.gt(0) && modifyPositionData.proxyFIATAllowance.gte(borrowStore.redeemState.deltaDebt)) {
-              try {
-                setSubmitError('');
-                await unsetFIATAllowanceForProxy(fiat);
-              } catch (e: any) {
-                setSubmitError(e.message);
-              }
-            } else {
-              try {
-                setSubmitError('');
-                await setFIATAllowanceForProxy(fiat, borrowStore.redeemState.deltaDebt);
-              } catch (e: any) {
-                setSubmitError(e.message);
-              }
-            }
-          }}
-          color='primary'
-          icon={
-            ['setFIATAllowanceForProxy', 'unsetFIATAllowanceForProxy'].includes(currentTxAction || '') && disableActions ? (
-              <Loading size='xs' />
-          ) : null
-          }
-        />
-
-        <Spacer y={3} />
-
-        {modifyPositionData.monetaFIATAllowance?.lt(borrowStore.redeemState.deltaDebt) && (
-          <>
-            <Spacer y={3} />
-            <Button
-              css={{ minWidth: '100%' }}
-              disabled={(() => {
-                if (disableActions || !hasProxy) return true;
-                if (modifyPositionData.monetaFIATAllowance?.gt(0) && modifyPositionData.monetaFIATAllowance?.gte(borrowStore.redeemState.deltaDebt)) return true;
-                return false;
-              })()}
-              icon={(['setFIATAllowanceForMoneta'].includes(currentTxAction || '') && disableActions)
-                ? (<Loading size='xs' />)
-                : null
-              }
-              onPress={async () => {
-                try {
-                  setSubmitError('');
-                  await setFIATAllowanceForMoneta(fiat);
-                } catch (e: any) {
-                  setSubmitError(e.message);
+        <Card variant='bordered'>
+          <Card.Body>
+            <Row justify='flex-start'>
+              <Switch
+                disabled={disableActions || !hasProxy}
+                // Next UI Switch `checked` type is wrong, this is necessary
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-ignore
+                checked={() => (modifyPositionData.proxyFIATAllowance?.gt(0) && modifyPositionData.proxyFIATAllowance?.gte(borrowStore.redeemState.deltaDebt) ?? false)}
+                onChange={async () => {
+                  if (borrowStore.redeemState.deltaDebt.gt(0) && modifyPositionData.proxyFIATAllowance.gte(borrowStore.redeemState.deltaDebt)) {
+                    try {
+                      setSubmitError('');
+                      await unsetFIATAllowanceForProxy(fiat);
+                    } catch (e: any) {
+                      setSubmitError(e.message);
+                    }
+                  } else {
+                    try {
+                      setSubmitError('');
+                      await setFIATAllowanceForProxy(fiat, borrowStore.redeemState.deltaDebt);
+                    } catch (e: any) {
+                      setSubmitError(e.message);
+                    }
+                  }
+                }}
+                color='primary'
+                icon={
+                  ['setFIATAllowanceForProxy', 'unsetFIATAllowanceForProxy'].includes(currentTxAction || '') && disableActions ? (
+                    <Loading size='xs' />
+                ) : null
                 }
-              }}
-            >
-              Approve FIAT for Moneta (One Time Action)
-            </Button>
-          </>
-        )}
+              />
+              <Spacer x={0.5} />
+              <Text>Allow <code>Proxy</code> to transfer your FIAT</Text>
+            </Row>
+            {modifyPositionData.monetaFIATAllowance?.lt(borrowStore.redeemState.deltaDebt) && (
+              <>
+                <Spacer x={0.5} />
+                <Row justify='flex-start'>
+                  <Switch
+                    disabled={disableActions || !hasProxy}
+                    // Next UI Switch `checked` type is wrong, this is necessary
+                    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                    // @ts-ignore
+                    checked={() => (modifyPositionData.monetaFIATAllowance?.gt(0) && modifyPositionData.monetaFIATAllowance?.gte(borrowStore.redeemState.deltaDebt) ?? false)}
+                    onChange={async () => {
+                      if (borrowStore.redeemState.deltaDebt.gt(0) && modifyPositionData.monetaFIATAllowance.gte(borrowStore.redeemState.deltaDebt)) {
+                        try {
+                          setSubmitError('');
+                          // await unsetFIATAllowanceForMoneta(fiat);
+                        } catch (e: any) {
+                          setSubmitError(e.message);
+                        }
+                      } else {
+                        try {
+                          setSubmitError('');
+                          await setFIATAllowanceForMoneta(fiat);
+                        } catch (e: any) {
+                          setSubmitError(e.message);
+                        }
+                      }
+                    }}
+                    color='primary'
+                    icon={
+                      ['setFIATAllowanceForMoneta', 'unsetFIATAllowanceForMoneta'].includes(currentTxAction || '') && disableActions ? (
+                        <Loading size='xs' />
+                      ) : null
+                    }
+                  />
+                  <Spacer x={0.5} />
+                  <Text>Allow <code>FIAT I</code> to transfer your FIAT (One Time)</Text>
+                </Row>
+              </>
+            )}
+          </Card.Body>
+        </Card>
 
+        <Spacer y={0.5} />
         { renderFormAlerts() }
 
         <Button

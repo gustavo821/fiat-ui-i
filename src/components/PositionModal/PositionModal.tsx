@@ -201,11 +201,11 @@ const PositionModalBody = (props: PositionModalProps) => {
         <Dropdown isDisabled={disableActions} >
           <Dropdown.Button css={{ width: '50%' }} >{`Mode: ${(!leverModeActive) ? 'Borrow' : 'Leverage'}`}</Dropdown.Button>
           <Dropdown.Menu
-            aria-label="Static Actions"
+            aria-label='Static Actions'
             onAction={(key) => setLeverModeActive(key === 'Leverage')}
           >
-            <Dropdown.Item key="Borrow">Borrow</Dropdown.Item>
-            <Dropdown.Item key="Leverage">Leverage</Dropdown.Item>
+            <Dropdown.Item key='Borrow'>Borrow</Dropdown.Item>
+            <Dropdown.Item key='Leverage'>Leverage</Dropdown.Item>
           </Dropdown.Menu>
         </Dropdown>
         </Modal.Header>

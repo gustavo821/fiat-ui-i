@@ -1,5 +1,5 @@
 import { computeCollateralizationRatio, scaleToDec, WAD, wadToDec } from '@fiatdao/sdk';
-import { Button, Card, Grid, Input, Loading, Modal, Spacer, Switch, Text } from '@nextui-org/react';
+import { Button, Card, Grid, Input, Loading, Modal, Row, Spacer, Switch, Text } from '@nextui-org/react';
 import { Slider } from 'antd';
 import 'antd/dist/antd.css';
 import { BigNumber, ethers } from 'ethers';
@@ -289,40 +289,46 @@ export const LeverCreateForm = ({
 
       </Modal.Body>
       <Modal.Footer justify='space-evenly'>
-        <Text size={'0.875rem'}>Approve {underlierSymbol}</Text>
-        <Switch
-          disabled={disableActions || !hasProxy}
-          // Next UI Switch `checked` type is wrong, this is necessary
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
-          checked={() => underlierAllowance?.gt(0) && underlierAllowance?.gte(upFrontUnderliers) ?? false}
-          onChange={async () => {
-            if (!upFrontUnderliers.isZero() && underlierAllowance?.gte(upFrontUnderliers)) {
-              try {
-                setSubmitError('');
-                await unsetUnderlierAllowanceForProxy(fiat);
-              } catch (e: any) {
-                setSubmitError(e.message);
+        <Card variant='bordered'>
+          <Card.Body>
+          <Row justify='flex-start'>
+            <Switch
+              disabled={disableActions || !hasProxy}
+              // Next UI Switch `checked` type is wrong, this is necessary
+              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+              // @ts-ignore
+              checked={() => underlierAllowance?.gt(0) && underlierAllowance?.gte(upFrontUnderliers) ?? false}
+              onChange={async () => {
+                if (!upFrontUnderliers.isZero() && underlierAllowance?.gte(upFrontUnderliers)) {
+                  try {
+                    setSubmitError('');
+                    await unsetUnderlierAllowanceForProxy(fiat);
+                  } catch (e: any) {
+                    setSubmitError(e.message);
+                  }
+                } else {
+                  try {
+                    setSubmitError('');
+                    await setUnderlierAllowanceForProxy(fiat, upFrontUnderliers);
+                  } catch (e: any) {
+                    setSubmitError(e.message);
+                  }
+                }
+              }}
+              color='primary'
+              icon={
+                ['setUnderlierAllowanceForProxy', 'unsetUnderlierAllowanceForProxy'].includes(currentTxAction || '') && disableActions ? (
+                  <Loading size='xs' />
+              ) : null
               }
-            } else {
-              try {
-                setSubmitError('');
-                await setUnderlierAllowanceForProxy(fiat, upFrontUnderliers);
-              } catch (e: any) {
-                setSubmitError(e.message);
-              }
-            }
-          }}
-          color='primary'
-          icon={
-            ['setUnderlierAllowanceForProxy', 'unsetUnderlierAllowanceForProxy'].includes(currentTxAction || '') && disableActions ? (
-              <Loading size='xs' />
-          ) : null
-          }
-        />
-        <Spacer y={3} />
-        { renderFormAlerts() }
+            />
+            <Spacer x={0.5} />
+            <Text>Allow <code>FIAT I</code> to transfer your {underlierSymbol}</Text>
+          </Row>
+          </Card.Body>
+        </Card>
         <Spacer y={0.5} />
+        { renderFormAlerts() }
         <Button
           css={{ minWidth: '100%' }}
           disabled={
@@ -629,42 +635,46 @@ export const LeverIncreaseForm = ({
       </Modal.Body>
 
       <Modal.Footer justify='space-evenly'>
-        <Text size={'0.875rem'}>Approve {underlierSymbol}</Text>
-        <Switch
-          disabled={disableActions || !hasProxy}
-          // Next UI Switch `checked` type is wrong, this is necessary
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
-          checked={() => underlierAllowance?.gt(0) && underlierAllowance?.gte(upFrontUnderliers) ?? false}
-          onChange={async () => {
-            if(!upFrontUnderliers.isZero() && underlierAllowance.gte(upFrontUnderliers)) {
-              try {
-                setSubmitError('');
-                await unsetUnderlierAllowanceForProxy(fiat);
-              } catch (e: any) {
-                setSubmitError(e.message);
+        <Card variant='bordered'>
+          <Card.Body>
+          <Row justify='flex-start'>
+            <Switch
+              disabled={disableActions || !hasProxy}
+              // Next UI Switch `checked` type is wrong, this is necessary
+              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+              // @ts-ignore
+              checked={() => underlierAllowance?.gt(0) && underlierAllowance?.gte(upFrontUnderliers) ?? false}
+              onChange={async () => {
+                if(!upFrontUnderliers.isZero() && underlierAllowance.gte(upFrontUnderliers)) {
+                  try {
+                    setSubmitError('');
+                    await unsetUnderlierAllowanceForProxy(fiat);
+                  } catch (e: any) {
+                    setSubmitError(e.message);
+                  }
+                } else {
+                  try {
+                    setSubmitError('');
+                    await setUnderlierAllowanceForProxy(fiat, upFrontUnderliers)
+                  } catch (e: any) {
+                    setSubmitError(e.message);
+                  }
+                }
+              }}
+              color='primary'
+              icon={
+                ['setUnderlierAllowanceForProxy', 'unsetUnderlierAllowanceForProxy'].includes(currentTxAction || '') && disableActions ? (
+                  <Loading size='xs' />
+                ) : null
               }
-            } else {
-              try {
-                setSubmitError('');
-                await setUnderlierAllowanceForProxy(fiat, upFrontUnderliers)
-              } catch (e: any) {
-                setSubmitError(e.message);
-              }
-            }
-          }}
-          color='primary'
-          icon={
-            ['setUnderlierAllowanceForProxy', 'unsetUnderlierAllowanceForProxy'].includes(currentTxAction || '') && disableActions ? (
-              <Loading size='xs' />
-            ) : null
-          }
-        />
-
-        <Spacer y={3} />
-
+            />
+            <Spacer x={0.5} />
+            <Text>Allow <code>FIAT I</code> to transfer your {underlierSymbol}</Text>
+          </Row>
+          </Card.Body>
+        </Card>
+        <Spacer y={0.5} />
         { renderFormAlerts() }
-
         <Button
           css={{ minWidth: '100%' }}
           disabled={(() => {
@@ -973,14 +983,11 @@ export const LeverDecreaseForm = ({
           size='sm'
           status='primary'
         />
-
         {/* renderSummary() */}
-
       </Modal.Body>
 
       <Modal.Footer justify='space-evenly'>
         { renderFormAlerts() }
-
         <Button
           css={{ minWidth: '100%' }}
           disabled={(() => {
@@ -1278,14 +1285,11 @@ export const LeverRedeemForm = ({
           size='sm'
           status='primary'
         />
-
         {/* renderSummary() */}
-
       </Modal.Body>
 
       <Modal.Footer justify='space-evenly'>
         { renderFormAlerts() }
-
         <Button
           css={{ minWidth: '100%' }}
           disabled={(() => {
