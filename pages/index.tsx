@@ -5,7 +5,7 @@ import shallow from 'zustand/shallow'
 import { useAddRecentTransaction } from '@rainbow-me/rainbowkit';
 import { Container, Spacer } from '@nextui-org/react';
 import { BigNumber, ContractReceipt, ethers } from 'ethers';
-import { FIAT, WAD } from '@fiatdao/sdk';
+import { WAD } from '@fiatdao/sdk';
 import { HeaderBar } from '../src/components/HeaderBar';
 import { CollateralTypesTable } from '../src/components/CollateralTypesTable';
 import { PositionsTable } from '../src/components/PositionsTable';
@@ -19,34 +19,13 @@ import { collateralTypesKey, useCollateralTypes } from '../src/state/queries/use
 import { userDataKey, useUserData } from '../src/state/queries/useUserData';
 import { useQueryClient } from '@tanstack/react-query';
 import { fiatBalanceKey } from '../src/state/queries/useFiatBalance';
-import useStore from '../src/state/stores/globalStore';
-
-export type TransactionStatus = null | 'error' | 'sent' | 'confirming' | 'confirmed';
+import useStore, { initialState } from '../src/state/stores/globalStore';
 
 const Home: NextPage = () => {
   const provider = useProvider();
   const { address, connector } = useAccount({ onConnect: () => resetState(), onDisconnect: () => resetState() });
   const { chain } = useNetwork();
   const addRecentTransaction = useAddRecentTransaction();
-
-  const initialState = React.useMemo(() => ({
-    setupListeners: false,
-    selectedPositionId: null as null | string,
-    selectedCollateralTypeId: null as null | string,
-    modifyPositionData: {
-      outdated: false,
-      collateralType: null as undefined | null | any,
-      position: null as undefined | null | any,
-      underlierAllowance: null as null | BigNumber, // [underlierScale]
-      underlierBalance: null as null | BigNumber, // [underlierScale]
-      monetaFIATAllowance: null as null | BigNumber, // [wad]
-      proxyFIATAllowance: null as null | BigNumber, // [wad]
-    },
-    transactionData: {
-      action: null as null | string,
-      status: null as TransactionStatus,
-    },
-  }), []) 
 
   // Only select necessary actions off of the store to minimize re-renders
   const borrowStore = useBorrowStore(
@@ -62,10 +41,6 @@ const Home: NextPage = () => {
 
   const [initialPageLoad, setInitialPageLoad] = React.useState<boolean>(true);
   const [setupListeners, setSetupListeners] = React.useState(false);
-  const [modifyPositionData, setModifyPositionData] = React.useState(initialState.modifyPositionData);
-  const [transactionData, setTransactionData] = React.useState(initialState.transactionData);
-  const [selectedPositionId, setSelectedPositionId] = React.useState(initialState.selectedPositionId);
-  const [selectedCollateralTypeId, setSelectedCollateralTypeId] = React.useState(initialState.selectedCollateralTypeId);
 
   const fiat = useStore((state) => state.fiat);
   const fiatFromSigner = useStore((state) => state.fiatFromSigner);
@@ -73,21 +48,24 @@ const Home: NextPage = () => {
   const user = useStore((state) => state.user);
   const setUser = useStore((state) => state.setUser);
   const setExplorerUrl = useStore((state) => state.setExplorerUrl);
+  const transactionData = useStore((state => state.transactionData));
+  const setTransactionData = useStore((state => state.setTransactionData));
+  const modifyPositionData = useStore((state) => state.modifyPositionData);
+  const setModifyPositionData = useStore((state) => state.setModifyPositionData);
+  const selectedCollateralTypeId = useStore((state) => state.selectedCollateralTypeId);
+  const setSelectedCollateralTypeId = useStore((state) => state.setSelectedCollateralTypeId);
+  const selectedPositionId = useStore((state) => state.selectedPositionId);
+  const setSelectedPositionId = useStore((state) => state.setSelectedPositionId);
+  const softResetStore = useStore((state) => state.softResetStore);
   const resetStore = useStore((state) => state.resetStore);
 
   const { data: collateralTypesData } = useCollateralTypes(fiat, chain?.id ?? chains.mainnet.id);
   const { data: userData } = useUserData(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
   const { positionsData, proxies } = userData as any;
 
-  const disableActions = React.useMemo(() => transactionData.status === 'sent', [transactionData.status])
-
   // eslint-disable-next-line react-hooks/exhaustive-deps
   function resetState() {
-    setSetupListeners(initialState.setupListeners);
-    setModifyPositionData(initialState.modifyPositionData);
-    setTransactionData(initialState.transactionData);
-    setSelectedPositionId(initialState.selectedPositionId);
-    setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
+    setSetupListeners(false);
     resetStore();
     queryClient.invalidateQueries(userDataKey.all);
     queryClient.invalidateQueries(fiatBalanceKey.all);
@@ -95,10 +73,7 @@ const Home: NextPage = () => {
 
   const softReset = () => {
     // Soft reset after a transaction
-    setModifyPositionData(initialState.modifyPositionData);
-    setTransactionData(initialState.transactionData);
-    setSelectedPositionId(initialState.selectedPositionId);
-    setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
+    softResetStore();
     // Refetch data after a reset
     queryClient.invalidateQueries(collateralTypesKey.all);
     queryClient.invalidateQueries(userDataKey.all);
@@ -188,7 +163,7 @@ const Home: NextPage = () => {
       });
     })();
 
-  }, [connector, collateralTypesData, positionsData, selectedCollateralTypeId, selectedPositionId, modifyPositionData, borrowStore, proxies, fiat]);
+  }, [connector, collateralTypesData, positionsData, selectedCollateralTypeId, selectedPositionId, modifyPositionData, setModifyPositionData, borrowStore, proxies, fiat]);
 
   const sendTransaction = async (
     fiat: any, useProxy: boolean, action: string, contract: ethers.Contract, method: string, ...args: any[]
@@ -447,9 +422,7 @@ const Home: NextPage = () => {
 
   return (
     <div>
-      <HeaderBar 
-        transactionData={transactionData}
-        disableActions={disableActions}
+      <HeaderBar
         createProxy={createProxy}
       />
       <Container lg>
@@ -458,38 +431,17 @@ const Home: NextPage = () => {
             ? null
             : (
               <>
-                <PositionsTable
-                  onSelectPosition={(positionId) => {
-                    setSelectedPositionId(positionId);
-                    setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
-                  }}
-                />
+                <PositionsTable />
                 <Spacer y={2} />
               </>
             )
         }
       </Container>
       <Container lg>
-        <CollateralTypesTable
-          onSelectCollateralType={(collateralTypeId) => {
-            // If user has an existing position for the collateral type then open PositionModal instead
-            const { vault, tokenId } = decodeCollateralTypeId(collateralTypeId);
-            const positionData = getPositionData(positionsData, vault, tokenId, proxies[0]);
-            if (positionData !== undefined) {
-              const positionId = encodePositionId(vault, tokenId, positionData.owner);
-              setSelectedPositionId(positionId);
-              setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
-            } else {
-              setSelectedPositionId(initialState.selectedPositionId);
-              setSelectedCollateralTypeId(collateralTypeId);
-            }
-          }}
-        />
+        <CollateralTypesTable />
       </Container>
 
       <PositionModal
-        modifyPositionData={modifyPositionData}
-        disableActions={disableActions}
         createPosition={createPosition}
         buyCollateralAndModifyDebt={buyCollateralAndModifyDebt}
         sellCollateralAndModifyDebt={sellCollateralAndModifyDebt}
@@ -498,17 +450,11 @@ const Home: NextPage = () => {
         buyCollateralAndIncreaseLever={buyCollateralAndIncreaseLever}
         sellCollateralAndDecreaseLever={sellCollateralAndDecreaseLever}
         redeemCollateralAndDecreaseLever={redeemCollateralAndDecreaseLever}
-        selectedPositionId={selectedPositionId}
-        selectedCollateralTypeId={selectedCollateralTypeId}
         setFIATAllowanceForProxy={setFIATAllowanceForProxy}
         unsetFIATAllowanceForProxy={unsetFIATAllowanceForProxy}
         setFIATAllowanceForMoneta={setFIATAllowanceForMoneta}
         setUnderlierAllowanceForProxy={setUnderlierAllowanceForProxy}
         unsetUnderlierAllowanceForProxy={unsetUnderlierAllowanceForProxy}
-        transactionData={transactionData}
-        setTransactionStatus={(status) =>
-          setTransactionData({ ...transactionData, status })
-        }
         open={!!modifyPositionData && (!!selectedCollateralTypeId || !!selectedPositionId)}
         onClose={() => {
           setSelectedPositionId(initialState.selectedPositionId);

@@ -6,8 +6,6 @@ import { useUserData } from '../state/queries/useUserData';
 import useStore from '../state/stores/globalStore';
 
 interface ProxyCardProps {
-  disableActions: boolean;
-  transactionData: any;
   createProxy: (fiat: any, user: string) => any;
 }
 
@@ -33,6 +31,8 @@ export const ProxyButton = (props: ProxyCardProps) => {
   const fiat = useStore((state) => state.fiat);
   const user = useStore((state) => state.user);
   const explorerUrl = useStore((state) => state.explorerUrl);
+  const disableActions = useStore((state) => state.disableActions);
+  const transactionData = useStore((state) => state.transactionData);
 
   const { data: userData } = useUserData(fiat, chain?.id ?? chains.mainnet.id, user ?? '');
   const { proxies } = userData as any;
@@ -75,12 +75,12 @@ export const ProxyButton = (props: ProxyCardProps) => {
           }
         }
       }}
-      disabled={props.disableActions}
+      disabled={disableActions}
       style={{marginRight: '10px'}} 
       icon={
         [
           'createProxy',
-        ].includes(props.transactionData.action || '') && props.disableActions ? (
+        ].includes(transactionData.action || '') && disableActions ? (
           <Loading size='xs' />
         ) : null
       }

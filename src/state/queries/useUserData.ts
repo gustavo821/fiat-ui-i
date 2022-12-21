@@ -11,6 +11,7 @@ export function useUserData(fiat: any, chainId: number, userAddress: string) {
     queryKey: userDataKey.chainAndAddress(chainId, userAddress),
     queryFn: async () => {
       if (!fiat || !userAddress) {
+        useStore.setState({hasProxy: false});
         return {
           positionsData: [],
           proxies: []

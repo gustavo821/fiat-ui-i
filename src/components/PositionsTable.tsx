@@ -11,17 +11,15 @@ import { useCollateralTypes } from '../state/queries/useCollateralTypes';
 import { useUserData } from '../state/queries/useUserData';
 import useStore from '../state/stores/globalStore';
 
-interface PositionsTableProps {
-  onSelectPosition: (positionId: string) => void
-}
-
-export const PositionsTable = (props: PositionsTableProps) => {
+export const PositionsTable = () => {
   const [sortedData, setSortedData] = React.useState<any[]>([]);
   const [sortProps, setSortProps] = React.useState<SortDescriptor>({
     column: 'Maturity',
     direction: 'descending'
   });
   const fiat = useStore((state) => state.fiat);
+  const setSelectedPositionId = useStore((state) => state.setSelectedPositionId);
+  const setSelectedCollateralTypeId = useStore((state) => state.setSelectedCollateralTypeId);
   const { chain } = useNetwork();
   const { address } = useAccount();
   const { data: collateralTypesData } = useCollateralTypes(fiat, chain?.id ?? chains.mainnet.id);
@@ -59,9 +57,10 @@ export const PositionsTable = (props: PositionsTableProps) => {
         css={{ height: 'auto', minWidth: '1088px' }}
         selectionMode='single'
         selectedKeys={'1'}
-        onSelectionChange={(selected) =>
-          props.onSelectPosition(Object.values(selected)[0])
-        }
+        onSelectionChange={(selected) => {
+          setSelectedPositionId(Object.values(selected)[0])
+          setSelectedCollateralTypeId(null)
+        }}
         sortDescriptor={sortProps as SortDescriptor}
         disabledKeys={sortedData.filter(({ vault, tokenId }) => (
           getCollateralTypeData(collateralTypesData, vault, tokenId) === undefined

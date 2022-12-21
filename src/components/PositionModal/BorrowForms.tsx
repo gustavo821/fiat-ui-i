@@ -4,9 +4,7 @@ import { Slider } from 'antd';
 import 'antd/dist/antd.css';
 import { BigNumber, ethers } from 'ethers';
 import React, {useMemo} from 'react';
-import { chain as chains, useAccount, useNetwork } from 'wagmi';
 import shallow from 'zustand/shallow';
-import { useUserData } from '../../state/queries/useUserData';
 import { useBorrowStore } from '../../state/stores/borrowStore';
 import { commifyToDecimalPlaces, floor2, floor4, floor5, minCollRatioWithBuffer } from '../../utils';
 import { Alert } from '../Alert';
@@ -15,24 +13,19 @@ import { PositionPreview } from './PositionPreview';
 import useStore from '../../state/stores/globalStore';
 
 export const CreateForm = ({
-  disableActions,
-  modifyPositionData,
-  transactionData,
   onClose,
   // TODO: refactor out into react query mutations / store actions
   createPosition,
   setUnderlierAllowanceForProxy,
   unsetUnderlierAllowanceForProxy,
 }: {
-  disableActions: boolean,
-  modifyPositionData: any,
-  transactionData: any,
   onClose: () => void,
   // TODO: refactor out into react query mutations / store actions
   createPosition: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
   setUnderlierAllowanceForProxy: (fiat: any, amount: BigNumber) => any,
   unsetUnderlierAllowanceForProxy: (fiat: any) => any,
 }) => {
+  const modifyPositionData = useStore((state) => state.modifyPositionData);
   const {
     collateralType: {
       metadata: { symbol: tokenSymbol },
@@ -43,14 +36,11 @@ export const CreateForm = ({
     underlierBalance,
     monetaDelegate,
   } = modifyPositionData;
-  const { action: currentTxAction } = transactionData;
-
   const fiat = useStore(state => state.fiat);
-
-  const { chain } = useNetwork();
-  const { address } = useAccount();
-  const { data: userData } = useUserData(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
-  const hasProxy = userData.proxies.length > 0;
+  const hasProxy = useStore(state => state.hasProxy);
+  const disableActions = useStore((state) => state.disableActions);
+  const transactionData = useStore((state => state.transactionData));
+  const { action: currentTxAction } = transactionData;
 
   const borrowStore = useBorrowStore(
     React.useCallback(
@@ -371,18 +361,12 @@ export const CreateForm = ({
 }
 
 export const IncreaseForm = ({
-  disableActions,
-  modifyPositionData,
-  transactionData,
   onClose,
   // TODO: refactor out into react query mutations / store actions
   buyCollateralAndModifyDebt,
   setUnderlierAllowanceForProxy,
   unsetUnderlierAllowanceForProxy,
 }: {
-  disableActions: boolean,
-  modifyPositionData: any,
-  transactionData: any,
   onClose: () => void,
   // TODO: refactor out into react query mutations / store actions
   buyCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any,
@@ -403,11 +387,10 @@ export const IncreaseForm = ({
     ), shallow
   );
   const fiat = useStore(state => state.fiat);
-
-  const { chain } = useNetwork();
-  const { address } = useAccount();
-  const { data: userData } = useUserData(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
-  const hasProxy = userData.proxies.length > 0;
+  const hasProxy = useStore(state => state.hasProxy);
+  const disableActions = useStore((state) => state.disableActions);
+  const transactionData = useStore(state => state.transactionData);
+  const modifyPositionData = useStore((state) => state.modifyPositionData);
   const { action: currentTxAction } = transactionData;
   
   const renderFormAlerts = () => {
@@ -612,9 +595,6 @@ export const IncreaseForm = ({
 }
 
 export const DecreaseForm = ({
-  disableActions,
-  modifyPositionData,
-  transactionData,
   onClose,
   // TODO: refactor out into react query mutations / store actions
   setFIATAllowanceForProxy,
@@ -622,9 +602,6 @@ export const DecreaseForm = ({
   setFIATAllowanceForMoneta,
   sellCollateralAndModifyDebt,
 }: {
-  disableActions: boolean,
-  modifyPositionData: any,
-  transactionData: any,
   onClose: () => void,
   // TODO: refactor out into react query mutations / store actions
   setFIATAllowanceForProxy: (fiat: any, amount: BigNumber) => any;
@@ -646,12 +623,10 @@ export const DecreaseForm = ({
     ), shallow
   );
   const fiat = useStore(state => state.fiat);
-
-  const { chain } = useNetwork();
-  const { address } = useAccount();
-  const { data: userData } = useUserData(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
-  const hasProxy = userData.proxies.length > 0;
-
+  const hasProxy = useStore(state => state.hasProxy);
+  const disableActions = useStore((state) => state.disableActions);
+  const modifyPositionData = useStore((state) => state.modifyPositionData);
+  const transactionData = useStore(state => state.transactionData);
   const { action: currentTxAction } = transactionData;
   
   const renderFormAlerts = () => {
@@ -897,9 +872,6 @@ export const DecreaseForm = ({
 }
 
 export const RedeemForm = ({
-  disableActions,
-  modifyPositionData,
-  transactionData,
   onClose,
   // TODO: refactor out into react query mutations / store actions
   setFIATAllowanceForProxy,
@@ -907,9 +879,6 @@ export const RedeemForm = ({
   setFIATAllowanceForMoneta,
   redeemCollateralAndModifyDebt,
 }: {
-  disableActions: boolean,
-  modifyPositionData: any,
-  transactionData: any,
   onClose: () => void,
   // TODO: refactor out into react query mutations / store actions
   setFIATAllowanceForProxy: (fiat: any, amount: BigNumber) => any;
@@ -931,12 +900,10 @@ export const RedeemForm = ({
     ), shallow
   );
   const fiat = useStore(state => state.fiat);
-  
-  const { chain } = useNetwork();
-  const { address } = useAccount();
-  const { data: userData } = useUserData(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
-  const hasProxy = userData.proxies.length > 0;
-
+  const hasProxy = useStore(state => state.hasProxy);
+  const disableActions = useStore((state) => state.disableActions);
+  const modifyPositionData = useStore((state) => state.modifyPositionData);
+  const transactionData = useStore(state => state.transactionData);
   const { action: currentTxAction } = transactionData;
   
   const renderFormAlerts = () => {
