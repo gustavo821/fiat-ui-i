@@ -74,7 +74,7 @@ const PositionModalBody = (props: PositionModalProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modifyPositionData.position, actionMode, setActionMode, selectedCollateralTypeId, matured])
 
-  if (!user || !modifyPositionData.collateralType || !modifyPositionData.collateralType.metadata ) {
+  if (!modifyPositionData.collateralType || !modifyPositionData.collateralType.metadata ) {
     // TODO: add skeleton components instead of null
     return null;
   }
