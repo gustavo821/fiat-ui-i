@@ -1,6 +1,5 @@
 import React from 'react';
 import { Badge, Button, Link, Text, Tooltip } from '@nextui-org/react';
-import { InfoIcon } from './icons/Info';
 import { connectButtonCSS, ProxyButton } from './ProxyButton';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { ResourcesModal } from './ResourcesModal';
@@ -79,7 +78,7 @@ export const HeaderBar = (props: any) => {
           <div style={{ display: 'flex', height: '40px' }}>
             <Button 
               auto
-              icon={<InfoIcon fill='var(--nextui-colors-foreground)' width='20' height='20'/>}
+              icon={'...'}
               css={connectButtonCSS}
               onPress={()=>setShowResourcesModal(true)}
             />
