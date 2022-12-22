@@ -722,7 +722,7 @@ export const LeverDecreaseForm = ({
     collateral, debt, collRatio, minCollRatio, maxCollRatio
   } = leverStore.decreaseState;
   const {
-    setSubTokenAmount, setMaxSubTokenAmount, setCollateralSlippagePct, setUnderlierSlippagePct, setTargetedCollRatio
+    setSubTokenAmount, setCollateralSlippagePct, setUnderlierSlippagePct, setTargetedCollRatio
   } = leverStore.decreaseActions;
   const { action: currentTxAction } = transactionData;
 

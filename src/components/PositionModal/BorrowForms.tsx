@@ -331,7 +331,6 @@ export const CreateForm = ({
         </Card>
         { renderFormAlerts() }
         <Spacer y={0.5} />
-        { renderFormAlerts() }
         <Button
           css={{ minWidth: '100%' }}
           disabled={
