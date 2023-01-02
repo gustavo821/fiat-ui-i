@@ -21,7 +21,7 @@ const { chains, provider, webSocketProvider } = configureChains([
     chain.mainnet, ...(process.env.NEXT_PUBLIC_ENABLE_TESTNETS === 'true' ? [chain.goerli] : [])
   ],
   [
-    (process.env.NEXT_PUBLIC_GANACHE_LOCAL && process.env.NODE_ENV === 'development' ? 
+    (process.env.NEXT_PUBLIC_GANACHE_LOCAL === 'true' && process.env.NODE_ENV === 'development' ? 
       jsonRpcProvider({
         rpc: (chain) => ({
           http: `http://127.0.0.1:8545`,

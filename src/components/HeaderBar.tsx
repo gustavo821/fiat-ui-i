@@ -16,7 +16,7 @@ interface BlockSyncStatus {
   message: string;
 }
 
-const USE_GANACHE = process.env.NEXT_PUBLIC_GANACHE_LOCAL && process.env.NODE_ENV === 'development';
+export const USE_GANACHE = process.env.NEXT_PUBLIC_GANACHE_LOCAL === 'true' && process.env.NODE_ENV === 'development';
 const BLOCKS_PER_MONTH = 5 * 60 * 24 * 30;
 
 export const HeaderBar = (props: any) => {
