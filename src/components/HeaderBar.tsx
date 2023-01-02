@@ -17,6 +17,7 @@ interface BlockSyncStatus {
 }
 
 const USE_GANACHE = process.env.NEXT_PUBLIC_GANACHE_LOCAL && process.env.NODE_ENV === 'development';
+const BLOCKS_PER_MONTH = 5 * 60 * 24 * 30;
 
 export const HeaderBar = (props: any) => {
   const [showResourcesModal, setShowResourcesModal] = React.useState<boolean>(false);
@@ -32,7 +33,7 @@ export const HeaderBar = (props: any) => {
   const { data: fiatBalance } = useFiatBalance(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
 
   const handleFastForward = async () => {
-    const result = await provider.send('evm_mine');
+    const result = await provider.send('evm_mine', [{blocks: BLOCKS_PER_MONTH}]);
     console.log({result})
   }
 
