@@ -18,7 +18,7 @@ export function useUserData(fiat: any, chainId: number, userAddress: string) {
           proxies: []
         }
       }
-      const userData = !USE_GANACHE ? await fiat.fetchUserData(userAddress) : await fiat.fetchUserDataProvider(userAddress);
+      const userData = !USE_GANACHE ? await fiat.fetchUserData(userAddress) : await fiat.fetchUserDataViaProvider(userAddress);
       const proxies = userData.filter((user: any) => (user.isProxy === true)).map((user: any) => user.user);
 
       useStore.setState({hasProxy: proxies.length > 0});

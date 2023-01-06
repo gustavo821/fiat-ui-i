@@ -1,11 +1,13 @@
 import { Dropdown, Modal, Navbar, Text } from '@nextui-org/react';
 import 'antd/dist/antd.css';
-import { BigNumber } from 'ethers';
+import { BigNumber, ethers } from 'ethers';
 import React, { useState } from 'react';
 import { formatUnixTimestamp } from '../../utils';
 import { CreateForm, DecreaseForm, IncreaseForm, RedeemForm } from './BorrowForms';
 import { LeverCreateForm, LeverDecreaseForm, LeverIncreaseForm, LeverRedeemForm } from './LeverForms';
 import useStore from '../../state/stores/globalStore';
+import { USE_GANACHE } from '../HeaderBar';
+import { useProvider } from 'wagmi';
 
 const enum Mode {
   CREATE='create',
@@ -51,6 +53,7 @@ export const PositionModal = (props: PositionModalProps) => {
 const PositionModalBody = (props: PositionModalProps) => {
   const [ leverModeActive, setLeverModeActive ] = useState(false);
   const [ actionMode, setActionMode ] = useState(Mode.INCREASE);
+  const [ ganacheTime, setGanacheTime ] = useState('');
 
   const user = useStore((state) => state.user);
   const disableActions = useStore((state) => state.disableActions);
@@ -59,9 +62,27 @@ const PositionModalBody = (props: PositionModalProps) => {
   const selectedPositionId = useStore((state) => state.selectedPositionId);
 
   const matured = React.useMemo(() => {
+    if (USE_GANACHE) {
+      const maturity = modifyPositionData.collateralType?.properties.maturity.toString();
+      return (maturity !== undefined && !(new Date(Number(ganacheTime) * 1000) < new Date(Number(maturity) * 1000)));
+    }
     const maturity = modifyPositionData.collateralType?.properties.maturity.toString();
     return (maturity !== undefined && !(new Date() < new Date(Number(maturity) * 1000)));
-  }, [modifyPositionData.collateralType?.properties.maturity])
+  }, [modifyPositionData.collateralType?.properties.maturity, ganacheTime])
+
+  const provider = useProvider();
+
+  const getTimestamp = React.useCallback(async () => {
+    const result =  await provider.send('eth_getBlockByNumber', ['latest'])
+    const time = ethers.BigNumber.from(result.timestamp).toString()
+    console.log({time})
+    return time
+  }, [provider])
+
+  React.useEffect(() => {
+    if (!USE_GANACHE) return;
+    getTimestamp().then((res: string)=> setGanacheTime(res))
+  }, [getTimestamp])
 
   React.useEffect(() => {
     // Set initial mode of modal depending on props
@@ -72,7 +93,7 @@ const PositionModalBody = (props: PositionModalProps) => {
     }  
     // these deps _are_ exhaustive
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [modifyPositionData.position, actionMode, setActionMode, selectedCollateralTypeId, matured])
+  }, [modifyPositionData.position, actionMode, setActionMode, selectedCollateralTypeId, matured, ganacheTime])
 
   if (!modifyPositionData.collateralType || !modifyPositionData.collateralType.metadata ) {
     // TODO: add skeleton components instead of null
