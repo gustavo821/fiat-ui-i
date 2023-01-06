@@ -3,13 +3,13 @@ import { Button, Card, Grid, Input, Loading, Modal, Row, Spacer, Switch, Text } 
 import { BigNumber, ethers } from 'ethers';
 import React, { useMemo } from 'react';
 import shallow from 'zustand/shallow';
+import useStore from '../../state/stores/globalStore';
 import { useLeverStore } from '../../state/stores/leverStore';
 import { commifyToDecimalPlaces, floor2, floor4 } from '../../utils';
 import { Alert } from '../Alert';
 import { InputLabelWithMax } from '../InputLabelWithMax';
-import useStore from '../../state/stores/globalStore';
 import { NumericInput } from '../NumericInput/NumericInput';
-import { RadixSlider } from '../RadixSlider/RadixSlider';
+import { Slider } from '../Slider/Slider';
 
 export const LeverCreateForm = ({
   onClose,
@@ -168,7 +168,7 @@ export const LeverCreateForm = ({
               <Card.Body
                 style={{ paddingLeft: '2.25rem', paddingRight: '2.25rem', overflow: 'hidden' }}
               >
-                <RadixSlider
+                <Slider
                   aria-label={'Targeted Collateralization Ratio'}
                   disabled={disableActions}
                   inverted
@@ -465,7 +465,7 @@ export const LeverIncreaseForm = ({
               <Card.Body
                 style={{ paddingLeft: '2.25rem', paddingRight: '2.25rem', overflow: 'hidden' }}
               >
-                <RadixSlider
+                <Slider
                   aria-label={'Targeted Collateralization Ratio'}
                   disabled={disableActions}
                   inverted
@@ -776,7 +776,7 @@ export const LeverDecreaseForm = ({
               <Card.Body
                 style={{ paddingLeft: '2.25rem', paddingRight: '2.25rem', overflow: 'hidden' }}
               >
-                <RadixSlider
+                <Slider
                   aria-label={'Targeted Collateralization Ratio'}
                   disabled={disableActions}
                   inverted
@@ -1054,7 +1054,7 @@ export const LeverRedeemForm = ({
               <Card.Body
                 style={{ paddingLeft: '2.25rem', paddingRight: '2.25rem', overflow: 'hidden' }}
               >
-                <RadixSlider
+                <Slider
                   aria-label={'Targeted Collateralization Ratio'}
                   disabled={disableActions}
                   inverted

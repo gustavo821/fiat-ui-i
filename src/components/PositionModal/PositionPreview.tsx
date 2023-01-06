@@ -1,6 +1,5 @@
 import { computeCollateralizationRatio, normalDebtToDebt, wadToDec } from '@fiatdao/sdk';
 import { Input, Loading, Text } from '@nextui-org/react';
-import 'antd/dist/antd.css';
 import { BigNumber, ethers } from 'ethers';
 import { floor2, floor5 } from '../../utils';
 

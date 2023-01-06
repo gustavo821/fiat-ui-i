@@ -1,16 +1,16 @@
 import { decToScale, decToWad, normalDebtToDebt, scaleToDec, wadToDec, ZERO } from '@fiatdao/sdk';
 import { Button, Card, Grid, Input, Loading, Modal, Row, Spacer, Switch, Text } from '@nextui-org/react';
 import { BigNumber, ethers } from 'ethers';
-import React, {useMemo} from 'react';
+import React, { useMemo } from 'react';
 import shallow from 'zustand/shallow';
 import { useBorrowStore } from '../../state/stores/borrowStore';
+import useStore from '../../state/stores/globalStore';
 import { commifyToDecimalPlaces, floor2, floor4, minCollRatioWithBuffer } from '../../utils';
 import { Alert } from '../Alert';
 import { InputLabelWithMax } from '../InputLabelWithMax';
 import { NumericInput } from '../NumericInput/NumericInput';
+import { Slider } from '../Slider/Slider';
 import { PositionPreview } from './PositionPreview';
-import useStore from '../../state/stores/globalStore';
-import { RadixSlider } from '../RadixSlider/RadixSlider';
 
 export const CreateForm = ({
   onClose,
@@ -178,7 +178,7 @@ export const CreateForm = ({
           <Card.Body
             style={{ paddingLeft: '2.25rem', paddingRight: '2.25rem', overflow: 'hidden' }}
           >
-            <RadixSlider
+            <Slider
               aria-label={'Targeted Collateralization Ratio'}
               disabled={disableActions}
               inverted

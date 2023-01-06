@@ -1,5 +1,4 @@
 import { Dropdown, Modal, Navbar, Text } from '@nextui-org/react';
-import 'antd/dist/antd.css';
 import { BigNumber } from 'ethers';
 import React, { useState } from 'react';
 import { formatUnixTimestamp } from '../../utils';

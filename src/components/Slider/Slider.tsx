@@ -1,18 +1,18 @@
 import { Label } from '@radix-ui/react-label';
-import * as Slider from '@radix-ui/react-slider';
+import * as RadixSlider from '@radix-ui/react-slider';
 import styles from './RadixSlider.module.css';
 
-interface SliderProps extends Slider.SliderProps {
+interface SliderProps extends RadixSlider.SliderProps {
   maxLabel?: string;
   minLabel?: string;
 }
 
-export function RadixSlider(props: SliderProps): any {
+export const Slider = (props: SliderProps) => {
   const { 'aria-label': ariaLabel, disabled, inverted, max, maxLabel, min, minLabel, onValueChange, step, value } = props;
 
   return (
     <>
-      <Slider.Root
+      <RadixSlider.Root
         aria-label={ariaLabel}
         disabled={disabled}
         className={styles.SliderRoot}
@@ -23,7 +23,7 @@ export function RadixSlider(props: SliderProps): any {
         step={step}
         value={value}
       >
-        <Slider.Track
+        <RadixSlider.Track
           className={styles.SliderTrack}
           /* gradient for non linear coll ratio riskiness. should probably impl as a variant
           style={{
@@ -32,10 +32,10 @@ export function RadixSlider(props: SliderProps): any {
           }}
            */
         >
-          <Slider.Range className={styles.SliderRange} />
-        </Slider.Track>
-        <Slider.Thumb className={styles.SliderThumb} />
-      </Slider.Root>
+          <RadixSlider.Range className={styles.SliderRange} />
+        </RadixSlider.Track>
+        <RadixSlider.Thumb className={styles.SliderThumb} />
+      </RadixSlider.Root>
 
       <div className={styles.SliderLabels}>
         <Label className={styles.SliderLabel}>{inverted ? maxLabel : minLabel}</Label>
