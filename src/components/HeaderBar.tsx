@@ -17,14 +17,13 @@ interface BlockSyncStatus {
 }
 
 export const USE_GANACHE = process.env.NEXT_PUBLIC_GANACHE_LOCAL === 'true' && process.env.NODE_ENV === 'development';
-const BLOCKS_PER_MONTH = 5 * 60 * 24 * 30;
-
+const BLOCKS_PER_MONTH = 5 * 60 * 24 * 30 * 12;
+const SECONDS_PER_YEAR = 60 * 60 * 24 * 31 * 12;
 export const HeaderBar = (props: any) => {
   const [showResourcesModal, setShowResourcesModal] = React.useState<boolean>(false);
   const [syncStatus, setSyncStatus] = React.useState<BlockSyncStatus>();
   const {data: providerBlockNumber, refetch} = useBlockNumber();
   const provider = useProvider();
-  console.log({providerBlockNumber})
 
   const fiat = useStore((state) => state.fiat);
 
@@ -33,6 +32,8 @@ export const HeaderBar = (props: any) => {
   const { data: fiatBalance } = useFiatBalance(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
 
   const handleFastForward = async () => {
+    const increaseTime = await provider.send('evm_increaseTime', [SECONDS_PER_YEAR])
+    console.log({increaseTime})
     const result = await provider.send('evm_mine', [{blocks: BLOCKS_PER_MONTH}]);
     console.log({result})
   }
