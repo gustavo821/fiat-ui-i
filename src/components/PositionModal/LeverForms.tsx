@@ -1,16 +1,15 @@
 import { computeCollateralizationRatio, decToScale, scaleToDec, WAD, wadToDec, ZERO } from '@fiatdao/sdk';
 import { Button, Card, Grid, Input, Loading, Modal, Row, Spacer, Switch, Text } from '@nextui-org/react';
-import { Slider } from 'antd';
-import 'antd/dist/antd.css';
 import { BigNumber, ethers } from 'ethers';
 import React, { useMemo } from 'react';
 import shallow from 'zustand/shallow';
+import useStore from '../../state/stores/globalStore';
 import { useLeverStore } from '../../state/stores/leverStore';
 import { commifyToDecimalPlaces, floor2, floor4 } from '../../utils';
 import { Alert } from '../Alert';
 import { InputLabelWithMax } from '../InputLabelWithMax';
-import useStore from '../../state/stores/globalStore';
 import { NumericInput } from '../NumericInput/NumericInput';
+import { Slider } from '../Slider/Slider';
 
 export const LeverCreateForm = ({
   onClose,
@@ -170,33 +169,16 @@ export const LeverCreateForm = ({
                 style={{ paddingLeft: '2.25rem', paddingRight: '2.25rem', overflow: 'hidden' }}
               >
                 <Slider
-                  handleStyle={{ borderColor: '#0072F5' }}
-                  included={false}
+                  aria-label={'Targeted Collateralization Ratio'}
                   disabled={disableActions}
-                  value={Number(wadToDec(targetedCollRatio))}
-                  onChange={(value) => { setTargetedCollRatio(fiat, value, modifyPositionData) }}
-                  min={floor4(wadToDec(minCollRatio))}
+                  inverted
                   max={(maxCollRatio.eq(ethers.constants.MaxUint256)) ? 5.0 : floor4(wadToDec(maxCollRatio))}
+                  maxLabel={'Safer'}
+                  min={floor4(wadToDec(minCollRatio))}
+                  minLabel={'Riskier'}
+                  onValueChange={(value) => { setTargetedCollRatio(fiat, Number(value), modifyPositionData) }}
                   step={0.001}
-                  reverse
-                  marks={{
-                    [(maxCollRatio.eq(ethers.constants.MaxUint256)) ? 5.0 : floor4(wadToDec(maxCollRatio))]: {
-                      style: {
-                      color: 'grey',
-                      fontSize: '0.75rem',
-                      borderColor: 'white',
-                    },
-                    label: 'Safe',
-                    },
-                    [floor4(wadToDec(minCollRatio))]: {
-                      style: {
-                      color: 'grey',
-                      fontSize: '0.75rem',
-                      borderColor: 'white',
-                    },
-                    label: 'Unsafe',
-                    },
-                  }}
+                  value={[Number(wadToDec(targetedCollRatio))]}
                 />
               </Card.Body>
             </Card>
@@ -484,35 +466,18 @@ export const LeverIncreaseForm = ({
                 style={{ paddingLeft: '2.25rem', paddingRight: '2.25rem', overflow: 'hidden' }}
               >
                 <Slider
-                  handleStyle={{ borderColor: '#0072F5' }}
-                  included={false}
+                  aria-label={'Targeted Collateralization Ratio'}
                   disabled={disableActions}
-                  value={Number(wadToDec(targetedCollRatio))}
-                  onChange={(value) => {
-                    setTargetedCollRatio(fiat, value, modifyPositionData);
-                  }}
-                  min={floor4(wadToDec(minCollRatio))}
+                  inverted
                   max={(maxCollRatio.eq(ethers.constants.MaxUint256)) ? 5.0 : floor4(wadToDec(maxCollRatio))}
-                  step={0.001}
-                  reverse
-                  marks={{
-                    [(maxCollRatio.eq(ethers.constants.MaxUint256)) ? 5.0 : floor4(wadToDec(maxCollRatio))]: {
-                      style: {
-                      color: 'grey',
-                      fontSize: '0.75rem',
-                      borderColor: 'white',
-                    },
-                    label: 'Safe',
-                    },
-                    [floor4(wadToDec(minCollRatio))]: {
-                      style: {
-                      color: 'grey',
-                      fontSize: '0.75rem',
-                      borderColor: 'white',
-                    },
-                    label: 'Unsafe',
-                    },
+                  maxLabel={'Safer'}
+                  min={floor4(wadToDec(minCollRatio))}
+                  minLabel={'Riskier'}
+                  onValueChange={(value) => {
+                    setTargetedCollRatio(fiat, Number(value), modifyPositionData);
                   }}
+                  step={0.001}
+                  value={[Number(wadToDec(targetedCollRatio))]}
                 />
               </Card.Body>
             </Card>
@@ -812,33 +777,16 @@ export const LeverDecreaseForm = ({
                 style={{ paddingLeft: '2.25rem', paddingRight: '2.25rem', overflow: 'hidden' }}
               >
                 <Slider
-                  handleStyle={{ borderColor: '#0072F5' }}
-                  included={false}
+                  aria-label={'Targeted Collateralization Ratio'}
                   disabled={disableActions}
-                  value={Number(wadToDec(targetedCollRatio))}
-                  onChange={(value) => { setTargetedCollRatio(fiat, value, modifyPositionData) }}
-                  min={floor4(wadToDec(minCollRatio))}
+                  inverted
                   max={(maxCollRatio.eq(ethers.constants.MaxUint256)) ? 5.0 : floor4(wadToDec(maxCollRatio))}
+                  maxLabel={'Safer'}
+                  min={floor4(wadToDec(minCollRatio))}
+                  minLabel={'Riskier'}
+                  onValueChange={(value) => { setTargetedCollRatio(fiat, Number(value), modifyPositionData) }}
                   step={0.001}
-                  reverse
-                  marks={{
-                    [(maxCollRatio.eq(ethers.constants.MaxUint256)) ? 5.0 : floor4(wadToDec(maxCollRatio))]: {
-                      style: {
-                      color: 'grey',
-                      fontSize: '0.75rem',
-                      borderColor: 'white',
-                    },
-                    label: 'Safe',
-                    },
-                    [floor4(wadToDec(minCollRatio))]: {
-                      style: {
-                      color: 'grey',
-                      fontSize: '0.75rem',
-                      borderColor: 'white',
-                    },
-                    label: 'Unsafe',
-                    },
-                  }}
+                  value={[Number(wadToDec(targetedCollRatio))]}
                 />
               </Card.Body>
             </Card>
@@ -1107,35 +1055,18 @@ export const LeverRedeemForm = ({
                 style={{ paddingLeft: '2.25rem', paddingRight: '2.25rem', overflow: 'hidden' }}
               >
                 <Slider
-                  handleStyle={{ borderColor: '#0072F5' }}
-                  included={false}
+                  aria-label={'Targeted Collateralization Ratio'}
                   disabled={disableActions}
-                  value={Number(wadToDec(targetedCollRatio))}
-                  onChange={(value) => {
-                    leverStore.redeemActions.setTargetedCollRatio(fiat, value, modifyPositionData);
-                  }}
-                  min={floor4(wadToDec(minCollRatio))}
+                  inverted
                   max={(maxCollRatio.eq(ethers.constants.MaxUint256)) ? 5.0 : floor4(wadToDec(maxCollRatio))}
-                  step={0.001}
-                  reverse
-                  marks={{
-                    [(maxCollRatio.eq(ethers.constants.MaxUint256)) ? 5.0 : floor4(wadToDec(maxCollRatio))]: {
-                      style: {
-                      color: 'grey',
-                      fontSize: '0.75rem',
-                      borderColor: 'white',
-                    },
-                    label: 'Safe',
-                    },
-                    [floor4(wadToDec(minCollRatio))]: {
-                      style: {
-                      color: 'grey',
-                      fontSize: '0.75rem',
-                      borderColor: 'white',
-                    },
-                    label: 'Unsafe',
-                    },
+                  maxLabel={'Safer'}
+                  min={floor4(wadToDec(minCollRatio))}
+                  minLabel={'Riskier'}
+                  onValueChange={(value) => {
+                    leverStore.redeemActions.setTargetedCollRatio(fiat, Number(value), modifyPositionData);
                   }}
+                  step={0.001}
+                  value={[Number(wadToDec(targetedCollRatio))]}
                 />
               </Card.Body>
             </Card>

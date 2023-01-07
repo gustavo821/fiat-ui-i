@@ -1,6 +1,5 @@
 import { Dropdown, Modal, Navbar, Text } from '@nextui-org/react';
-import 'antd/dist/antd.css';
-import { BigNumber, ethers } from 'ethers';
+import { BigNumber } from 'ethers';
 import React, { useState } from 'react';
 import { formatUnixTimestamp } from '../../utils';
 import { CreateForm, DecreaseForm, IncreaseForm, RedeemForm } from './BorrowForms';
@@ -73,7 +72,7 @@ const PositionModalBody = (props: PositionModalProps) => {
 
   const getTimestamp = React.useCallback(async () => {
     const result =  await provider.send('eth_getBlockByNumber', ['latest'])
-    return ethers.BigNumber.from(result.timestamp).toString()
+    return BigNumber.from(result.timestamp).toString()
   }, [provider])
 
   React.useEffect(() => {

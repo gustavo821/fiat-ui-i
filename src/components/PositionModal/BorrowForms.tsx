@@ -1,17 +1,16 @@
 import { decToScale, decToWad, normalDebtToDebt, scaleToDec, wadToDec, ZERO } from '@fiatdao/sdk';
 import { Button, Card, Grid, Input, Loading, Modal, Row, Spacer, Switch, Text } from '@nextui-org/react';
-import { Slider } from 'antd';
-import 'antd/dist/antd.css';
 import { BigNumber, ethers } from 'ethers';
-import React, {useMemo} from 'react';
+import React, { useMemo } from 'react';
 import shallow from 'zustand/shallow';
 import { useBorrowStore } from '../../state/stores/borrowStore';
+import useStore from '../../state/stores/globalStore';
 import { commifyToDecimalPlaces, floor2, floor4, minCollRatioWithBuffer } from '../../utils';
 import { Alert } from '../Alert';
 import { InputLabelWithMax } from '../InputLabelWithMax';
 import { NumericInput } from '../NumericInput/NumericInput';
+import { Slider } from '../Slider/Slider';
 import { PositionPreview } from './PositionPreview';
-import useStore from '../../state/stores/globalStore';
 
 export const CreateForm = ({
   onClose,
@@ -180,45 +179,22 @@ export const CreateForm = ({
             style={{ paddingLeft: '2.25rem', paddingRight: '2.25rem', overflow: 'hidden' }}
           >
             <Slider
-              handleStyle={{ borderColor: '#0072F5' }}
-              included={false}
+              aria-label={'Targeted Collateralization Ratio'}
+              color='gradient'
               disabled={disableActions}
-              value={Number(wadToDec(borrowStore.createState.targetedCollRatio))}
-              onChange={(value) => {
-                borrowStore.createActions.setTargetedCollRatio(fiat, value, modifyPositionData);
-              }}
-              min={floor4(wadToDec(minCollRatio))}
+              inverted
               max={5.0}
-              step={0.001}
-              reverse
-              marks={{
-                5.0: {
-                  style: { color: 'grey', fontSize: '0.75rem' },
-              label: 'Safe',
-              },
-              4.0: {
-                style: { color: 'grey', fontSize: '0.75rem' },
-              label: '400%',
-              },
-              3.0: {
-                style: { color: 'grey', fontSize: '0.75rem' },
-              label: '300%',
-              },
-              2.0: {
-                style: { color: 'grey', fontSize: '0.75rem' },
-              label: '200%',
-              },
-              [floor4(wadToDec(minCollRatio))]: {
-                style: {
-                  color: 'grey',
-                  fontSize: '0.75rem',
-                  borderColor: 'white',
-              },
-              label: 'Unsafe',
-              },
+              maxLabel={'Safer'}
+              min={floor4(wadToDec(minCollRatio))}
+              minLabel={'Riskier'}
+              onValueChange={(value) => {
+                borrowStore.createActions.setTargetedCollRatio(fiat, Number(value), modifyPositionData);
               }}
+              step={0.001}
+              value={[Number(wadToDec(borrowStore.createState.targetedCollRatio))]}
             />
           </Card.Body>
+
         </Card>
       </Modal.Body>
       <Spacer y={0.75} />
