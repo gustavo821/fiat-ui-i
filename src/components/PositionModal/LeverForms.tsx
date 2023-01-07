@@ -215,7 +215,7 @@ export const LeverCreateForm = ({
           }
           placeholder='0'
           type='string'
-          label={'Leveraged Gain (at maturity)'}
+          label={'Net Gain at maturity (incl. borrow fees))'}
           labelRight={underlierSymbol}
           contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
