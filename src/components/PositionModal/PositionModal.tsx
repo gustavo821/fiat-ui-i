@@ -69,7 +69,7 @@ const PositionModalBody = (props: PositionModalProps) => {
     return (maturity !== undefined && !(new Date() < new Date(Number(maturity) * 1000)));
   }, [modifyPositionData.collateralType?.properties.maturity, ganacheTime])
 
-  const provider = useProvider();
+  const provider = useProvider() as any;
 
   const getTimestamp = React.useCallback(async () => {
     const result =  await provider.send('eth_getBlockByNumber', ['latest'])

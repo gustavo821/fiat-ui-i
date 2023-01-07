@@ -24,7 +24,7 @@ export const HeaderBar = (props: any) => {
   const [showResourcesModal, setShowResourcesModal] = React.useState<boolean>(false);
   const [syncStatus, setSyncStatus] = React.useState<BlockSyncStatus>();
   const {data: providerBlockNumber, refetch} = useBlockNumber();
-  const provider = useProvider();
+  const provider = useProvider() as any;
 
   const fiat = useStore((state) => state.fiat);
 
