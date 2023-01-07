@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "fork-goerli": "export $(grep '^NEXT_PUBLIC_ALCHEMY_API_KEY' .env.local) && npx ganache --fork.url=https://eth-goerli.g.alchemy.com/v2/${NEXT_PUBLIC_ALCHEMY_API_KEY}",
+    "fork-goerli": "export $(grep '^NEXT_PUBLIC_ALCHEMY_API_KEY' .env.local) && npx ganache --fork.url=https://eth-goerli.g.alchemy.com/v2/${NEXT_PUBLIC_ALCHEMY_API_KEY} --chain.chainId=5 -p=8555",
     "fork-main": "export $(grep '^NEXT_PUBLIC_ALCHEMY_API_KEY' .env.local) && echo $NEXT_PUBLIC_ALCHEMY_API_KEY && npx ganache --fork.url=https://eth-mainnet.g.alchemy.com/v2/$NEXT_PUBLIC_ALCHEMY_API_KEY"
   },
   "dependencies": {

@@ -24,7 +24,7 @@ const { chains, provider, webSocketProvider } = configureChains([
     (process.env.NEXT_PUBLIC_GANACHE_LOCAL === 'true' && process.env.NODE_ENV === 'development' ? 
       jsonRpcProvider({
         rpc: (chain) => ({
-          http: `http://127.0.0.1:8545`,
+          http: `http://127.0.0.1:8555`,
         }),
       }) : alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY })),
   ]);
