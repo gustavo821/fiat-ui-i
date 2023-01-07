@@ -55,7 +55,6 @@ const PositionModalBody = (props: PositionModalProps) => {
   const [ actionMode, setActionMode ] = useState(Mode.INCREASE);
   const [ ganacheTime, setGanacheTime ] = useState('');
 
-  const user = useStore((state) => state.user);
   const disableActions = useStore((state) => state.disableActions);
   const modifyPositionData = useStore((state) => state.modifyPositionData);
   const selectedCollateralTypeId = useStore((state) => state.selectedCollateralTypeId);
