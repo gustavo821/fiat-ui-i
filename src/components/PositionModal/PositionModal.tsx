@@ -74,7 +74,9 @@ const PositionModalBody = (props: PositionModalProps) => {
 
   const getTimestamp = React.useCallback(async () => {
     const result =  await provider.send('eth_getBlockByNumber', ['latest'])
-    return ethers.BigNumber.from(result.timestamp).toString()
+    const time = ethers.BigNumber.from(result.timestamp).toString()
+    console.log({time})
+    return time
   }, [provider])
 
   React.useEffect(() => {

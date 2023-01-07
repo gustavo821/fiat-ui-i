@@ -33,7 +33,9 @@ export const HeaderBar = (props: any) => {
 
   const handleFastForward = async () => {
     const increaseTime = await provider.send('evm_increaseTime', [SECONDS_PER_YEAR])
-    const result = await provider.send('evm_mine', [{blocks: 1}]);
+    console.log({increaseTime})
+    const result = await provider.send('evm_mine', [{blocks: BLOCKS_PER_MONTH}]);
+    console.log({result})
   }
 
   const queryBlockNumber = React.useCallback(async () => {
