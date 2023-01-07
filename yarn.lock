@@ -517,9 +517,10 @@
     "@ethersproject/properties" "^5.7.0"
     "@ethersproject/strings" "^5.7.0"
 
-"@fiatdao/sdk@https://github.com/fiatdao/sdk-i.git#feature/fetchUserDataProvider":
-  version "0.0.29"
-  resolved "https://github.com/fiatdao/sdk-i.git#96ec2a9146770dc7a387f319ddbc9b586a698970"
+"@fiatdao/sdk@0.0.31":
+  version "0.0.31"
+  resolved "https://registry.yarnpkg.com/@fiatdao/sdk/-/sdk-0.0.31.tgz#71e33d6a2ae216c4226baf119d9eea245383a56a"
+  integrity sha512-oC2n9J5gLlg5s8zPgi4tFWdbE1XZniOMk4nawuFtymraKy4jwwUa+lpFBwHZ0TuUVdjmbS/+DLwo+I2qtImzNA==
   dependencies:
     changelog "https://github.com/fiatdao/changelog"
     ethers "^5.7.1"
@@ -2528,9 +2529,9 @@ chalk@^4.0.0, chalk@^4.1.1:
     ansi-styles "^4.1.0"
     supports-color "^7.1.0"
 
-"changelog@https://github.com/fiatdao/changelog":
+"changelog@git+https://github.com/fiatdao/changelog.git":
   version "0.0.0"
-  resolved "https://github.com/fiatdao/changelog#d94dcae8094a3fb6373b209463e1e74e2a72fc25"
+  resolved "git+https://github.com/fiatdao/changelog.git#936ca29d9be83a724fffc71499c4add2804e8653"
 
 cipher-base@^1.0.0, cipher-base@^1.0.1, cipher-base@^1.0.3:
   version "1.0.4"
