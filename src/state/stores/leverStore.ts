@@ -20,7 +20,7 @@ import {
 import { BigNumber, BigNumberish } from 'ethers';
 import create from 'zustand';
 import * as userActions from '../../actions';
-import { debounce, floor2, maxCollRatioWithBuffer, minCollRatioWithBuffer } from '../../utils';
+import { debounce, floor2, interestPerSecondToRateUntilMaturity, maxCollRatioWithBuffer, minCollRatioWithBuffer } from '../../utils';
 
 /// A store for setting and getting form values to create and manage positions.
 export interface LeverState {
@@ -43,7 +43,8 @@ export interface LeverState {
     collateral: BigNumber; // [wad]
     collRatio: BigNumber; // new collateralization ratio [wad]
     debt: BigNumber; // [wad]
-    // estimates based on price impact
+    leveragedGain: BigNumber; // [wad]
+    // estimates without slippage protection (best case)
     estCollateral: BigNumber; // estimated new collateral [wad]
     estCollRatio: BigNumber; // estimated new collateralization ratio [wad]
     estMinUnderliersToBuy: BigNumber; // estimated min. amount of underliers to buy from FIAT [underlierScale]
@@ -65,7 +66,7 @@ export interface LeverState {
     collateral: BigNumber; // [wad]
     collRatio: BigNumber; // [wad] estimated new collateralization ratio
     debt: BigNumber; // [wad]
-    // estimates based on price impact
+    // estimates without slippage protection (best case)
     estCollateral: BigNumber; // estimated new collateral [wad]
     estCollRatio: BigNumber; // estimated new collateralization ratio [wad]
     estMinUnderliersToBuy: BigNumber; // estimated min. amount of underliers to buy from FIAT [underlierScale]
@@ -237,6 +238,7 @@ const initialState = {
     collateral: ZERO, // [wad]
     collRatio: ZERO, // [wad]
     debt: ZERO, // [wad]
+    leveragedGain: ZERO, // [wad]
     // estimates based on price impact
     estCollateral: ZERO, // [wad]
     estCollRatio: ZERO, // [wad]
@@ -374,12 +376,13 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
       // 4. compute estimated and worsed case outputs
       //      a. estimated values based on estimated exchange rates with price impact without slippage
       //      b. worsed case values based on slippage adjusted estimated exchange rates with slippage
+      // 5. compute estimated levered gain
       calculatePositionValuesAfterCreation: debounce(async function (fiat: any, modifyPositionData: any) {
         const { collateralType } = modifyPositionData;
         const { 
-          properties: { tokenScale, underlierScale },
+          properties: { tokenScale, underlierScale, maturity },
           settings: { codex: { debtFloor }, collybus: { liquidationRatio } },
-          state: { codex: { virtualRate: rate }, collybus: { fairPrice } }
+          state: { codex: { virtualRate: rate }, collybus: { fairPrice }, publican: { interestPerSecond } }
         } = collateralType
         const {
           collateralSlippagePct, underlierSlippagePct, upFrontUnderliers, targetedCollRatio
@@ -461,7 +464,17 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           const minTokenToBuy = underlierIn.mul(underlierToCollateralRateWithSlippage).div(underlierScale);
           const collateral = scaleToWad(minTokenToBuy, tokenScale);
           const collRatio = computeCollateralizationRatio(collateral, fairPrice, normalDebt, rate);
+
+          // 5.
+          const borrowRate = interestPerSecondToRateUntilMaturity(interestPerSecond, maturity);
+          const dueAtMaturity = normalDebt.mul(borrowRate).div(WAD);
           
+          const fiatForUnderlierRate = (await userActions.fiatForUnderlier(fiat, debt, collateralType))
+            .mul(underlierScale).div(wadToScale(debt, underlierScale));
+          const withdrawableCollateral = collateral
+            .sub(debt.add(dueAtMaturity).mul(WAD).div(scaleToWad(fiatForUnderlierRate, underlierScale)));
+          const leveragedGain = withdrawableCollateral.sub(scaleToWad(upFrontUnderliersBN, underlierScale));
+
           if (debt.gt(ZERO) && debt.lte(debtFloor)) set(() => ({
             formErrors: [
               ...get().formErrors,
@@ -478,7 +491,7 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
             createState: {
               ...state.createState,
               minCollRatio, maxCollRatio, addDebt, minUnderliersToBuy, minTokenToBuy,
-              collateral, collRatio, debt,
+              collateral, collRatio, debt, leveragedGain,
               estMinUnderliersToBuy, estMinTokenToBuy, estCollateral, estCollRatio
             },
             formDataLoading: false,
@@ -489,7 +502,7 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
             createState: {
               ...state.createState,
               minCollRatio: ZERO, maxCollRatio: ZERO, addDebt: ZERO, minUnderliersToBuy: ZERO, minTokenToBuy: ZERO,
-              collateral: ZERO, collRatio: ZERO, debt: ZERO,
+              collateral: ZERO, collRatio: ZERO, debt: ZERO, leveragedGain: ZERO,
               estMinUnderliersToBuy: ZERO, estMinTokenToBuy: ZERO, estCollateral: ZERO, estCollRatio: ZERO
             },
             formDataLoading: false,
