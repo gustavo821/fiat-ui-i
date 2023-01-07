@@ -56,7 +56,7 @@ export const LeverCreateForm = ({
   const {
     upFrontUnderliers, collateralSlippagePct, underlierSlippagePct, targetedCollRatio,
     addDebt, minUnderliersToBuy, minTokenToBuy, 
-    collateral, collRatio, debt, leveragedGain, minCollRatio, maxCollRatio
+    collateral, collRatio, debt, leveragedGain, leveragedAPY, minCollRatio, maxCollRatio
   } = leverStore.createState;
   const {
     setUpFrontUnderliers, setCollateralSlippagePct, setUnderlierSlippagePct, setTargetedCollRatio
@@ -211,11 +211,11 @@ export const LeverCreateForm = ({
           readOnly
           value={(leverStore.formDataLoading)
             ? ' '
-            : `${floor2(wadToDec(leveragedGain))}`
+            : `${floor2(wadToDec(leveragedGain))} (${floor2(wadToDec(leveragedAPY.mul(100)))}% APY)`
           }
           placeholder='0'
           type='string'
-          label={'Net Gain at maturity (incl. borrow fees))'}
+          label={'Net Gain at Maturity (incl. borrow fees)'}
           labelRight={underlierSymbol}
           contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'

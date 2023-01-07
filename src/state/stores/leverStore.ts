@@ -20,7 +20,7 @@ import {
 import { BigNumber, BigNumberish } from 'ethers';
 import create from 'zustand';
 import * as userActions from '../../actions';
-import { debounce, floor2, interestPerSecondToRateUntilMaturity, maxCollRatioWithBuffer, minCollRatioWithBuffer } from '../../utils';
+import { debounce, earnableRateToAPY, floor2, interestPerSecondToRateUntilMaturity, maxCollRatioWithBuffer, minCollRatioWithBuffer } from '../../utils';
 
 /// A store for setting and getting form values to create and manage positions.
 export interface LeverState {
@@ -44,6 +44,7 @@ export interface LeverState {
     collRatio: BigNumber; // new collateralization ratio [wad]
     debt: BigNumber; // [wad]
     leveragedGain: BigNumber; // [wad]
+    leveragedAPY: BigNumber; // [wad]
     // estimates without slippage protection (best case)
     estCollateral: BigNumber; // estimated new collateral [wad]
     estCollRatio: BigNumber; // estimated new collateralization ratio [wad]
@@ -239,6 +240,7 @@ const initialState = {
     collRatio: ZERO, // [wad]
     debt: ZERO, // [wad]
     leveragedGain: ZERO, // [wad]
+    leveragedAPY: ZERO, // [wad]
     // estimates based on price impact
     estCollateral: ZERO, // [wad]
     estCollRatio: ZERO, // [wad]
@@ -474,6 +476,9 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           const withdrawableCollateral = collateral
             .sub(debt.add(dueAtMaturity).mul(WAD).div(scaleToWad(fiatForUnderlierRate, underlierScale)));
           const leveragedGain = withdrawableCollateral.sub(scaleToWad(upFrontUnderliersBN, underlierScale));
+          const earnableRate = scaleToWad(upFrontUnderliersBN, underlierScale).add(leveragedGain)
+            .mul(WAD).div(scaleToWad(upFrontUnderliersBN, underlierScale)).sub(WAD);
+          const leveragedAPY = earnableRateToAPY(earnableRate, maturity);
 
           if (debt.gt(ZERO) && debt.lte(debtFloor)) set(() => ({
             formErrors: [
@@ -491,7 +496,7 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
             createState: {
               ...state.createState,
               minCollRatio, maxCollRatio, addDebt, minUnderliersToBuy, minTokenToBuy,
-              collateral, collRatio, debt, leveragedGain,
+              collateral, collRatio, debt, leveragedGain, leveragedAPY,
               estMinUnderliersToBuy, estMinTokenToBuy, estCollateral, estCollRatio
             },
             formDataLoading: false,
