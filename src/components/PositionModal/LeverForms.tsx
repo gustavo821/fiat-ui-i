@@ -388,7 +388,8 @@ export const LeverIncreaseForm = ({
   } = modifyPositionData;
   const {
     upFrontUnderliersStr, collateralSlippagePctStr, underlierSlippagePctStr,
-    addDebt, minUnderliersToBuy, minTokenToBuy, targetedCollRatio,
+    addDebt, redeemableUnderliers,
+    minUnderliersToBuy, minTokenToBuy, targetedCollRatio,
     collateral, collRatio, debt, minCollRatio, maxCollRatio
   } = leverStore.increaseState;
   const {
@@ -520,6 +521,20 @@ export const LeverIncreaseForm = ({
           type='string'
           label={'Total Collateral to deposit (incl. slippage)'}
           labelRight={tokenSymbol}
+          contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
+          size='sm'
+          status='primary'
+        />
+        <Input
+          readOnly
+          value={(leverStore.formDataLoading)
+            ? ' '
+            : `${floor2(scaleToDec(redeemableUnderliers, underlierScale))}`
+          }
+          placeholder='0'
+          type='string'
+          label={'Redeemable at maturity (incl. borrow fees)'}
+          labelRight={underlierSymbol}
           contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
           status='primary'
@@ -699,7 +714,7 @@ export const LeverDecreaseForm = ({
   } = modifyPositionData;
   const {
     subTokenAmountStr, collateralSlippagePctStr, underlierSlippagePctStr,
-    maxUnderliersToSell, minUnderliersToBuy, targetedCollRatio,
+    maxUnderliersToSell, minUnderliersToBuy, targetedCollRatio, redeemableUnderliers,
     collateral, debt, collRatio, minCollRatio, maxCollRatio
   } = leverStore.decreaseState;
   const {
@@ -844,6 +859,20 @@ export const LeverDecreaseForm = ({
           placeholder='0'
           type='string'
           label={'Underliers to withdraw (includes slippage)'}
+          labelRight={underlierSymbol}
+          contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
+          size='sm'
+          status='primary'
+        />
+        <Input
+          readOnly
+          value={(leverStore.formDataLoading)
+            ? ' '
+            : `${floor2(scaleToDec(redeemableUnderliers, underlierScale))}`
+          }
+          placeholder='0'
+          type='string'
+          label={'Redeemable at maturity (incl. borrow fees)'}
           labelRight={underlierSymbol}
           contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
