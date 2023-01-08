@@ -34,7 +34,7 @@ const SliderLabel = styled(Label,{
 
 const RadixSliderTrack = styled(RadixSlider.Track, {
   position: 'relative',
-  backgroundColor: 'white',
+  backgroundColor: 'var(--nextui-colors-gray300)',
   flexGrow: '1',
   height: '100%',
   borderRadius: '4px',
@@ -68,10 +68,7 @@ const RadixSliderThumb = styled(RadixSlider.Thumb, {
   backgroundColor: 'white',
   borderRadius: '100%',
   boxShadow: '0 0 0 2px var(--nextui-colors-primary)',
-  // TODO: is this how you do hover selector?
-  '&:hover': {
-    backgroundColor: 'white',
-  },
+
   '&:focus': {
     outline: 'none',
     boxShadow: '0 0 0 2px var(--nextui-colors-primaryBorder)',
