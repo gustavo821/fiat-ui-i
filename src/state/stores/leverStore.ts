@@ -19,7 +19,14 @@ import {
 import { BigNumber } from 'ethers';
 import create from 'zustand';
 import * as userActions from '../../actions';
-import { debounce, earnableRateToAPY, floor2, interestPerSecondToRateUntilMaturity, maxCollRatioWithBuffer, minCollRatioWithBuffer } from '../../utils';
+import {
+  debounce,
+  earnableRateToAPY,
+  floor2,
+  interestPerSecondToRateUntilMaturity,
+  maxCollRatioWithBuffer,
+  minCollRatioWithBuffer
+} from '../../utils';
 
 /// A store for setting and getting form values to create and manage *levered* positions.
 /// User input values are `string`s to handle all sensible decimal inputs (empty str, 0, 0.0, etc.).
@@ -391,21 +398,20 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           collateralSlippagePctStr, underlierSlippagePctStr, upFrontUnderliersStr, targetedCollRatio
         } = get().createState;
 
-        // Convert user inputs from strings to BigNumbers
-        const upFrontUnderliers = upFrontUnderliersStr === null || upFrontUnderliersStr === ''
-          ? ZERO
-          : decToScale(upFrontUnderliersStr, underlierScale);
-
-        const collSlippageCeiled = Number(collateralSlippagePctStr) < 0 ? 0 : Number(collateralSlippagePctStr) > 50 ? 50 : Number(collateralSlippagePctStr);
-        const collateralSlippagePct = decToWad(collSlippageCeiled / 100);
-
-        const underlierSlippageCeiled = Number(underlierSlippagePctStr) < 0 ? 0 : Number(underlierSlippagePctStr) > 50 ? 50 : Number(underlierSlippagePctStr);
-        const underlierSlippagePct = decToWad(underlierSlippageCeiled / 100);
-
         // Reset form errors and warnings on new input
         set(() => ({ formWarnings: [], formErrors: [] }));
 
         try {
+          // Convert user inputs from strings to BigNumbers
+          const upFrontUnderliers = (upFrontUnderliersStr === null || upFrontUnderliersStr === '')
+            ? ZERO : decToScale(upFrontUnderliersStr, underlierScale);
+          const collSlippageCeiled = (Number(collateralSlippagePctStr) < 0)
+            ? 0 : (Number(collateralSlippagePctStr) > 50) ? 50 : Number(collateralSlippagePctStr);
+          const collateralSlippagePct = decToWad(collSlippageCeiled / 100);
+          const underlierSlippageCeiled = (Number(underlierSlippagePctStr) < 0)
+            ? 0 : (Number(underlierSlippagePctStr) > 50) ? 50 : Number(underlierSlippagePctStr);
+          const underlierSlippagePct = decToWad(underlierSlippageCeiled / 100);
+          
           // 1.
           const fiatToUnderlierRateIdeal = await userActions.fiatToUnderlier(fiat, decToWad(1), collateralType);
           const underlierToCollateralRateIdeal = await userActions.underlierToCollateralToken(
@@ -471,7 +477,6 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           // 5.
           const borrowRate = interestPerSecondToRateUntilMaturity(interestPerSecond, maturity);
           const dueAtMaturity = normalDebt.mul(borrowRate).div(WAD);
-          
           const fiatForUnderlierRate = (await userActions.fiatForUnderlier(fiat, debt, collateralType))
             .mul(underlierScale).div(wadToScale(debt, underlierScale));
           const withdrawableCollateral = collateral
@@ -496,8 +501,8 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           set((state) => ({
             createState: {
               ...state.createState,
-              minCollRatio, maxCollRatio, addDebt, minUnderliersToBuy, minTokenToBuy,
-              collateral, collRatio, debt, leveragedGain, leveragedAPY,
+              minCollRatio, maxCollRatio, minUnderliersToBuy, minTokenToBuy,
+              addDebt, collateral, collRatio, debt, leveragedGain, leveragedAPY,
               estMinUnderliersToBuy, estMinTokenToBuy, estCollateral, estCollRatio
             },
             formDataLoading: false,
@@ -507,8 +512,8 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           set((state) => ({
             createState: {
               ...state.createState,
-              minCollRatio: ZERO, maxCollRatio: ZERO, addDebt: ZERO, minUnderliersToBuy: ZERO, minTokenToBuy: ZERO,
-              collateral: ZERO, collRatio: ZERO, debt: ZERO, leveragedGain: ZERO,
+              minCollRatio: ZERO, maxCollRatio: ZERO, minUnderliersToBuy: ZERO, minTokenToBuy: ZERO,
+              addDebt: ZERO, collateral: ZERO, collRatio: ZERO, debt: ZERO, leveragedGain: ZERO,
               estMinUnderliersToBuy: ZERO, estMinTokenToBuy: ZERO, estCollateral: ZERO, estCollRatio: ZERO
             },
             formDataLoading: false,
@@ -578,21 +583,20 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           collateralSlippagePctStr, underlierSlippagePctStr, upFrontUnderliersStr, targetedCollRatio
         } = get().increaseState;
 
-        // Convert user inputs from strings to BigNumbers
-        const upFrontUnderliers = upFrontUnderliersStr === null || upFrontUnderliersStr === ''
-          ? ZERO
-          : decToScale(upFrontUnderliersStr, underlierScale);
-
-        const collSlippageCeiled = Number(collateralSlippagePctStr) < 0 ? 0 : Number(collateralSlippagePctStr) > 50 ? 50 : Number(collateralSlippagePctStr);
-        const collateralSlippagePct = decToWad(collSlippageCeiled / 100);
-
-        const underlierSlippageCeiled = Number(underlierSlippagePctStr) < 0 ? 0 : Number(underlierSlippagePctStr) > 50 ? 50 : Number(underlierSlippagePctStr);
-        const underlierSlippagePct = decToWad(underlierSlippageCeiled / 100);
-
         // Reset form errors and warnings on new input
         set(() => ({ formWarnings: [], formErrors: [] }));
 
         try {
+          // Convert user inputs from strings to BigNumbers
+          const upFrontUnderliers = (upFrontUnderliersStr === null || upFrontUnderliersStr === '')
+            ? ZERO : decToScale(upFrontUnderliersStr, underlierScale);
+          const collSlippageCeiled = (Number(collateralSlippagePctStr) < 0)
+            ? 0 : (Number(collateralSlippagePctStr) > 50) ? 50 : Number(collateralSlippagePctStr);
+          const collateralSlippagePct = decToWad(collSlippageCeiled / 100);
+          const underlierSlippageCeiled = (Number(underlierSlippagePctStr) < 0)
+            ? 0 : (Number(underlierSlippagePctStr) > 50) ? 50 : Number(underlierSlippagePctStr);
+          const underlierSlippagePct = decToWad(underlierSlippageCeiled / 100);
+          
           // 1.
           const fiatToUnderlierRateIdeal = await userActions.fiatToUnderlier(fiat, decToWad(1), collateralType);
           const underlierToCollateralRateIdeal = await userActions.underlierToCollateralToken(
@@ -677,19 +681,19 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           set((state) => ({
             increaseState: {
               ...state.increaseState,
-              minCollRatio, maxCollRatio, addDebt, minUnderliersToBuy, minTokenToBuy,
-              collateral, collRatio, debt,
+              minCollRatio, maxCollRatio, minUnderliersToBuy, minTokenToBuy,
+              addDebt, collateral, collRatio, debt,
               estMinUnderliersToBuy, estMinTokenToBuy, estCollateral, estCollRatio
             },
             formDataLoading: false,
           }));
         } catch (e: any) {
-          console.log(e);
+          console.error(e);
           set((state) => ({
             increaseState: {
               ...state.increaseState,
-              minCollRatio: ZERO, maxCollRatio: ZERO, addDebt: ZERO, minUnderliersToBuy: ZERO, minTokenToBuy: ZERO,
-              collateral: ZERO, collRatio: ZERO, debt: ZERO,
+              minCollRatio: ZERO, maxCollRatio: ZERO, minUnderliersToBuy: ZERO, minTokenToBuy: ZERO,
+              addDebt: ZERO, collateral: ZERO, collRatio: ZERO, debt: ZERO,
               estMinUnderliersToBuy: ZERO, estMinTokenToBuy: ZERO, estCollateral: ZERO, estCollRatio: ZERO
             },
             formDataLoading: false,
@@ -765,21 +769,20 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           subTokenAmountStr, collateralSlippagePctStr, underlierSlippagePctStr, targetedCollRatio
         } = get().decreaseState;
 
-        // Convert user inputs from strings to BigNumbers
-        const subTokenAmount = subTokenAmountStr === null || subTokenAmountStr === ''
-          ? ZERO
-          : decToScale(subTokenAmountStr, tokenScale);
-
-        const collSlippageCeiled = Number(collateralSlippagePctStr) < 0 ? 0 : Number(collateralSlippagePctStr) > 50 ? 50 : Number(collateralSlippagePctStr);
-        const collateralSlippagePct = decToWad(collSlippageCeiled / 100);
-
-        const underlierSlippageCeiled = Number(underlierSlippagePctStr) < 0 ? 0 : Number(underlierSlippagePctStr) > 50 ? 50 : Number(underlierSlippagePctStr);
-        const underlierSlippagePct = decToWad(underlierSlippageCeiled / 100);
-
         // Reset form errors and warnings on new input
         set(() => ({ formWarnings: [], formErrors: [] }));
 
         try {
+          // Convert user inputs from strings to BigNumbers
+          const subTokenAmount = (subTokenAmountStr === null || subTokenAmountStr === '')
+            ? ZERO : decToScale(subTokenAmountStr, tokenScale);
+          const collSlippageCeiled = (Number(collateralSlippagePctStr) < 0)
+            ? 0 : (Number(collateralSlippagePctStr) > 50) ? 50 : Number(collateralSlippagePctStr);
+          const collateralSlippagePct = decToWad(collSlippageCeiled / 100);
+          const underlierSlippageCeiled = (Number(underlierSlippagePctStr) < 0)
+            ? 0 : (Number(underlierSlippagePctStr) > 50) ? 50 : Number(underlierSlippagePctStr);
+          const underlierSlippagePct = decToWad(underlierSlippageCeiled / 100);
+          
           const collateral = position.collateral.sub(scaleToWad(subTokenAmount, tokenScale));
           if (collateral.lt(0)) set(() => ({
             formErrors: [...get().formErrors, 'Can\'t withdraw more collateral than there is deposited']
@@ -839,18 +842,18 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           set((state) => ({
             decreaseState: {
               ...state.decreaseState,
-              minCollRatio, maxCollRatio, subDebt, maxUnderliersToSell, minUnderliersToBuy,
-              collateral, collRatio, debt
+              minCollRatio, maxCollRatio, maxUnderliersToSell, minUnderliersToBuy,
+              subDebt, collateral, collRatio, debt
             },
             formDataLoading: false
           }));
         } catch (e: any) {
-          console.log(e);
+          console.error(e);
           set((state) => ({
             decreaseState: {
               ...state.decreaseState,
-              minCollRatio: ZERO, maxCollRatio: ZERO, subDebt: ZERO, maxUnderliersToSell: ZERO, minUnderliersToBuy: ZERO,
-              collateral: ZERO, collRatio: ZERO, debt: ZERO
+              minCollRatio: ZERO, maxCollRatio: ZERO, maxUnderliersToSell: ZERO, minUnderliersToBuy: ZERO,
+              subDebt: ZERO, collateral: ZERO, collRatio: ZERO, debt: ZERO
             },
             formDataLoading: false,
             formErrors: [...get().formErrors, e.message],
@@ -919,19 +922,17 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           subTokenAmountStr, underlierSlippagePctStr, targetedCollRatio
         } = get().redeemState;
 
-        // Convert user inputs from strings to BigNumbers
-        const subTokenAmount = subTokenAmountStr === null || subTokenAmountStr === ''
-          ? ZERO
-          : decToScale(subTokenAmountStr, tokenScale);
-
-        const underlierSlippageCeiled = Number(underlierSlippagePctStr) < 0 ? 0 : Number(underlierSlippagePctStr) > 50 ? 50 : Number(underlierSlippagePctStr);
-        const underlierSlippagePct = decToWad(underlierSlippageCeiled / 100);
-
         // Reset form errors and warnings on new input
         set(() => ({ formWarnings: [], formErrors: [] }));
 
         try {
-          console.log(subTokenAmount.toString());
+          // Convert user inputs from strings to BigNumbers
+          const subTokenAmount = (subTokenAmountStr === null || subTokenAmountStr === '')
+            ? ZERO : decToScale(subTokenAmountStr, tokenScale);
+          const underlierSlippageCeiled = (Number(underlierSlippagePctStr) < 0)
+            ? 0 : (Number(underlierSlippagePctStr) > 50) ? 50 : Number(underlierSlippagePctStr);
+          const underlierSlippagePct = decToWad(underlierSlippageCeiled / 100);
+    
           const collateral = position.collateral.sub(scaleToWad(subTokenAmount, tokenScale));
           if (collateral.lt(0)) set(() => ({
             formErrors: [...get().formErrors, 'Can\'t withdraw more collateral than there is deposited']
@@ -990,18 +991,18 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           set((state) => ({
             redeemState: {
               ...state.redeemState,
-              minCollRatio, maxCollRatio, subDebt, maxUnderliersToSell, underliersToRedeem,
-              collateral, collRatio, debt
+              minCollRatio, maxCollRatio, maxUnderliersToSell, underliersToRedeem,
+              subDebt, collateral, collRatio, debt
             },
             formDataLoading: false
           }));
         } catch (e: any) {
-          console.log(e);
+          console.error(e);
           set((state) => ({
             redeemState: {
               ...state.redeemState,
-              minCollRatio: ZERO, maxCollRatio: ZERO, subDebt: ZERO, maxUnderliersToSell: ZERO, minUnderliersToBuy: ZERO,
-              collateral: ZERO, collRatio: ZERO, debt: ZERO
+              minCollRatio: ZERO, maxCollRatio: ZERO, maxUnderliersToSell: ZERO, minUnderliersToBuy: ZERO,
+              subDebt: ZERO, collateral: ZERO, collRatio: ZERO, debt: ZERO
             },
             formDataLoading: false,
             formErrors: [...get().formErrors, e.message],

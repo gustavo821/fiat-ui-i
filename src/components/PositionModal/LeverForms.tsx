@@ -170,6 +170,7 @@ export const LeverCreateForm = ({
               >
                 <Slider
                   aria-label={'Targeted Collateralization Ratio'}
+                  color='gradient'
                   disabled={disableActions}
                   inverted
                   max={(maxCollRatio.eq(ethers.constants.MaxUint256)) ? 5.0 : floor4(wadToDec(maxCollRatio))}
@@ -215,7 +216,7 @@ export const LeverCreateForm = ({
           }
           placeholder='0'
           type='string'
-          label={'Net Gain at Maturity (incl. borrow fees)'}
+          label={'Net Gain at maturity (incl. borrow fees)'}
           labelRight={underlierSymbol}
           contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
@@ -481,6 +482,7 @@ export const LeverIncreaseForm = ({
               >
                 <Slider
                   aria-label={'Targeted Collateralization Ratio'}
+                  color='gradient'
                   disabled={disableActions}
                   inverted
                   max={(maxCollRatio.eq(ethers.constants.MaxUint256)) ? 5.0 : floor4(wadToDec(maxCollRatio))}
@@ -792,6 +794,7 @@ export const LeverDecreaseForm = ({
               >
                 <Slider
                   aria-label={'Targeted Collateralization Ratio'}
+                  color='gradient'
                   disabled={disableActions}
                   inverted
                   max={(maxCollRatio.eq(ethers.constants.MaxUint256)) ? 5.0 : floor4(wadToDec(maxCollRatio))}
@@ -1070,6 +1073,7 @@ export const LeverRedeemForm = ({
               >
                 <Slider
                   aria-label={'Targeted Collateralization Ratio'}
+                  color='gradient'
                   disabled={disableActions}
                   inverted
                   max={(maxCollRatio.eq(ethers.constants.MaxUint256)) ? 5.0 : floor4(wadToDec(maxCollRatio))}
