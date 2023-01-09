@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@fiatdao/sdk": "0.0.30",
+    "@fiatdao/sdk": "0.0.32",
     "@nextui-org/react": "^1.0.0-beta.10",
     "@radix-ui/react-label": "^2.0.0",
     "@radix-ui/react-slider": "^1.1.0",
