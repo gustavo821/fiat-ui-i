@@ -5,7 +5,7 @@ import React, { useMemo } from 'react';
 import shallow from 'zustand/shallow';
 import useStore from '../../state/stores/globalStore';
 import { useLeverStore } from '../../state/stores/leverStore';
-import { commifyToDecimalPlaces, floor2, floor4 } from '../../utils';
+import { commifyToDecimalPlaces, floor2, floor4, interestPerSecondToAPY } from '../../utils';
 import { Alert } from '../Alert';
 import { InputLabelWithMax } from '../InputLabelWithMax';
 import { NumericInput } from '../NumericInput/NumericInput';
@@ -47,7 +47,8 @@ export const LeverCreateForm = ({
   const {
     collateralType: {
       metadata: { symbol: tokenSymbol },
-      properties: { underlierScale, underlierSymbol, tokenScale }
+      properties: { underlierScale, underlierSymbol, tokenScale },
+      state: { publican: { interestPerSecond } }
     },
     underlierAllowance,
     underlierBalance,
@@ -216,7 +217,9 @@ export const LeverCreateForm = ({
           }
           placeholder='0'
           type='string'
-          label={'Net Gain at maturity (incl. borrow fees)'}
+          label={`Net Gain at maturity 
+            (incl. ${floor2(Number(wadToDec(interestPerSecondToAPY(interestPerSecond))) * 100)}% borrow fee)
+          `}
           labelRight={underlierSymbol}
           contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
@@ -379,7 +382,7 @@ export const LeverIncreaseForm = ({
     collateralType: {
       metadata: { symbol: tokenSymbol },
       properties: { underlierScale, underlierSymbol, tokenScale },
-      state: { codex: { virtualRate }, collybus: { fairPrice } }
+      state: { codex: { virtualRate }, collybus: { fairPrice }, publican: { interestPerSecond } }
     },
     underlierAllowance,
     underlierBalance,
@@ -533,7 +536,9 @@ export const LeverIncreaseForm = ({
           }
           placeholder='0'
           type='string'
-          label={'Redeemable at maturity (incl. borrow fees)'}
+          label={`Redeemable at maturity 
+            (incl. ${floor2(Number(wadToDec(interestPerSecondToAPY(interestPerSecond))) * 100)}% borrow fee)
+          `}
           labelRight={underlierSymbol}
           contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
@@ -708,7 +713,7 @@ export const LeverDecreaseForm = ({
     collateralType: {
       metadata: { symbol: tokenSymbol },
       properties: { underlierScale, underlierSymbol, tokenScale },
-      state: { codex: { virtualRate }, collybus: { fairPrice } }
+      state: { codex: { virtualRate }, collybus: { fairPrice }, publican: { interestPerSecond } }
     },
     position
   } = modifyPositionData;
@@ -872,7 +877,9 @@ export const LeverDecreaseForm = ({
           }
           placeholder='0'
           type='string'
-          label={'Redeemable at maturity (incl. borrow fees)'}
+          label={`Redeemable at maturity 
+            (incl. ${floor2(Number(wadToDec(interestPerSecondToAPY(interestPerSecond))) * 100)}% borrow fee)
+          `}
           labelRight={underlierSymbol}
           contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
