@@ -1,5 +1,127 @@
-import { debtToNormalDebt, decToWad, scaleToWad, WAD, wadToScale, ZERO } from '@fiatdao/sdk';
+import { addressEq, debtToNormalDebt, decToWad, scaleToWad, WAD, wadToScale, ZERO } from '@fiatdao/sdk';
 import { BigNumber, Contract } from 'ethers';
+
+export const underlierToFIAT = async (
+  fiat: any,
+  underlierAmount: BigNumber,
+  collateralType: any
+): Promise<BigNumber> => {
+  if (underlierAmount.isZero()) return ZERO;
+
+  const { vaultType, underlierToken, underlierSymbol } = collateralType.properties;
+  const { fiatToUnderlierTradePath: { pools, assetsOut } } = collateralType.metadata;
+  const { leverEPTActions, leverFYActions, leverSPTActions } = fiat.getContracts();
+  const poolsToFIAT = JSON.parse(JSON.stringify(pools)).reverse();
+  const assetsIn = JSON.parse(JSON.stringify(assetsOut)).reverse();
+  if (!addressEq(underlierToken, assetsIn[0])) throw new Error('Invalid trade path');
+
+  try {
+    switch (vaultType) {
+      case 'ERC20:EPT': {
+        return await fiat.call(
+          leverEPTActions, 'underlierToFIAT', poolsToFIAT, assetsIn, underlierAmount
+        );
+      }
+      case 'ERC20:FY': {
+        return await fiat.call(
+          leverFYActions, 'underlierToFIAT', poolsToFIAT, assetsIn, underlierAmount
+        );
+      }
+      case 'ERC20:SPT': {
+        return await fiat.call(
+          leverSPTActions, 'underlierToFIAT', poolsToFIAT, assetsIn, underlierAmount
+        );
+      }
+      default: {
+        throw new Error('Unsupported collateral type');
+      }
+    }
+  } catch (error) {
+    console.error(error);
+    throw new Error(`Insufficient liquidity to convert ${underlierSymbol} to FIAT`);
+  }
+};
+
+// TODO: remove precision conversion
+export const fiatToUnderlier = async (
+  fiat: any,
+  fiatAmount: BigNumber,
+  collateralType: any
+): Promise<BigNumber> => {
+  if (fiatAmount.isZero()) return ZERO;
+
+  const { vaultType, underlierToken, underlierSymbol } = collateralType.properties;
+  const { fiatToUnderlierTradePath: { pools: poolsToUnderlier, assetsOut } } = collateralType.metadata;
+  const { leverEPTActions, leverFYActions, leverSPTActions } = fiat.getContracts();
+  if (!addressEq(underlierToken, assetsOut[assetsOut.length - 1])) throw new Error('Invalid trade path');
+
+  try {
+    switch (vaultType) {
+      case 'ERC20:EPT': {
+        return await fiat.call(
+          leverEPTActions, 'fiatToUnderlier', poolsToUnderlier, assetsOut, fiatAmount
+        );
+      }
+      case 'ERC20:FY': {
+        return await fiat.call(
+          leverFYActions, 'fiatToUnderlier', poolsToUnderlier, assetsOut, fiatAmount
+        );
+      }
+      case 'ERC20:SPT': {
+        return await fiat.call(
+          leverSPTActions, 'fiatToUnderlier', poolsToUnderlier, assetsOut, fiatAmount
+        );
+      }
+      default: {
+        throw new Error('Unsupported collateral type');
+      }
+    }
+  } catch (error) {
+    console.error(error);
+    throw new Error(`Insufficient liquidity to convert FIAT to ${underlierSymbol}`);
+  }
+};
+
+export const fiatForUnderlier = async (
+  fiat: any,
+  fiatAmount: BigNumber,
+  collateralType: any
+): Promise<BigNumber> => {
+  if (fiatAmount.isZero()) return ZERO;
+
+  const { vaultType, underlierToken, underlierSymbol } = collateralType.properties;
+  const { fiatToUnderlierTradePath: { pools, assetsOut } } = collateralType.metadata;
+  const { leverEPTActions, leverFYActions, leverSPTActions } = fiat.getContracts();
+  const poolsToFIAT = JSON.parse(JSON.stringify(pools)); // TODO: expected it to be reversed
+  const assetsIn = JSON.parse(JSON.stringify(assetsOut)).reverse();
+  if (!addressEq(underlierToken, assetsIn[0])) throw new Error('Invalid trade path');
+
+  try {
+    switch (vaultType) {
+      case 'ERC20:EPT': {
+        return await fiat.call(
+          leverEPTActions, 'fiatForUnderlier', poolsToFIAT, assetsIn, fiatAmount
+        );
+      }
+      case 'ERC20:FY': {
+        return await fiat.call(
+          leverFYActions, 'fiatForUnderlier', poolsToFIAT, assetsIn, fiatAmount
+        );
+      }
+      case 'ERC20:SPT': {
+        return await fiat.call(
+          leverSPTActions, 'fiatForUnderlier', poolsToFIAT, assetsIn, fiatAmount
+        );
+      }
+      default: {
+        throw new Error('Unsupported collateral type');
+      }
+    }
+  } catch (error) {
+    console.error(error);
+    throw new Error(`Insufficient liquidity to convert ${underlierSymbol} to FIAT`);
+  }
+};
 
 export const underlierToCollateralToken = async (
   fiat: any,
@@ -8,54 +130,45 @@ export const underlierToCollateralToken = async (
 ): Promise<BigNumber> => {
   if (underlier.isZero()) return ZERO;
 
-  const { vault, tokenId, vaultType } = collateralType.properties;
+  const { vault, tokenId, vaultType, tokenSymbol, underlierSymbol } = collateralType.properties;
   const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = fiat.getContracts();
-  switch (vaultType) {
-    case 'ERC20:EPT': {
-      if (collateralType.properties.eptData == undefined) throw new Error('Missing EPT data');
-      const { eptData: { balancerVault: balancer, poolId: pool } } = collateralType.properties;
-      return await fiat.call(
-        vaultEPTActions,
-        'underlierToPToken',
-        vault,
-        balancer,
-        pool,
-        underlier
-      );
+
+  try {
+    switch (vaultType) {
+      case 'ERC20:EPT': {
+        if (collateralType.properties.eptData == undefined) throw new Error('Missing EPT data');
+        const { eptData: { balancerVault: balancer, poolId: pool } } = collateralType.properties;
+        return await fiat.call(
+          vaultEPTActions, 'underlierToPToken', vault, balancer, pool, underlier
+        );
+      }
+      case 'ERC1155:FC': {
+        if (collateralType.properties.fcData == undefined) throw new Error('Missing FC data');
+        return await fiat.call(
+          vaultFCActions, 'underlierToFCash', tokenId, underlier
+        );
+      }
+      case 'ERC20:FY': {
+        if (collateralType.properties.fyData == undefined) throw new Error('Missing FY data');
+        const { fyData: { yieldSpacePool } } = collateralType.properties;
+        return await fiat.call(
+          vaultFYActions, 'underlierToFYToken', underlier, yieldSpacePool
+        );
+      }
+      case 'ERC20:SPT': {
+        if (collateralType.properties.sptData == undefined) throw new Error('Missing SPT data');
+        const { sptData: { spacePool, balancerVault } } = collateralType.properties;
+        return await fiat.call(
+          vaultSPTActions, 'underlierToPToken', spacePool, balancerVault, underlier
+        );
+      }
+      default: {
+        throw new Error('Unsupported collateral type');
+      }
     }
-    case 'ERC1155:FC': {
-      if (collateralType.properties.fcData == undefined) throw new Error('Missing FC data');
-      return await fiat.call(
-        vaultFCActions,
-        'underlierToFCash',
-        tokenId,
-        underlier
-      );
-    }
-    case 'ERC20:FY': {
-      if (collateralType.properties.fyData == undefined) throw new Error('Missing FY data');
-      const { fyData: { yieldSpacePool } } = collateralType.properties;
-      return await fiat.call(
-        vaultFYActions,
-        'underlierToFYToken',
-        underlier,
-        yieldSpacePool
-      );
-    }
-    case 'ERC20:SPT': {
-      if (collateralType.properties.sptData == undefined) throw new Error('Missing SPT data');
-      const { sptData: { spacePool, balancerVault } } = collateralType.properties;
-      return await fiat.call(
-        vaultSPTActions,
-        'underlierToPToken',
-        spacePool,
-        balancerVault,
-        underlier
-      );
-    }
-    default: {
-      throw new Error('Unsupported collateral type');
-    }
+  } catch (error) {
+    console.error(error);
+    throw new Error(`Insufficient liquidity to convert ${underlierSymbol} to ${tokenSymbol}`);
   }
 };
 
@@ -65,54 +178,44 @@ export const collateralTokenToUnderlier = async (
   collateralType: any
 ): Promise<BigNumber> => {
   if (collateral.isZero()) return ZERO;
-  const { vault, tokenId, vaultType } = collateralType.properties;
+  const { vault, tokenId, vaultType, tokenSymbol, underlierSymbol } = collateralType.properties;
   const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = fiat.getContracts();
 
-  switch (vaultType) {
-    case 'ERC20:EPT': {
-      if (collateralType.properties.eptData == undefined) throw new Error('Missing EPT data');
-      const { eptData: { balancerVault: balancer, poolId: pool } } = collateralType.properties;
-      return await fiat.call(
-        vaultEPTActions,
-        'pTokenToUnderlier',
-        vault,
-        balancer,
-        pool,
-        collateral
-      );
+  try {
+    switch (vaultType) {
+      case 'ERC20:EPT': {
+        if (collateralType.properties.eptData == undefined) throw new Error('Missing EPT data');
+        const { eptData: { balancerVault: balancer, poolId: pool } } = collateralType.properties;
+        return await fiat.call(
+          vaultEPTActions, 'pTokenToUnderlier', vault, balancer, pool, collateral
+        );
+      }
+      case 'ERC1155:FC': {
+        if (collateralType.properties.fcData == undefined) throw new Error('Missing FC data');
+        return await fiat.call(
+          vaultFCActions, 'fCashToUnderlier', tokenId, collateral
+        );
+      }
+      case 'ERC20:FY': {
+        if (collateralType.properties.fyData == undefined) throw new Error('Missing FY data');
+        const { fyData: { yieldSpacePool } } = collateralType.properties;
+        return await fiat.call(
+          vaultFYActions, 'fyTokenToUnderlier', collateral, yieldSpacePool
+        );
+      }
+      case 'ERC20:SPT': {
+        if (collateralType.properties.sptData == undefined) throw new Error('Missing SPT data');
+        const { sptData: { spacePool, balancerVault } } = collateralType.properties;
+        return await fiat.call(
+          vaultSPTActions, 'pTokenToUnderlier', spacePool, balancerVault, collateral
+        );
+      }
+      default:
+        throw new Error('Unsupported collateral type');
     }
-    case 'ERC1155:FC': {
-      if (collateralType.properties.fcData == undefined) throw new Error('Missing FC data');
-      return await fiat.call(
-        vaultFCActions,
-        'fCashToUnderlier',
-        tokenId,
-        collateral
-      );
-    }
-    case 'ERC20:FY': {
-      if (collateralType.properties.fyData == undefined) throw new Error('Missing FY data');
-      const { fyData: { yieldSpacePool } } = collateralType.properties;
-      return await fiat.call(
-        vaultFYActions,
-        'fyTokenToUnderlier',
-        collateral,
-        yieldSpacePool
-      );
-    }
-    case 'ERC20:SPT': {
-      if (collateralType.properties.sptData == undefined) throw new Error('Missing SPT data');
-      const { sptData: { spacePool, balancerVault } } = collateralType.properties;
-      return await fiat.call(
-        vaultSPTActions,
-        'pTokenToUnderlier',
-        spacePool,
-        balancerVault,
-        collateral
-      );
-    }
-    default:
-      throw new Error('Unsupported collateral type');
+  } catch (error) {
+    console.error(error);
+    throw new Error(`Insufficient liquidity to convert ${tokenSymbol} to ${underlierSymbol}`);
   }
 };
 
@@ -188,12 +291,14 @@ const addDeltaNormalBuffer = (deltaNormalDebt: BigNumber): BigNumber => {
 }
 
 export const buildModifyCollateralAndDebtArgs = (
-  contextData: any,
+  fiat: any,
+  user: string,
+  proxies: any[],
   collateralTypeData: any,
   deltaDebt: BigNumber,
   position: { collateral: BigNumber, normalDebt: BigNumber }
 ): { contract: Contract, methodName: string, methodArgs: any[] } => {
-  const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = contextData.fiat.getContracts();
+  const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = fiat.getContracts();
   const { properties } = collateralTypeData;
 
   let deltaNormalDebt = addDeltaNormalBuffer(
@@ -215,9 +320,9 @@ export const buildModifyCollateralAndDebtArgs = (
       properties.vault,
       properties.token,
       properties.tokenId,
-      contextData.proxies[0],
-      contextData.user,
-      contextData.user,
+      proxies[0],
+      user,
+      user,
       ZERO,
       deltaNormalDebt,
     ],
@@ -226,13 +331,15 @@ export const buildModifyCollateralAndDebtArgs = (
 }
 
 export const buildBuyCollateralAndModifyDebtArgs = (
-  contextData: any,
+  fiat: any,
+  user: string,
+  proxies: any[],
   collateralTypeData: any,
   deltaCollateral: BigNumber,
   deltaDebt: BigNumber,
   underlier: BigNumber
 ): { contract: Contract, methodName: string, methodArgs: any[] } => {
-  const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = contextData.fiat.getContracts();
+  const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = fiat.getContracts();
   const { properties } = collateralTypeData;
 
   const deltaNormalDebt = addDeltaNormalBuffer(
@@ -252,9 +359,9 @@ export const buildBuyCollateralAndModifyDebtArgs = (
         methodName: 'buyCollateralAndModifyDebt',
         methodArgs: [
           properties.vault,
-          contextData.proxies[0],
-          contextData.user,
-          contextData.user,
+          proxies[0],
+          user,
+          user,
           underlier,
           deltaNormalDebt,
           [
@@ -284,9 +391,9 @@ export const buildBuyCollateralAndModifyDebtArgs = (
           properties.vault,
           properties.token,
           properties.tokenId,
-          contextData.proxies[0],
-          contextData.user,
-          contextData.user,
+          proxies[0],
+          user,
+          user,
           tokenAmount,
           deltaNormalDebt,
           minLendRate,
@@ -302,9 +409,9 @@ export const buildBuyCollateralAndModifyDebtArgs = (
         methodName: 'buyCollateralAndModifyDebt',
         methodArgs: [
           properties.vault,
-          contextData.proxies[0],
-          contextData.user,
-          contextData.user,
+          proxies[0],
+          user,
+          user,
           underlier,
           deltaNormalDebt,
           [
@@ -324,9 +431,9 @@ export const buildBuyCollateralAndModifyDebtArgs = (
         methodName: 'buyCollateralAndModifyDebt',
         methodArgs: [
           properties.vault,
-          contextData.proxies[0],
-          contextData.user,
-          contextData.user,
+          proxies[0],
+          user,
+          user,
           underlier,
           deltaNormalDebt,
           [
@@ -348,14 +455,16 @@ export const buildBuyCollateralAndModifyDebtArgs = (
 };
 
 export const buildSellCollateralAndModifyDebtArgs = (
-  contextData: any,
+  fiat: any,
+  user: string,
+  proxies: any[],
   collateralTypeData: any,
   deltaCollateral: BigNumber,
   deltaDebt: BigNumber,
   underlier: BigNumber,
   position: any
 ): { contract: Contract, methodName: string, methodArgs: any[] } => {
-  const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = contextData.fiat.getContracts();
+  const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = fiat.getContracts();
   const { properties } = collateralTypeData;
 
   let deltaNormalDebt = addDeltaNormalBuffer(
@@ -379,9 +488,9 @@ export const buildSellCollateralAndModifyDebtArgs = (
         methodName: 'sellCollateralAndModifyDebt',
         methodArgs: [
           properties.vault,
-          contextData.proxies[0],
-          contextData.user,
-          contextData.user,
+          proxies[0],
+          user,
+          user,
           tokenAmount,
           deltaNormalDebt,
           [
@@ -412,9 +521,9 @@ export const buildSellCollateralAndModifyDebtArgs = (
           properties.vault,
           properties.token,
           properties.tokenId,
-          contextData.proxies[0],
-          contextData.user,
-          contextData.user,
+          proxies[0],
+          user,
+          user,
           tokenAmount,
           deltaNormalDebt,
           maxBorrowRate
@@ -430,9 +539,9 @@ export const buildSellCollateralAndModifyDebtArgs = (
         methodName: 'sellCollateralAndModifyDebt',
         methodArgs: [
           properties.vault,
-          contextData.proxies[0],
-          contextData.user,
-          contextData.user,
+          proxies[0],
+          user,
+          user,
           tokenAmount,
           deltaNormalDebt,
           [
@@ -453,9 +562,9 @@ export const buildSellCollateralAndModifyDebtArgs = (
         methodName: 'sellCollateralAndModifyDebt',
         methodArgs: [
           properties.vault,
-          contextData.proxies[0],
-          contextData.user,
-          contextData.user,
+          proxies[0],
+          user,
+          user,
           tokenAmount,
           deltaNormalDebt,
           [
@@ -476,13 +585,16 @@ export const buildSellCollateralAndModifyDebtArgs = (
   }
 };
 
-export const buildRedeemCollateralAndModifyDebtArgs = (contextData: any,
+export const buildRedeemCollateralAndModifyDebtArgs = (
+  fiat: any,
+  user: string,
+  proxies: any[],
   collateralTypeData: any,
   deltaCollateral: BigNumber,
   deltaDebt: BigNumber,
   position: any
 ): { contract: Contract, methodName: string, methodArgs: any[] } => {
-  const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = contextData.fiat.getContracts();
+  const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = fiat.getContracts();
   const { properties } = collateralTypeData;
 
   let deltaNormalDebt = debtToNormalDebt(deltaDebt, collateralTypeData.state.codex.virtualRate)
@@ -502,9 +614,9 @@ export const buildRedeemCollateralAndModifyDebtArgs = (contextData: any,
         methodArgs: [
           properties.vault,
           properties.token,
-          contextData.proxies[0],
-          contextData.user,
-          contextData.user,
+          proxies[0],
+          user,
+          user,
           tokenAmount,
           deltaNormalDebt
         ]
@@ -520,9 +632,9 @@ export const buildRedeemCollateralAndModifyDebtArgs = (contextData: any,
           properties.vault,
           properties.token,
           properties.tokenId,
-          contextData.proxies[0],
-          contextData.user,
-          contextData.user,
+          proxies[0],
+          user,
+          user,
           tokenAmount,
           deltaNormalDebt
         ]
@@ -538,9 +650,9 @@ export const buildRedeemCollateralAndModifyDebtArgs = (contextData: any,
         methodArgs: [
           properties.vault,
           properties.token,
-          contextData.proxies[0],
-          contextData.user,
-          contextData.user,
+          proxies[0],
+          user,
+          user,
           tokenAmount,
           deltaNormalDebt
         ]
@@ -556,9 +668,9 @@ export const buildRedeemCollateralAndModifyDebtArgs = (contextData: any,
         methodArgs: [
           properties.vault,
           properties.token,
-          contextData.proxies[0],
-          contextData.user,
-          contextData.user,
+          proxies[0],
+          user,
+          user,
           tokenAmount,
           deltaNormalDebt,
           [
@@ -568,6 +680,305 @@ export const buildRedeemCollateralAndModifyDebtArgs = (contextData: any,
             properties.underlierToken,
             tokenAmount
           ]
+        ]
+      };
+      return args;
+    }
+    default: {
+      throw new Error('Unsupported vault: ', properties.vaultType);
+    }
+  }
+};
+
+export const buildBuyCollateralAndIncreaseLeverArgs = async (
+  fiat: any,
+  user: string,
+  proxies: any[],
+  collateralTypeData: any,
+  upFrontUnderliers: BigNumber,
+  addDebt: BigNumber,
+  minUnderlierToBuy: BigNumber,
+  minTokenToBuy: BigNumber,
+): Promise<{ contract: Contract, methodName: string, methodArgs: any[] }> => {
+  const { leverEPTActions, leverFYActions, leverSPTActions } = fiat.getContracts();
+  const { properties } = collateralTypeData;
+  const { fiatToUnderlierTradePath: { pools: poolsToUnderlier, assetsOut } } = collateralTypeData.metadata;
+  const deadline = Math.round(+new Date() / 1000) + 3600;
+
+  switch (properties.vaultType) {
+    case 'ERC20:EPT': {
+      if (!properties.eptData) throw new Error('Missing EPT data');
+      const sellFIATSwapParams = await leverEPTActions.buildSellFIATSwapParams(
+        poolsToUnderlier, assetsOut, minUnderlierToBuy, deadline
+      );
+      const args = {
+        contract: leverEPTActions,
+        methodName: 'buyCollateralAndIncreaseLever',
+        methodArgs: [
+          properties.vault,
+          proxies[0],
+          user,
+          upFrontUnderliers,
+          addDebt,
+          sellFIATSwapParams,
+          [
+            properties.eptData.balancerVault,
+            properties.eptData.poolId,
+            properties.underlierToken,
+            properties.token,
+            minTokenToBuy,
+            deadline
+          ]
+        ]
+      };
+      return args;
+    }
+    case 'ERC20:FY': {
+      if (!properties.fyData) throw new Error('Missing FY data');
+      const sellFIATSwapParams = await leverFYActions.buildSellFIATSwapParams(
+        poolsToUnderlier, assetsOut, minUnderlierToBuy, deadline
+      );
+      const args = {
+        contract: leverFYActions,
+        methodName: 'buyCollateralAndIncreaseLever',
+        methodArgs: [
+          properties.vault,
+          proxies[0],
+          user,
+          upFrontUnderliers,
+          addDebt,
+          sellFIATSwapParams,
+          [
+            minTokenToBuy,
+            properties.fyData.yieldSpacePool,
+            properties.underlierToken,
+            properties.token
+          ]
+        ],
+      };
+      return args;
+    }
+    case 'ERC20:SPT': {
+      if (!properties.sptData) throw new Error('Missing SPT data');
+      const sellFIATSwapParams = await leverSPTActions.buildSellFIATSwapParams(
+        poolsToUnderlier, assetsOut, minUnderlierToBuy, deadline
+      );
+      const args = {
+        contract: leverSPTActions,
+        methodName: 'buyCollateralAndIncreaseLever',
+        methodArgs: [
+          properties.vault,
+          proxies[0],
+          user,
+          upFrontUnderliers,
+          addDebt,
+          sellFIATSwapParams,
+          [
+            properties.sptData.adapter,
+            minTokenToBuy,
+            properties.sptData.maturity,
+            properties.underlierToken,
+            properties.token,
+            upFrontUnderliers.add(minUnderlierToBuy)
+          ]
+        ],
+      };
+      return args;
+    }
+    default: {
+      throw new Error('Unsupported vault: ', properties.vaultType);
+    }
+  }
+};
+
+export const buildSellCollateralAndDecreaseLeverArgs = async (
+  fiat: any,
+  user: string,
+  proxies: any[],
+  collateralTypeData: any,
+  subTokenAmount: BigNumber,
+  subDebt: BigNumber,
+  maxUnderliersToSell: BigNumber,
+  minUnderliersToBuy: BigNumber,
+  position: any
+): Promise<{ contract: Contract, methodName: string, methodArgs: any[] }> => {
+  const { leverEPTActions, leverFYActions, leverSPTActions } = fiat.getContracts();
+  const { properties } = collateralTypeData;
+  const { fiatToUnderlierTradePath: { pools, assetsOut } } = collateralTypeData.metadata;
+  const deadline = Math.round(+new Date() / 1000) + 3600;
+  const poolsToFIAT = JSON.parse(JSON.stringify(pools)); // TODO: expected it to be reversed
+  const assetsIn = JSON.parse(JSON.stringify(assetsOut)).reverse();
+
+  let subNormalDebt = addDeltaNormalBuffer(debtToNormalDebt(subDebt, collateralTypeData.state.codex.virtualRate));
+  if (position.normalDebt.sub(subNormalDebt).lt(WAD)) subNormalDebt = position.normalDebt;
+  // if subTokenAmount is zero then debt can't be decreased
+  if (subTokenAmount.isZero()) throw new Error('Invalid value for `subTokenAmount` - Value has to be non-zero');
+
+  switch (properties.vaultType) {
+    case 'ERC20:EPT': {
+      if (!properties.eptData) throw new Error('Missing EPT data');
+      const buyFIATSwapParams = await leverEPTActions.buildBuyFIATSwapParams(
+        poolsToFIAT, assetsIn, maxUnderliersToSell, deadline
+      );
+      const args = {
+        contract: leverEPTActions,
+        methodName: 'sellCollateralAndDecreaseLever',
+        methodArgs: [
+          properties.vault,
+          proxies[0],
+          user,
+          subTokenAmount,
+          subNormalDebt,
+          buyFIATSwapParams,
+          [
+            properties.eptData.balancerVault,
+            properties.eptData.poolId,
+            properties.token,
+            properties.underlierToken,
+            minUnderliersToBuy,
+            deadline
+          ]
+        ]
+      };
+      return args;
+    }
+    case 'ERC20:FY': {
+      if (!properties.fyData) throw new Error('Missing FY data');
+      const buyFIATSwapParams = await leverFYActions.buildBuyFIATSwapParams(
+        poolsToFIAT, assetsIn, maxUnderliersToSell, deadline
+      );
+      const args = {
+        contract: leverFYActions,
+        methodName: 'sellCollateralAndDecreaseLever',
+        methodArgs: [
+          properties.vault,
+          proxies[0],
+          user,
+          subTokenAmount,
+          subNormalDebt,
+          buyFIATSwapParams,
+          [
+            minUnderliersToBuy,
+            properties.fyData.yieldSpacePool,
+            properties.token,
+            properties.underlierToken
+          ]
+        ]
+      };
+      return args;
+    }
+    case 'ERC20:SPT': {
+      if (!properties.sptData) throw new Error('Missing SPT data');
+      const buyFIATSwapParams = await leverSPTActions.buildBuyFIATSwapParams(
+        poolsToFIAT, assetsIn, maxUnderliersToSell, deadline
+      );
+      const args = {
+        contract: leverSPTActions,
+        methodName: 'sellCollateralAndDecreaseLever',
+        methodArgs: [
+          properties.vault,
+          proxies[0],
+          user,
+          subTokenAmount,
+          subNormalDebt,
+          buyFIATSwapParams,
+          [
+            properties.sptData.adapter,
+            minUnderliersToBuy,
+            properties.sptData.maturity,
+            properties.token,
+            properties.underlierToken,
+            subTokenAmount
+          ]
+        ]
+      };
+      return args;
+    }
+    default: {
+      throw new Error('Unsupported vault: ', properties.vaultType);
+    }
+  }
+};
+
+export const buildRedeemCollateralAndDecreaseLeverArgs = async (
+  fiat: any,
+  user: string,
+  proxies: any[],
+  collateralTypeData: any,
+  subTokenAmount: BigNumber,
+  subDebt: BigNumber,
+  maxUnderliersToSell: BigNumber,
+  position: any
+): Promise<{ contract: Contract, methodName: string, methodArgs: any[] }> => {
+  const { leverEPTActions, leverFYActions, leverSPTActions } = fiat.getContracts();
+  const { properties } = collateralTypeData;
+  const { fiatToUnderlierTradePath: { pools, assetsOut } } = collateralTypeData.metadata;
+  const deadline = Math.round(+new Date() / 1000) + 3600;
+  const poolsToFIAT = JSON.parse(JSON.stringify(pools)); // TODO: expected it to be reversed
+  const assetsIn = JSON.parse(JSON.stringify(assetsOut)).reverse();
+
+  let subNormalDebt = addDeltaNormalBuffer(debtToNormalDebt(subDebt, collateralTypeData.state.codex.virtualRate));
+  if (position.normalDebt.sub(subNormalDebt).lt(WAD)) subNormalDebt = position.normalDebt;
+  // if subTokenAmount is zero then debt can't be decreased
+  if (subTokenAmount.isZero()) throw new Error('Invalid value for `subTokenAmount` - Value has to be non-zero');
+
+  switch (properties.vaultType) {
+    case 'ERC20:EPT': {
+      if (!properties.eptData) throw new Error('Missing EPT data');
+      const buyFIATSwapParams = await leverEPTActions.buildBuyFIATSwapParams(
+        poolsToFIAT, assetsIn, maxUnderliersToSell, deadline
+      );
+      const args = {
+        contract: leverEPTActions,
+        methodName: 'redeemCollateralAndDecreaseLever',
+        methodArgs: [
+          properties.vault,
+          properties.token,
+          proxies[0],
+          user,
+          subTokenAmount,
+          subNormalDebt,
+          buyFIATSwapParams
+        ]
+      };
+      return args;
+    }
+    case 'ERC20:FY': {
+      if (!properties.fyData) throw new Error('Missing FY data');
+      const buyFIATSwapParams = await leverFYActions.buildBuyFIATSwapParams(
+        poolsToFIAT, assetsIn, maxUnderliersToSell, deadline
+      );
+      const args = {
+        contract: leverFYActions,
+        methodName: 'redeemCollateralAndDecreaseLever',
+        methodArgs: [
+          properties.vault,
+          properties.token,
+          proxies[0],
+          user,
+          subTokenAmount,
+          subNormalDebt,
+          buyFIATSwapParams
+        ]
+      };
+      return args;
+    }
+    case 'ERC20:SPT': {
+      if (!properties.sptData) throw new Error('Missing SPT data');
+      const buyFIATSwapParams = await leverSPTActions.buildBuyFIATSwapParams(
+        poolsToFIAT, assetsIn, maxUnderliersToSell, deadline
+      );
+      const args = {
+        contract: leverSPTActions,
+        methodName: 'redeemCollateralAndDecreaseLever',
+        methodArgs: [
+          properties.vault,
+          properties.token,
+          proxies[0],
+          user,
+          subTokenAmount,
+          subNormalDebt,
+          buyFIATSwapParams
         ]
       };
       return args;

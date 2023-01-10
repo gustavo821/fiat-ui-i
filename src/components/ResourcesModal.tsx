@@ -53,12 +53,12 @@ export const ResourcesModal = (props: any) => {
   return (
     <Modal
       closeButton
-      aria-labelledby="modal-title"
+      aria-labelledby='modal-title'
       open={props.open}
       onClose={props.onClose}
     >
       <Modal.Header css={{justifyContent: 'space-between'}}>
-        <Text id="modal-title" size={18} css={headerCss}>
+        <Text id='modal-title' size={18} css={headerCss}>
           Resources
         </Text>
       </Modal.Header>

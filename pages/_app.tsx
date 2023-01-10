@@ -13,6 +13,7 @@ import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import { chain, configureChains, createClient, WagmiConfig } from 'wagmi';
 import { alchemyProvider } from 'wagmi/providers/alchemy';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import '../styles/global.css';
 
 const { chains, provider, webSocketProvider } = configureChains([
@@ -56,7 +57,10 @@ const nextLightTheme = createTheme({
     colors: {
       connectButtonBackground: '#FFF',
       connectButtonColor: '#25292e',
-    }
+    },
+    transitions:  {
+      default: 'all 125ms ease',
+    },
   }
 })
 const nextDarkTheme = createTheme({
@@ -64,9 +68,14 @@ const nextDarkTheme = createTheme({
   theme: {
     colors: {
       connectButtonBackground: '#1a1b1f'
-    }
+    },
+    transitions:  {
+      default: 'all 125ms ease',
+    },
   }
 })
+
+const queryClient = new QueryClient()
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (
@@ -75,22 +84,24 @@ function MyApp({ Component, pageProps }: AppProps) {
         <title>FIAT I</title>
       </Head>
       <WagmiConfig client={wagmiClient}>
-        <RainbowKitProvider 
-          appInfo={demoAppInfo} 
-          chains={chains} 
-          theme={{lightMode: lightTheme(), darkMode: darkTheme(),}}
-          showRecentTransactions={true}
-        >
-          <NextThemesProvider 
-            defaultTheme='system'
-            attribute='class'
-            value={{ light: nextLightTheme.className, dark: nextDarkTheme.className }}
+        <QueryClientProvider client={queryClient}>
+          <RainbowKitProvider 
+            appInfo={demoAppInfo} 
+            chains={chains} 
+            theme={{lightMode: lightTheme(), darkMode: darkTheme(),}}
+            showRecentTransactions={true}
           >
-            <NextUIProvider>
-              <Component {...pageProps} />
-            </NextUIProvider>
-          </NextThemesProvider>
-        </RainbowKitProvider>
+            <NextThemesProvider 
+              defaultTheme='system'
+              attribute='class'
+              value={{ light: nextLightTheme.className, dark: nextDarkTheme.className }}
+            >
+              <NextUIProvider>
+                <Component {...pageProps} />
+              </NextUIProvider>
+            </NextThemesProvider>
+          </RainbowKitProvider>
+        </QueryClientProvider>
       </WagmiConfig>
     </>
   );
