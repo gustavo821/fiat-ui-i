@@ -114,7 +114,7 @@ export const LeverCreateForm = ({
         <Text b size={'m'}>Inputs</Text>
         {underlierBalance && (
           <Text size={'$sm'}>
-            Wallet:{' '}
+            Available to deposit:{' '}
             {commifyToDecimalPlaces(underlierBalance, underlierScale, 2)}{' '}
             {underlierSymbol}
           </Text>
@@ -432,7 +432,8 @@ export const LeverIncreaseForm = ({
         <Text b size={'m'}>Inputs</Text>
         {underlierBalance && (
           <Text size={'$sm'}>
-            Wallet: {commifyToDecimalPlaces(underlierBalance, underlierScale, 2)} {underlierSymbol}
+            Available to deposit:{' '}
+            {commifyToDecimalPlaces(underlierBalance, underlierScale, 2)} {underlierSymbol}
           </Text>
         )}
         <NumericInput

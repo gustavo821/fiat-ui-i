@@ -129,7 +129,7 @@ export const CreateForm = ({
         </Text>
         {underlierBalance && (
           <Text size={'$sm'}>
-            Wallet:{' '}
+            Available to deposit:{' '}
             {commifyToDecimalPlaces(underlierBalance, underlierScale, 2)}{' '}
             {underlierSymbol}
           </Text>
@@ -411,7 +411,8 @@ export const IncreaseForm = ({
       </Text>
       {modifyPositionData.underlierBalance && (
         <Text size={'$sm'}>
-          Wallet: {commifyToDecimalPlaces(modifyPositionData.underlierBalance, modifyPositionData.collateralType.properties.underlierScale, 2)} {modifyPositionData.collateralType.properties.underlierSymbol}
+          Available to deposit:{' '}
+          {commifyToDecimalPlaces(modifyPositionData.underlierBalance, modifyPositionData.collateralType.properties.underlierScale, 2)} {modifyPositionData.collateralType.properties.underlierSymbol}
         </Text>
       )}
       <Grid.Container
