@@ -2,23 +2,31 @@ import React from 'react';
 import { Badge, SortDescriptor, Table, Text, User } from '@nextui-org/react';
 import { addressEq, wadToDec, ZERO } from '@fiatdao/sdk';
 import {
-  earnableRateToAPY, encodeCollateralTypeId, floor2, formatUnixTimestamp,
-  interestPerSecondToAPY, interestPerSecondToRateUntilMaturity
+  decodeCollateralTypeId, earnableRateToAPY, encodeCollateralTypeId, encodePositionId,
+  floor2, formatUnixTimestamp, getPositionData, interestPerSecondToAPY, interestPerSecondToRateUntilMaturity
 } from '../utils';
+import { chain as chains, useAccount, useNetwork, } from 'wagmi';
+import { useCollateralTypes } from '../state/queries/useCollateralTypes';
+import { useUserData } from '../state/queries/useUserData';
+import useStore from '../state/stores/globalStore';
 
-interface CollateralTypesTableProps {
-  collateralTypesData: Array<any>,
-  positionsData: Array<any>,
-  onSelectCollateralType: (collateralTypeId: string) => void
-}
-
-export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
+export const CollateralTypesTable = () => {
   const [sortedData, setSortedData] = React.useState<any[]>([]);
   const [sortProps, setSortProps] = React.useState<SortDescriptor>({ column: 'Maturity', direction: 'descending' });
-  
+
+  const { chain } = useNetwork();
+  const { address } = useAccount();
+  const fiat = useStore((state) => state.fiat);
+  const setSelectedPositionId = useStore((state) => state.setSelectedPositionId);
+  const setSelectedCollateralTypeId = useStore((state) => state.setSelectedCollateralTypeId);
+
+  const { data: collateralTypesData } = useCollateralTypes(fiat, chain?.id ?? chains.mainnet.id);
+  const { data: userData } = useUserData(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
+  const { positionsData, proxies } = userData as any;
+
   React.useEffect(() => {
-    const data = [...props.collateralTypesData].filter(({ properties: { vault, tokenId } }) => {
-      if (props.positionsData.find((position) => addressEq(position.vault, vault) && position.tokenId == tokenId)) {
+    const data = [...collateralTypesData].filter(({ properties: { vault, tokenId } }) => {
+      if (positionsData.find((position: any) => addressEq(position.vault, vault) && position.tokenId == tokenId)) {
         return false;
       }
       return true;
@@ -30,19 +38,33 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
       return a.properties.maturity.toNumber() > b.properties.maturity.toNumber() ? 1 : -1
     });
     setSortedData(data);
-  }, [props.collateralTypesData, props.positionsData, sortProps.direction])
+  }, [collateralTypesData, positionsData, sortProps.direction])
 
-  if (props.collateralTypesData.length === 0) return null;
+  if (collateralTypesData.length === 0) return null;
+
+  const onSelectCollateralType = (collateralTypeId: string) => {
+    // If user has an existing position for the collateral type then open PositionModal instead
+    const { vault, tokenId } = decodeCollateralTypeId(collateralTypeId);
+    const positionData = getPositionData(positionsData, vault, tokenId, proxies[0]);
+    if (positionData !== undefined) {
+      const positionId = encodePositionId(vault, tokenId, positionData.owner);
+      setSelectedPositionId(positionId);
+      setSelectedCollateralTypeId(null);
+    } else {
+      setSelectedPositionId(null);
+      setSelectedCollateralTypeId(collateralTypeId);
+    }
+  }
 
   return (
     <>
       <Text h2>Create Position</Text>
       <Table
         aria-label='Collateral Types'
-        css={{ height: 'auto', minWidth: '100%' }}
+        css={{ height: 'auto', minWidth: '1088px' }}
         selectionMode='single'
         selectedKeys={'1'}
-        onSelectionChange={(selected) => props.onSelectCollateralType(Object.values(selected)[0])}
+        onSelectionChange={(selected) => onSelectCollateralType(Object.values(selected)[0])}
         sortDescriptor={sortProps as SortDescriptor}
         onSortChange={(data) => { setSortProps({ direction: data.direction, column: data.column })}}
       >
@@ -87,7 +109,7 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
                   <Table.Cell>{`${floor2(wadToDec(earnableRateAnnulized.mul(100)))}% (${floor2(wadToDec(earnableRate.mul(100)))}%)`}</Table.Cell>
                   <Table.Cell>{`${floor2(wadToDec(borrowRateAnnualized.mul(100)))}% (${floor2(wadToDec(borrowRate.mul(100)))}%)`}</Table.Cell>
                   <Table.Cell>{`${floor2(Number(wadToDec(depositedCollateral))).toLocaleString()} ${symbol}`}</Table.Cell>
-                  <Table.Cell>
+                  <Table.Cell css={{'& span': {width: '100%'}}}>
                     <Badge isSquared color={new Date() < maturityFormatted ? 'success' : 'error'} variant='flat' >
                       {formatUnixTimestamp(maturity)}, ({daysUntilMaturity} days)
                     </Badge>

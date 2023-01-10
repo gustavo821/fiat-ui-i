@@ -1,35 +1,39 @@
 import React from 'react';
 import { Badge, Col, Row, SortDescriptor, Table, Text, User } from '@nextui-org/react';
-import { WAD, wadToDec } from '@fiatdao/sdk';
-
+import { computeCollateralizationRatio, WAD, wadToDec } from '@fiatdao/sdk';
+import { chain as chains, useAccount, useNetwork, } from 'wagmi';
 import {
-  encodePositionId, floor2, floor4, formatUnixTimestamp, getCollateralTypeData,
+  encodePositionId, floor2, formatUnixTimestamp, getCollateralTypeData,
   interestPerSecondToAPY, interestPerSecondToRateUntilMaturity
 } from '../utils';
 import { ethers } from 'ethers';
+import { useCollateralTypes } from '../state/queries/useCollateralTypes';
+import { useUserData } from '../state/queries/useUserData';
+import useStore from '../state/stores/globalStore';
 
-interface PositionsTableProps {
-  contextData: any,
-  collateralTypesData: Array<any>,
-  positionsData: Array<any>,
-  onSelectPosition: (positionId: string) => void
-}
-
-export const PositionsTable = (props: PositionsTableProps) => {
+export const PositionsTable = () => {
   const [sortedData, setSortedData] = React.useState<any[]>([]);
   const [sortProps, setSortProps] = React.useState<SortDescriptor>({
     column: 'Maturity',
     direction: 'descending'
   });
+  const fiat = useStore((state) => state.fiat);
+  const setSelectedPositionId = useStore((state) => state.setSelectedPositionId);
+  const setSelectedCollateralTypeId = useStore((state) => state.setSelectedCollateralTypeId);
+  const { chain } = useNetwork();
+  const { address } = useAccount();
+  const { data: collateralTypesData } = useCollateralTypes(fiat, chain?.id ?? chains.mainnet.id);
+  const { data: userData } = useUserData(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
+  const { positionsData } = userData as any;
 
   React.useEffect(() => {
-    const data = [...props.positionsData]
+    const data = [...positionsData]
     data.sort((a: any, b: any) : number => {
-      if (!props.collateralTypesData || !a || !b) return 0;
+      if (!collateralTypesData || !a || !b) return 0;
       const { vault: vaultA, tokenId: tokenIdA } = a;
       const { vault: vaultB, tokenId: tokenIdB } = b;
-      const dataA = getCollateralTypeData(props.collateralTypesData, vaultA, tokenIdA);
-      const dataB = getCollateralTypeData(props.collateralTypesData, vaultB, tokenIdB);
+      const dataA = getCollateralTypeData(collateralTypesData, vaultA, tokenIdA);
+      const dataB = getCollateralTypeData(collateralTypesData, vaultB, tokenIdB);
       if (!dataA || !dataB) return 0;
       if (sortProps.direction === 'descending' ) {
         return dataA.properties.maturity.toNumber() < dataB.properties.maturity.toNumber() ? 1 : -1
@@ -37,9 +41,9 @@ export const PositionsTable = (props: PositionsTableProps) => {
       return dataA.properties.maturity.toNumber() > dataB.properties.maturity.toNumber() ? 1 : -1
     });
     setSortedData(data);
-  }, [props.collateralTypesData, props.positionsData, sortProps.direction])
+  }, [collateralTypesData, positionsData, sortProps.direction])
 
-  if (props.positionsData === null || props.positionsData.length === 0 || props.collateralTypesData.length === 0) {
+  if (positionsData === null || positionsData.length === 0 || collateralTypesData.length === 0) {
     // TODO
     // return <Loading />;
     return null;
@@ -50,15 +54,16 @@ export const PositionsTable = (props: PositionsTableProps) => {
       <Text h2>Positions</Text>
       <Table
         aria-label='Positions'
-        css={{ height: 'auto', minWidth: '100%' }}
+        css={{ height: 'auto', minWidth: '1088px' }}
         selectionMode='single'
         selectedKeys={'1'}
-        onSelectionChange={(selected) =>
-          props.onSelectPosition(Object.values(selected)[0])
-        }
+        onSelectionChange={(selected) => {
+          setSelectedPositionId(Object.values(selected)[0])
+          setSelectedCollateralTypeId(null)
+        }}
         sortDescriptor={sortProps as SortDescriptor}
         disabledKeys={sortedData.filter(({ vault, tokenId }) => (
-          getCollateralTypeData(props.collateralTypesData, vault, tokenId) === undefined
+          getCollateralTypeData(collateralTypesData, vault, tokenId) === undefined
         )).map(({ vault, tokenId, owner }) => encodePositionId(vault, tokenId, owner))}
         onSortChange={(data) => {
           setSortProps({
@@ -79,7 +84,7 @@ export const PositionsTable = (props: PositionsTableProps) => {
           {
             sortedData.map((position) => {
               const { owner, vault, tokenId, collateral, normalDebt } = position;
-              const collateralTypeData = getCollateralTypeData(props.collateralTypesData, vault, tokenId);
+              const collateralTypeData = getCollateralTypeData(collateralTypesData, vault, tokenId);
               if (collateralTypeData === undefined) {
                 return (
                   <Table.Row key={encodePositionId(vault, tokenId, owner)}>
@@ -103,7 +108,7 @@ export const PositionsTable = (props: PositionsTableProps) => {
               const borrowRateAnnualized = interestPerSecondToAPY(interestPerSecond);
               const debt = normalDebt.mul(virtualRate).div(WAD);
               const dueAtMaturity = normalDebt.mul(borrowRate).div(WAD);
-              const collRatio = props.contextData.fiat.computeCollateralizationRatio(collateral, fairPrice, normalDebt, virtualRate);
+              const collRatio = computeCollateralizationRatio(collateral, fairPrice, normalDebt, virtualRate);
               const maturityFormatted = new Date(Number(maturity.toString()) * 1000);
               const daysUntilMaturity = Math.max(Math.floor((Number(maturity.toString()) - Math.floor(Date.now() / 1000)) / 86400), 0);
               return (
@@ -144,7 +149,7 @@ export const PositionsTable = (props: PositionsTableProps) => {
                       ? '∞' : `${floor2(wadToDec(collRatio.mul(100)))}%`
                     }
                   </Table.Cell>
-                  <Table.Cell>
+                  <Table.Cell css={{'& span': {width: '100%'}}}>
                     <Badge isSquared color={new Date() < maturityFormatted ? 'success' : 'error'} variant='flat' >
                       {formatUnixTimestamp(maturity)}, ({daysUntilMaturity} days)
                     </Badge>
