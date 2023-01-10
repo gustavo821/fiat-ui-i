@@ -259,26 +259,17 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
         try {
           let deltaCollateral = ZERO;
           if (!underlier.isZero()) {
-            try {
-              // Preview underlier to collateral token swap
-              const tokensOut = await userActions.underlierToCollateralToken(fiat, underlier, collateralType);
-              // redemption price with a 1:1 exchange rate
-              const minTokensOut = underlier.mul(tokenScale).div(underlierScale);
-              // apply slippagePct to preview
-              const tokensOutWithSlippage = tokensOut.mul(WAD.sub(slippage)).div(WAD);
-              // assert: minTokensOut > idealTokenOut
-              if (tokensOutWithSlippage.lt(minTokensOut)) set(() => (
-                { formWarnings: ['Large Price Impact (Negative Yield)'] }
-              ));
-              deltaCollateral = scaleToWad(tokensOut, tokenScale).mul(WAD.sub(slippage)).div(WAD);
-            } catch (e: any) {
-              if (e.reason && e.reason === 'BAL#001') {
-                // Catch balancer-specific underflow error
-                // https://dev.balancer.fi/references/error-codes
-                throw new Error('Insufficient liquidity to convert underlier to collateral');
-              }
-              throw e;
-            }
+            // Preview underlier to collateral token swap
+            const tokensOut = await userActions.underlierToCollateralToken(fiat, underlier, collateralType);
+            // redemption price with a 1:1 exchange rate
+            const minTokensOut = underlier.mul(tokenScale).div(underlierScale);
+            // apply slippagePct to preview
+            const tokensOutWithSlippage = tokensOut.mul(WAD.sub(slippage)).div(WAD);
+            // assert: minTokensOut > idealTokenOut
+            if (tokensOutWithSlippage.lt(minTokensOut)) set(() => (
+              { formWarnings: ['Large Price Impact (Negative Yield)'] }
+            ));
+            deltaCollateral = scaleToWad(tokensOut, tokenScale).mul(WAD.sub(slippage)).div(WAD);
           }
 
           // For new position, calculate deltaDebt based on targetedCollRatio
@@ -316,6 +307,7 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
               debt: ZERO,
               collRatio: ZERO,
             },
+            formDataLoading: false,
             formErrors: [...get().formErrors, error.message],
           }));
         }
@@ -387,26 +379,17 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
         try {
           let deltaCollateral = ZERO;
           if (!underlier.isZero()) {
-            try {
-              // Preview underlier to collateral token swap
-              const tokensOut = await userActions.underlierToCollateralToken(fiat, underlier, collateralType);
-              // redemption price with a 1:1 exchange rate
-              const minTokensOut = underlier.mul(tokenScale).div(underlierScale);
-              // apply slippagePct to preview
-              const tokensOutWithSlippage = tokensOut.mul(WAD.sub(slippage)).div(WAD);
-              // assert: minTokensOut > idealTokenOut
-              if (tokensOutWithSlippage.lt(minTokensOut)) set(() => (
-                { formWarnings: ['Large Price Impact (Negative Yield)'] }
-              ));
-              deltaCollateral = scaleToWad(tokensOut, tokenScale).mul(WAD.sub(slippage)).div(WAD);
-            } catch (e: any) {
-              if (e.reason && e.reason === 'BAL#001') {
-                // Catch balancer-specific underflow error
-                // https://dev.balancer.fi/references/error-codes
-                throw new Error('Insufficient liquidity to convert underlier to collateral');
-              }
-              throw e;
-            }
+            // Preview underlier to collateral token swap
+            const tokensOut = await userActions.underlierToCollateralToken(fiat, underlier, collateralType);
+            // redemption price with a 1:1 exchange rate
+            const minTokensOut = underlier.mul(tokenScale).div(underlierScale);
+            // apply slippagePct to preview
+            const tokensOutWithSlippage = tokensOut.mul(WAD.sub(slippage)).div(WAD);
+            // assert: minTokensOut > idealTokenOut
+            if (tokensOutWithSlippage.lt(minTokensOut)) set(() => (
+              { formWarnings: ['Large Price Impact (Negative Yield)'] }
+            ));
+            deltaCollateral = scaleToWad(tokensOut, tokenScale).mul(WAD.sub(slippage)).div(WAD);
           }
 
           // Estimate new position values based on deltaDebt, taking into account an existing position's collateral
@@ -515,17 +498,8 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
           const tokenInScaled = wadToScale(deltaCollateral, tokenScale);
           let underlier = ZERO;
           if (!tokenInScaled.isZero()) {
-            try {
-              const underlierAmount = await userActions.collateralTokenToUnderlier(fiat, tokenInScaled, collateralType);
-              underlier = underlierAmount.mul(WAD.sub(slippage)).div(WAD); // with slippage
-            } catch (e: any) {
-              if (e.reason && e.reason === 'BAL#001') {
-                // Catch balancer-specific underflow error
-                // https://dev.balancer.fi/references/error-codes
-                throw new Error('Insufficient liquidity to convert collateral to underlier');
-              }
-              throw e;
-            }
+            const underlierAmount = await userActions.collateralTokenToUnderlier(fiat, tokenInScaled, collateralType);
+            underlier = underlierAmount.mul(WAD.sub(slippage)).div(WAD); // with slippage
           }
           const deltaNormalDebt = debtToNormalDebt(deltaDebt, rate);
 
