@@ -187,7 +187,7 @@ export const LeverCreateForm = ({
           </>
         )}
         <Text size={'$sm'}>
-          Note: The fees are due on the total leveraged amounts. Withdrawing collateral before maturity most likely will result in a loss.
+          Note: Third-party swap fees are due on the total position amounts. Withdrawing collateral before maturity may result in a loss.
         </Text>
       </Modal.Body>
       <Spacer y={0.75} />
@@ -504,7 +504,7 @@ export const LeverIncreaseForm = ({
           </>
         )}
         <Text size={'$sm'}>
-          Note: The fees are due on the total leveraged amounts. Withdrawing collateral before maturity most likely will result in a loss.
+          Note: Third-party swap fees are due on the total position amounts. Withdrawing collateral before maturity may result in a loss.
         </Text>
       </Modal.Body>
 
@@ -830,7 +830,7 @@ export const LeverDecreaseForm = ({
           </>
         )}
         <Text size={'$sm'}>
-          Note: The fees are due on the total leveraged amounts. Withdrawing collateral before maturity most likely will result in a loss.
+          Note: Third-party swap fees are due on the total position amounts. Withdrawing collateral before maturity may result in a loss.
         </Text>
       </Modal.Body>
 
