@@ -510,7 +510,7 @@ export const LeverIncreaseForm = ({
               color='primary'
               content={`Amount of ${underlierSymbol} to swap in addition to the flash-lent amount of FIAT for ${tokenSymbol}.
                 This determines the resulting collateralization ratio of the levered position.
-                The more underliers are provided upfront, the higher the collateralization ratio will be.
+                The more underliers are provided upfront, the higher (safer) the collateralization ratio will be.
               `}
             >
               Upfront underliers
