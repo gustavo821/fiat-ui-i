@@ -248,7 +248,7 @@ export const LeverCreateForm = ({
             <Tooltip
               css={{ zIndex: 10000, width: 250 }}
               color='primary'
-              content={`The total amount of collateral that is bought the upfront underliers and the flash-lent FIAT.
+              content={`The total amount of collateral that is bought via the upfront underliers and the flash-lent FIAT.
                 This estimate accounts for slippage and price impact.`
               }
             >
@@ -631,7 +631,7 @@ export const LeverIncreaseForm = ({
             <Tooltip
               css={{ zIndex: 10000, width: 250 }}
               color='primary'
-              content={`The total amount of collateral that is bought the upfront underliers and the flash-lent FIAT.
+              content={`The total amount of collateral that is bought via the upfront underliers and the flash-lent FIAT.
                 This estimate accounts for slippage and price impact.
               `}
             >
