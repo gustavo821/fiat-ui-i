@@ -139,7 +139,7 @@ export const LeverCreateForm = ({
               onChange={(event) => { setUnderlierSlippagePct(fiat, event.target.value, modifyPositionData) }}
               step='0.01'
               placeholder='1.00'
-              label='Slippage w/ Price Impact (FIAT to Underlier swap)'
+              label='Slippage (FIAT to Underlier swap)'
               rightAdornment={'%'}
               style={{ width: '11.0rem' }}
             />
@@ -151,7 +151,7 @@ export const LeverCreateForm = ({
               onChange={(event) => { setCollateralSlippagePct(fiat, event.target.value, modifyPositionData) }}
               step='0.01'
               placeholder='1.00'
-              label='Slippage w/ Price Impact (Underlier to Collateral swap)'
+              label='Slippage (Underlier to Collateral swap)'
               rightAdornment={'%'}
               style={{ width: '11.0rem' }}
             />
