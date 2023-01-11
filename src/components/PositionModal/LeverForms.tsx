@@ -128,9 +128,9 @@ export const LeverCreateForm = ({
             <Tooltip
               css={{ zIndex: 10000, width: 250 }}
               color='primary'
-              content={`Amount of ${underlierSymbol} to swap in addition to the flash-lent amount of FIAT for ${tokenSymbol}.
+              content={`The amount of ${underlierSymbol} to swap in addition to the flash-lent amount of FIAT for ${tokenSymbol}.
                 This determines the resulting collateralization ratio of the levered position.
-                The more underliers are provided upfront, the higher the collateralization ratio will be.
+                The more underliers are provided upfront, the higher (safer) the collateralization ratio will be.
               `}
             >
               Upfront underliers
@@ -154,9 +154,11 @@ export const LeverCreateForm = ({
                 <Tooltip
                   css={{ zIndex: 10000, width: 250 }}
                   color='primary'
-                  content={`Maximum allowed slippage when swapping the flash-lent FIAT for ${underlierSymbol}.`}
+                  content={`The maximum allowed slippage (in percentage) when swapping the flash-lent FIAT for ${underlierSymbol}.
+                    The transaction will revert if the amount of ${underlierSymbol} diverges by more (in percentages) than the provided slippage amount.
+                  `}
                 >
-                  Slippage<br/>(FIAT to Underlier swap)
+                  Slippage<br/>(FIAT → Underlier)
                 </Tooltip>
               }
               rightAdornment={'%'}
@@ -174,9 +176,11 @@ export const LeverCreateForm = ({
                 <Tooltip
                   css={{ zIndex: 10000, width: 250 }}
                   color='primary'
-                  content={`Maximum allowed slippage when swapping bought ${underlierSymbol} for ${tokenSymbol}.`}
+                  content={`The maximum allowed slippage (in percentage) when swapping the bought ${underlierSymbol} for ${tokenSymbol}.
+                    The transaction will revert if the amount of ${tokenSymbol} diverges by more (in percentages) than the provided slippage amount.
+                  `}
                 >
-                  Slippage<br/>(Underlier to Collateral swap)
+                  Slippage<br/>(Underlier → Collateral Asset)
                 </Tooltip>
               }
               rightAdornment={'%'}
@@ -194,7 +198,7 @@ export const LeverCreateForm = ({
                 css={{ zIndex: 10000, width: 250 }}
                 color='primary'
                 content={`The targeted collateralization ratio of the levered position.
-                  Note: The actual collateralization ratio can slightly diverge from the targeted value (see Position Preview).
+                  Note: The actual collateralization ratio can diverge slightly from the targeted value (see Position Preview).
                 `}
               >
                 Targeted collateralization ratio ({floor2(wadToDec(targetedCollRatio.mul(100)))}%)
@@ -244,8 +248,9 @@ export const LeverCreateForm = ({
             <Tooltip
               css={{ zIndex: 10000, width: 250 }}
               color='primary'
-              content={`The total amount of collateral that is obtained from swapping the upfront underliers and the flash-lent FIAT.
-              This estimate accounts for slippage and price impact.`}
+              content={`The total amount of collateral that is bought the upfront underliers and the flash-lent FIAT.
+                This estimate accounts for slippage and price impact.`
+              }
             >
               Total Collateral to deposit (incl. slippage)
             </Tooltip>
@@ -270,8 +275,9 @@ export const LeverCreateForm = ({
               css={{ zIndex: 10000, width: 250 }}
               color='primary'
               content={`The implied gain of the collateral asset at maturity.
-              This estimate accounts for the due borrow fees as well as the slippage and the price impact using current exchange rates.
-              Note: Borrow fees, the price impact and the price of FIAT might be different at maturity.`}
+                This estimate accounts for the due borrow fees as well as the slippage and the price impact using current exchange rates.
+                Note: Borrow fees, the price impact and the price of FIAT might be different at maturity.
+              `}
             >
               Estimated net gain at maturity 
               (incl. {floor2(Number(wadToDec(interestPerSecondToAPY(interestPerSecond))) * 100)}% borrow fee)
@@ -528,9 +534,11 @@ export const LeverIncreaseForm = ({
                 <Tooltip
                   css={{ zIndex: 10000, width: 250 }}
                   color='primary'
-                  content={`Maximum allowed slippage when swapping the flash-lent FIAT for ${underlierSymbol}.`}
+                  content={`The maximum allowed slippage (in percentage) when swapping the flash-lent FIAT for ${underlierSymbol}.
+                    The transaction will revert if the amount of ${underlierSymbol} diverges by more (in percentages) than the provided slippage amount.
+                  `}
                 >
-                  Slippage<br/>(FIAT to Underlier swap)
+                  Slippage<br/>(FIAT → Underlier)
                 </Tooltip>
               }
               rightAdornment={'%'}
@@ -547,9 +555,11 @@ export const LeverIncreaseForm = ({
                 <Tooltip
                   css={{ zIndex: 10000, width: 250 }}
                   color='primary'
-                  content={`Maximum allowed slippage when swapping bought ${underlierSymbol} for ${tokenSymbol}.`}
+                  content={`The maximum allowed slippage (in percentage) when swapping the bought ${underlierSymbol} for ${tokenSymbol}.
+                    The transaction will revert if the amount of ${tokenSymbol} diverges by more (in percentages) than the provided slippage amount.
+                  `}
                 >
-                  Slippage<br/>(Underlier to Collateral swap)
+                  Slippage<br/>(Underlier → Collateral Asset)
                 </Tooltip>
               }
               rightAdornment={'%'}
@@ -567,7 +577,7 @@ export const LeverIncreaseForm = ({
                 css={{ zIndex: 10000, width: 250 }}
                 color='primary'
                 content={`The targeted collateralization ratio of the levered position.
-                  Note: The actual collateralization ratio can slightly diverge from the targeted value (see Position Preview).
+                  Note: The actual collateralization ratio can diverge slightly from the targeted value (see Position Preview).
                 `}
               >
                 Targeted collateralization ratio ({floor2(wadToDec(targetedCollRatio.mul(100)))}%)
@@ -621,8 +631,9 @@ export const LeverIncreaseForm = ({
             <Tooltip
               css={{ zIndex: 10000, width: 250 }}
               color='primary'
-              content={`The total amount of collateral that is obtained from swapping the upfront underliers and the flash-lent FIAT.
-              This estimate accounts for slippage and price impact.`}
+              content={`The total amount of collateral that is bought the upfront underliers and the flash-lent FIAT.
+                This estimate accounts for slippage and price impact.
+              `}
             >
               Total Collateral to deposit (incl. slippage)
             </Tooltip>
@@ -647,8 +658,9 @@ export const LeverIncreaseForm = ({
               css={{ zIndex: 10000, width: 250 }}
               color='primary'
               content={`The net amount of underliers that can be redeemed at maturity.
-              This estimate accounts for the due borrow fees as well as the slippage and the price impact using current exchange rates.
-              Note: Borrow fees, the price impact and the price of FIAT might be different at maturity.`}
+                This estimate accounts for the due borrow fees as well as the slippage and the price impact using current exchange rates.
+                Note: Borrow fees, the price impact and the price of FIAT might be different at maturity.
+              `}
             >
               Redeemable at maturity 
               (incl. {floor2(Number(wadToDec(interestPerSecondToAPY(interestPerSecond))) * 100)}% borrow fee)
@@ -887,9 +899,11 @@ export const LeverDecreaseForm = ({
                 <Tooltip
                   css={{ zIndex: 10000, width: 250 }}
                   color='primary'
-                  content={`Maximum allowed slippage when swapping the withdrawn ${tokenSymbol} for ${underlierSymbol}.`}
+                  content={`The maximum allowed slippage (in percentage) when swapping the withdrawn ${tokenSymbol} for ${underlierSymbol}.
+                    The transaction will revert if the amount of ${underlierSymbol} diverges by more (in percentages) than the provided slippage amount.
+                  `}
                 >
-                  Slippage<br/>(Collateral to Underlier swap)
+                  Slippage<br/>(Collateral Asset → Underlier)
                 </Tooltip>
               }
               rightAdornment={'%'}
@@ -906,9 +920,11 @@ export const LeverDecreaseForm = ({
                 <Tooltip
                   css={{ zIndex: 10000, width: 250 }}
                   color='primary'
-                  content={`Maximum allowed slippage when swapping the bought ${underlierSymbol} for the flash-lent FIAT.`}
+                  content={`The maximum allowed slippage (in percentage) when swapping the bought ${underlierSymbol} for the flash-lent FIAT.
+                    The transaction will revert if the amount of FIAT diverges by more (in percentages) than the provided slippage amount.
+                  `}
                 >
-                  Slippage<br/>(Underlier to FIAT swap)
+                  Slippage<br/>(Underlier → FIAT)
                 </Tooltip>
               }
               rightAdornment={'%'}
@@ -941,7 +957,7 @@ export const LeverDecreaseForm = ({
                 css={{ zIndex: 10000, width: 250 }}
                 color='primary'
                 content={`The targeted collateralization ratio of the levered position.
-                  Note: The actual collateralization ratio can slightly diverge from the targeted value (see Position Preview).
+                  Note: The actual collateralization ratio can diverge slightly from the targeted value (see Position Preview).
                 `}
               >
                 Targeted collateralization ratio ({floor2(wadToDec(targetedCollRatio.mul(100)))}%)
@@ -1020,8 +1036,9 @@ export const LeverDecreaseForm = ({
               css={{ zIndex: 10000, width: 250 }}
               color='primary'
               content={`The net amount of underliers that can be redeemed at maturity.
-              This estimate accounts for the due borrow fees as well as the slippage and the price impact using current exchange rates.
-              Note: Borrow fees, the price impact and the price of FIAT might be different at maturity.`}
+                This estimate accounts for the due borrow fees as well as the slippage and the price impact using current exchange rates.
+                Note: Borrow fees, the price impact and the price of FIAT might be different at maturity.
+              `}
             >
               Redeemable at maturity 
               (incl. {floor2(Number(wadToDec(interestPerSecondToAPY(interestPerSecond))) * 100)}% borrow fee)
@@ -1268,9 +1285,11 @@ export const LeverRedeemForm = ({
               <Tooltip
                 css={{ zIndex: 10000, width: 250 }}
                 color='primary'
-                content={`Maximum allowed slippage when swapping the redeemed ${underlierSymbol} for the flash-lent FIAT.`}
+                content={`The maximum allowed slippage (in percentage) when swapping the redeemed ${underlierSymbol} for the flash-lent FIAT.
+                  The transaction will revert if the amount of FIAT diverges by more (in percentages) than the provided slippage amount.
+                `}
               >
-                Slippage<br/>(Underlier to FIAT swap)
+                Slippage<br/>(Underlier → FIAT)
               </Tooltip>
             }
             rightAdornment={'%'}
@@ -1287,7 +1306,7 @@ export const LeverRedeemForm = ({
                 css={{ zIndex: 10000, width: 250 }}
                 color='primary'
                 content={`The targeted collateralization ratio of the levered position.
-                  Note: The actual collateralization ratio can slightly diverge from the targeted value (see Position Preview).
+                  Note: The actual collateralization ratio can diverge slightly from the targeted value (see Position Preview).
                 `}
               >
                 Targeted collateralization ratio ({floor2(wadToDec(targetedCollRatio.mul(100)))}%)
