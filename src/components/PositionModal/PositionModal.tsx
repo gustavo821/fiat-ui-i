@@ -242,13 +242,13 @@ const PositionModalBody = (props: PositionModalProps) => {
               { renderNavbarLinks() }
             </Navbar.Content>
           </Navbar> 
-          <Card variant='bordered'>
+          {/* <Card variant='bordered'>
             <Card.Body>
               <Text size={14}>
                 Borrow FIAT against your collateral up to a certain minimum collateralization ratio threshold.
               </Text>
             </Card.Body>
-          </Card>
+          </Card> */}
         </>
         }
       </Modal.Body>
