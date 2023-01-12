@@ -478,7 +478,18 @@ export const IncreaseForm = ({
             borrowStore.increaseActions.setSlippagePct(fiat, event.target.value, modifyPositionData);
           }}
           placeholder='0.01'
-          label='Slippage'
+          label={
+            <Tooltip
+              css={{ zIndex: 10000, width: 250 }}
+              color='primary'
+              content={`The maximum allowed slippage (in percentage) when swapping ${underlierSymbol} for
+                ${tokenSymbol}. The transaction will revert if the amount of ${tokenSymbol} diverges by more
+                (in percentages) than the provided slippage amount.
+              `}
+            >
+              Slippage
+            </Tooltip>
+          }
           rightAdornment={'%'}
           style={{ width: '7.5rem' }}
         />
@@ -490,7 +501,15 @@ export const IncreaseForm = ({
           borrowStore.increaseActions.setDeltaDebt(fiat, event.target.value, modifyPositionData);
         }}
         placeholder='0'
-        label={'FIAT to borrow'}
+        label={
+          <Tooltip
+            css={{ zIndex: 10000, width: 250 }}
+            color='primary'
+            content={'The amount of FIAT to borrow against the collateral.'}
+          >
+            FIAT to borrow
+          </Tooltip>
+        }
         rightAdornment={'FIAT'}
       />
     </Modal.Body>
@@ -511,7 +530,19 @@ export const IncreaseForm = ({
           }
           placeholder='0'
           type='string'
-          label={'Collateral to deposit (incl. slippage)'}
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          label={
+            <Tooltip
+              css={{ zIndex: 10000, width: 250 }}
+              color='primary'
+              content={`The total amount of the collateral asset that is bought from the provided underliers.
+                This estimate accounts for slippage and price impact.`
+              }
+            >
+              Collateral to deposit (incl. slippage)
+            </Tooltip>
+          }
           labelRight={tokenSymbol}
           contentLeft={borrowStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
@@ -732,7 +763,18 @@ export const DecreaseForm = ({
             }}
             placeholder='0.01'
             inputMode='decimal'
-            label='Slippage'
+            label={
+              <Tooltip
+                css={{ zIndex: 10000, width: 250 }}
+                color='primary'
+                content={`The maximum allowed slippage (in percentage) when swapping ${tokenSymbol} for
+                  ${underlierSymbol}. The transaction will revert if the amount of ${underlierSymbol} diverges by more
+                  (in percentages) than the provided slippage amount.
+                `}
+              >
+                Slippage
+              </Tooltip>
+            }
             rightAdornment={'%'}
             style={{ width: '7.5rem' }}
           />
