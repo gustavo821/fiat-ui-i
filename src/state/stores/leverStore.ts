@@ -10,6 +10,7 @@ import {
   minCRForLeveredDeposit,
   minCRForLeveredWithdrawal,
   normalDebtToDebt,
+  scaleToDec,
   scaleToWad,
   WAD,
   wadToDec,
@@ -804,9 +805,9 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           const underlierSlippagePct = decToWad(underlierSlippageCeiled / 100);
           
           const collateral = position.collateral.sub(scaleToWad(subTokenAmount, tokenScale));
-          if (collateral.lt(0)) set(() => ({
-            formErrors: [...get().formErrors, 'Can\'t withdraw more collateral than there is deposited']
-          }));
+          if (collateral.lt(0)) throw new Error('Can\'t withdraw more collateral than there is deposited');
+          if (collateral.isZero(0) && subTokenAmount.isZero())
+            throw new Error('Collateral is zero. Can\'t withdraw more collateral.');
 
           // if the resulting collateral is 0 than the flashloan amount has to be equal the entire outstanding debt
           // TODO: replace with computeLeveredWithdrawal method
@@ -967,9 +968,9 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           const underlierSlippagePct = decToWad(underlierSlippageCeiled / 100);
     
           const collateral = position.collateral.sub(scaleToWad(subTokenAmount, tokenScale));
-          if (collateral.lt(0)) set(() => ({
-            formErrors: [...get().formErrors, 'Can\'t withdraw more collateral than there is deposited']
-          }));
+          if (collateral.lt(0)) throw new Error('Can\'t withdraw more collateral than there is deposited');
+          if (collateral.isZero(0) && subTokenAmount.isZero())
+            throw new Error('Collateral is zero. Can\'t withdraw more collateral.');
 
           // if the resulting collateral is 0 than the flashloan amount has to be equal the entire outstanding debt
           // TODO: replace with computeLeveredWithdrawal method
