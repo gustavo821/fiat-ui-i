@@ -282,8 +282,8 @@ export const LeverCreateForm = ({
               css={{ zIndex: 10000, width: 250 }}
               color='primary'
               content={`The implied gain of the collateral asset at maturity.
-                This estimate accounts for the due borrow fees as well as the slippage and the price impact using
-                current exchange rates. Note: Borrow fees, the price impact and the price of FIAT might be different
+                This estimate accounts for the due borrow fees and assumes a fixed price of FIAT of 1 USD at maturity.
+                Note: Borrow fees, the price impact and the price of FIAT might be different
                 at maturity. For larger input amounts the resulting gain can be negative due to large price impacts or
                 low liquidity.
               `}
