@@ -207,7 +207,9 @@ const PositionModalBody = (props: PositionModalProps) => {
     <>
       <Modal.Header justify='center'>
         <Dropdown isDisabled={disableActions} >
-          <Dropdown.Button css={{ width: '50%' }} >{`Mode: ${(!leverModeActive) ? 'Borrow' : 'Leverage'}`}</Dropdown.Button>
+          <Dropdown.Button css={{ width: '50%' }}>
+            {`Mode: ${(!leverModeActive) ? 'Borrow' : 'Leverage'}`}
+          </Dropdown.Button>
           <Dropdown.Menu
             aria-label='Static Actions'
             onAction={(key) => setLeverModeActive(key === 'Leverage')}
@@ -229,28 +231,39 @@ const PositionModalBody = (props: PositionModalProps) => {
           </Text>
         </Modal.Header>
       <Modal.Body>
-        { !(leverModeActive && vaultType === 'ERC1155:FC') && 
-        <>
-          <Navbar
-            variant='static'
-            isCompact
-            disableShadow
-            disableBlur
-            containerCss={{ justifyContent: 'center', background: 'transparent' }}
-          >
-            <Navbar.Content enableCursorHighlight variant='highlight-rounded'>
-              { renderNavbarLinks() }
-            </Navbar.Content>
-          </Navbar> 
-          {/* <Card variant='bordered'>
-            <Card.Body>
-              <Text size={14}>
-                Borrow FIAT against your collateral up to a certain minimum collateralization ratio threshold.
-              </Text>
-            </Card.Body>
-          </Card> */}
-        </>
-        }
+        {!(leverModeActive && vaultType === 'ERC1155:FC') && (
+          <>
+            <Navbar
+              variant='static'
+              isCompact
+              disableShadow
+              disableBlur
+              containerCss={{ justifyContent: 'center', background: 'transparent' }}
+            >
+              <Navbar.Content enableCursorHighlight variant='highlight-rounded'>
+                { renderNavbarLinks() }
+              </Navbar.Content>
+            </Navbar> 
+            {!(leverModeActive) && (
+              <Card variant='bordered'>
+                <Card.Body>
+                  <Text size={14}>
+                    Borrow FIAT against your collateral up to a certain minimum collateralization ratio threshold.
+                  </Text>
+                </Card.Body>
+              </Card>
+            )}
+            {(leverModeActive) && (
+              <Card variant='bordered'>
+                <Card.Body>
+                  <Text size={14}>
+                    Use FIAT liquidity to multiply your exposure to collateral yield.
+                  </Text>
+                </Card.Body>
+              </Card>
+            )}
+          </>
+        )}
       </Modal.Body>
 
       { renderForm() }
