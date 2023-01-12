@@ -488,8 +488,11 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           const fiatForUnderlierRate = (await userActions.fiatForUnderlier(fiat, debt, collateralType))
             .mul(underlierScale).div(wadToScale(debt, underlierScale));
           const withdrawableCollateral = collateral
-            .sub(debt.add(dueAtMaturity).mul(WAD).div(scaleToWad(fiatForUnderlierRate, underlierScale)));
+            .sub(debt.add(dueAtMaturity).mul(scaleToWad(fiatForUnderlierRate, underlierScale)).div(WAD));
           const leveragedGain = withdrawableCollateral.sub(scaleToWad(upFrontUnderliers, underlierScale));
+          if (leveragedGain.lt(ZERO)) set(() => ({
+            formErrors: [...get().formErrors, 'Large Price Impact (Negative Yield)']
+          }));
           const earnableRate = scaleToWad(upFrontUnderliers, underlierScale).add(leveragedGain)
             .mul(WAD).div(scaleToWad(upFrontUnderliers, underlierScale)).sub(WAD);
           const leveragedAPY = earnableRateToAPY(earnableRate, maturity);

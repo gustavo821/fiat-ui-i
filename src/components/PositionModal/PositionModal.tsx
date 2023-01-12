@@ -1,4 +1,4 @@
-import { Dropdown, Modal, Navbar, Text } from '@nextui-org/react';
+import { Card, Dropdown, Modal, Navbar, Text } from '@nextui-org/react';
 import { BigNumber } from 'ethers';
 import React, { useState } from 'react';
 import { formatUnixTimestamp } from '../../utils';
@@ -230,6 +230,7 @@ const PositionModalBody = (props: PositionModalProps) => {
         </Modal.Header>
       <Modal.Body>
         { !(leverModeActive && vaultType === 'ERC1155:FC') && 
+        <>
           <Navbar
             variant='static'
             isCompact
@@ -241,6 +242,14 @@ const PositionModalBody = (props: PositionModalProps) => {
               { renderNavbarLinks() }
             </Navbar.Content>
           </Navbar> 
+          <Card variant='bordered'>
+            <Card.Body>
+              <Text size={14}>
+                Borrow FIAT against your collateral up to a certain minimum collateralization ratio threshold.
+              </Text>
+            </Card.Body>
+          </Card>
+        </>
         }
       </Modal.Body>
 
