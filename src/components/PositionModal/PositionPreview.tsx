@@ -5,8 +5,8 @@ import { floor2, floor5 } from '../../utils';
 
 export const PositionPreview = ({
   formDataLoading,
-  positionCollateral,
-  positionNormalDebt,
+  collateral,
+  normalDebt,
   estimatedCollateral,
   estimatedCollateralRatio,
   estimatedDebt,
@@ -15,8 +15,8 @@ export const PositionPreview = ({
   symbol,
 }: {
   formDataLoading: boolean,
-  positionCollateral: BigNumber,
-  positionNormalDebt: BigNumber,
+  collateral: BigNumber,
+  normalDebt: BigNumber,
   estimatedCollateral: BigNumber,
   estimatedCollateralRatio: BigNumber,
   estimatedDebt: BigNumber,
@@ -33,11 +33,11 @@ export const PositionPreview = ({
         readOnly
         value={(formDataLoading)
           ? ' '
-          : `${floor2(wadToDec(positionCollateral))} → ${floor2(wadToDec(estimatedCollateral))}`
+          : `${floor2(wadToDec(collateral))} → ${floor2(wadToDec(estimatedCollateral))}`
         }
         placeholder='0'
         type='string'
-        label={`Collateral (before: ${floor2(wadToDec(positionCollateral))} ${symbol})`}
+        label={`Collateral (before: ${floor2(wadToDec(collateral))} ${symbol})`}
         labelRight={symbol}
         contentLeft={formDataLoading ? <Loading size='xs' /> : null}
         size='sm'
@@ -47,11 +47,11 @@ export const PositionPreview = ({
         readOnly
         value={(formDataLoading)
           ? ' '
-          : `${floor5(wadToDec(normalDebtToDebt(positionNormalDebt, virtualRate)))} → ${floor5(wadToDec(estimatedDebt))}`
+          : `${floor5(wadToDec(normalDebtToDebt(normalDebt, virtualRate)))} → ${floor5(wadToDec(estimatedDebt))}`
         }
         placeholder='0'
         type='string'
-        label={`Debt (before: ${floor5(wadToDec(normalDebtToDebt(positionNormalDebt, virtualRate)))} FIAT)`}
+        label={`Debt (before: ${floor5(wadToDec(normalDebtToDebt(normalDebt, virtualRate)))} FIAT)`}
         labelRight={'FIAT'}
         contentLeft={formDataLoading ? <Loading size='xs' /> : null}
         size='sm'
@@ -62,7 +62,7 @@ export const PositionPreview = ({
         value={(() => {
           if (formDataLoading) return ' ';
           let collRatioBefore = computeCollateralizationRatio(
-            positionCollateral, fairPrice, positionNormalDebt, virtualRate
+            collateral, fairPrice, normalDebt, virtualRate
           );
           collRatioBefore = (collRatioBefore.eq(ethers.constants.MaxUint256))
             ? '∞' : `${floor2(wadToDec(collRatioBefore.mul(100)))}%`;
@@ -75,7 +75,7 @@ export const PositionPreview = ({
         label={
           `Collateralization Ratio (before: ${(() => {
           const collRatio = computeCollateralizationRatio(
-            positionCollateral, fairPrice, positionNormalDebt, virtualRate
+            collateral, fairPrice, normalDebt, virtualRate
           );
           if (collRatio.eq(ethers.constants.MaxUint256)) return '∞'
             return floor2(wadToDec(collRatio.mul(100)));
