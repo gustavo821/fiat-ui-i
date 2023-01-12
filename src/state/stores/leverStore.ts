@@ -442,9 +442,11 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           const underliersInIdeal = upFrontUnderliers.add(flashloanIdeal.mul(fiatToUnderlierRateIdeal).div(WAD));
           const collateralOut = await userActions.underlierToCollateralToken(fiat, underliersInIdeal, collateralType);
           const underlierToCollateralRateWithPriceImpact = collateralOut.mul(underlierScale).div(underliersInIdeal);
+          console.debug('Rate (Underlier to Collateral Asset):', scaleToDec(underlierToCollateralRateWithPriceImpact, tokenScale));
           const fiatToUnderlierRateWithPriceImpact = (await userActions.fiatToUnderlier(
             fiat, flashloanIdeal, collateralType)
-          ).mul(WAD).div(flashloanIdeal);
+            ).mul(WAD).div(flashloanIdeal);
+          console.debug('Rate (FIAT to Underlier):', scaleToDec(fiatToUnderlierRateWithPriceImpact, underlierScale));
           const underliersIn = upFrontUnderliers.add(flashloanIdeal.mul(fiatToUnderlierRateWithPriceImpact).div(WAD));
 
           // 4.
@@ -485,8 +487,10 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           // 5.
           const borrowRate = interestPerSecondToRateUntilMaturity(interestPerSecond, maturity);
           const dueAtMaturity = normalDebt.mul(borrowRate).div(WAD);
-          const fiatForUnderlierRate = (await userActions.fiatForUnderlier(fiat, debt, collateralType))
-            .mul(underlierScale).div(wadToScale(debt, underlierScale));
+          // const fiatForUnderlierRate = (await userActions.fiatForUnderlier(fiat, debt, collateralType))
+            // .mul(underlierScale).div(wadToScale(debt, underlierScale));
+          const fiatForUnderlierRate = underlierScale; // assuming a 1:1 exchange rate upon maturity
+          console.debug('Rate (FIAT for Underlier):', scaleToDec(fiatForUnderlierRate, underlierScale));
           const withdrawableCollateral = collateral
             .sub(debt.add(dueAtMaturity).mul(scaleToWad(fiatForUnderlierRate, underlierScale)).div(WAD));
           const leveragedGain = withdrawableCollateral.sub(scaleToWad(upFrontUnderliers, underlierScale));
