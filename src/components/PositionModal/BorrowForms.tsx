@@ -3,6 +3,8 @@ import { Button, Card, Grid, Input, Loading, Modal, Row, Spacer, Switch, Text, T
 import { BigNumber, ethers } from 'ethers';
 import React, { useMemo } from 'react';
 import shallow from 'zustand/shallow';
+import 'katex/dist/katex.min.css';
+import { InlineMath } from 'react-katex';
 import { useBorrowStore } from '../../state/stores/borrowStore';
 import useStore from '../../state/stores/globalStore';
 import { commifyToDecimalPlaces, floor2, floor4, minCollRatioWithBuffer } from '../../utils';
@@ -171,7 +173,15 @@ export const CreateForm = ({
           css={{ zIndex: 10000, width: 250 }}
           color='primary'
           style={{ paddingLeft: '0.25rem', marginBottom: '0.375rem' }}
-          content={'The targeted collateralization ratio of the position.'}
+          content={
+            <>
+              The targeted collateralization ratio of the position.
+              <br />
+              Formula:
+              <br />
+              <InlineMath math="\text{collRatio} = \frac{\text{collateral}*\text{fairPrice}}{\text{debt}}"/>
+            </>
+          }
         >
           <Text size={'0.75rem'}>
             Targeted collateralization ratio ({floor2(wadToDec(borrowStore.createState.targetedCollRatio.mul(100)))}%)
