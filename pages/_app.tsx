@@ -17,17 +17,20 @@ import { jsonRpcProvider } from 'wagmi/providers/jsonRpc'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import '../styles/global.css';
 
-const { chains, provider, webSocketProvider } = configureChains([
-    chain.mainnet, ...(process.env.NEXT_PUBLIC_ENABLE_TESTNETS === 'true' ? [chain.goerli] : [])
-  ],
-  [
-    (process.env.NEXT_PUBLIC_GANACHE_LOCAL === 'true' && process.env.NODE_ENV === 'development' ? 
-      jsonRpcProvider({
-        rpc: () => ({
-          http: 'http://127.0.0.1:8555',
-        }),
-      }) : alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY })),
-  ]);
+const useGanache = process.env.NEXT_PUBLIC_GANACHE_LOCAL === 'true' && process.env.NODE_ENV === 'development';
+const useTestNets = process.env.NEXT_PUBLIC_ENABLE_TESTNETS === 'true';
+
+const chainConfig = useGanache ? [chain.localhost] : (useTestNets ? [chain.mainnet, chain.goerli] : [chain.mainnet]);
+
+const providerConfig = useGanache ? 
+  [jsonRpcProvider({
+    rpc: () => ({
+      http: 'http://127.0.0.1:8545',
+    }),
+  })] : 
+  [alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY })];
+
+const { chains, provider, webSocketProvider } = configureChains(chainConfig, providerConfig);
 
 const { wallets } = getDefaultWallets({
   appName: 'FIAT I UI',
@@ -64,7 +67,7 @@ const nextLightTheme = createTheme({
       connectButtonBackground: '#FFF',
       connectButtonColor: '#25292e',
     },
-    transitions:  {
+    transitions: {
       default: 'all 125ms ease',
     },
   }
@@ -75,7 +78,7 @@ const nextDarkTheme = createTheme({
     colors: {
       connectButtonBackground: '#1a1b1f'
     },
-    transitions:  {
+    transitions: {
       default: 'all 125ms ease',
     },
   }
@@ -91,13 +94,13 @@ function MyApp({ Component, pageProps }: AppProps) {
       </Head>
       <WagmiConfig client={wagmiClient}>
         <QueryClientProvider client={queryClient}>
-          <RainbowKitProvider 
-            appInfo={demoAppInfo} 
-            chains={chains} 
-            theme={{lightMode: lightTheme(), darkMode: darkTheme(),}}
+          <RainbowKitProvider
+            appInfo={demoAppInfo}
+            chains={chains}
+            theme={{ lightMode: lightTheme(), darkMode: darkTheme(), }}
             showRecentTransactions={true}
           >
-            <NextThemesProvider 
+            <NextThemesProvider
               defaultTheme='system'
               attribute='class'
               value={{ light: nextLightTheme.className, dark: nextDarkTheme.className }}
