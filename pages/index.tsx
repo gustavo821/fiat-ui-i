@@ -13,6 +13,7 @@ import { PositionModal } from '../src/components/PositionModal/PositionModal';
 import { decodeCollateralTypeId, decodePositionId, getCollateralTypeData, getPositionData } from '../src/utils';
 import * as userActions from '../src/actions';
 import { useBorrowStore } from '../src/state/stores/borrowStore';
+import { useLeverStore } from '../src/state/stores/leverStore';
 import { collateralTypesKey, useCollateralTypes } from '../src/state/queries/useCollateralTypes';
 import { userDataKey, useUserData } from '../src/state/queries/useUserData';
 import { useQueryClient } from '@tanstack/react-query';
@@ -27,6 +28,16 @@ const Home: NextPage = () => {
 
   // Only select necessary actions off of the store to minimize re-renders
   const borrowStore = useBorrowStore(
+    React.useCallback(
+      (state) => ({
+        reset: state.reset,
+      }),
+      []
+    ), shallow
+  );
+
+  // Only select necessary actions off of the store to minimize re-renders
+  const leverStore = useLeverStore(
     React.useCallback(
       (state) => ({
         reset: state.reset,
@@ -459,6 +470,7 @@ const Home: NextPage = () => {
           setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
           setModifyPositionData(initialState.modifyPositionData);
           borrowStore.reset();
+          leverStore.reset();
         }}
       />
       <Spacer />

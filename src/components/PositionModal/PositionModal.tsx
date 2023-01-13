@@ -59,6 +59,8 @@ const PositionModalBody = (props: PositionModalProps) => {
   const selectedCollateralTypeId = useStore((state) => state.selectedCollateralTypeId);
   const selectedPositionId = useStore((state) => state.selectedPositionId);
 
+  const vaultType = modifyPositionData?.collateralType?.properties?.vaultType;
+
   const matured = React.useMemo(() => {
     if (USE_GANACHE) {
       const maturity = modifyPositionData.collateralType?.properties.maturity.toString();
@@ -137,6 +139,13 @@ const PositionModalBody = (props: PositionModalProps) => {
 
   const renderForm = () => {
     if (leverModeActive) {
+      if (vaultType === 'ERC1155:FC') {
+        return (
+          <Text css={{marginBottom: '10px'}} >
+            FIAT I currently does not provide 1-click leverage for Notional Finance. Please use <a href='https://beta.notional.finance/vaults' target='_blank' rel='noreferrer'>https://beta.notional.finance/vaults</a>
+          </Text>
+        )
+      }
       return !!selectedCollateralTypeId && actionMode === Mode.CREATE
           ? <LeverCreateForm
               createLeveredPosition={props.createLeveredPosition}
@@ -238,17 +247,19 @@ const PositionModalBody = (props: PositionModalProps) => {
           </Text>
         </Modal.Header>
       <Modal.Body>
-        <Navbar
-          variant='static'
-          isCompact
-          disableShadow
-          disableBlur
-          containerCss={{ justifyContent: 'center', background: 'transparent' }}
-        >
-          <Navbar.Content enableCursorHighlight variant='highlight-rounded'>
-            { renderNavbarLinks() }
-          </Navbar.Content>
-        </Navbar>
+        { !(leverModeActive && vaultType === 'ERC1155:FC') && 
+          <Navbar
+            variant='static'
+            isCompact
+            disableShadow
+            disableBlur
+            containerCss={{ justifyContent: 'center', background: 'transparent' }}
+          >
+            <Navbar.Content enableCursorHighlight variant='highlight-rounded'>
+              { renderNavbarLinks() }
+            </Navbar.Content>
+          </Navbar> 
+        }
       </Modal.Body>
 
       { renderForm() }
