@@ -809,8 +809,11 @@ export const buildSellCollateralAndDecreaseLeverArgs = async (
   const poolsToFIAT = JSON.parse(JSON.stringify(pools)); // TODO: expected it to be reversed
   const assetsIn = JSON.parse(JSON.stringify(assetsOut)).reverse();
 
-  let subNormalDebt = addDeltaNormalBuffer(debtToNormalDebt(subDebt, collateralTypeData.state.codex.virtualRate));
-  if (position.normalDebt.sub(subNormalDebt).lt(WAD)) subNormalDebt = position.normalDebt;
+  let subNormalDebt = debtToNormalDebt(subDebt, collateralTypeData.state.codex.virtualRate)
+  if (position.normalDebt.sub(subNormalDebt).lt(WAD))
+    subNormalDebt = position.normalDebt;
+  else
+    subNormalDebt = addDeltaNormalBuffer(subNormalDebt);
   // if subTokenAmount is zero then debt can't be decreased
   if (subTokenAmount.isZero()) throw new Error('Invalid value for `subTokenAmount` - Value has to be non-zero');
 
@@ -917,8 +920,11 @@ export const buildRedeemCollateralAndDecreaseLeverArgs = async (
   const poolsToFIAT = JSON.parse(JSON.stringify(pools)); // TODO: expected it to be reversed
   const assetsIn = JSON.parse(JSON.stringify(assetsOut)).reverse();
 
-  let subNormalDebt = addDeltaNormalBuffer(debtToNormalDebt(subDebt, collateralTypeData.state.codex.virtualRate));
-  if (position.normalDebt.sub(subNormalDebt).lt(WAD)) subNormalDebt = position.normalDebt;
+  let subNormalDebt = debtToNormalDebt(subDebt, collateralTypeData.state.codex.virtualRate)
+  if (position.normalDebt.sub(subNormalDebt).lt(WAD))
+    subNormalDebt = position.normalDebt;
+  else
+    subNormalDebt = addDeltaNormalBuffer(subNormalDebt);
   // if subTokenAmount is zero then debt can't be decreased
   if (subTokenAmount.isZero()) throw new Error('Invalid value for `subTokenAmount` - Value has to be non-zero');
 
