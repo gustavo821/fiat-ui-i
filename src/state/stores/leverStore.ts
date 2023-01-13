@@ -103,7 +103,6 @@ export interface LeverState {
   };
   redeemState: {
     // input
-    collateralSlippagePctStr: string; // [wad] underlier to collateral
     underlierSlippagePctStr: string; // [wad] fiat to underlier
     subTokenAmountStr: string; // [tokenScale]
     subDebt: BigNumber; // [wad]
@@ -209,11 +208,6 @@ interface LeverActions {
       value: string,
       modifyPositionData: any,
     ) => void;
-    setCollateralSlippagePct: (
-      fiat: any,
-      value: string,
-      modifyPositionData: any,
-    ) => void;
     setUnderlierSlippagePct: (
       fiat: any,
       value: string,
@@ -262,9 +256,9 @@ const initialState: LeverState = {
   increaseState: {
     // input
     upFrontUnderliersStr: '', // [underlierScale]
-    collateralSlippagePctStr: '0.01',
+    collateralSlippagePctStr: '0.5',
     underlierSlippagePctStr: '0.01',
-    targetedCollRatio: decToWad('1.2'),
+    targetedCollRatio: ZERO, // [wad]
     // output
     minCollRatio: ZERO, // [wad]
     maxCollRatio: ZERO, // [wad]
@@ -284,10 +278,10 @@ const initialState: LeverState = {
   },
   decreaseState: {
     // input
-    collateralSlippagePctStr: '0.01',
+    collateralSlippagePctStr: '0.5',
     underlierSlippagePctStr: '0.01',
     subTokenAmountStr: '', // [tokenScale]
-    targetedCollRatio: decToWad('1.2'),
+    targetedCollRatio: ZERO, // [wad]
     // output
     minCollRatio: ZERO, // [wad]
     maxCollRatio: ZERO, // [wad]
@@ -302,10 +296,9 @@ const initialState: LeverState = {
   },
   redeemState: {
     // input
-    collateralSlippagePctStr: '0.01',
     underlierSlippagePctStr: '0.01',
     subTokenAmountStr: '', // [tokenScale]
-    targetedCollRatio: decToWad('1.2'),
+    targetedCollRatio: ZERO, // [wad]
     // output
     minCollRatio: ZERO, // [wad]
     maxCollRatio: ZERO, // [wad]
@@ -596,9 +589,8 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           settings: { codex: { debtFloor }, collybus: { liquidationRatio } },
           state: { codex: { virtualRate: rate }, collybus: { fairPrice }, publican: { interestPerSecond } }
         } = collateralType
-        const {
-          collateralSlippagePctStr, underlierSlippagePctStr, upFrontUnderliersStr, targetedCollRatio
-        } = get().increaseState;
+        const { collateralSlippagePctStr, underlierSlippagePctStr, upFrontUnderliersStr } = get().increaseState;
+        let { targetedCollRatio } = get().increaseState;
 
         // Reset form errors and warnings on new input
         set(() => ({ formWarnings: [], formErrors: [] }));
@@ -613,6 +605,12 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           const underlierSlippageCeiled = (Number(underlierSlippagePctStr) < 0)
             ? 0 : (Number(underlierSlippagePctStr) > 50) ? 50 : Number(underlierSlippagePctStr);
           const underlierSlippagePct = decToWad(underlierSlippageCeiled / 100);
+
+          // set the initial value for targetCollRatio to the current collRatio
+          const currentCollRatio = computeCollateralizationRatio(
+            position.collateral, fairPrice, position.normalDebt, rate
+          );
+          if (targetedCollRatio.isZero()) targetedCollRatio = currentCollRatio
           
           // 1.
           const fiatToUnderlierRateIdeal = await userActions.fiatToUnderlier(fiat, decToWad(1), collateralType);
@@ -668,10 +666,12 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           ));
           if (minCollRatio.lt(minCollRatioWithBuffer(liquidationRatio)))
             minCollRatio = minCollRatioWithBuffer(liquidationRatio);
-          const maxCollRatio = maxCRForLeveredDeposit(
-            position.collateral, position.normalDebt, rate, fairPrice,
-            scaleToWad(underlierToCollateralRateWithSlippage, tokenScale), scaleToWad(upFrontUnderliers, underlierScale)
-          );
+          // const maxCollRatio = maxCRForLeveredDeposit(
+          //   position.collateral, position.normalDebt, rate, fairPrice,
+          //   scaleToWad(underlierToCollatera]lRateWithSlippage, tokenScale), scaleToWad(upFrontUnderliers, underlierScale)
+          // ); // TODO: maxCollRatio is higher than within computeLeveredDeposit
+          const maxCollRatio = currentCollRatio;
+
           const minUnderliersToBuy = flashloanIdeal.mul(fiatToUnderlierRateWithSlippage).div(WAD);
           const minTokenToBuy = underliersIn.mul(underlierToCollateralRateWithSlippage).div(underlierScale);
           const collateral = position.collateral.add(scaleToWad(minTokenToBuy, tokenScale));
@@ -708,7 +708,7 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
             increaseState: {
               ...state.increaseState,
               minCollRatio, maxCollRatio, minUnderliersToBuy, minTokenToBuy,
-              addDebt, redeemableUnderliers,
+              addDebt, redeemableUnderliers, targetedCollRatio,
               collateral, collRatio, debt,
               estMinUnderliersToBuy, estMinTokenToBuy, estCollateral, estCollRatio
             },
@@ -720,7 +720,7 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
             increaseState: {
               ...state.increaseState,
               minCollRatio: ZERO, maxCollRatio: ZERO, minUnderliersToBuy: ZERO, minTokenToBuy: ZERO,
-              addDebt: ZERO, redeemableUnderliers: ZERO,
+              addDebt: ZERO, redeemableUnderliers: ZERO, targetedCollRatio: ZERO,
               collateral: ZERO, collRatio: ZERO, debt: ZERO,
               estMinUnderliersToBuy: ZERO, estMinTokenToBuy: ZERO, estCollateral: ZERO, estCollRatio: ZERO
             },
@@ -793,9 +793,8 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           settings: { codex: { debtFloor }, collybus: { liquidationRatio } },
           state: { codex: { virtualRate: rate }, collybus: { fairPrice }, publican: { interestPerSecond }  }
         } = collateralType;
-        const {
-          subTokenAmountStr, collateralSlippagePctStr, underlierSlippagePctStr, targetedCollRatio
-        } = get().decreaseState;
+        const { subTokenAmountStr, collateralSlippagePctStr, underlierSlippagePctStr } = get().decreaseState;
+        let { targetedCollRatio } = get().decreaseState;
 
         // Reset form errors and warnings on new input
         set(() => ({ formWarnings: [], formErrors: [] }));
@@ -810,6 +809,12 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           const underlierSlippageCeiled = (Number(underlierSlippagePctStr) < 0)
             ? 0 : (Number(underlierSlippagePctStr) > 50) ? 50 : Number(underlierSlippagePctStr);
           const underlierSlippagePct = decToWad(underlierSlippageCeiled / 100);
+          
+          // set the initial value for targetCollRatio to the current collRatio
+          const currentCollRatio = computeCollateralizationRatio(
+            position.collateral, fairPrice, position.normalDebt, rate
+          );
+          if (targetedCollRatio.isZero()) targetedCollRatio = currentCollRatio
           
           const collateral = position.collateral.sub(scaleToWad(subTokenAmount, tokenScale));
           if (collateral.lt(0)) throw new Error('Can\'t withdraw more collateral than there is deposited');
@@ -840,20 +845,20 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           const debt = normalDebtToDebt(position.normalDebt, rate).sub(subDebt);
           const normalDebt = position.normalDebt.sub(subNormalDebt);
           
+          // let minCollRatio = minCollRatioWithBuffer(minCRForLeveredWithdrawal(
+          //   position.collateral, position.normalDebt, fairPrice, rate, scaleToWad(subTokenAmount, tokenScale)
+          // )); // Comment out because safety buffer can cause minCollRatio to be higher than maxCollRatio
+          let minCollRatio = ZERO;
+          if (minCollRatio.lt(minCollRatioWithBuffer(liquidationRatio)))
+            minCollRatio = minCollRatioWithBuffer(liquidationRatio);
+          const maxSubDebt = await userActions.underlierToFIAT(fiat, underliersOut, collateralType);
+          const maxCollRatio = computeCollateralizationRatio(
+            collateral, fairPrice, position.normalDebt.sub(debtToNormalDebt(maxSubDebt, rate)), rate
+          );
+
           const minUnderliersToBuy = subTokenAmount.mul(collateralToUnderlierRateWithSlippage).div(tokenScale);
           const maxUnderliersToSell = flashloan.mul(fiatForUnderlierRateWithSlippage).div(WAD);
           const collRatio = computeCollateralizationRatio(collateral, fairPrice, normalDebt, rate);
-
-          let minCollRatio = minCollRatioWithBuffer(minCRForLeveredWithdrawal(
-            position.collateral, position.normalDebt, fairPrice, rate, scaleToWad(subTokenAmount, tokenScale)
-          ));
-          if (minCollRatio.lt(minCollRatioWithBuffer(liquidationRatio)))
-            minCollRatio = minCollRatioWithBuffer(liquidationRatio);
-
-          const maxSubDebt = await userActions.underlierToFIAT(fiat, underliersOut, collateralType);
-          const maxCollRatio = maxCollRatioWithBuffer(computeCollateralizationRatio(
-            collateral, fairPrice, position.normalDebt.sub(debtToNormalDebt(maxSubDebt, rate)), rate
-          ));
 
           const borrowRate = interestPerSecondToRateUntilMaturity(interestPerSecond, maturity);
           const dueAtMaturity = position.normalDebt.mul(borrowRate).div(WAD);
@@ -877,11 +882,16 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
               ...get().formErrors, `Collateralization Ratio has to be greater than ${floor2(wadToDec(minCollRatio))} %`
             ]
           }));
+          if (debt.gt(0) && collRatio.gt(maxCollRatio)) set(() => ({
+            formErrors: [
+              ...get().formErrors, `Collateralization Ratio has to be less than ${floor2(wadToDec(maxCollRatio))} %`
+            ]
+          }));
 
           set((state) => ({
             decreaseState: {
               ...state.decreaseState,
-              minCollRatio, maxCollRatio, maxUnderliersToSell, minUnderliersToBuy,
+              minCollRatio, maxCollRatio, maxUnderliersToSell, minUnderliersToBuy, targetedCollRatio,
               subDebt, redeemableUnderliers,
               collateral, collRatio, debt
             },
@@ -893,7 +903,7 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
             decreaseState: {
               ...state.decreaseState,
               minCollRatio: ZERO, maxCollRatio: ZERO, maxUnderliersToSell: ZERO, minUnderliersToBuy: ZERO,
-              subDebt: ZERO, redeemableUnderliers: ZERO,
+              subDebt: ZERO, redeemableUnderliers: ZERO, targetedCollRatio: ZERO,
               collateral: ZERO, collRatio: ZERO, debt: ZERO
             },
             formDataLoading: false,
@@ -934,14 +944,6 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
         get().redeemActions.calculatePositionValuesAfterRedeem(fiat, modifyPositionData);
       },
 
-      setCollateralSlippagePct: (fiat, value, modifyPositionData) => {
-        set((state) => ({
-          redeemState: { ...state.redeemState, collateralSlippagePctStr: value },
-          formDataLoading: true,
-        }));
-        get().redeemActions.calculatePositionValuesAfterRedeem(fiat, modifyPositionData);
-      },
-
       setUnderlierSlippagePct: (fiat, value, modifyPositionData) => {
         set((state) => ({
           redeemState: { ...state.redeemState, underlierSlippagePctStr: value },
@@ -959,9 +961,8 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           settings: { codex: { debtFloor }, collybus: { liquidationRatio } },
           state: { codex: { virtualRate: rate }, collybus: { fairPrice } }
         } = collateralType;
-        const {
-          subTokenAmountStr, underlierSlippagePctStr, targetedCollRatio
-        } = get().redeemState;
+        const { subTokenAmountStr, underlierSlippagePctStr } = get().redeemState;
+        let { targetedCollRatio } = get().redeemState;
 
         // Reset form errors and warnings on new input
         set(() => ({ formWarnings: [], formErrors: [] }));
@@ -973,6 +974,12 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           const underlierSlippageCeiled = (Number(underlierSlippagePctStr) < 0)
             ? 0 : (Number(underlierSlippagePctStr) > 50) ? 50 : Number(underlierSlippagePctStr);
           const underlierSlippagePct = decToWad(underlierSlippageCeiled / 100);
+
+          // set the initial value for targetCollRatio to the current collRatio
+          const currentCollRatio = computeCollateralizationRatio(
+            position.collateral, fairPrice, position.normalDebt, rate
+          );
+          if (targetedCollRatio.isZero()) targetedCollRatio = currentCollRatio
     
           const collateral = position.collateral.sub(scaleToWad(subTokenAmount, tokenScale));
           if (collateral.lt(0)) throw new Error('Can\'t withdraw more collateral than there is deposited');
@@ -1002,20 +1009,20 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           const debt = normalDebtToDebt(position.normalDebt, rate).sub(subDebt);
           const normalDebt = position.normalDebt.sub(subNormalDebt);
           
+          // let minCollRatio = minCollRatioWithBuffer(minCRForLeveredWithdrawal(
+          //   position.collateral, position.normalDebt, fairPrice, rate, scaleToWad(subTokenAmount, tokenScale)
+          // )); // Comment out because safety buffer can cause minCollRatio to be higher than maxCollRatio
+          let minCollRatio = ZERO;
+          if (minCollRatio.lt(minCollRatioWithBuffer(liquidationRatio)))
+            minCollRatio = minCollRatioWithBuffer(liquidationRatio);
+          const maxSubDebt = await userActions.underlierToFIAT(fiat, underliersOut, collateralType);
+          const maxCollRatio = computeCollateralizationRatio(
+            collateral, fairPrice, position.normalDebt.sub(debtToNormalDebt(maxSubDebt, rate)), rate
+          );
+          
           const underliersToRedeem = subTokenAmount.mul(collateralToUnderlierRate).div(tokenScale);
           const maxUnderliersToSell = flashloan.mul(fiatForUnderlierRateWithSlippage).div(WAD);
           const collRatio = computeCollateralizationRatio(collateral, fairPrice, normalDebt, rate);
-
-          let minCollRatio = minCollRatioWithBuffer(minCRForLeveredWithdrawal(
-            position.collateral, position.normalDebt, fairPrice, rate, scaleToWad(subTokenAmount, tokenScale)
-          ));
-          if (minCollRatio.lt(minCollRatioWithBuffer(liquidationRatio)))
-            minCollRatio = minCollRatioWithBuffer(liquidationRatio);
-
-          const maxSubDebt = await userActions.underlierToFIAT(fiat, underliersOut, collateralType);
-          const maxCollRatio = maxCollRatioWithBuffer(computeCollateralizationRatio(
-            collateral, fairPrice, position.normalDebt.sub(debtToNormalDebt(maxSubDebt, rate)), rate
-          ));
 
           if (debt.gt(ZERO) && debt.lte(debtFloor)) set(() => ({
             formErrors: [
@@ -1028,12 +1035,17 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
               ...get().formErrors, `Collateralization Ratio has to be greater than ${floor2(wadToDec(minCollRatio))} %`
             ]
           }));
+          if (debt.gt(0) && collRatio.gt(maxCollRatio)) set(() => ({
+            formErrors: [
+              ...get().formErrors, `Collateralization Ratio has to be less than ${floor2(wadToDec(maxCollRatio))} %`
+            ]
+          }));
 
           set((state) => ({
             redeemState: {
               ...state.redeemState,
               minCollRatio, maxCollRatio, maxUnderliersToSell, underliersToRedeem,
-              subDebt,
+              subDebt, targetedCollRatio,
               collateral, collRatio, debt
             },
             formDataLoading: false
@@ -1044,7 +1056,7 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
             redeemState: {
               ...state.redeemState,
               minCollRatio: ZERO, maxCollRatio: ZERO, maxUnderliersToSell: ZERO, minUnderliersToBuy: ZERO,
-              subDebt: ZERO,
+              subDebt: ZERO, targetedCollRatio: ZERO,
               collateral: ZERO, collRatio: ZERO, debt: ZERO
             },
             formDataLoading: false,
