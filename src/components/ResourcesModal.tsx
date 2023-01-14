@@ -3,6 +3,10 @@ import React from 'react';
 
 const links = [
   {
+    text: 'User Guide',
+    url: 'https://docs.fiatdao.com/guides/releverage-fixed-rates'
+  },
+  {
     text: 'Old App',
     url: 'https://app.fiatdao.com',
   },
