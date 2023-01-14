@@ -173,15 +173,7 @@ export const CreateForm = ({
           css={{ zIndex: 10000, width: 250 }}
           color='primary'
           style={{ paddingLeft: '0.25rem', marginBottom: '0.375rem' }}
-          content={
-            <>
-              The targeted collateralization ratio of the position.
-              <br />
-              Formula:
-              <br />
-              <InlineMath math="\text{collRatio} = \frac{\text{collateral}*\text{fairPrice}}{\text{debt}}"/>
-            </>
-          }
+          content={'The targeted collateralization ratio of the position.'}
         >
           <Text size={'0.75rem'}>
             Targeted collateralization ratio ({floor2(wadToDec(borrowStore.createState.targetedCollRatio.mul(100)))}%)
@@ -281,7 +273,28 @@ export const CreateForm = ({
           }
           placeholder='0'
           type='string'
-          label='Collateralization Ratio'
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          label={
+            <Tooltip
+              css={{ zIndex: 10000, width: 250 }}
+              color='primary'
+              content={
+                <>
+                  The collateralization ratio is the ratio of the value of the collateral (fair price) divided by the
+                  outstanding debt (FIAT) drawn against it. The fair price is derived from the spot price of the
+                  underlier denominated in USD and a discounting model that the protocol applies for accounting for the
+                  time value of money of the fixed term asset.
+                  <br />
+                  The following formula is used:
+                  <InlineMath math="\text{collRatio} = \frac{\text{collateral}*\text{fairPrice}}{\text{debt}}"/>
+                  <br />
+                </>
+              }
+            >
+              Collateralization Ratio
+            </Tooltip>
+          }
           labelRight={'🚦'}
           contentLeft={borrowStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'

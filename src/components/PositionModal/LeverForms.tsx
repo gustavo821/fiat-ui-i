@@ -2,6 +2,8 @@ import { computeCollateralizationRatio, decToScale, scaleToDec, WAD, wadToDec, Z
 import { Button, Card, Grid, Input, Loading, Modal, Row, Spacer, Switch, Text, Tooltip } from '@nextui-org/react';
 import { BigNumber, ethers } from 'ethers';
 import React, { useMemo } from 'react';
+import 'katex/dist/katex.min.css';
+import { InlineMath } from 'react-katex';
 import shallow from 'zustand/shallow';
 import useStore from '../../state/stores/globalStore';
 import { useLeverStore } from '../../state/stores/leverStore';
@@ -337,7 +339,29 @@ export const LeverCreateForm = ({
           }
           placeholder='0'
           type='string'
-          label='Collateralization Ratio (incl. slippage)'
+          // label='Collateralization Ratio (incl. slippage)'
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          label={
+            <Tooltip
+              css={{ zIndex: 10000, width: 250 }}
+              color='primary'
+              content={
+                <>
+                  The collateralization ratio is the ratio of the value of the collateral (fair price) divided by the
+                  outstanding debt (FIAT) drawn against it. The fair price is derived from the spot price of the
+                  underlier denominated in USD and a discounting model that the protocol applies for accounting for the
+                  time value of money of the fixed term asset.
+                  <br />
+                  The following formula is used:
+                  <InlineMath math="\text{collRatio} = \frac{\text{collateral}*\text{fairPrice}}{\text{debt}}"/>
+                  <br />
+                </>
+              }
+            >
+              Collateralization Ratio (incl. slippage)
+            </Tooltip>
+          }
           labelRight={'🚦'}
           contentLeft={(leverStore.formDataLoading) ? <Loading size='xs' /> : null}
           size='sm'
@@ -740,7 +764,28 @@ export const LeverIncreaseForm = ({
           })()}
           placeholder='0'
           type='string'
-          label='Collateralization Ratio (incl. slippage)'
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          label={
+            <Tooltip
+              css={{ zIndex: 10000, width: 250 }}
+              color='primary'
+              content={
+                <>
+                  The collateralization ratio is the ratio of the value of the collateral (fair price) divided by the
+                  outstanding debt (FIAT) drawn against it. The fair price is derived from the spot price of the
+                  underlier denominated in USD and a discounting model that the protocol applies for accounting for the
+                  time value of money of the fixed term asset.
+                  <br />
+                  The following formula is used:
+                  <InlineMath math="\text{collRatio} = \frac{\text{collateral}*\text{fairPrice}}{\text{debt}}"/>
+                  <br />
+                </>
+              }
+            >
+              Collateralization Ratio (incl. slippage)
+            </Tooltip>
+          }
           labelRight={'🚦'}
           contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
@@ -1154,7 +1199,28 @@ export const LeverDecreaseForm = ({
           })()}
           placeholder='0'
           type='string'
-          label='Collateralization Ratio'
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          label={
+            <Tooltip
+              css={{ zIndex: 10000, width: 250 }}
+              color='primary'
+              content={
+                <>
+                  The collateralization ratio is the ratio of the value of the collateral (fair price) divided by the
+                  outstanding debt (FIAT) drawn against it. The fair price is derived from the spot price of the
+                  underlier denominated in USD and a discounting model that the protocol applies for accounting for the
+                  time value of money of the fixed term asset.
+                  <br />
+                  The following formula is used:
+                  <InlineMath math="\text{collRatio} = \frac{\text{collateral}*\text{fairPrice}}{\text{debt}}"/>
+                  <br />
+                </>
+              }
+            >
+              Collateralization Ratio (incl. slippage)
+            </Tooltip>
+          }
           labelRight={'🚦'}
           contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
@@ -1479,7 +1545,28 @@ export const LeverRedeemForm = ({
           })()}
           placeholder='0'
           type='string'
-          label='Collateralization Ratio'
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          label={
+            <Tooltip
+              css={{ zIndex: 10000, width: 250 }}
+              color='primary'
+              content={
+                <>
+                  The collateralization ratio is the ratio of the value of the collateral (fair price) divided by the
+                  outstanding debt (FIAT) drawn against it. The fair price is derived from the spot price of the
+                  underlier denominated in USD and a discounting model that the protocol applies for accounting for the
+                  time value of money of the fixed term asset.
+                  <br />
+                  The following formula is used:
+                  <InlineMath math="\text{collRatio} = \frac{\text{collateral}*\text{fairPrice}}{\text{debt}}"/>
+                  <br />
+                </>
+              }
+            >
+              Collateralization Ratio (incl. slippage)
+            </Tooltip>
+          }
           labelRight={'🚦'}
           contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
