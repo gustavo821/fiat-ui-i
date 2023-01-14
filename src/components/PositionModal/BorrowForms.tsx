@@ -3,6 +3,8 @@ import { Button, Card, Grid, Input, Loading, Modal, Row, Spacer, Switch, Text, T
 import { BigNumber, ethers } from 'ethers';
 import React, { useMemo } from 'react';
 import shallow from 'zustand/shallow';
+import 'katex/dist/katex.min.css';
+import { InlineMath } from 'react-katex';
 import { useBorrowStore } from '../../state/stores/borrowStore';
 import useStore from '../../state/stores/globalStore';
 import { commifyToDecimalPlaces, floor2, floor4, minCollRatioWithBuffer } from '../../utils';
@@ -271,7 +273,28 @@ export const CreateForm = ({
           }
           placeholder='0'
           type='string'
-          label='Collateralization Ratio'
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          label={
+            <Tooltip
+              css={{ zIndex: 10000, width: 250 }}
+              color='primary'
+              content={
+                <>
+                  The collateralization ratio is the ratio of the value of the collateral (fair price) divided by the
+                  outstanding debt (FIAT) drawn against it. The fair price is derived from the spot price of the
+                  underlier denominated in USD and a discounting model that the protocol applies for accounting for the
+                  time value of money of the fixed term asset.
+                  <br />
+                  The following formula is used:
+                  <InlineMath math="\text{collRatio} = \frac{\text{collateral}*\text{fairPrice}}{\text{debt}}"/>
+                  <br />
+                </>
+              }
+            >
+              Collateralization Ratio
+            </Tooltip>
+          }
           labelRight={'🚦'}
           contentLeft={borrowStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'

@@ -1,5 +1,7 @@
 import { computeCollateralizationRatio, normalDebtToDebt, wadToDec } from '@fiatdao/sdk';
-import { Input, Loading, Text } from '@nextui-org/react';
+import { Input, Loading, Text, Tooltip } from '@nextui-org/react';
+import 'katex/dist/katex.min.css';
+import { InlineMath } from 'react-katex';
 import { BigNumber, ethers } from 'ethers';
 import { floor2, floor5 } from '../../utils';
 
@@ -72,15 +74,32 @@ export const PositionPreview = ({
         })()}
         placeholder='0'
         type='string'
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
         label={
-          `Collateralization Ratio (before: ${(() => {
-          const collRatio = computeCollateralizationRatio(
-            collateral, fairPrice, normalDebt, virtualRate
-          );
-          if (collRatio.eq(ethers.constants.MaxUint256)) return '∞'
-            return floor2(wadToDec(collRatio.mul(100)));
-        })()
-        }%)`
+          <Tooltip
+            css={{ zIndex: 10000, width: 250 }}
+            color='primary'
+            content={
+              <>
+                The collateralization ratio is the ratio of the value of the collateral (fair price) divided by the
+                outstanding debt (FIAT) drawn against it. The fair price is derived from the spot price of the
+                underlier denominated in USD and a discounting model that the protocol applies for accounting for the
+                time value of money of the fixed term asset.
+                <br />
+                The following formula is used:
+                <InlineMath math='\text{collRatio} = \frac{\text{collateral}*\text{fairPrice}}{\text{debt}}'/>
+                <br />
+              </>
+            }
+          >
+            {`Collateralization Ratio (before: ${(() => {
+              const collRatio = computeCollateralizationRatio(collateral, fairPrice, normalDebt, virtualRate);
+              if (collRatio.eq(ethers.constants.MaxUint256)) return '∞'
+                return floor2(wadToDec(collRatio.mul(100)));
+              })()
+            }%)`}
+          </Tooltip>
         }
         labelRight={'🚦'}
         contentLeft={formDataLoading ? <Loading size='xs' /> : null}
