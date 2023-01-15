@@ -94,7 +94,7 @@ export const HeaderBar = (props: any) => {
           <Text size='$xs'css={{ alignSelf: 'center'}}>
             {syncStatus?.subgraphBlockNumber}
           </Text>
-          { USE_GANACHE && <Button onClick={handleFastForward} size='xs' css={{ marginLeft: '3px' }}>Forward</Button> }
+          { USE_GANACHE && <Button onPress={handleFastForward} size='xs' css={{ marginLeft: '3px' }}>Forward</Button> }
         </Tooltip>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', padding: 0 }}>
