@@ -62,12 +62,13 @@ export const HeaderBar = (props: any) => {
   const handleFastForward = async (time: number) => {
     await provider.send('evm_increaseTime', [time])
     await provider.send('evm_mine', [{blocks: 1}]);
-    getGanacheTime();
+    await getGanacheTime();
+    handleSnapshot();
   }
 
   const handleSnapshot = async () => {
     const result = await provider.send('evm_snapshot')
-    const newSnapshotIds = [...snapshotIds, {time: ganacheTime.getTime(), id: result}];
+    const newSnapshotIds = [...snapshotIds, {time: useStore.getState().ganacheTime.getTime(), id: result}];
     setSnapshotIds(newSnapshotIds);
     window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(newSnapshotIds));
   }
@@ -156,9 +157,8 @@ export const HeaderBar = (props: any) => {
               </Dropdown> 
               <Dropdown closeOnSelect={false}>
                 <Dropdown.Button size='xs' css={{ marginLeft: '3px' }}>Snapshots</Dropdown.Button>
-                <Dropdown.Menu disabledKeys={['input']} aria-label="Snapshots" onAction={(e) => e === 'take-snapshot' ? handleSnapshot() : handleRevert(e as string)}>
-                  {[<Dropdown.Item key='take-snapshot'>Take Snapshot</Dropdown.Item>, 
-                  ...snapshotIds.map((item) => (<Dropdown.Item key={item.id}>{`Revert to ${new Date(item.time).toLocaleDateString()}`}</Dropdown.Item>))]}
+                <Dropdown.Menu disabledKeys={['input']} aria-label="Snapshots" onAction={(e) => handleRevert(e as string)}>
+                  { snapshotIds.map((item) => (<Dropdown.Item key={item.id}>{`Revert to ${new Date(item.time).toLocaleDateString()}`}</Dropdown.Item>)) }
                 </Dropdown.Menu>
               </Dropdown>
             </>
