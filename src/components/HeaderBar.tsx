@@ -51,6 +51,7 @@ export const HeaderBar = (props: any) => {
     if (!snapshotId) return;
     await provider.send('evm_revert', [snapshotId])
     getGanacheTime();
+    setSnapshotIds(snapshotIds.filter((id) => id <= snapshotId))
   }
 
   const handleSnapshotInput = (e: any) => {
