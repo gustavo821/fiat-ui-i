@@ -16,15 +16,38 @@ interface BlockSyncStatus {
   message: string;
 }
 
-const SECONDS_PER_MONTH = 60 * 60 * 24 * 31;
+const SESSION_STORAGE_KEY = 'fiat-ui-snapshotIds';
+
+const SECONDS_PER_DAY = 60 * 60 * 24;
+const SECONDS_PER_WEEK = SECONDS_PER_DAY * 7;
+const SECONDS_PER_MONTH = SECONDS_PER_DAY * 31;
+const SECONDS_PER_YEAR = SECONDS_PER_DAY * 365;
+
+const fastForwardOptions = [{
+  label: 'Forward By 1D',
+  value: SECONDS_PER_DAY
+}, {
+  label: 'Forward By 1W',
+  value: SECONDS_PER_WEEK
+}, {
+  label: 'Forward By 1M',
+  value: SECONDS_PER_MONTH
+}, {
+  label: 'Forward By 1Y',
+  value: SECONDS_PER_YEAR
+}];
 
 export const USE_FORK = (process.env.NEXT_PUBLIC_GANACHE_LOCAL === 'true' || process.env.NEXT_PUBLIC_TENDERLY_FORK === 'true') && process.env.NODE_ENV === 'development';
 
+interface SnapshotId {
+  time: number;
+  id: string;
+}
+
 export const HeaderBar = (props: any) => {
   const [showResourcesModal, setShowResourcesModal] = React.useState<boolean>(false);
-  const [manualSnapshotId, setManualSnapshotId] = React.useState<string>();
   const [syncStatus, setSyncStatus] = React.useState<BlockSyncStatus>();
-  const [snapshotIds, setSnapshotIds] = React.useState<string[]>([]);
+  const [snapshotIds, setSnapshotIds] = React.useState<SnapshotId[]>([]);
   const {data: providerBlockNumber, refetch} = useBlockNumber();
   const provider = useProvider() as any;
 
@@ -36,27 +59,26 @@ export const HeaderBar = (props: any) => {
   const { address } = useAccount();
   const { data: fiatBalance } = useFiatBalance(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
 
-  const handleFastForward = async () => {
-    await provider.send('evm_increaseTime', [SECONDS_PER_MONTH])
+  const handleFastForward = async (time: number) => {
+    await provider.send('evm_increaseTime', [time])
     await provider.send('evm_mine', [{blocks: 1}]);
     getGanacheTime();
   }
 
   const handleSnapshot = async () => {
     const result = await provider.send('evm_snapshot')
-    setSnapshotIds([...snapshotIds, result]);
+    const newSnapshotIds = [...snapshotIds, {time: ganacheTime.getTime(), id: result}];
+    setSnapshotIds(newSnapshotIds);
+    window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(newSnapshotIds));
   }
 
   const handleRevert = async (snapshotId: string) => {
     if (!snapshotId) return;
     await provider.send('evm_revert', [snapshotId])
     getGanacheTime();
-    setSnapshotIds(snapshotIds.filter((id) => id <= snapshotId))
-  }
-
-  const handleSnapshotInput = (e: any) => {
-    if (e?.target.value === null) return;
-    setManualSnapshotId(e?.target.value);
+    const newSnapshotIds = snapshotIds.filter((item) => parseInt(item.id, 16) < parseInt(snapshotId, 16));
+    setSnapshotIds(newSnapshotIds);
+    window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(newSnapshotIds));
   }
 
   const queryBlockNumber = React.useCallback(async () => {
@@ -91,13 +113,21 @@ export const HeaderBar = (props: any) => {
   }, [fiat, providerBlockNumber])
 
   React.useEffect(() => {
+    if (!USE_FORK) return;
+    const resultString = window.sessionStorage.getItem(SESSION_STORAGE_KEY);
+    if (!resultString) return;
+    setSnapshotIds(JSON.parse(resultString));
+  }, [])
+
+  React.useEffect(() => {
     queryBlockNumber();
+    if (USE_FORK) getGanacheTime();
     const timer = setInterval(() => {
       refetch();
       queryBlockNumber();
     }, 10000);
     return () => clearInterval(timer);
-  }, [fiat, queryBlockNumber, refetch, ganacheTime])
+  }, [fiat, queryBlockNumber, refetch, getGanacheTime])
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -118,26 +148,19 @@ export const HeaderBar = (props: any) => {
           </Text>
           { USE_FORK && (
             <>
-              <Button onPress={handleFastForward} size='xs' css={{ marginLeft: '5px' }}>Forward</Button>
+              <Dropdown closeOnSelect={false}>
+                <Dropdown.Button size='xs' css={{ marginLeft: '3px' }}>{ganacheTime?.toLocaleString().split(',')[0]}</Dropdown.Button>
+                <Dropdown.Menu disabledKeys={['input']} aria-label="Fast Forward" onAction={(e) => handleFastForward(parseInt(e as string))}>
+                  {fastForwardOptions.map((item) => (<Dropdown.Item key={item.value}>{item.label}</Dropdown.Item>))}
+                </Dropdown.Menu>
+              </Dropdown> 
               <Dropdown closeOnSelect={false}>
                 <Dropdown.Button size='xs' css={{ marginLeft: '3px' }}>Snapshots</Dropdown.Button>
                 <Dropdown.Menu disabledKeys={['input']} aria-label="Snapshots" onAction={(e) => e === 'take-snapshot' ? handleSnapshot() : handleRevert(e as string)}>
                   {[<Dropdown.Item key='take-snapshot'>Take Snapshot</Dropdown.Item>, 
-                  ...snapshotIds.map((item) => (<Dropdown.Item key={item}>{item}</Dropdown.Item>))]}
+                  ...snapshotIds.map((item) => (<Dropdown.Item key={item.id}>{`Revert to ${new Date(item.time).toLocaleDateString()}`}</Dropdown.Item>))]}
                 </Dropdown.Menu>
-              </Dropdown> 
-              <Input 
-                aria-label="Snapshot Input" 
-                key="use-snapshot-input" 
-                placeholder='0x1' 
-                type='text' 
-                size='xs' 
-                css={{ marginLeft: '3px' }}
-                width='150px'
-                onChange={handleSnapshotInput}
-                contentRight={<Button onPress={() => handleRevert(manualSnapshotId ?? '')} size='xs'>Revert</Button>}
-                contentRightStyling={false}
-              />
+              </Dropdown>
             </>
           )}
         </Tooltip>
