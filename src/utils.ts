@@ -1,6 +1,6 @@
 import { BigNumber, BigNumberish, ethers } from 'ethers';
 import { decToWad, scaleToDec, wadToDec, ZERO } from '@fiatdao/sdk';
-import { USE_GANACHE } from './components/HeaderBar';
+import { USE_FORK } from './components/HeaderBar';
 import useStore from './state/stores/globalStore';
 
 export const formatUnixTimestamp = (unixTimestamp: BigNumberish): string => {
@@ -35,7 +35,7 @@ export const commifyToDecimalPlaces = (value: BigNumber, scale: number, decimalP
 };
 
 export const earnableRateToAPY = (earnableRate: BigNumber, maturity: BigNumberish): BigNumber => {
-  const now = USE_GANACHE ? Math.floor(useStore.getState().ganacheTime.getTime() / 1000) : Math.floor(Date.now() / 1000);
+  const now = USE_FORK ? Math.floor(useStore.getState().ganacheTime.getTime() / 1000) : Math.floor(Date.now() / 1000);
   if (now >= Number(maturity.toString())) return ZERO;
   const secondsUntilMaturity = Number(maturity.toString()) - now;
   const yearFraction = secondsUntilMaturity / 31622400;
@@ -47,7 +47,7 @@ export const earnableRateToAPY = (earnableRate: BigNumber, maturity: BigNumberis
 export const interestPerSecondToRateUntilMaturity = (
   interestPerSecond: BigNumberish, maturity: BigNumberish
 ): BigNumber => {
-  const now = USE_GANACHE ? Math.floor(useStore.getState().ganacheTime.getTime() / 1000) : Math.floor(Date.now() / 1000)
+  const now = USE_FORK ? Math.floor(useStore.getState().ganacheTime.getTime() / 1000) : Math.floor(Date.now() / 1000)
   if (now >= Number(maturity.toString())) return ZERO;
   const secondsUntilMaturity = Number(maturity.toString()) - now;
   return decToWad(

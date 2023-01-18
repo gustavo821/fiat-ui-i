@@ -2,7 +2,7 @@ import create from 'zustand';
 import { FIAT } from '@fiatdao/sdk';
 import { BigNumber } from 'ethers';
 import { getProvider } from '@wagmi/core'
-import { USE_GANACHE } from '../../components/HeaderBar';
+import { USE_FORK } from '../../components/HeaderBar';
 
 export type TransactionStatus = null | 'error' | 'sent' | 'confirming' | 'confirmed'; 
 
@@ -85,7 +85,7 @@ const useStore = create<any>()((set: any) => ({
     }))
   },
   getGanacheTime: async () => {
-    if (!USE_GANACHE) return;
+    if (!USE_FORK) return;
     const provider = getProvider() as any;
     const result = await provider.send('eth_getBlockByNumber', ['latest']);
     const timestamp = BigNumber.from(result.timestamp).toNumber() * 1000;

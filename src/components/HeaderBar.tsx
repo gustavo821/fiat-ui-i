@@ -1,5 +1,5 @@
 import React from 'react';
-import { Badge, Button, Link, Text, Tooltip } from '@nextui-org/react';
+import { Badge, Button, Dropdown, Input, Link, Text, Tooltip } from '@nextui-org/react';
 import { connectButtonCSS, ProxyButton } from './ProxyButton';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { ResourcesModal } from './ResourcesModal';
@@ -18,16 +18,19 @@ interface BlockSyncStatus {
 
 const SECONDS_PER_MONTH = 60 * 60 * 24 * 31;
 
-export const USE_GANACHE = process.env.NEXT_PUBLIC_GANACHE_LOCAL === 'true' && process.env.NODE_ENV === 'development';
+export const USE_FORK = (process.env.NEXT_PUBLIC_GANACHE_LOCAL === 'true' || process.env.NEXT_PUBLIC_TENDERLY_FORK === 'true') && process.env.NODE_ENV === 'development';
 
 export const HeaderBar = (props: any) => {
   const [showResourcesModal, setShowResourcesModal] = React.useState<boolean>(false);
+  const [manualSnapshotId, setManualSnapshotId] = React.useState<string>();
   const [syncStatus, setSyncStatus] = React.useState<BlockSyncStatus>();
+  const [snapshotIds, setSnapshotIds] = React.useState<string[]>([]);
   const {data: providerBlockNumber, refetch} = useBlockNumber();
   const provider = useProvider() as any;
 
   const fiat = useStore((state) => state.fiat);
   const getGanacheTime = useStore((state) => state.getGanacheTime);
+  const ganacheTime = useStore((state) => state.ganacheTime);
 
   const { chain } = useNetwork();
   const { address } = useAccount();
@@ -39,10 +42,26 @@ export const HeaderBar = (props: any) => {
     getGanacheTime();
   }
 
+  const handleSnapshot = async () => {
+    const result = await provider.send('evm_snapshot')
+    setSnapshotIds([...snapshotIds, result]);
+  }
+
+  const handleRevert = async (snapshotId: string) => {
+    if (!snapshotId) return;
+    await provider.send('evm_revert', [snapshotId])
+    getGanacheTime();
+  }
+
+  const handleSnapshotInput = (e: any) => {
+    if (e?.target.value === null) return;
+    setManualSnapshotId(e?.target.value);
+  }
+
   const queryBlockNumber = React.useCallback(async () => {
     if (!fiat) return;
     if (!providerBlockNumber) return;
-    if (USE_GANACHE) {
+    if (USE_FORK) {
       const subgraphBlockNumber = providerBlockNumber;
       const blockDiff = 0;
       const status = 'success';
@@ -77,7 +96,7 @@ export const HeaderBar = (props: any) => {
       queryBlockNumber();
     }, 10000);
     return () => clearInterval(timer);
-  }, [fiat, queryBlockNumber, refetch])
+  }, [fiat, queryBlockNumber, refetch, ganacheTime])
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -96,7 +115,30 @@ export const HeaderBar = (props: any) => {
           <Text size='$xs'css={{ alignSelf: 'center'}}>
             {syncStatus?.subgraphBlockNumber}
           </Text>
-          { USE_GANACHE && <Button onPress={handleFastForward} size='xs' css={{ marginLeft: '3px' }}>Forward</Button> }
+          { USE_FORK && (
+            <>
+              <Button onPress={handleFastForward} size='xs' css={{ marginLeft: '5px' }}>Forward</Button>
+              <Dropdown closeOnSelect={false}>
+                <Dropdown.Button size='xs' css={{ marginLeft: '3px' }}>Snapshots</Dropdown.Button>
+                <Dropdown.Menu disabledKeys={['input']} aria-label="Snapshots" onAction={(e) => e === 'take-snapshot' ? handleSnapshot() : handleRevert(e as string)}>
+                  {[<Dropdown.Item key='take-snapshot'>Take Snapshot</Dropdown.Item>, 
+                  ...snapshotIds.map((item) => (<Dropdown.Item key={item}>{item}</Dropdown.Item>))]}
+                </Dropdown.Menu>
+              </Dropdown> 
+              <Input 
+                aria-label="Snapshot Input" 
+                key="use-snapshot-input" 
+                placeholder='0x1' 
+                type='text' 
+                size='xs' 
+                css={{ marginLeft: '3px' }}
+                width='150px'
+                onChange={handleSnapshotInput}
+                contentRight={<Button onPress={() => handleRevert(manualSnapshotId ?? '')} size='xs'>Revert</Button>}
+                contentRightStyling={false}
+              />
+            </>
+          )}
         </Tooltip>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', padding: 0 }}>
@@ -106,7 +148,7 @@ export const HeaderBar = (props: any) => {
             <Button 
               auto
               icon={'...'}
-              css={connectButtonCSS}
+              css={{...connectButtonCSS, maxWidth: '40px'}}
               onPress={()=>setShowResourcesModal(true)}
             />
             <ProxyButton

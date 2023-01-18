@@ -10,7 +10,7 @@ import { ethers } from 'ethers';
 import { useCollateralTypes } from '../state/queries/useCollateralTypes';
 import { useUserData } from '../state/queries/useUserData';
 import useStore from '../state/stores/globalStore';
-import { USE_GANACHE } from './HeaderBar';
+import { USE_FORK } from './HeaderBar';
 
 export const PositionsTable = () => {
   const [sortedData, setSortedData] = React.useState<any[]>([]);
@@ -24,6 +24,7 @@ export const PositionsTable = () => {
   const ganacheTime = useStore((state) => state.ganacheTime);
   const { chain } = useNetwork();
   const { address } = useAccount();
+
   const { data: collateralTypesData } = useCollateralTypes(fiat, chain?.id ?? chains.mainnet.id);
   const { data: userData } = useUserData(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
   const { positionsData } = userData as any;
@@ -112,7 +113,7 @@ export const PositionsTable = () => {
               const dueAtMaturity = normalDebt.mul(borrowRate).div(WAD);
               const collRatio = computeCollateralizationRatio(collateral, fairPrice, normalDebt, virtualRate);
               const maturityFormatted = new Date(Number(maturity.toString()) * 1000);
-              const now = USE_GANACHE ? Math.floor(ganacheTime.getTime() / 1000) : Math.floor(Date.now() / 1000);
+              const now = USE_FORK ? Math.floor(ganacheTime.getTime() / 1000) : Math.floor(Date.now() / 1000);
               const daysUntilMaturity = Math.max(Math.floor((Number(maturity.toString()) - now) / 86400), 0);
               return (
                 <Table.Row key={encodePositionId(vault, tokenId, owner)}>
@@ -153,7 +154,7 @@ export const PositionsTable = () => {
                     }
                   </Table.Cell>
                   <Table.Cell css={{'& span': {width: '100%'}}}>
-                    <Badge isSquared color={(USE_GANACHE ? ganacheTime : new Date()) < maturityFormatted ? 'success' : 'error'} variant='flat' >
+                    <Badge isSquared color={(USE_FORK ? ganacheTime : new Date()) < maturityFormatted ? 'success' : 'error'} variant='flat' >
                       {formatUnixTimestamp(maturity)}, ({daysUntilMaturity} days)
                     </Badge>
                   </Table.Cell>

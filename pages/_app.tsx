@@ -18,6 +18,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import '../styles/global.css';
 
 const useGanache = process.env.NEXT_PUBLIC_GANACHE_LOCAL === 'true' && process.env.NODE_ENV === 'development';
+const useTenderly = process.env.NEXT_PUBLIC_TENDERLY_FORK === 'true' && process.env.NODE_ENV === 'development';
 const useTestNets = process.env.NEXT_PUBLIC_ENABLE_TESTNETS === 'true';
 
 const chainConfig = useGanache ? [chain.localhost] : (useTestNets ? [chain.mainnet, chain.goerli] : [chain.mainnet]);
@@ -26,6 +27,11 @@ const providerConfig = useGanache ?
   [jsonRpcProvider({
     rpc: () => ({
       http: 'http://127.0.0.1:8545',
+    }),
+  })] : useTenderly ? 
+  [jsonRpcProvider({
+    rpc: () => ({
+      http: 'https://rpc.tenderly.co/fork/82e30c17-2931-498c-8b2e-cf38052dd6d9',
     }),
   })] : 
   [alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY })];

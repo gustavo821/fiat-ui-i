@@ -1,6 +1,6 @@
 import { addressEq, debtToNormalDebt, decToWad, scaleToWad, WAD, wadToScale, ZERO } from '@fiatdao/sdk';
 import { BigNumber, Contract } from 'ethers';
-import { USE_GANACHE } from './components/HeaderBar';
+import { USE_FORK } from './components/HeaderBar';
 import useStore from './state/stores/globalStore';
 
 export const underlierToFIAT = async (
@@ -226,7 +226,7 @@ export const getEarnableRate = async (fiat: any, collateralTypesData: any) => {
   const queries = collateralTypesData.flatMap((collateralTypeData: any) => {
     const { properties } = collateralTypeData;
     const { vault, tokenId, vaultType, tokenScale, underlierScale, maturity } = properties;
-    const date = USE_GANACHE ? useStore.getState().ganacheTime.getTime() : new Date();
+    const date = USE_FORK ? useStore.getState().ganacheTime.getTime() : new Date();
     if (date >= new Date(Number(maturity.toString()) * 1000)) return [];
     switch (vaultType) {
       case 'ERC20:EPT': {
@@ -356,7 +356,7 @@ export const buildBuyCollateralAndModifyDebtArgs = (
   switch (properties.vaultType) {
     case 'ERC20:EPT': {
       if (!properties.eptData) throw new Error('Missing EPT data');
-      const now = USE_GANACHE ? useStore.getState().ganacheTime.getTime() / 1000 : (+new Date() / 1000);
+      const now = USE_FORK ? useStore.getState().ganacheTime.getTime() / 1000 : (+new Date() / 1000);
       const deadline = Math.round(now) + 3600;
       const args = {
         contract: vaultEPTActions,
@@ -485,7 +485,7 @@ export const buildSellCollateralAndModifyDebtArgs = (
   switch (properties.vaultType) {
     case 'ERC20:EPT': {
       if (!properties.eptData) throw new Error('Missing EPT data');
-      const now = USE_GANACHE ? useStore.getState().ganacheTime.getTime() / 1000 : (+new Date() / 1000);
+      const now = USE_FORK ? useStore.getState().ganacheTime.getTime() / 1000 : (+new Date() / 1000);
       const deadline = Math.round(now) + 3600;
       // await contextData.fiat.dryrunViaProxy(
       const args = {
@@ -708,7 +708,7 @@ export const buildBuyCollateralAndIncreaseLeverArgs = async (
   const { leverEPTActions, leverFYActions, leverSPTActions } = fiat.getContracts();
   const { properties } = collateralTypeData;
   const { fiatToUnderlierTradePath: { pools: poolsToUnderlier, assetsOut } } = collateralTypeData.metadata;
-  const now = USE_GANACHE ? useStore.getState().ganacheTime.getTime() / 1000 : (+new Date() / 1000);
+  const now = USE_FORK ? useStore.getState().ganacheTime.getTime() / 1000 : (+new Date() / 1000);
   const deadline = Math.round(now) + 3600;
 
   switch (properties.vaultType) {
@@ -811,7 +811,7 @@ export const buildSellCollateralAndDecreaseLeverArgs = async (
   const { leverEPTActions, leverFYActions, leverSPTActions } = fiat.getContracts();
   const { properties } = collateralTypeData;
   const { fiatToUnderlierTradePath: { pools, assetsOut } } = collateralTypeData.metadata;
-  const now = USE_GANACHE ? useStore.getState().ganacheTime.getTime() / 1000 : (+new Date() / 1000);
+  const now = USE_FORK ? useStore.getState().ganacheTime.getTime() / 1000 : (+new Date() / 1000);
   const deadline = Math.round(now) + 3600;
   const poolsToFIAT = JSON.parse(JSON.stringify(pools)); // TODO: expected it to be reversed
   const assetsIn = JSON.parse(JSON.stringify(assetsOut)).reverse();
@@ -920,7 +920,7 @@ export const buildRedeemCollateralAndDecreaseLeverArgs = async (
   const { leverEPTActions, leverFYActions, leverSPTActions } = fiat.getContracts();
   const { properties } = collateralTypeData;
   const { fiatToUnderlierTradePath: { pools, assetsOut } } = collateralTypeData.metadata;
-  const now = USE_GANACHE ? useStore.getState().ganacheTime.getTime() / 1000 : (+new Date() / 1000);
+  const now = USE_FORK ? useStore.getState().ganacheTime.getTime() / 1000 : (+new Date() / 1000);
   const deadline = Math.round(now) + 3600;
   const poolsToFIAT = JSON.parse(JSON.stringify(pools)); // TODO: expected it to be reversed
   const assetsIn = JSON.parse(JSON.stringify(assetsOut)).reverse();

@@ -5,7 +5,7 @@ import { formatUnixTimestamp } from '../../utils';
 import { CreateForm, DecreaseForm, IncreaseForm, RedeemForm } from './BorrowForms';
 import { LeverCreateForm, LeverDecreaseForm, LeverIncreaseForm, LeverRedeemForm } from './LeverForms';
 import useStore from '../../state/stores/globalStore';
-import { USE_GANACHE } from '../HeaderBar';
+import { USE_FORK } from '../HeaderBar';
 
 const enum Mode {
   CREATE='create',
@@ -62,7 +62,7 @@ const PositionModalBody = (props: PositionModalProps) => {
   const vaultType = modifyPositionData?.collateralType?.properties?.vaultType;
 
   const matured = React.useMemo(() => {
-    if (USE_GANACHE) {
+    if (USE_FORK) {
       const maturity = modifyPositionData.collateralType?.properties.maturity.toString();
       return (maturity !== undefined && !(ganacheTime < new Date(Number(maturity) * 1000)));
     }
@@ -71,7 +71,7 @@ const PositionModalBody = (props: PositionModalProps) => {
   }, [modifyPositionData.collateralType?.properties.maturity, ganacheTime])
 
   React.useEffect(() => {
-    if (!USE_GANACHE) return;
+    if (!USE_FORK) return;
     getGanacheTime();
   }, [getGanacheTime])
 
