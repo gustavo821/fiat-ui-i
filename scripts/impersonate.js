@@ -30,7 +30,6 @@ const main = async() => {
     const signer = provider.getSigner(impersonate);
     const { to, from, data } = payload.params[0];
     const result = await signer.sendTransaction({ to, from, data })
-    //const result = await provider.send(payload.methd, payload.params)
     console.log({result})
     connector.approveRequest({
       id: payload.id,

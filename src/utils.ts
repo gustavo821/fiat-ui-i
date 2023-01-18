@@ -1,5 +1,7 @@
 import { BigNumber, BigNumberish, ethers } from 'ethers';
 import { decToWad, scaleToDec, wadToDec, ZERO } from '@fiatdao/sdk';
+import { USE_GANACHE } from './components/HeaderBar';
+import useStore from './state/stores/globalStore';
 
 export const formatUnixTimestamp = (unixTimestamp: BigNumberish): string => {
   const date = new Date(Number(unixTimestamp.toString()) * 1000);
@@ -33,9 +35,9 @@ export const commifyToDecimalPlaces = (value: BigNumber, scale: number, decimalP
 };
 
 export const earnableRateToAPY = (earnableRate: BigNumber, maturity: BigNumberish): BigNumber => {
-  const now = Math.floor(Date.now() / 1000)
+  const now = USE_GANACHE ? Math.floor(useStore.getState().ganacheTime.getTime() / 1000) : Math.floor(Date.now() / 1000);
   if (now >= Number(maturity.toString())) return ZERO;
-  const secondsUntilMaturity = Number(maturity.toString()) - Math.floor(Date.now() / 1000);
+  const secondsUntilMaturity = Number(maturity.toString()) - now;
   const yearFraction = secondsUntilMaturity / 31622400;
   return BigNumber.from(
     decToWad((Math.pow((1 + Number(wadToDec(earnableRate))), (1 / yearFraction )) - 1).toFixed(10))
@@ -45,9 +47,9 @@ export const earnableRateToAPY = (earnableRate: BigNumber, maturity: BigNumberis
 export const interestPerSecondToRateUntilMaturity = (
   interestPerSecond: BigNumberish, maturity: BigNumberish
 ): BigNumber => {
-  const now = Math.floor(Date.now() / 1000)
+  const now = USE_GANACHE ? Math.floor(useStore.getState().ganacheTime.getTime() / 1000) : Math.floor(Date.now() / 1000)
   if (now >= Number(maturity.toString())) return ZERO;
-  const secondsUntilMaturity = Number(maturity.toString()) - Math.floor(Date.now() / 1000);
+  const secondsUntilMaturity = Number(maturity.toString()) - now;
   return decToWad(
     (Math.pow(Number(wadToDec(BigNumber.from(interestPerSecond)).slice(0, 17)), secondsUntilMaturity) - 1)
       .toFixed(10)

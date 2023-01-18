@@ -27,6 +27,7 @@ export const HeaderBar = (props: any) => {
   const provider = useProvider() as any;
 
   const fiat = useStore((state) => state.fiat);
+  const getGanacheTime = useStore((state) => state.getGanacheTime);
 
   const { chain } = useNetwork();
   const { address } = useAccount();
@@ -35,6 +36,7 @@ export const HeaderBar = (props: any) => {
   const handleFastForward = async () => {
     await provider.send('evm_increaseTime', [SECONDS_PER_MONTH])
     await provider.send('evm_mine', [{blocks: 1}]);
+    getGanacheTime();
   }
 
   const queryBlockNumber = React.useCallback(async () => {

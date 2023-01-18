@@ -6,7 +6,6 @@ import { CreateForm, DecreaseForm, IncreaseForm, RedeemForm } from './BorrowForm
 import { LeverCreateForm, LeverDecreaseForm, LeverIncreaseForm, LeverRedeemForm } from './LeverForms';
 import useStore from '../../state/stores/globalStore';
 import { USE_GANACHE } from '../HeaderBar';
-import { useProvider } from 'wagmi';
 
 const enum Mode {
   CREATE='create',
@@ -52,35 +51,29 @@ export const PositionModal = (props: PositionModalProps) => {
 const PositionModalBody = (props: PositionModalProps) => {
   const [ leverModeActive, setLeverModeActive ] = useState(false);
   const [ actionMode, setActionMode ] = useState(Mode.INCREASE);
-  const [ ganacheTime, setGanacheTime ] = useState('');
 
   const disableActions = useStore((state) => state.disableActions);
   const modifyPositionData = useStore((state) => state.modifyPositionData);
   const selectedCollateralTypeId = useStore((state) => state.selectedCollateralTypeId);
   const selectedPositionId = useStore((state) => state.selectedPositionId);
+  const ganacheTime = useStore((state => state.ganacheTime));
+  const getGanacheTime = useStore((state) => state.getGanacheTime);
 
   const vaultType = modifyPositionData?.collateralType?.properties?.vaultType;
 
   const matured = React.useMemo(() => {
     if (USE_GANACHE) {
       const maturity = modifyPositionData.collateralType?.properties.maturity.toString();
-      return (maturity !== undefined && !(new Date(Number(ganacheTime) * 1000) < new Date(Number(maturity) * 1000)));
+      return (maturity !== undefined && !(ganacheTime < new Date(Number(maturity) * 1000)));
     }
     const maturity = modifyPositionData.collateralType?.properties.maturity.toString();
     return (maturity !== undefined && !(new Date() < new Date(Number(maturity) * 1000)));
   }, [modifyPositionData.collateralType?.properties.maturity, ganacheTime])
 
-  const provider = useProvider() as any;
-
-  const getTimestamp = React.useCallback(async () => {
-    const result =  await provider.send('eth_getBlockByNumber', ['latest'])
-    return BigNumber.from(result.timestamp).toString()
-  }, [provider])
-
   React.useEffect(() => {
     if (!USE_GANACHE) return;
-    getTimestamp().then((res: string)=> setGanacheTime(res))
-  }, [getTimestamp])
+    getGanacheTime();
+  }, [getGanacheTime])
 
   React.useEffect(() => {
     // Set initial mode of modal depending on props

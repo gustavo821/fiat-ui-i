@@ -9,6 +9,7 @@ import { chain as chains, useAccount, useNetwork, } from 'wagmi';
 import { useCollateralTypes } from '../state/queries/useCollateralTypes';
 import { useUserData } from '../state/queries/useUserData';
 import useStore from '../state/stores/globalStore';
+import { USE_GANACHE } from './HeaderBar';
 
 export const CollateralTypesTable = () => {
   const [sortedData, setSortedData] = React.useState<any[]>([]);
@@ -19,6 +20,7 @@ export const CollateralTypesTable = () => {
   const fiat = useStore((state) => state.fiat);
   const setSelectedPositionId = useStore((state) => state.setSelectedPositionId);
   const setSelectedCollateralTypeId = useStore((state) => state.setSelectedCollateralTypeId);
+  const ganacheTime = useStore((state) => state.ganacheTime);
 
   const { data: collateralTypesData } = useCollateralTypes(fiat, chain?.id ?? chains.mainnet.id);
   const { data: userData } = useUserData(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
@@ -86,7 +88,8 @@ export const CollateralTypesTable = () => {
               const borrowRate = interestPerSecondToRateUntilMaturity(interestPerSecond, maturity);
               const borrowRateAnnualized = interestPerSecondToAPY(interestPerSecond);
               const maturityFormatted = new Date(Number(maturity.toString()) * 1000);
-              const daysUntilMaturity = Math.max(Math.floor((Number(maturity.toString()) - Math.floor(Date.now() / 1000)) / 86400), 0);
+              const now = USE_GANACHE ? Math.floor(ganacheTime.getTime() / 1000) : Math.floor(Date.now() / 1000);
+              const daysUntilMaturity = Math.max(Math.floor((Number(maturity.toString()) - now) / 86400), 0);
               return (
                 <Table.Row key={encodeCollateralTypeId(vault, tokenId)}>
                   <Table.Cell>
@@ -110,7 +113,7 @@ export const CollateralTypesTable = () => {
                   <Table.Cell>{`${floor2(wadToDec(borrowRateAnnualized.mul(100)))}% (${floor2(wadToDec(borrowRate.mul(100)))}%)`}</Table.Cell>
                   <Table.Cell>{`${floor2(Number(wadToDec(depositedCollateral))).toLocaleString()} ${symbol}`}</Table.Cell>
                   <Table.Cell css={{'& span': {width: '100%'}}}>
-                    <Badge isSquared color={new Date() < maturityFormatted ? 'success' : 'error'} variant='flat' >
+                    <Badge isSquared color={(USE_GANACHE ? ganacheTime : new Date()) < maturityFormatted ? 'success' : 'error'} variant='flat' >
                       {formatUnixTimestamp(maturity)}, ({daysUntilMaturity} days)
                     </Badge>
                   </Table.Cell>
