@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "ganache": "./scripts/testnet.sh",
+    "testnet": "./scripts/testnet.sh",
     "get-tokens": "export $(grep '^PRIVATE_KEY' .env.local) && node ./scripts/steal_tokens.js"
   },
   "dependencies": {

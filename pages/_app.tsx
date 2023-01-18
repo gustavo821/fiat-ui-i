@@ -19,9 +19,9 @@ import '../styles/global.css';
 
 const useGanache = process.env.NEXT_PUBLIC_GANACHE_LOCAL === 'true' && process.env.NODE_ENV === 'development';
 const useTenderly = process.env.NEXT_PUBLIC_TENDERLY_FORK === 'true' && process.env.NODE_ENV === 'development';
-const useTestNets = process.env.NEXT_PUBLIC_ENABLE_TESTNETS === 'true';
+const useTestnets = process.env.NEXT_PUBLIC_ENABLE_TESTNETS === 'true';
 
-const chainConfig = useGanache ? [chain.localhost] : (useTestNets ? [chain.mainnet, chain.goerli] : [chain.mainnet]);
+const chainConfig = useGanache ? [chain.localhost] : (useTestnets ? [chain.mainnet, chain.goerli] : [chain.mainnet]);
 
 const providerConfig = useGanache ? 
   [jsonRpcProvider({
@@ -31,7 +31,7 @@ const providerConfig = useGanache ?
   })] : useTenderly ? 
   [jsonRpcProvider({
     rpc: () => ({
-      http: 'https://rpc.tenderly.co/fork/82e30c17-2931-498c-8b2e-cf38052dd6d9',
+      http: `https://rpc.tenderly.co/fork/${process.env.NEXT_PUBLIC_TENDERLY_APY_KEY}`,
     }),
   })] : 
   [alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY })];

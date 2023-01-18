@@ -14,7 +14,8 @@ if [ -z "$NEXT_PUBLIC_ALCHEMY_API_KEY" ]; then
   exit 1;
 fi
 
-cmd="ganache \
+# hardcoded unlocked accounts hold USDC, DAI and ETH necessary for testing on mainnet
+cmd="npx ganache \
 	--fork.url=https://eth-mainnet.alchemyapi.io/v2/$NEXT_PUBLIC_ALCHEMY_API_KEY \
 	--miner.defaultGasPrice 30000000000 \
 	--chain.vmErrorsOnRPCResponse=true \
