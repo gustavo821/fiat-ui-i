@@ -21,7 +21,7 @@ const useGanache = process.env.NEXT_PUBLIC_GANACHE_LOCAL === 'true' && process.e
 const useTenderly = process.env.NEXT_PUBLIC_TENDERLY_FORK === 'true' && process.env.NODE_ENV === 'development';
 const useTestnets = process.env.NEXT_PUBLIC_ENABLE_TESTNETS === 'true';
 
-const chainConfig = useGanache ? [chain.localhost] : (useTestnets ? [chain.mainnet, chain.goerli] : [chain.mainnet]);
+const chainConfig = useGanache || useTenderly ? [chain.localhost] : (useTestnets ? [chain.mainnet, chain.goerli] : [chain.mainnet]);
 
 const providerConfig = useGanache ? 
   [jsonRpcProvider({

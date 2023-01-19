@@ -7,6 +7,7 @@ import { queryMeta } from '@fiatdao/sdk';
 import { chain as chains, useAccount, useBlockNumber, useNetwork, useProvider } from 'wagmi';
 import { useFiatBalance } from '../state/queries/useFiatBalance';
 import useStore from '../state/stores/globalStore';
+import { hexValue } from 'ethers/lib/utils';
 
 interface BlockSyncStatus {
   subgraphBlockNumber: number;
@@ -37,7 +38,9 @@ const fastForwardOptions = [{
   value: SECONDS_PER_YEAR
 }];
 
-export const USE_FORK = (process.env.NEXT_PUBLIC_GANACHE_LOCAL === 'true' || process.env.NEXT_PUBLIC_TENDERLY_FORK === 'true') && process.env.NODE_ENV === 'development';
+export const USE_GANACHE = process.env.NEXT_PUBLIC_GANACHE_LOCAL === 'true';
+export const USE_TENDERLY = process.env.NEXT_PUBLIC_TENDERLY_FORK === 'true';
+export const USE_FORK = ( USE_GANACHE || USE_TENDERLY ) && process.env.NODE_ENV === 'development';
 
 interface SnapshotId {
   time: number;
@@ -60,10 +63,18 @@ export const HeaderBar = (props: any) => {
   const { data: fiatBalance } = useFiatBalance(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
 
   const handleFastForward = async (time: number) => {
-    await provider.send('evm_increaseTime', [time])
-    await provider.send('evm_mine', [{blocks: 1}]);
+    if (!USE_FORK) return;
+    await handleSnapshot();
+    if (USE_GANACHE) {
+      await provider.send('evm_increaseTime', [time]);
+      await provider.send('evm_mine', [{blocks: 1}]);
+    } else {
+      const increaseTimeParams = [hexValue(time)];
+      await provider.send('evm_increaseTime', increaseTimeParams)
+      const increaseBlocksParams = [hexValue(1)];
+      await provider.send('evm_increaseBlocks', increaseBlocksParams);
+    }
     await getGanacheTime();
-    handleSnapshot();
   }
 
   const handleSnapshot = async () => {
@@ -77,7 +88,8 @@ export const HeaderBar = (props: any) => {
     if (!snapshotId) return;
     await provider.send('evm_revert', [snapshotId])
     getGanacheTime();
-    const newSnapshotIds = snapshotIds.filter((item) => parseInt(item.id, 16) < parseInt(snapshotId, 16));
+    const index = snapshotIds.findIndex((item) => snapshotId === item.id);
+    const newSnapshotIds = index > -1 ? snapshotIds.slice(0, index) : [];
     setSnapshotIds(newSnapshotIds);
     window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(newSnapshotIds));
   }
@@ -89,7 +101,7 @@ export const HeaderBar = (props: any) => {
       const subgraphBlockNumber = providerBlockNumber;
       const blockDiff = 0;
       const status = 'success';
-      const message = 'Ganache Fork'
+      const message = USE_GANACHE ? 'Ganache Fork' : 'Tenderly Fork';
       setSyncStatus({
         subgraphBlockNumber,
         providerBlockNumber,

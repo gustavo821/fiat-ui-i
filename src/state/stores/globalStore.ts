@@ -87,7 +87,7 @@ const useStore = create<any>()((set: any) => ({
   getGanacheTime: async () => {
     if (!USE_FORK) return;
     const provider = getProvider() as any;
-    const result = await provider.send('eth_getBlockByNumber', ['latest']);
+    const result = await provider.send('eth_getBlockByNumber', ['latest', false]);
     const timestamp = BigNumber.from(result.timestamp).toNumber() * 1000;
     set(() => ({
       ganacheTime: new Date(timestamp)
