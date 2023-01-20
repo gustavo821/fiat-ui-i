@@ -1,5 +1,6 @@
 const WalletConnect = require('@walletconnect/client');
 const ethers = require('ethers');
+const fs = require('fs');
 require('dotenv').config({ path: '.env.local' });
 
 const impersonate = process.env.NEXT_PUBLIC_IMPERSONATE_ACCOUNT;
@@ -12,9 +13,26 @@ const provider = new ethers.providers.JsonRpcProvider(forkURL);
   if (!impersonate || !provider) {
     console.log('Misconfigured environment vars');
   }
+  const uri = process.argv[2];
+  let cachedSession;
+  try {
+    cachedSession = fs.readFileSync('./cached_session');
+  } catch (e) {
+    console.log('No cached session');
+  }
+
+  if (!cachedSession && !uri) {
+    console.log('No cached session or supplied uri');
+    return;
+  }
 
   // Create connector and connect to WalletConnect bridge
-  const connector = new WalletConnect.default({ bridge: 'https://bridge.walletconnect.org', uri: process.argv[2] });
+  const connector = new WalletConnect.default({ 
+    bridge: 'https://bridge.walletconnect.org', 
+    uri: uri ? process.argv[2] : undefined,
+    session: !uri ? JSON.parse(cachedSession) : undefined
+  });
+  console.log(connector.connected)
 
   // Subscribe to session requests
   connector.on('session_request', (error) => {
@@ -25,6 +43,7 @@ const provider = new ethers.providers.JsonRpcProvider(forkURL);
 
   // Subscribe to call requests
   connector.on('call_request', async (error, payload) => {
+    console.log('Call request');
     if (error) throw error;
     try {
       const signer = provider.getSigner(impersonate);
@@ -33,16 +52,25 @@ const provider = new ethers.providers.JsonRpcProvider(forkURL);
       const result = await signer.sendTransaction({ to, from, data, gasLimit })
       console.log({ result })
       connector.approveRequest({ id: payload.id, result: result.hash });
-      //await result.wait();
     } catch (error) {
       console.log({error})
     }
   });
 
   connector.on('connect', (error) => {
-    if (error) throw error;
     console.log('Connect');
+    if (error) throw error;
     console.log('Impersonating address: ', impersonate);
+    try {
+      fs.rmSync('./cached_session');
+    } catch (e) {}
+      fs.writeFile('./cached_session', JSON.stringify(connector.session), (err) => {
+      if (err)
+        console.log(err);
+      else {
+        console.log('Cached wallet connect session');
+      }
+    });
   });
 
   connector.on('disconnect', (error) => {
@@ -51,6 +79,7 @@ const provider = new ethers.providers.JsonRpcProvider(forkURL);
   });
 
   if (!connector.connected) {
+    console.log('Create session')
     await connector.createSession();
   }
 })();
