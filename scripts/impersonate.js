@@ -32,7 +32,6 @@ const provider = new ethers.providers.JsonRpcProvider(forkURL);
     uri: uri ? process.argv[2] : undefined,
     session: !uri ? JSON.parse(cachedSession) : undefined
   });
-  console.log(connector.connected)
 
   // Subscribe to session requests
   connector.on('session_request', (error) => {
