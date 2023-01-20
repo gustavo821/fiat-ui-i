@@ -81,5 +81,7 @@ const provider = new ethers.providers.JsonRpcProvider(forkURL);
   if (!connector.connected) {
     console.log('Create session')
     await connector.createSession();
+  } else {
+    console.log('Session resumed');
   }
 })();
