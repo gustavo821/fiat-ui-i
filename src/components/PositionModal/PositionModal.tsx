@@ -1,7 +1,7 @@
 import { Dropdown, Modal, Navbar, Text } from '@nextui-org/react';
 import { BigNumber } from 'ethers';
 import React, { useState } from 'react';
-import { formatUnixTimestamp } from '../../utils';
+import { formatUnixTimestamp, scaleAndConvertMaturity } from '../../utils';
 import { CreateForm, DecreaseForm, IncreaseForm, RedeemForm } from './BorrowForms';
 import { LeverCreateForm, LeverDecreaseForm, LeverIncreaseForm, LeverRedeemForm } from './LeverForms';
 import useStore from '../../state/stores/globalStore';
@@ -63,11 +63,11 @@ const PositionModalBody = (props: PositionModalProps) => {
 
   const matured = React.useMemo(() => {
     if (USE_FORK) {
-      const maturity = modifyPositionData.collateralType?.properties.maturity.toString();
-      return (maturity !== undefined && !(ganacheTime < new Date(Number(maturity) * 1000)));
+      const maturity = modifyPositionData.collateralType?.properties.maturity;
+      return (maturity !== undefined && !(ganacheTime < scaleAndConvertMaturity(maturity)));
     }
-    const maturity = modifyPositionData.collateralType?.properties.maturity.toString();
-    return (maturity !== undefined && !(new Date() < new Date(Number(maturity) * 1000)));
+    const maturity = modifyPositionData.collateralType?.properties.maturity;
+    return (maturity !== undefined && !(new Date() < scaleAndConvertMaturity(maturity)));
   }, [modifyPositionData.collateralType?.properties.maturity, ganacheTime])
 
   React.useEffect(() => {
