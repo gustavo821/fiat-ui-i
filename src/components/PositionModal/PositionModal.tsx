@@ -1,11 +1,10 @@
 import { Dropdown, Modal, Navbar, Text } from '@nextui-org/react';
 import { BigNumber } from 'ethers';
 import React, { useState } from 'react';
-import { formatUnixTimestamp, scaleAndConvertMaturity } from '../../utils';
+import { formatUnixTimestamp, getTimestamp, scaleAndConvertMaturity } from '../../utils';
 import { CreateForm, DecreaseForm, IncreaseForm, RedeemForm } from './BorrowForms';
 import { LeverCreateForm, LeverDecreaseForm, LeverIncreaseForm, LeverRedeemForm } from './LeverForms';
 import useStore from '../../state/stores/globalStore';
-import { USE_FORK } from '../HeaderBar';
 
 const enum Mode {
   CREATE='create',
@@ -56,24 +55,14 @@ const PositionModalBody = (props: PositionModalProps) => {
   const modifyPositionData = useStore((state) => state.modifyPositionData);
   const selectedCollateralTypeId = useStore((state) => state.selectedCollateralTypeId);
   const selectedPositionId = useStore((state) => state.selectedPositionId);
-  const ganacheTime = useStore((state => state.ganacheTime));
-  const getGanacheTime = useStore((state) => state.getGanacheTime);
 
   const vaultType = modifyPositionData?.collateralType?.properties?.vaultType;
 
   const matured = React.useMemo(() => {
-    if (USE_FORK) {
-      const maturity = modifyPositionData.collateralType?.properties.maturity;
-      return (maturity !== undefined && !(ganacheTime < scaleAndConvertMaturity(maturity)));
-    }
+    const now = getTimestamp();
     const maturity = modifyPositionData.collateralType?.properties.maturity;
-    return (maturity !== undefined && !(new Date() < scaleAndConvertMaturity(maturity)));
-  }, [modifyPositionData.collateralType?.properties.maturity, ganacheTime])
-
-  React.useEffect(() => {
-    if (!USE_FORK) return;
-    getGanacheTime();
-  }, [getGanacheTime])
+    return (maturity !== undefined && !(now < scaleAndConvertMaturity(maturity).getTime()));
+  }, [modifyPositionData.collateralType?.properties.maturity]);
 
   React.useEffect(() => {
     // Set initial mode of modal depending on props
@@ -84,7 +73,7 @@ const PositionModalBody = (props: PositionModalProps) => {
     }  
     // these deps _are_ exhaustive
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [modifyPositionData.position, actionMode, setActionMode, selectedCollateralTypeId, matured, ganacheTime])
+  }, [modifyPositionData.position, actionMode, setActionMode, selectedCollateralTypeId, matured])
 
   if (!modifyPositionData.collateralType || !modifyPositionData.collateralType.metadata ) {
     // TODO: add skeleton components instead of null
