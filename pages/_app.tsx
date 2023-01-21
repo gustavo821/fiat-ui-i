@@ -7,7 +7,7 @@ import {
   RainbowKitProvider,
 } from '@rainbow-me/rainbowkit';
 import '@rainbow-me/rainbowkit/styles.css';
-import { argentWallet, ledgerWallet, trustWallet } from '@rainbow-me/rainbowkit/wallets';
+import { argentWallet, ledgerWallet, trustWallet, walletConnectWallet } from '@rainbow-me/rainbowkit/wallets';
 import { ThemeProvider as NextThemesProvider } from 'next-themes';
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
@@ -20,8 +20,9 @@ import '../styles/global.css';
 const useGanache = process.env.NEXT_PUBLIC_GANACHE_LOCAL === 'true' && process.env.NODE_ENV === 'development';
 const useTenderly = process.env.NEXT_PUBLIC_TENDERLY_FORK === 'true' && process.env.NODE_ENV === 'development';
 const useTestnets = process.env.NEXT_PUBLIC_ENABLE_TESTNETS === 'true';
+const useFork = useGanache || useTenderly;
+const chainConfig = useFork ? [chain.localhost] : (useTestnets ? [chain.mainnet, chain.goerli] : [chain.mainnet]);
 
-const chainConfig = useGanache || useTenderly ? [chain.localhost] : (useTestnets ? [chain.mainnet, chain.goerli] : [chain.mainnet]);
 
 const providerConfig = useGanache ? 
   [jsonRpcProvider({
@@ -47,7 +48,14 @@ const demoAppInfo = {
   appName: 'FIAT I UI',
 };
 
-const connectors = connectorsForWallets([
+const connectors = useFork ? connectorsForWallets([
+  {
+    groupName: 'Fork And Impersonate',
+    wallets: [
+      walletConnectWallet({ chains }),
+    ],
+  },
+]) : connectorsForWallets([
   ...wallets,
   {
     groupName: 'Other',
