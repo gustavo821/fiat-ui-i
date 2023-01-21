@@ -35,7 +35,7 @@ export const commifyToDecimalPlaces = (value: BigNumber, scale: number, decimalP
 };
 
 export const earnableRateToAPY = (earnableRate: BigNumber, maturity: BigNumberish): BigNumber => {
-  const now = USE_FORK ? Math.floor(useStore.getState().ganacheTime.getTime() / 1000) : Math.floor(Date.now() / 1000);
+  const now = Math.floor(getTimestamp() / 1000);
   if (now >= Number(maturity.toString())) return ZERO;
   const secondsUntilMaturity = Number(maturity.toString()) - now;
   const yearFraction = secondsUntilMaturity / 31622400;
@@ -47,7 +47,7 @@ export const earnableRateToAPY = (earnableRate: BigNumber, maturity: BigNumberis
 export const interestPerSecondToRateUntilMaturity = (
   interestPerSecond: BigNumberish, maturity: BigNumberish
 ): BigNumber => {
-  const now = USE_FORK ? Math.floor(useStore.getState().ganacheTime.getTime() / 1000) : Math.floor(Date.now() / 1000)
+  const now = Math.floor(getTimestamp() / 1000);
   if (now >= Number(maturity.toString())) return ZERO;
   const secondsUntilMaturity = Number(maturity.toString()) - now;
   return decToWad(
@@ -106,4 +106,12 @@ export function debounce<F extends (...args: Parameters<F>) => ReturnType<F>>(
     clearTimeout(timeout as number); // this number cast is for browser support NodeJS.Timeout is for Node envs and so tsc stops whining
     timeout = setTimeout(() => func(...args), delay);
   };
+}
+
+export const getTimestamp = () : number => {
+  return USE_FORK ? useStore.getState().ganacheTime.getTime() : new Date().getTime();
+}
+
+export const scaleAndConvertMaturity = (maturity : BigNumber) : Date => {
+  return new Date(Number(maturity.toString()) * 1000);
 }

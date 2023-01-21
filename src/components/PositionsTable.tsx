@@ -4,13 +4,13 @@ import { computeCollateralizationRatio, WAD, wadToDec } from '@fiatdao/sdk';
 import { chain as chains, useAccount, useNetwork, } from 'wagmi';
 import {
   encodePositionId, floor2, formatUnixTimestamp, getCollateralTypeData,
-  interestPerSecondToAPY, interestPerSecondToRateUntilMaturity
+  getTimestamp,
+  interestPerSecondToAPY, interestPerSecondToRateUntilMaturity, scaleAndConvertMaturity
 } from '../utils';
 import { ethers } from 'ethers';
 import { useCollateralTypes } from '../state/queries/useCollateralTypes';
 import { useUserData } from '../state/queries/useUserData';
 import useStore from '../state/stores/globalStore';
-import { USE_FORK } from './HeaderBar';
 
 export const PositionsTable = () => {
   const [sortedData, setSortedData] = React.useState<any[]>([]);
@@ -21,7 +21,7 @@ export const PositionsTable = () => {
   const fiat = useStore((state) => state.fiat);
   const setSelectedPositionId = useStore((state) => state.setSelectedPositionId);
   const setSelectedCollateralTypeId = useStore((state) => state.setSelectedCollateralTypeId);
-  const ganacheTime = useStore((state) => state.ganacheTime);
+  
   const { chain } = useNetwork();
   const { address } = useAccount();
 
@@ -112,8 +112,8 @@ export const PositionsTable = () => {
               const debt = normalDebt.mul(virtualRate).div(WAD);
               const dueAtMaturity = normalDebt.mul(borrowRate).div(WAD);
               const collRatio = computeCollateralizationRatio(collateral, fairPrice, normalDebt, virtualRate);
-              const maturityFormatted = new Date(Number(maturity.toString()) * 1000);
-              const now = USE_FORK ? Math.floor(ganacheTime.getTime() / 1000) : Math.floor(Date.now() / 1000);
+              const maturityFormatted = scaleAndConvertMaturity(maturity).getTime();
+              const now = Math.floor(getTimestamp() / 1000);
               const daysUntilMaturity = Math.max(Math.floor((Number(maturity.toString()) - now) / 86400), 0);
               return (
                 <Table.Row key={encodePositionId(vault, tokenId, owner)}>
@@ -154,7 +154,7 @@ export const PositionsTable = () => {
                     }
                   </Table.Cell>
                   <Table.Cell css={{'& span': {width: '100%'}}}>
-                    <Badge isSquared color={(USE_FORK ? ganacheTime : new Date()) < maturityFormatted ? 'success' : 'error'} variant='flat' >
+                    <Badge isSquared color={getTimestamp() < maturityFormatted ? 'success' : 'error'} variant='flat' >
                       {formatUnixTimestamp(maturity)}, ({daysUntilMaturity} days)
                     </Badge>
                   </Table.Cell>
