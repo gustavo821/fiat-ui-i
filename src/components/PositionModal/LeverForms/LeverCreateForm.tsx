@@ -10,20 +10,27 @@ import { Alert } from '../../Alert';
 import { NumericInput } from '../../NumericInput/NumericInput';
 import { Slider } from '../../Slider/Slider';
 import { LeverPreview } from './LeverPreview';
+import { sendTransaction } from '../../../actions';
+import { buildBuyCollateralAndIncreaseLeverArgs } from '../../../actions';
+import { useUserData } from '../../../state/queries/useUserData';
+import { useAddRecentTransaction } from '@rainbow-me/rainbowkit';
+import { chain as chains, useAccount, useNetwork } from 'wagmi';
+import useSoftReset from '../../../hooks/useSoftReset';
 
 const LeverCreateForm = ({
   onClose,
-  // TODO: refactor out into react query mutations / store actions
-  createLeveredPosition,
   setUnderlierAllowanceForProxy,
   unsetUnderlierAllowanceForProxy,
 }: {
   onClose: () => void,
-  // TODO: refactor out into react query mutations / store actions
-  createLeveredPosition: (upFrontUnderlier: BigNumber, addDebt: BigNumber, minUnderlierToBuy: BigNumber, minTokenToBuy: BigNumber) => any;
   setUnderlierAllowanceForProxy: (fiat: any, amount: BigNumber) => any,
   unsetUnderlierAllowanceForProxy: (fiat: any) => any,
 }) => {
+
+  const addRecentTransaction = useAddRecentTransaction();
+  const { chain } = useNetwork();
+  const { address } = useAccount();
+
   const leverStore = useLeverStore(
     React.useCallback(
       (state) => ({
@@ -42,8 +49,14 @@ const LeverCreateForm = ({
   const disableActions = useStore((state) => state.disableActions);
   const transactionData = useStore((state => state.transactionData));
   const modifyPositionData = useStore((state) => state.modifyPositionData);
-  const [submitError, setSubmitError] = React.useState('');
+  const user = useStore((state) => state.user);
+  const softReset = useSoftReset();
 
+  const { data: userData } = useUserData(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
+  const { proxies } = userData as any;
+
+  const [submitError, setSubmitError] = React.useState('');
+  
   const {
     collateralType: {
       properties: { underlierScale, underlierSymbol, },
@@ -64,6 +77,19 @@ const LeverCreateForm = ({
   const upFrontUnderliers = useMemo(() => {
     return leverStore.createState.upFrontUnderliersStr === '' ? ZERO : decToScale(leverStore.createState.upFrontUnderliersStr, underlierScale)
   }, [leverStore.createState.upFrontUnderliersStr, underlierScale])
+
+  const createLeveredPosition = async (
+    upFrontUnderlier: BigNumber, addDebt: BigNumber, minUnderlierToBuy: BigNumber, minTokenToBuy: BigNumber
+  ) => {
+    const args = await buildBuyCollateralAndIncreaseLeverArgs(
+      fiat, user, proxies, modifyPositionData.collateralType, upFrontUnderlier, addDebt, minUnderlierToBuy, minTokenToBuy
+    );
+    const response = await sendTransaction(
+      fiat, true, proxies[0], 'createLeveredPosition', args.contract, args.methodName, ...args.methodArgs
+    );
+    addRecentTransaction({ hash: response.transactionHash, description: 'Create levered position' });
+    softReset();
+  }
 
   const renderFormAlerts = () => {
     const formAlerts = [];

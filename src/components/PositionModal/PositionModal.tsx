@@ -24,7 +24,6 @@ interface PositionModalProps {
   buyCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
   sellCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
   redeemCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber) => any;
-  createLeveredPosition: (upFrontUnderlier: BigNumber, addDebt: BigNumber, minUnderlierToBuy: BigNumber, minTokenToBuy: BigNumber) => any;
   buyCollateralAndIncreaseLever: (upFrontUnderlier: BigNumber, addDebt: BigNumber, minUnderlierToBuy: BigNumber, minTokenToBuy: BigNumber) => any;
   sellCollateralAndDecreaseLever: (subTokenAmount: BigNumber, subDebt: BigNumber, maxUnderlierToSell: BigNumber, minUnderlierToBuy: BigNumber) => any;
   redeemCollateralAndDecreaseLever: (subTokenAmount: BigNumber, subDebt: BigNumber, maxUnderlierToSell: BigNumber) => any;
@@ -136,7 +135,6 @@ const PositionModalBody = (props: PositionModalProps) => {
       }
       return !!selectedCollateralTypeId && actionMode === Mode.CREATE
           ? <LeverCreateForm
-              createLeveredPosition={props.createLeveredPosition}
               setUnderlierAllowanceForProxy={props.setUnderlierAllowanceForProxy}
               unsetUnderlierAllowanceForProxy={props.unsetUnderlierAllowanceForProxy}
               onClose={props.onClose}
