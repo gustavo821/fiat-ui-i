@@ -102,9 +102,7 @@ export const HeaderBar = (props: any) => {
               css={{...connectButtonCSS, maxWidth: '40px'}}
               onPress={()=>setShowResourcesModal(true)}
             />
-            <ProxyButton
-              createProxy={props.createProxy}
-            />
+            <ProxyButton />
             {(fiatBalance) && 
               <Badge css={connectButtonCSS} >
                 <Link

@@ -165,15 +165,6 @@ const Home: NextPage = () => {
 
   }, [connector, collateralTypesData, positionsData, selectedCollateralTypeId, selectedPositionId, modifyPositionData, setModifyPositionData, borrowStore, proxies, fiat]);
 
-  const createProxy = async (fiat: any, user: string) => {
-    const response = await userActions.sendTransaction(
-      fiat, false, '', 'createProxy', fiat.getContracts().proxyRegistry, 'deployFor', user
-    );
-    addRecentTransaction({ hash: response.transactionHash, description: 'Create Proxy account' });
-    // Refetch User data query to get proxy
-    queryClient.invalidateQueries(userDataKey.all);
-  }
-
   const setUnderlierAllowanceForProxy = async (fiat: any, amount: BigNumber) => {
     const token = fiat.getERC20Contract(modifyPositionData.collateralType.properties.underlierToken);
     // add 1 unit has a buffer in case user refreshes the page and the value becomes outdated
@@ -374,9 +365,7 @@ const Home: NextPage = () => {
 
   return (
     <div>
-      <HeaderBar
-        createProxy={createProxy}
-      />
+      <HeaderBar />
       <Container lg>
         {
           !positionsData || positionsData.length === 0
