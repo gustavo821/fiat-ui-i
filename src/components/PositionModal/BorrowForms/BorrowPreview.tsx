@@ -1,7 +1,7 @@
 import { computeCollateralizationRatio, normalDebtToDebt, wadToDec } from '@fiatdao/sdk';
 import { Input, Loading, Text } from '@nextui-org/react';
 import { BigNumber, ethers } from 'ethers';
-import { floor2, floor5 } from '../../utils';
+import { floor2, floor5 } from '../../../utils';
 
 export const BorrowPreview = ({
   formDataLoading,

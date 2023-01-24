@@ -1,14 +1,15 @@
-import { decToScale, scaleToDec, WAD, wadToDec, ZERO } from '@fiatdao/sdk';
-import { Button, Card, Grid, Input, Loading, Modal, Row, Spacer, Switch, Text } from '@nextui-org/react';
+import { decToScale, wadToDec, ZERO } from '@fiatdao/sdk';
+import { Button, Card, Grid, Loading, Modal, Row, Spacer, Switch, Text } from '@nextui-org/react';
 import { BigNumber, ethers } from 'ethers';
 import React, { useMemo } from 'react';
 import shallow from 'zustand/shallow';
 import useStore from '../../../state/stores/globalStore';
 import { useLeverStore } from '../../../state/stores/leverStore';
-import { commifyToDecimalPlaces, floor2, floor4, interestPerSecondToAPY } from '../../../utils';
+import { commifyToDecimalPlaces, floor2, floor4 } from '../../../utils';
 import { Alert } from '../../Alert';
 import { NumericInput } from '../../NumericInput/NumericInput';
 import { Slider } from '../../Slider/Slider';
+import { LeverPreview } from './LeverPreview';
 
 const LeverCreateForm = ({
   onClose,
@@ -45,9 +46,7 @@ const LeverCreateForm = ({
 
   const {
     collateralType: {
-      metadata: { symbol: tokenSymbol },
-      properties: { underlierScale, underlierSymbol, tokenScale },
-      state: { publican: { interestPerSecond } }
+      properties: { underlierScale, underlierSymbol, },
     },
     underlierAllowance,
     underlierBalance,
@@ -55,8 +54,7 @@ const LeverCreateForm = ({
   } = modifyPositionData;
   const {
     upFrontUnderliersStr, collateralSlippagePctStr, underlierSlippagePctStr, targetedCollRatio,
-    addDebt, minUnderliersToBuy, minTokenToBuy, 
-    collateral, collRatio, debt, leveragedGain, leveragedAPY, minCollRatio, maxCollRatio
+    addDebt, minUnderliersToBuy, minTokenToBuy, minCollRatio, maxCollRatio
   } = leverStore.createState;
   const {
     setUpFrontUnderliers, setCollateralSlippagePct, setUnderlierSlippagePct, setTargetedCollRatio
@@ -191,89 +189,7 @@ const LeverCreateForm = ({
       </Modal.Body>
       <Spacer y={0.75} />
       <Card.Divider />
-      <Modal.Body>
-        <Spacer y={0} />
-        <Text b size={'m'}>Leveraged Swap Preview</Text>
-        <Input
-          readOnly
-          value={(leverStore.formDataLoading)
-            ? ' '
-            : `${floor2(scaleToDec(minTokenToBuy, tokenScale))}`
-          }
-          placeholder='0'
-          type='string'
-          label={'Total Collateral to deposit (incl. slippage)'}
-          labelRight={tokenSymbol}
-          contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
-          size='sm'
-          status='primary'
-        />
-        <Input
-          readOnly
-          value={(leverStore.formDataLoading)
-            ? ' '
-            : `${floor2(wadToDec(leveragedGain))} (${floor2(wadToDec(leveragedAPY.mul(100)))}% APY)`
-          }
-          placeholder='0'
-          type='string'
-          label={`Net Gain at maturity 
-            (incl. ${floor2(Number(wadToDec(interestPerSecondToAPY(interestPerSecond))) * 100)}% borrow fee)
-          `}
-          labelRight={underlierSymbol}
-          contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
-          size='sm'
-          status='primary'
-        />
-      </Modal.Body>
-      <Spacer y={0.75} />
-      <Card.Divider />
-      <Modal.Body>
-        <Spacer y={0} />
-        <Text b size={'m'}>Position Preview</Text>
-        <Input
-          readOnly
-          value={(leverStore.formDataLoading)
-            ? ' '
-            : `${floor2(wadToDec(collateral))}`
-          }
-          placeholder='0'
-          type='string'
-          label={'Collateral (incl. slippage)'}
-          labelRight={tokenSymbol}
-          contentLeft={(leverStore.formDataLoading) ? <Loading size='xs' /> : null}
-          size='sm'
-          status='primary'
-        />
-        <Input
-          readOnly
-          value={(leverStore.formDataLoading) ? ' ' : floor2(wadToDec(debt))}
-          placeholder='0'
-          type='string'
-          label='Debt (incl. slippage)'
-          labelRight={'FIAT'}
-          contentLeft={(leverStore.formDataLoading) ? <Loading size='xs' /> : null}
-          size='sm'
-          status='primary'
-        />
-        <Input
-          readOnly
-          value={
-            (leverStore.formDataLoading)
-              ? ' '
-              : `${floor2(wadToDec(collRatio.mul(100)))}%`
-          }
-          placeholder='0'
-          type='string'
-          label='Collateralization Ratio (incl. slippage)'
-          labelRight={'🚦'}
-          contentLeft={(leverStore.formDataLoading) ? <Loading size='xs' /> : null}
-          size='sm'
-          status='primary'
-        />
-
-        {/* renderSummary() */}
-
-      </Modal.Body>
+      <LeverPreview />
       <Modal.Footer justify='space-evenly'>
         <Card variant='bordered'>
           <Card.Body>

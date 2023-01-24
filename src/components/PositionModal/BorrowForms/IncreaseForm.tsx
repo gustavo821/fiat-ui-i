@@ -8,7 +8,7 @@ import useStore from '../../../state/stores/globalStore';
 import { commifyToDecimalPlaces, floor2 } from '../../../utils';
 import { Alert } from '../../Alert';
 import { NumericInput } from '../../NumericInput/NumericInput';
-import { BorrowPreview } from '../BorrowPreview';
+import { BorrowPreview } from './BorrowPreview';
 
 const IncreaseForm = ({
   onClose,

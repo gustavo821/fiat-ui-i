@@ -8,7 +8,7 @@ import useStore from '../../../state/stores/globalStore';
 import { Alert } from '../../Alert';
 import { InputLabelWithMax } from '../../InputLabelWithMax';
 import { NumericInput } from '../../NumericInput/NumericInput';
-import { BorrowPreview } from '../BorrowPreview';
+import { BorrowPreview } from './BorrowPreview';
 
 const RedeemForm = ({
   onClose,
