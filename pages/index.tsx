@@ -216,17 +216,6 @@ const Home: NextPage = () => {
     addRecentTransaction({ hash: response.transactionHash, description: 'Reset FIAT allowance for Proxy' });
   }
 
-  const createPosition = async (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => {
-    const args = userActions.buildBuyCollateralAndModifyDebtArgs(
-      fiat, user, proxies, modifyPositionData.collateralType, deltaCollateral, deltaDebt, underlier
-    );
-    const response = await userActions.sendTransaction(
-      fiat, true, proxies[0], 'createPosition', args.contract, args.methodName, ...args.methodArgs
-    );
-    addRecentTransaction({ hash: response.transactionHash, description: 'Create position' });
-    softReset();
-  }
-
   const buyCollateralAndModifyDebt = async (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => {
     const { collateralType, position } = modifyPositionData;
     if (deltaCollateral.isZero()) {
@@ -383,7 +372,6 @@ const Home: NextPage = () => {
       </Container>
 
       <PositionModal
-        createPosition={createPosition}
         buyCollateralAndModifyDebt={buyCollateralAndModifyDebt}
         sellCollateralAndModifyDebt={sellCollateralAndModifyDebt}
         redeemCollateralAndModifyDebt={redeemCollateralAndModifyDebt}
