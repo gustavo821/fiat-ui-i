@@ -3,7 +3,7 @@ import { Input, Loading, Text } from '@nextui-org/react';
 import { BigNumber, ethers } from 'ethers';
 import { floor2, floor5 } from '../../utils';
 
-export const PositionPreview = ({
+export const BorrowPreview = ({
   formDataLoading,
   positionCollateral,
   positionNormalDebt,

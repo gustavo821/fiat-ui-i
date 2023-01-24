@@ -9,7 +9,7 @@ import { floor2 } from '../../../utils';
 import { Alert } from '../../Alert';
 import { InputLabelWithMax } from '../../InputLabelWithMax';
 import { NumericInput } from '../../NumericInput/NumericInput';
-import { PositionPreview } from '../PositionPreview';
+import { BorrowPreview } from '../BorrowPreview';
 
 const DecreaseForm = ({
   onClose,
@@ -167,7 +167,7 @@ const DecreaseForm = ({
       <Card.Divider />
 
       <Modal.Body css={{ marginTop: 'var(--nextui-space-8)' }}>
-        <PositionPreview
+        <BorrowPreview
           formDataLoading={borrowStore.formDataLoading}
           positionCollateral={modifyPositionData.position.collateral}
           positionNormalDebt={modifyPositionData.position.normalDebt}

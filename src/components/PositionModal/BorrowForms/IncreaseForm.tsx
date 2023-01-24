@@ -8,7 +8,7 @@ import useStore from '../../../state/stores/globalStore';
 import { commifyToDecimalPlaces, floor2 } from '../../../utils';
 import { Alert } from '../../Alert';
 import { NumericInput } from '../../NumericInput/NumericInput';
-import { PositionPreview } from '../PositionPreview';
+import { BorrowPreview } from '../BorrowPreview';
 
 const IncreaseForm = ({
   onClose,
@@ -156,7 +156,7 @@ const IncreaseForm = ({
       <Card.Divider />
 
       <Modal.Body css={{ marginTop: 'var(--nextui-space-8)' }}>
-        <PositionPreview
+        <BorrowPreview
           formDataLoading={borrowStore.formDataLoading}
           positionCollateral={modifyPositionData.position.collateral}
           positionNormalDebt={modifyPositionData.position.normalDebt}
