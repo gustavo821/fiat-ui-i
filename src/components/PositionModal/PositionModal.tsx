@@ -3,7 +3,10 @@ import { BigNumber } from 'ethers';
 import React, { useState } from 'react';
 import { formatUnixTimestamp, getTimestamp, scaleAndConvertMaturity } from '../../utils';
 import { CreateForm, DecreaseForm, IncreaseForm, RedeemForm } from './BorrowForms';
-import { LeverCreateForm, LeverDecreaseForm, LeverIncreaseForm, LeverRedeemForm } from './LeverForms';
+import LeverCreateForm from './LeverForms/LeverCreateForm';
+import LeverDecreaseForm from './LeverForms/LeverDecreaseForm';
+import LeverIncreaseForm from './LeverForms/LeverIncreaseForm';
+import LeverRedeemForm from './LeverForms/LeverRedeemForm';
 import useStore from '../../state/stores/globalStore';
 
 const enum Mode {
