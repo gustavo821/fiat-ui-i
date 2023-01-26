@@ -10,15 +10,12 @@ import { Alert } from '../../Alert';
 import { InputLabelWithMax } from '../../InputLabelWithMax';
 import { NumericInput } from '../../NumericInput/NumericInput';
 import { Slider } from '../../Slider/Slider';
+import { useRedeemCollateralAndDecreaseLever } from '../../../hooks/useLeveredPositions';
 
 const LeverRedeemForm = ({
   onClose,
-  // TODO: refactor out into react query mutations / store actions
-  redeemCollateralAndDecreaseLever,
 }: {
   onClose: () => void,
-  // TODO: refactor out into react query mutations / store actions
-  redeemCollateralAndDecreaseLever: (subTokenAmount: BigNumber, subDebt: BigNumber, maxUnderlierToSell: BigNumber) => any;
 }) => {
   const [submitError, setSubmitError] = React.useState('');
   const leverStore = useLeverStore(
@@ -54,6 +51,8 @@ const LeverRedeemForm = ({
   
   const { action: currentTxAction } = transactionData;
   
+  const redeemCollateralAndDecreaseLever = useRedeemCollateralAndDecreaseLever();
+
   const subTokenAmount = useMemo(() => {
     return leverStore.redeemState.subTokenAmountStr === '' ? ZERO : decToScale(leverStore.redeemState.subTokenAmountStr, tokenScale)
   }, [leverStore.redeemState.subTokenAmountStr, tokenScale])

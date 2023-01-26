@@ -20,7 +20,6 @@ const enum Mode {
 }
 
 interface PositionModalProps {
-  redeemCollateralAndDecreaseLever: (subTokenAmount: BigNumber, subDebt: BigNumber, maxUnderlierToSell: BigNumber) => any;
   setFIATAllowanceForMoneta: (fiat: any) => any;
   setFIATAllowanceForProxy: (fiat: any, amount: BigNumber) => any;
   unsetFIATAllowanceForProxy: (fiat: any) => any;
@@ -145,7 +144,6 @@ const PositionModalBody = (props: PositionModalProps) => {
             />
           : !!selectedPositionId && actionMode === Mode.REDEEM
           ? <LeverRedeemForm
-              redeemCollateralAndDecreaseLever={props.redeemCollateralAndDecreaseLever}
               onClose={props.onClose}
             />
           : null
