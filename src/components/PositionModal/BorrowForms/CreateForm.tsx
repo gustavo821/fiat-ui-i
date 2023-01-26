@@ -10,15 +10,12 @@ import { Alert } from '../../Alert';
 import { NumericInput } from '../../NumericInput/NumericInput';
 import { Slider } from '../../Slider/Slider';
 import { useCreatePosition } from '../../../hooks/useBorrowPositions';
+import { useSetUnderlierAllowanceForProxy, useUnsetUnderlierAllowanceForProxy } from '../../../hooks/useSetAllowance';
 
 const CreateForm = ({
   onClose,
-  setUnderlierAllowanceForProxy,
-  unsetUnderlierAllowanceForProxy,
 }: {
   onClose: () => void,
-  setUnderlierAllowanceForProxy: (fiat: any, amount: BigNumber) => any,
-  unsetUnderlierAllowanceForProxy: (fiat: any) => any,
 }) => {
   const modifyPositionData = useStore((state) => state.modifyPositionData);
   const {
@@ -39,6 +36,8 @@ const CreateForm = ({
   const { action: currentTxAction } = transactionData;
 
   const createPosition = useCreatePosition();
+  const setUnderlierAllowanceForProxy = useSetUnderlierAllowanceForProxy();
+  const unsetUnderlierAllowanceForProxy = useUnsetUnderlierAllowanceForProxy();
 
   const borrowStore = useBorrowStore(
     React.useCallback(
@@ -278,14 +277,14 @@ const CreateForm = ({
               if (!underlierBN.isZero() && underlierAllowance?.gte(underlierBN)) {
                 try {
                   setSubmitError('');
-                  await unsetUnderlierAllowanceForProxy(fiat);
+                  await unsetUnderlierAllowanceForProxy();
                 } catch (e: any) {
                   setSubmitError(e.message);
                 }
               } else {
                 try {
                   setSubmitError('');
-                  await setUnderlierAllowanceForProxy(fiat, underlierBN);
+                  await setUnderlierAllowanceForProxy(underlierBN);
                 } catch (e: any) {
                   setSubmitError(e.message);
                 }

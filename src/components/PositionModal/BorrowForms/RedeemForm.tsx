@@ -1,6 +1,5 @@
 import { decToWad, normalDebtToDebt, wadToDec, ZERO } from '@fiatdao/sdk';
 import { Button, Card, Grid, Loading, Modal, Row, Spacer, Switch, Text } from '@nextui-org/react';
-import { BigNumber } from 'ethers';
 import React, { useMemo } from 'react';
 import shallow from 'zustand/shallow';
 import { useBorrowStore } from '../../../state/stores/borrowStore';
@@ -10,18 +9,16 @@ import { InputLabelWithMax } from '../../InputLabelWithMax';
 import { NumericInput } from '../../NumericInput/NumericInput';
 import { BorrowPreview } from './BorrowPreview';
 import { useRedeemCollateralAndModifyDebt } from '../../../hooks/useBorrowPositions';
+import { 
+  useSetFIATAllowanceForMoneta, 
+  useSetFIATAllowanceForProxy, 
+  useUnsetFIATAllowanceForProxy 
+} from '../../../hooks/useSetAllowance';
 
 const RedeemForm = ({
   onClose,
-  setFIATAllowanceForProxy,
-  unsetFIATAllowanceForProxy,
-  setFIATAllowanceForMoneta,
 }: {
   onClose: () => void,
-  // TODO: refactor out into react query mutations / store actions
-  setFIATAllowanceForProxy: (fiat: any, amount: BigNumber) => any;
-  setFIATAllowanceForMoneta: (fiat: any) => any;
-  unsetFIATAllowanceForProxy: (fiat: any) => any;
 }) => {
   const [submitError, setSubmitError] = React.useState('');
   const borrowStore = useBorrowStore(
@@ -43,6 +40,9 @@ const RedeemForm = ({
   const transactionData = useStore(state => state.transactionData);
 
   const redeemCollateralAndModifyDebt = useRedeemCollateralAndModifyDebt();
+  const setFIATAllowanceForMoneta = useSetFIATAllowanceForMoneta();
+  const setFIATAllowanceForProxy = useSetFIATAllowanceForProxy();
+  const unsetFIATAllowanceForProxy = useUnsetFIATAllowanceForProxy();
 
   const deltaCollateral = useMemo(() => {
     return borrowStore.redeemState.deltaCollateralStr === '' ? ZERO : decToWad(borrowStore.redeemState.deltaCollateralStr)
@@ -154,14 +154,14 @@ const RedeemForm = ({
                   if (deltaDebt.gt(0) && modifyPositionData.proxyFIATAllowance.gte(deltaDebt)) {
                     try {
                       setSubmitError('');
-                      await unsetFIATAllowanceForProxy(fiat);
+                      await unsetFIATAllowanceForProxy();
                     } catch (e: any) {
                       setSubmitError(e.message);
                     }
                   } else {
                     try {
                       setSubmitError('');
-                      await setFIATAllowanceForProxy(fiat, deltaDebt);
+                      await setFIATAllowanceForProxy(deltaDebt);
                     } catch (e: any) {
                       setSubmitError(e.message);
                     }
@@ -198,7 +198,7 @@ const RedeemForm = ({
                       } else {
                         try {
                           setSubmitError('');
-                          await setFIATAllowanceForMoneta(fiat);
+                          await setFIATAllowanceForMoneta();
                         } catch (e: any) {
                           setSubmitError(e.message);
                         }

@@ -10,15 +10,12 @@ import { Alert } from '../../Alert';
 import { NumericInput } from '../../NumericInput/NumericInput';
 import { BorrowPreview } from './BorrowPreview';
 import { useBuyCollateralAndModifyDebt } from '../../../hooks/useBorrowPositions';
+import { useSetUnderlierAllowanceForProxy, useUnsetUnderlierAllowanceForProxy } from '../../../hooks/useSetAllowance';
 
 const IncreaseForm = ({
   onClose,
-  setUnderlierAllowanceForProxy,
-  unsetUnderlierAllowanceForProxy,
 }: {
   onClose: () => void,
-  setUnderlierAllowanceForProxy: (fiat: any, amount: BigNumber) => any,
-  unsetUnderlierAllowanceForProxy: (fiat: any) => any,
 }) => {
   const [submitError, setSubmitError] = React.useState('');
   const borrowStore = useBorrowStore(
@@ -40,6 +37,8 @@ const IncreaseForm = ({
   const modifyPositionData = useStore((state) => state.modifyPositionData);
 
   const buyCollateralAndModifyDebt = useBuyCollateralAndModifyDebt();
+  const setUnderlierAllowanceForProxy = useSetUnderlierAllowanceForProxy();
+  const unsetUnderlierAllowanceForProxy = useUnsetUnderlierAllowanceForProxy();
 
   const underlierBN = useMemo(() => {
     return borrowStore.increaseState.underlierStr === '' ? ZERO : decToScale(borrowStore.increaseState.underlierStr, modifyPositionData.collateralType.properties.underlierScale)
@@ -182,14 +181,14 @@ const IncreaseForm = ({
                 if(!underlierBN.isZero() && modifyPositionData.underlierAllowance.gte(underlierBN)) {
                   try {
                     setSubmitError('');
-                    await unsetUnderlierAllowanceForProxy(fiat);
+                    await unsetUnderlierAllowanceForProxy();
                   } catch (e: any) {
                     setSubmitError(e.message);
                   }
                 } else {
                   try {
                     setSubmitError('');
-                    await setUnderlierAllowanceForProxy(fiat, underlierBN)
+                    await setUnderlierAllowanceForProxy(underlierBN)
                   } catch (e: any) {
                     setSubmitError(e.message);
                   }

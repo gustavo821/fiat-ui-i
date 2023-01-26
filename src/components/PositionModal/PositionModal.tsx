@@ -20,11 +20,6 @@ const enum Mode {
 }
 
 interface PositionModalProps {
-  setFIATAllowanceForMoneta: (fiat: any) => any;
-  setFIATAllowanceForProxy: (fiat: any, amount: BigNumber) => any;
-  unsetFIATAllowanceForProxy: (fiat: any) => any;
-  setUnderlierAllowanceForProxy: (fiat: any, amount: BigNumber) => any;
-  unsetUnderlierAllowanceForProxy: (fiat: any) => any;
   open: boolean;
   onClose: () => void;
 }
@@ -128,14 +123,10 @@ const PositionModalBody = (props: PositionModalProps) => {
       }
       return !!selectedCollateralTypeId && actionMode === Mode.CREATE
           ? <LeverCreateForm
-              setUnderlierAllowanceForProxy={props.setUnderlierAllowanceForProxy}
-              unsetUnderlierAllowanceForProxy={props.unsetUnderlierAllowanceForProxy}
               onClose={props.onClose}
           />
           : !!selectedPositionId && actionMode === Mode.INCREASE
           ? <LeverIncreaseForm
-              setUnderlierAllowanceForProxy={props.setUnderlierAllowanceForProxy}
-              unsetUnderlierAllowanceForProxy={props.unsetUnderlierAllowanceForProxy}
               onClose={props.onClose}
             />
           : !!selectedPositionId && actionMode === Mode.DECREASE
@@ -151,28 +142,18 @@ const PositionModalBody = (props: PositionModalProps) => {
       return !!selectedCollateralTypeId && actionMode === Mode.CREATE
           ? <CreateForm
               onClose={props.onClose}
-              setUnderlierAllowanceForProxy={props.setUnderlierAllowanceForProxy}
-              unsetUnderlierAllowanceForProxy={props.unsetUnderlierAllowanceForProxy}
           />
           : !!selectedPositionId && actionMode === Mode.INCREASE
           ? <IncreaseForm
               onClose={props.onClose}
-              setUnderlierAllowanceForProxy={props.setUnderlierAllowanceForProxy}
-              unsetUnderlierAllowanceForProxy={props.unsetUnderlierAllowanceForProxy}
             />
           : !!selectedPositionId && actionMode === Mode.DECREASE
           ? <DecreaseForm
               onClose={props.onClose}
-              setFIATAllowanceForProxy={props.setFIATAllowanceForProxy}
-              unsetFIATAllowanceForProxy={props.unsetFIATAllowanceForProxy}
-              setFIATAllowanceForMoneta={props.setFIATAllowanceForMoneta}
             />
           : !!selectedPositionId && actionMode === Mode.REDEEM
           ? <RedeemForm
               onClose={props.onClose}
-              setFIATAllowanceForProxy={props.setFIATAllowanceForProxy}
-              unsetFIATAllowanceForProxy={props.unsetFIATAllowanceForProxy}
-              setFIATAllowanceForMoneta={props.setFIATAllowanceForMoneta}
             />
           : null
     }

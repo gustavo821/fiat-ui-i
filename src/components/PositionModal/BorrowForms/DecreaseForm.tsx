@@ -11,17 +11,16 @@ import { InputLabelWithMax } from '../../InputLabelWithMax';
 import { NumericInput } from '../../NumericInput/NumericInput';
 import { BorrowPreview } from './BorrowPreview';
 import { useSellCollateralAndModifyDebt } from '../../../hooks/useBorrowPositions';
+import { 
+  useSetFIATAllowanceForMoneta, 
+  useSetFIATAllowanceForProxy, 
+  useUnsetFIATAllowanceForProxy 
+} from '../../../hooks/useSetAllowance';
 
 const DecreaseForm = ({
   onClose,
-  setFIATAllowanceForProxy,
-  unsetFIATAllowanceForProxy,
-  setFIATAllowanceForMoneta,
 }: {
   onClose: () => void,
-  setFIATAllowanceForProxy: (fiat: any, amount: BigNumber) => any;
-  setFIATAllowanceForMoneta: (fiat: any) => any;
-  unsetFIATAllowanceForProxy: (fiat: any) => any;
 }) => {
   const [submitError, setSubmitError] = React.useState('');
   const borrowStore = useBorrowStore(
@@ -43,6 +42,9 @@ const DecreaseForm = ({
   const transactionData = useStore(state => state.transactionData);
 
   const sellCollateralAndModifyDebt = useSellCollateralAndModifyDebt();
+  const setFIATAllowanceForMoneta = useSetFIATAllowanceForMoneta();
+  const setFIATAllowanceForProxy = useSetFIATAllowanceForProxy();
+  const unsetFIATAllowanceForProxy = useUnsetFIATAllowanceForProxy();
 
   const deltaCollateral = useMemo(() => {
     return borrowStore.decreaseState.deltaCollateralStr === '' ? ZERO : decToWad(borrowStore.decreaseState.deltaCollateralStr)
@@ -193,14 +195,14 @@ const DecreaseForm = ({
                   if (deltaDebt.gt(0) && modifyPositionData.proxyFIATAllowance.gte(deltaDebt)) {
                     try {
                       setSubmitError('');
-                      await unsetFIATAllowanceForProxy(fiat);
+                      await unsetFIATAllowanceForProxy();
                     } catch (e: any) {
                       setSubmitError(e.message);
                     }
                   } else {
                     try {
                       setSubmitError('');
-                      await setFIATAllowanceForProxy(fiat, deltaDebt);
+                      await setFIATAllowanceForProxy(deltaDebt);
                     } catch (e: any) {
                       setSubmitError(e.message);
                     }
@@ -237,7 +239,7 @@ const DecreaseForm = ({
                       } else {
                         try {
                           setSubmitError('');
-                          await setFIATAllowanceForMoneta(fiat);
+                          await setFIATAllowanceForMoneta();
                         } catch (e: any) {
                           setSubmitError(e.message);
                         }

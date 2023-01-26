@@ -2,16 +2,12 @@ import React from 'react';
 import type { NextPage } from 'next';
 import { chain as chains, useAccount, useNetwork, useProvider } from 'wagmi';
 import shallow from 'zustand/shallow'
-import { useAddRecentTransaction } from '@rainbow-me/rainbowkit';
 import { Container, Spacer } from '@nextui-org/react';
-import { BigNumber, ethers } from 'ethers';
-import { WAD } from '@fiatdao/sdk';
 import { HeaderBar } from '../src/components/HeaderBar';
 import { CollateralTypesTable } from '../src/components/CollateralTypesTable';
 import { PositionsTable } from '../src/components/PositionsTable';
 import { PositionModal } from '../src/components/PositionModal/PositionModal';
 import { decodeCollateralTypeId, decodePositionId, getCollateralTypeData, getPositionData } from '../src/utils';
-import * as userActions from '../src/actions';
 import { useBorrowStore } from '../src/state/stores/borrowStore';
 import { useLeverStore } from '../src/state/stores/leverStore';
 import { useCollateralTypes } from '../src/state/queries/useCollateralTypes';
@@ -19,13 +15,11 @@ import { userDataKey, useUserData } from '../src/state/queries/useUserData';
 import { useQueryClient } from '@tanstack/react-query';
 import { fiatBalanceKey } from '../src/state/queries/useFiatBalance';
 import useStore, { initialState } from '../src/state/stores/globalStore';
-import useSoftReset from '../src/hooks/useSoftReset';
 
 const Home: NextPage = () => {
   const provider = useProvider();
   const { address, connector } = useAccount({ onConnect: () => resetState(), onDisconnect: () => resetState() });
   const { chain } = useNetwork();
-  const addRecentTransaction = useAddRecentTransaction();
 
   // Only select necessary actions off of the store to minimize re-renders
   const borrowStore = useBorrowStore(
@@ -55,7 +49,6 @@ const Home: NextPage = () => {
   const fiat = useStore((state) => state.fiat);
   const fiatFromSigner = useStore((state) => state.fiatFromSigner);
   const fiatFromProvider = useStore((state) => state.fiatFromProvider);
-  const user = useStore((state) => state.user);
   const setUser = useStore((state) => state.setUser);
   const setExplorerUrl = useStore((state) => state.setExplorerUrl);
   const modifyPositionData = useStore((state) => state.modifyPositionData);
@@ -77,8 +70,6 @@ const Home: NextPage = () => {
     queryClient.invalidateQueries(userDataKey.all);
     queryClient.invalidateQueries(fiatBalanceKey.all);
   }
-
-  const softReset = useSoftReset();
 
   // Reset state if network or account changes
   React.useEffect(() => {
@@ -165,57 +156,6 @@ const Home: NextPage = () => {
 
   }, [connector, collateralTypesData, positionsData, selectedCollateralTypeId, selectedPositionId, modifyPositionData, setModifyPositionData, borrowStore, proxies, fiat]);
 
-  const setUnderlierAllowanceForProxy = async (fiat: any, amount: BigNumber) => {
-    const token = fiat.getERC20Contract(modifyPositionData.collateralType.properties.underlierToken);
-    // add 1 unit has a buffer in case user refreshes the page and the value becomes outdated
-    const allowance = BigNumber.from(amount).add(modifyPositionData.collateralType.properties.underlierScale);
-    const response = await userActions.sendTransaction(
-      fiat, false, '', 'setUnderlierAllowanceForProxy', token, 'approve', proxies[0], allowance
-    );
-    addRecentTransaction({ hash: response.transactionHash, description: 'Set underlier allowance for Proxy' });
-    const underlierAllowance = await token.allowance(user, proxies[0])
-    setModifyPositionData({ ...modifyPositionData, underlierAllowance });
-  }
-
-  const unsetUnderlierAllowanceForProxy = async (fiat: any) => {
-    const token = fiat.getERC20Contract(modifyPositionData.collateralType.properties.underlierToken);
-    const response =  await userActions.sendTransaction(
-      fiat, false, '', 'unsetUnderlierAllowanceForProxy', token, 'approve', proxies[0], 0
-    );
-    addRecentTransaction({ hash: response.transactionHash, description: 'Reset underlier allowance for Proxy' });
-  }
-
-  const setFIATAllowanceForMoneta = async (fiat: any) => {
-    const { moneta, vaultEPTActions, fiat: token } = fiat.getContracts();
-    const response = await userActions.sendTransaction(
-      // approveFIAT is implemented for all Actions contract
-      fiat, true, proxies[0], 'setFIATAllowanceForMoneta', vaultEPTActions, 'approveFIAT', moneta.address, ethers.constants.MaxUint256
-    );
-    addRecentTransaction({ hash: response.transactionHash, description: 'Set FIAT allowance Moneta' });
-    const monetaFIATAllowance = await token.allowance(proxies[0], moneta.address)
-    setModifyPositionData({ ...modifyPositionData, monetaFIATAllowance });
-  }
-
-  const setFIATAllowanceForProxy = async (fiat: any, amount: BigNumber) => {
-    const { fiat: token } = fiat.getContracts();
-    // add 1 unit has a buffer in case user refreshes the page and the value becomes outdated
-    const allowance = amount.add(WAD);
-    const response = await userActions.sendTransaction(
-      fiat, false, '', 'setFIATAllowanceForProxy', token, 'approve', proxies[0], allowance
-    );
-    addRecentTransaction({ hash: response.transactionHash, description: 'Set  FIAT allowance for Proxy' });
-    const proxyFIATAllowance = await token.allowance(user, proxies[0]);
-    setModifyPositionData({ ...modifyPositionData, proxyFIATAllowance });
-  }
-
-  const unsetFIATAllowanceForProxy = async (fiat: any) => {
-    const { fiat: token } = fiat.getContracts();
-    const response = await userActions.sendTransaction(
-      fiat, false, '', 'unsetFIATAllowanceForProxy', token, 'approve', proxies[0], 0
-    );
-    addRecentTransaction({ hash: response.transactionHash, description: 'Reset FIAT allowance for Proxy' });
-  }
-
   // Cycle the first page render to allow styles to load
   React.useEffect(() => {
     setInitialPageLoad(false);
@@ -243,11 +183,6 @@ const Home: NextPage = () => {
       </Container>
 
       <PositionModal
-        setFIATAllowanceForProxy={setFIATAllowanceForProxy}
-        unsetFIATAllowanceForProxy={unsetFIATAllowanceForProxy}
-        setFIATAllowanceForMoneta={setFIATAllowanceForMoneta}
-        setUnderlierAllowanceForProxy={setUnderlierAllowanceForProxy}
-        unsetUnderlierAllowanceForProxy={unsetUnderlierAllowanceForProxy}
         open={!!modifyPositionData && (!!selectedCollateralTypeId || !!selectedPositionId)}
         onClose={() => {
           setSelectedPositionId(initialState.selectedPositionId);

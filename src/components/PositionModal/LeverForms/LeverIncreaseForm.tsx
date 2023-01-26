@@ -10,15 +10,11 @@ import { Alert } from '../../Alert';
 import { NumericInput } from '../../NumericInput/NumericInput';
 import { Slider } from '../../Slider/Slider';
 import { useBuyCollateralAndIncreaseLever } from '../../../hooks/useLeveredPositions';
-
+import { useSetUnderlierAllowanceForProxy, useUnsetUnderlierAllowanceForProxy } from '../../../hooks/useSetAllowance';
 const LeverIncreaseForm = ({
   onClose,
-  setUnderlierAllowanceForProxy,
-  unsetUnderlierAllowanceForProxy,
 }: {
   onClose: () => void,
-  setUnderlierAllowanceForProxy: (fiat: any, amount: BigNumber) => any,
-  unsetUnderlierAllowanceForProxy: (fiat: any) => any,
 }) => {
   const [submitError, setSubmitError] = React.useState('');
   const leverStore = useLeverStore(
@@ -40,6 +36,8 @@ const LeverIncreaseForm = ({
   const modifyPositionData = useStore((state) => state.modifyPositionData);
 
   const buyCollateralAndIncreaseLever = useBuyCollateralAndIncreaseLever();
+  const setUnderlierAllowanceForProxy = useSetUnderlierAllowanceForProxy();
+  const unsetUnderlierAllowanceForProxy = useUnsetUnderlierAllowanceForProxy();
 
   const {
     collateralType: {
@@ -282,14 +280,14 @@ const LeverIncreaseForm = ({
                 if(!upFrontUnderliers.isZero() && underlierAllowance.gte(upFrontUnderliers)) {
                   try {
                     setSubmitError('');
-                    await unsetUnderlierAllowanceForProxy(fiat);
+                    await unsetUnderlierAllowanceForProxy();
                   } catch (e: any) {
                     setSubmitError(e.message);
                   }
                 } else {
                   try {
                     setSubmitError('');
-                    await setUnderlierAllowanceForProxy(fiat, upFrontUnderliers)
+                    await setUnderlierAllowanceForProxy(upFrontUnderliers)
                   } catch (e: any) {
                     setSubmitError(e.message);
                   }
