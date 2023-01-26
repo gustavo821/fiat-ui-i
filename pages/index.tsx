@@ -216,22 +216,6 @@ const Home: NextPage = () => {
     addRecentTransaction({ hash: response.transactionHash, description: 'Reset FIAT allowance for Proxy' });
   }
 
-  const buyCollateralAndIncreaseLever = async (
-    upFrontUnderlier: BigNumber, addDebt: BigNumber, minUnderlierToBuy: BigNumber, minTokenToBuy: BigNumber
-  ) => {
-    const args = await userActions.buildBuyCollateralAndIncreaseLeverArgs(
-      fiat, user, proxies, modifyPositionData.collateralType, upFrontUnderlier, addDebt, minUnderlierToBuy, minTokenToBuy
-    );
-    const response = await userActions.sendTransaction(
-      fiat, true, proxies[0], 'buyCollateralAndIncreaseLever', args.contract, args.methodName, ...args.methodArgs
-    );
-    addRecentTransaction({
-      hash: response.transactionHash, description: 'Buy and deposit collateral and increase leverage'
-    });
-    softReset();
-    return response;
-  }
-
   const sellCollateralAndDecreaseLever = async (
     subTokenAmount: BigNumber, subDebt: BigNumber, maxUnderlierToSell: BigNumber, minUnderlierToBuy: BigNumber
   ) => {
@@ -293,7 +277,6 @@ const Home: NextPage = () => {
       </Container>
 
       <PositionModal
-        buyCollateralAndIncreaseLever={buyCollateralAndIncreaseLever}
         sellCollateralAndDecreaseLever={sellCollateralAndDecreaseLever}
         redeemCollateralAndDecreaseLever={redeemCollateralAndDecreaseLever}
         setFIATAllowanceForProxy={setFIATAllowanceForProxy}

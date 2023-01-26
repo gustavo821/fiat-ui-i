@@ -9,7 +9,6 @@ import useSoftReset from './useSoftReset';
 import { useUserData } from '../state/queries/useUserData';
 
 export const useCreateLeveredPosition = () => {
-
   const addRecentTransaction = useAddRecentTransaction();
   const { chain } = useNetwork();
   const { address } = useAccount();
@@ -36,4 +35,36 @@ export const useCreateLeveredPosition = () => {
   }, [addRecentTransaction, fiat, modifyPositionData.collateralType, proxies, softReset, user]);
 
   return createLeveredPosition;
+}
+
+export const useBuyCollateralAndIncreaseLever = () => {
+  const addRecentTransaction = useAddRecentTransaction();
+  const { chain } = useNetwork();
+  const { address } = useAccount();
+  const softReset = useSoftReset();
+
+  const fiat = useStore(state => state.fiat);
+  const user = useStore((state) => state.user);
+  const modifyPositionData = useStore((state) => state.modifyPositionData);
+
+  const { data: userData } = useUserData(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
+  const { proxies } = userData as any;
+  
+  const buyCollateralAndIncreaseLever = useCallback(async (
+    upFrontUnderlier: BigNumber, addDebt: BigNumber, minUnderlierToBuy: BigNumber, minTokenToBuy: BigNumber
+  ) => {
+    const args = await buildBuyCollateralAndIncreaseLeverArgs(
+      fiat, user, proxies, modifyPositionData.collateralType, upFrontUnderlier, addDebt, minUnderlierToBuy, minTokenToBuy
+    );
+    const response = await sendTransaction(
+      fiat, true, proxies[0], 'buyCollateralAndIncreaseLever', args.contract, args.methodName, ...args.methodArgs
+    );
+    addRecentTransaction({
+      hash: response.transactionHash, description: 'Buy and deposit collateral and increase leverage'
+    });
+    softReset();
+    return response;
+  }, [addRecentTransaction, fiat, modifyPositionData.collateralType, proxies, softReset, user]);
+
+  return buyCollateralAndIncreaseLever;
 }

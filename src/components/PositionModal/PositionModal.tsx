@@ -20,7 +20,6 @@ const enum Mode {
 }
 
 interface PositionModalProps {
-  buyCollateralAndIncreaseLever: (upFrontUnderlier: BigNumber, addDebt: BigNumber, minUnderlierToBuy: BigNumber, minTokenToBuy: BigNumber) => any;
   sellCollateralAndDecreaseLever: (subTokenAmount: BigNumber, subDebt: BigNumber, maxUnderlierToSell: BigNumber, minUnderlierToBuy: BigNumber) => any;
   redeemCollateralAndDecreaseLever: (subTokenAmount: BigNumber, subDebt: BigNumber, maxUnderlierToSell: BigNumber) => any;
   setFIATAllowanceForMoneta: (fiat: any) => any;
@@ -137,7 +136,6 @@ const PositionModalBody = (props: PositionModalProps) => {
           />
           : !!selectedPositionId && actionMode === Mode.INCREASE
           ? <LeverIncreaseForm
-              buyCollateralAndIncreaseLever={props.buyCollateralAndIncreaseLever}
               setUnderlierAllowanceForProxy={props.setUnderlierAllowanceForProxy}
               unsetUnderlierAllowanceForProxy={props.unsetUnderlierAllowanceForProxy}
               onClose={props.onClose}

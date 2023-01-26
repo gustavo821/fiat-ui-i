@@ -9,17 +9,14 @@ import { commifyToDecimalPlaces, floor2, floor4, interestPerSecondToAPY } from '
 import { Alert } from '../../Alert';
 import { NumericInput } from '../../NumericInput/NumericInput';
 import { Slider } from '../../Slider/Slider';
+import { useBuyCollateralAndIncreaseLever } from '../../../hooks/useLeveredPositions';
 
 const LeverIncreaseForm = ({
   onClose,
-  // TODO: refactor out into react query mutations / store actions
-  buyCollateralAndIncreaseLever,
   setUnderlierAllowanceForProxy,
   unsetUnderlierAllowanceForProxy,
 }: {
   onClose: () => void,
-  // TODO: refactor out into react query mutations / store actions
-  buyCollateralAndIncreaseLever: (upFrontUnderlier: BigNumber, addDebt: BigNumber, minUnderlierToBuy: BigNumber, minTokenToBuy: BigNumber) => any;
   setUnderlierAllowanceForProxy: (fiat: any, amount: BigNumber) => any,
   unsetUnderlierAllowanceForProxy: (fiat: any) => any,
 }) => {
@@ -41,6 +38,8 @@ const LeverIncreaseForm = ({
   const disableActions = useStore((state) => state.disableActions);
   const transactionData = useStore((state => state.transactionData));
   const modifyPositionData = useStore((state) => state.modifyPositionData);
+
+  const buyCollateralAndIncreaseLever = useBuyCollateralAndIncreaseLever();
 
   const {
     collateralType: {
