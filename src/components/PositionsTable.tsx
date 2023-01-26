@@ -4,7 +4,6 @@ import { computeCollateralizationRatio, WAD, wadToDec } from '@fiatdao/sdk';
 import { chain as chains, useAccount, useNetwork, } from 'wagmi';
 import {
   encodePositionId, floor2, formatUnixTimestamp, getCollateralTypeData,
-  getTimestamp,
   interestPerSecondToAPY, interestPerSecondToRateUntilMaturity, scaleAndConvertMaturity
 } from '../utils';
 import { ethers } from 'ethers';

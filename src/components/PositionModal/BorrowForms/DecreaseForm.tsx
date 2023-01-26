@@ -1,6 +1,5 @@
 import { decToWad, normalDebtToDebt, scaleToDec, wadToDec, ZERO } from '@fiatdao/sdk';
 import { Button, Card, Grid, Input, Loading, Modal, Row, Spacer, Switch, Text } from '@nextui-org/react';
-import { BigNumber } from 'ethers';
 import React, { useMemo } from 'react';
 import shallow from 'zustand/shallow';
 import { useBorrowStore } from '../../../state/stores/borrowStore';

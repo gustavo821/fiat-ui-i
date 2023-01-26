@@ -1,6 +1,6 @@
 import { computeCollateralizationRatio, decToScale, scaleToDec, WAD, wadToDec, ZERO } from '@fiatdao/sdk';
 import { Button, Card, Grid, Input, Loading, Modal, Row, Spacer, Switch, Text } from '@nextui-org/react';
-import { BigNumber, ethers } from 'ethers';
+import { ethers } from 'ethers';
 import React, { useMemo } from 'react';
 import shallow from 'zustand/shallow';
 import useStore from '../../../state/stores/globalStore';

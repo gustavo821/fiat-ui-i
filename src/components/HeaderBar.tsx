@@ -21,7 +21,7 @@ export const USE_GANACHE = process.env.NEXT_PUBLIC_GANACHE_LOCAL === 'true';
 export const USE_TENDERLY = process.env.NEXT_PUBLIC_TENDERLY_FORK === 'true';
 export const USE_FORK = ( USE_GANACHE || USE_TENDERLY ) && process.env.NODE_ENV === 'development';
 
-export const HeaderBar = (props: any) => {
+export const HeaderBar = () => {
   const [showResourcesModal, setShowResourcesModal] = React.useState<boolean>(false);
   const [syncStatus, setSyncStatus] = React.useState<BlockSyncStatus>();
   const {data: providerBlockNumber, refetch} = useBlockNumber();

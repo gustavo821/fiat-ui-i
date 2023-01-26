@@ -1,5 +1,4 @@
 import { Dropdown, Modal, Navbar, Text } from '@nextui-org/react';
-import { BigNumber } from 'ethers';
 import React, { useState } from 'react';
 import { formatUnixTimestamp, getTimestamp, scaleAndConvertMaturity } from '../../utils';
 import CreateForm from './BorrowForms/CreateForm';
