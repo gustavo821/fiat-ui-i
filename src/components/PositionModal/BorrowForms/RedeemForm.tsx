@@ -9,21 +9,19 @@ import { Alert } from '../../Alert';
 import { InputLabelWithMax } from '../../InputLabelWithMax';
 import { NumericInput } from '../../NumericInput/NumericInput';
 import { BorrowPreview } from './BorrowPreview';
+import { useRedeemCollateralAndModifyDebt } from '../../../hooks/useBorrowPositions';
 
 const RedeemForm = ({
   onClose,
-  // TODO: refactor out into react query mutations / store actions
   setFIATAllowanceForProxy,
   unsetFIATAllowanceForProxy,
   setFIATAllowanceForMoneta,
-  redeemCollateralAndModifyDebt,
 }: {
   onClose: () => void,
   // TODO: refactor out into react query mutations / store actions
   setFIATAllowanceForProxy: (fiat: any, amount: BigNumber) => any;
   setFIATAllowanceForMoneta: (fiat: any) => any;
   unsetFIATAllowanceForProxy: (fiat: any) => any;
-  redeemCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber) => any;
 }) => {
   const [submitError, setSubmitError] = React.useState('');
   const borrowStore = useBorrowStore(
@@ -43,6 +41,8 @@ const RedeemForm = ({
   const disableActions = useStore((state) => state.disableActions);
   const modifyPositionData = useStore((state) => state.modifyPositionData);
   const transactionData = useStore(state => state.transactionData);
+
+  const redeemCollateralAndModifyDebt = useRedeemCollateralAndModifyDebt();
 
   const deltaCollateral = useMemo(() => {
     return borrowStore.redeemState.deltaCollateralStr === '' ? ZERO : decToWad(borrowStore.redeemState.deltaCollateralStr)

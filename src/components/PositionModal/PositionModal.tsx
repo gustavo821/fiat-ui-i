@@ -20,7 +20,6 @@ const enum Mode {
 }
 
 interface PositionModalProps {
-  redeemCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber) => any;
   buyCollateralAndIncreaseLever: (upFrontUnderlier: BigNumber, addDebt: BigNumber, minUnderlierToBuy: BigNumber, minTokenToBuy: BigNumber) => any;
   sellCollateralAndDecreaseLever: (subTokenAmount: BigNumber, subDebt: BigNumber, maxUnderlierToSell: BigNumber, minUnderlierToBuy: BigNumber) => any;
   redeemCollateralAndDecreaseLever: (subTokenAmount: BigNumber, subDebt: BigNumber, maxUnderlierToSell: BigNumber) => any;
@@ -180,7 +179,6 @@ const PositionModalBody = (props: PositionModalProps) => {
               setFIATAllowanceForProxy={props.setFIATAllowanceForProxy}
               unsetFIATAllowanceForProxy={props.unsetFIATAllowanceForProxy}
               setFIATAllowanceForMoneta={props.setFIATAllowanceForMoneta}
-              redeemCollateralAndModifyDebt={props.redeemCollateralAndModifyDebt}
             />
           : null
     }
