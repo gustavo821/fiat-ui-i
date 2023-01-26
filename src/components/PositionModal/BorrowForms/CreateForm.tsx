@@ -9,11 +9,7 @@ import { commifyToDecimalPlaces, floor2, floor4, minCollRatioWithBuffer } from '
 import { Alert } from '../../Alert';
 import { NumericInput } from '../../NumericInput/NumericInput';
 import { Slider } from '../../Slider/Slider';
-import { buildBuyCollateralAndModifyDebtArgs, sendTransaction } from '../../../actions';
-import { useUserData } from '../../../state/queries/useUserData';
-import { chain as chains, useAccount, useNetwork } from 'wagmi';
-import { useAddRecentTransaction } from '@rainbow-me/rainbowkit';
-import useSoftReset from '../../../hooks/useSoftReset';
+import { useCreatePosition } from '../../../hooks/useBorrowPositions';
 
 const CreateForm = ({
   onClose,
@@ -24,10 +20,6 @@ const CreateForm = ({
   setUnderlierAllowanceForProxy: (fiat: any, amount: BigNumber) => any,
   unsetUnderlierAllowanceForProxy: (fiat: any) => any,
 }) => {
-  const { chain } = useNetwork();
-  const { address } = useAccount();
-  const addRecentTransaction = useAddRecentTransaction();
-  const softReset = useSoftReset();
   const modifyPositionData = useStore((state) => state.modifyPositionData);
   const {
     collateralType: {
@@ -43,11 +35,10 @@ const CreateForm = ({
   const hasProxy = useStore(state => state.hasProxy);
   const disableActions = useStore((state) => state.disableActions);
   const transactionData = useStore((state => state.transactionData));
-  const user = useStore((state) => state.user);
+
   const { action: currentTxAction } = transactionData;
 
-  const { data: userData } = useUserData(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
-  const { proxies } = userData as any;
+  const createPosition = useCreatePosition();
 
   const borrowStore = useBorrowStore(
     React.useCallback(
@@ -69,17 +60,6 @@ const CreateForm = ({
   const [submitError, setSubmitError] = React.useState('');
 
   const minCollRatio = useMemo(() => minCollRatioWithBuffer(liquidationRatio), [liquidationRatio]);
-
-  const createPosition = async (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => {
-    const args = buildBuyCollateralAndModifyDebtArgs(
-      fiat, user, proxies, modifyPositionData.collateralType, deltaCollateral, deltaDebt, underlier
-    );
-    const response = await sendTransaction(
-      fiat, true, proxies[0], 'createPosition', args.contract, args.methodName, ...args.methodArgs
-    );
-    addRecentTransaction({ hash: response.transactionHash, description: 'Create position' });
-    softReset();
-  }
 
   if (
     !modifyPositionData.collateralType ||
