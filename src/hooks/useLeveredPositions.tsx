@@ -1,12 +1,16 @@
 import { useCallback } from 'react';
 import { BigNumber } from 'ethers';
 import { sendTransaction } from '../actions';
-import { buildBuyCollateralAndIncreaseLeverArgs, buildSellCollateralAndDecreaseLeverArgs } from '../actions';
 import { useAddRecentTransaction } from '@rainbow-me/rainbowkit';
 import { chain as chains, useAccount, useNetwork } from 'wagmi';
 import useStore from '../state/stores/globalStore';
 import useSoftReset from './useSoftReset';
 import { useUserData } from '../state/queries/useUserData';
+import { 
+  buildBuyCollateralAndIncreaseLeverArgs, 
+  buildRedeemCollateralAndDecreaseLeverArgs, 
+  buildSellCollateralAndDecreaseLeverArgs 
+} from '../actions';
 
 export const useCreateLeveredPosition = () => {
   const addRecentTransaction = useAddRecentTransaction();
@@ -116,17 +120,17 @@ export const useRedeemCollateralAndDecreaseLever = () => {
   const { proxies } = userData as any;
   
   const redeemCollateralAndDecreaseLever = useCallback(async (
-    subTokenAmount: BigNumber, subDebt: BigNumber, maxUnderlierToSell: BigNumber, minUnderlierToBuy: BigNumber
+    subTokenAmount: BigNumber, subDebt: BigNumber, maxUnderlierToSell: BigNumber
   ) => {
     const { collateralType, position } = modifyPositionData;
-    const args = await buildSellCollateralAndDecreaseLeverArgs(
-      fiat, user, proxies, collateralType, subTokenAmount, subDebt, maxUnderlierToSell, minUnderlierToBuy, position
+    const args = await buildRedeemCollateralAndDecreaseLeverArgs(
+      fiat, user, proxies, collateralType, subTokenAmount, subDebt, maxUnderlierToSell, position
     );
     const response = await sendTransaction(
-      fiat, true, proxies[0], 'sellCollateralAndDecreaseLever', args.contract, args.methodName, ...args.methodArgs
+      fiat, true, proxies[0], 'redeemCollateralAndDecreaseLever', args.contract, args.methodName, ...args.methodArgs
     );
     addRecentTransaction({
-      hash: response.transactionHash, description: 'Withdraw and sell collateral and decrease leverage'
+      hash: response.transactionHash, description: 'Withdraw and redeem collateral and decrease leverage'
     });
     softReset();
     return response;
