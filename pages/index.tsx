@@ -216,33 +216,6 @@ const Home: NextPage = () => {
     addRecentTransaction({ hash: response.transactionHash, description: 'Reset FIAT allowance for Proxy' });
   }
 
-  const sellCollateralAndModifyDebt = async (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => {
-    const { collateralType, position } = modifyPositionData;
-    if (deltaCollateral.isZero()) {
-      // decrease (pay back)
-      const args = userActions.buildModifyCollateralAndDebtArgs(
-        fiat, user, proxies, collateralType, deltaDebt.mul(-1), position
-      );
-      const response = await userActions.sendTransaction(
-        fiat, true, proxies[0], 'modifyCollateralAndDebt', args.contract, args.methodName, ...args.methodArgs
-      );
-      addRecentTransaction({ hash: response.transactionHash, description: 'Repay borrowed FIAT' });
-      softReset();
-    }
-    else {
-      const args = userActions.buildSellCollateralAndModifyDebtArgs(
-        fiat, user, proxies, collateralType, deltaCollateral, deltaDebt, underlier, position,
-      );
-      const response = await userActions.sendTransaction(
-        fiat, true, proxies[0], 'sellCollateralAndModifyDebt', args.contract, args.methodName, ...args.methodArgs
-      );
-      addRecentTransaction({
-        hash: response.transactionHash, description: 'Withdraw and sell collateral and repay borrowed FIAT'
-      });
-      softReset();
-    }
-  }
-
   const redeemCollateralAndModifyDebt = async (deltaCollateral: BigNumber, deltaDebt: BigNumber) => {
     const { collateralType, position } = modifyPositionData;
     if (deltaCollateral.isZero()) {
@@ -347,7 +320,6 @@ const Home: NextPage = () => {
       </Container>
 
       <PositionModal
-        sellCollateralAndModifyDebt={sellCollateralAndModifyDebt}
         redeemCollateralAndModifyDebt={redeemCollateralAndModifyDebt}
         buyCollateralAndIncreaseLever={buyCollateralAndIncreaseLever}
         sellCollateralAndDecreaseLever={sellCollateralAndDecreaseLever}

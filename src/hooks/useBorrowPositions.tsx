@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { BigNumber } from 'ethers';
 import { sendTransaction } from '../actions';
-import { buildBuyCollateralAndModifyDebtArgs, buildModifyCollateralAndDebtArgs } from '../actions';
+import { buildBuyCollateralAndModifyDebtArgs, buildModifyCollateralAndDebtArgs, buildSellCollateralAndModifyDebtArgs } from '../actions';
 import { useAddRecentTransaction } from '@rainbow-me/rainbowkit';
 import { chain as chains, useAccount, useNetwork } from 'wagmi';
 import useStore from '../state/stores/globalStore';
@@ -75,4 +75,47 @@ export const useBuyCollateralAndModifyDebt = () => {
   } ,[addRecentTransaction, fiat, modifyPositionData, proxies, softReset, user]);
   
   return buyCollateralAndModifyDebt;
+}
+
+export const useSellCollateralAndModifyDebt = () => {
+  const { chain } = useNetwork();
+  const { address } = useAccount();
+  const addRecentTransaction = useAddRecentTransaction();
+  const softReset = useSoftReset();
+
+  const fiat = useStore(state => state.fiat);
+  const user = useStore((state) => state.user);
+  const modifyPositionData = useStore((state) => state.modifyPositionData);
+
+  const { data: userData } = useUserData(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
+  const { proxies } = userData as any;
+
+  const sellCollateralAndModifyDebt = useCallback(async (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => {
+    const { collateralType, position } = modifyPositionData;
+    if (deltaCollateral.isZero()) {
+      // decrease (pay back)
+      const args = buildModifyCollateralAndDebtArgs(
+        fiat, user, proxies, collateralType, deltaDebt.mul(-1), position
+      );
+      const response = await sendTransaction(
+        fiat, true, proxies[0], 'modifyCollateralAndDebt', args.contract, args.methodName, ...args.methodArgs
+      );
+      addRecentTransaction({ hash: response.transactionHash, description: 'Repay borrowed FIAT' });
+      softReset();
+    }
+    else {
+      const args = buildSellCollateralAndModifyDebtArgs(
+        fiat, user, proxies, collateralType, deltaCollateral, deltaDebt, underlier, position,
+      );
+      const response = await sendTransaction(
+        fiat, true, proxies[0], 'sellCollateralAndModifyDebt', args.contract, args.methodName, ...args.methodArgs
+      );
+      addRecentTransaction({
+        hash: response.transactionHash, description: 'Withdraw and sell collateral and repay borrowed FIAT'
+      });
+      softReset();
+    }
+  } ,[addRecentTransaction, fiat, modifyPositionData, proxies, softReset, user]);
+  
+  return sellCollateralAndModifyDebt;
 }

@@ -10,21 +10,18 @@ import { Alert } from '../../Alert';
 import { InputLabelWithMax } from '../../InputLabelWithMax';
 import { NumericInput } from '../../NumericInput/NumericInput';
 import { BorrowPreview } from './BorrowPreview';
+import { useSellCollateralAndModifyDebt } from '../../../hooks/useBorrowPositions';
 
 const DecreaseForm = ({
   onClose,
-  // TODO: refactor out into react query mutations / store actions
   setFIATAllowanceForProxy,
   unsetFIATAllowanceForProxy,
   setFIATAllowanceForMoneta,
-  sellCollateralAndModifyDebt,
 }: {
   onClose: () => void,
-  // TODO: refactor out into react query mutations / store actions
   setFIATAllowanceForProxy: (fiat: any, amount: BigNumber) => any;
   setFIATAllowanceForMoneta: (fiat: any) => any;
   unsetFIATAllowanceForProxy: (fiat: any) => any;
-  sellCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
 }) => {
   const [submitError, setSubmitError] = React.useState('');
   const borrowStore = useBorrowStore(
@@ -44,6 +41,8 @@ const DecreaseForm = ({
   const disableActions = useStore((state) => state.disableActions);
   const modifyPositionData = useStore((state) => state.modifyPositionData);
   const transactionData = useStore(state => state.transactionData);
+
+  const sellCollateralAndModifyDebt = useSellCollateralAndModifyDebt();
 
   const deltaCollateral = useMemo(() => {
     return borrowStore.decreaseState.deltaCollateralStr === '' ? ZERO : decToWad(borrowStore.decreaseState.deltaCollateralStr)
