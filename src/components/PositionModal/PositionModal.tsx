@@ -20,7 +20,6 @@ const enum Mode {
 }
 
 interface PositionModalProps {
-  buyCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
   sellCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
   redeemCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber) => any;
   buyCollateralAndIncreaseLever: (upFrontUnderlier: BigNumber, addDebt: BigNumber, minUnderlierToBuy: BigNumber, minTokenToBuy: BigNumber) => any;
@@ -166,10 +165,8 @@ const PositionModalBody = (props: PositionModalProps) => {
           : !!selectedPositionId && actionMode === Mode.INCREASE
           ? <IncreaseForm
               onClose={props.onClose}
-              buyCollateralAndModifyDebt={props.buyCollateralAndModifyDebt}
               setUnderlierAllowanceForProxy={props.setUnderlierAllowanceForProxy}
               unsetUnderlierAllowanceForProxy={props.unsetUnderlierAllowanceForProxy}
-              
             />
           : !!selectedPositionId && actionMode === Mode.DECREASE
           ? <DecreaseForm
