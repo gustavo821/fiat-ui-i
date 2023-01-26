@@ -10,15 +10,12 @@ import { Alert } from '../../Alert';
 import { InputLabelWithMax } from '../../InputLabelWithMax';
 import { NumericInput } from '../../NumericInput/NumericInput';
 import { Slider } from '../../Slider/Slider';
+import { useSellCollateralAndDecreaseLever } from '../../../hooks/useLeveredPositions';
 
 const LeverDecreaseForm = ({
   onClose,
-  // TODO: refactor out into react query mutations / store actions
-  sellCollateralAndDecreaseLever,
 }: {
   onClose: () => void,
-  // TODO: refactor out into react query mutations / store actions
-  sellCollateralAndDecreaseLever: (subTokenAmount: BigNumber, subDebt: BigNumber, maxUnderlierToSell: BigNumber, minUnderlierToBuy: BigNumber) => any;
 }) => {
   const [submitError, setSubmitError] = React.useState('');
   const leverStore = useLeverStore(
@@ -38,6 +35,8 @@ const LeverDecreaseForm = ({
   const disableActions = useStore((state) => state.disableActions);
   const transactionData = useStore((state => state.transactionData));
   const modifyPositionData = useStore((state) => state.modifyPositionData);
+
+  const sellCollateralAndDecreaseLever = useSellCollateralAndDecreaseLever();
 
   const {
     collateralType: {
