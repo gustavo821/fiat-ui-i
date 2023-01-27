@@ -44,16 +44,24 @@ const RedeemForm = ({
   const setFIATAllowanceForProxy = useSetFIATAllowanceForProxy();
   const unsetFIATAllowanceForProxy = useUnsetFIATAllowanceForProxy();
 
-  const deltaCollateral = useMemo(() => {
-    return borrowStore.redeemState.deltaCollateralStr === '' ? ZERO : decToWad(borrowStore.redeemState.deltaCollateralStr)
-  }, [borrowStore.redeemState.deltaCollateralStr])
-
-  const deltaDebt = useMemo(() => {
-    return borrowStore.redeemState.deltaDebtStr === '' ? ZERO : decToWad(borrowStore.redeemState.deltaDebtStr)
-  }, [borrowStore.redeemState.deltaDebtStr])
-
+  const {
+    collateralType: {
+      metadata: { symbol: tokenSymbol },
+      state: { collybus: { fairPrice }, codex: { virtualRate } }
+    },
+    proxyFIATAllowance,
+    monetaFIATAllowance,
+    position: { collateral, normalDebt }
+  } = modifyPositionData;
   const { action: currentTxAction } = transactionData;
-  
+
+  const deltaCollateral = useMemo(() => (
+    (borrowStore.redeemState.deltaCollateralStr === '') ? ZERO : decToWad(borrowStore.redeemState.deltaCollateralStr)
+  ), [borrowStore.redeemState.deltaCollateralStr])
+  const deltaDebt = useMemo(() => (
+    (borrowStore.redeemState.deltaDebtStr === '') ? ZERO : decToWad(borrowStore.redeemState.deltaDebtStr)
+  ), [borrowStore.redeemState.deltaDebtStr])
+
   const renderFormAlerts = () => {
     const formAlerts = [];
 
@@ -98,7 +106,10 @@ const RedeemForm = ({
             label={
               <InputLabelWithMax
                 label='Collateral to withdraw and redeem'
-                onMaxClick={() => borrowStore.redeemActions.setDeltaCollateral(fiat, wadToDec(modifyPositionData.position.collateral).toString(), modifyPositionData)} />
+                onMaxClick={() => borrowStore.redeemActions.setDeltaCollateral(
+                  fiat, wadToDec(collateral).toString(), modifyPositionData
+                )}
+              />
             }
             rightAdornment={modifyPositionData.collateralType.metadata.symbol}
             style={{ width: '100%' }}
@@ -108,13 +119,16 @@ const RedeemForm = ({
           disabled={disableActions}
           value={borrowStore.redeemState.deltaDebtStr}
           onChange={(event) => {
-            borrowStore.redeemActions.setDeltaDebt(fiat, event.target.value,modifyPositionData);
+            borrowStore.redeemActions.setDeltaDebt(fiat, event.target.value, modifyPositionData);
           }}
           placeholder='0'
           label={
             <InputLabelWithMax
               label='FIAT to pay back'
-              onMaxClick={() => borrowStore.redeemActions.setDeltaDebt(fiat, wadToDec(normalDebtToDebt(modifyPositionData.position.normalDebt, modifyPositionData.collateralType.state.codex.virtualRate)).toString(), modifyPositionData)} />
+              onMaxClick={() => borrowStore.redeemActions.setDeltaDebt(
+                fiat, wadToDec(normalDebtToDebt(normalDebt, virtualRate)).toString(), modifyPositionData
+              )}
+            />
           }
           rightAdornment={'FIAT'}
         />
@@ -129,14 +143,14 @@ const RedeemForm = ({
       <Modal.Body css={{ marginTop: 'var(--nextui-space-8)' }}>
         <BorrowPreview
           formDataLoading={borrowStore.formDataLoading}
-          positionCollateral={modifyPositionData.position.collateral}
-          positionNormalDebt={modifyPositionData.position.normalDebt}
+          collateral={collateral}
+          normalDebt={normalDebt}
           estimatedCollateral={borrowStore.redeemState.collateral}
           estimatedCollateralRatio={borrowStore.redeemState.collRatio}
           estimatedDebt={borrowStore.redeemState.debt}
-          virtualRate={modifyPositionData.collateralType.state.codex.virtualRate}
-          fairPrice={modifyPositionData.collateralType.state.collybus.fairPrice}
-          symbol={modifyPositionData.collateralType.metadata.symbol}
+          virtualRate={virtualRate}
+          fairPrice={fairPrice}
+          symbol={tokenSymbol}
         />
       </Modal.Body>
 
@@ -149,9 +163,9 @@ const RedeemForm = ({
                 // Next UI Switch `checked` type is wrong, this is necessary
                 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                 // @ts-ignore
-                checked={() => (modifyPositionData.proxyFIATAllowance?.gt(0) && modifyPositionData.proxyFIATAllowance?.gte(deltaDebt) ?? false)}
+                checked={() => (proxyFIATAllowance?.gt(0) && proxyFIATAllowance?.gte(deltaDebt) ?? false)}
                 onChange={async () => {
-                  if (deltaDebt.gt(0) && modifyPositionData.proxyFIATAllowance.gte(deltaDebt)) {
+                  if (deltaDebt.gt(0) && proxyFIATAllowance.gte(deltaDebt)) {
                     try {
                       setSubmitError('');
                       await unsetFIATAllowanceForProxy();
@@ -161,7 +175,7 @@ const RedeemForm = ({
                   } else {
                     try {
                       setSubmitError('');
-                      await setFIATAllowanceForProxy(deltaDebt);
+                      await setFIATAllowanceForProxy(fiat);
                     } catch (e: any) {
                       setSubmitError(e.message);
                     }
@@ -169,7 +183,10 @@ const RedeemForm = ({
                 }}
                 color='primary'
                 icon={
-                  ['setFIATAllowanceForProxy', 'unsetFIATAllowanceForProxy'].includes(currentTxAction || '') && disableActions ? (
+                  (
+                    ['setFIATAllowanceForProxy', 'unsetFIATAllowanceForProxy'].includes(currentTxAction || '')
+                    && disableActions
+                  ) ? (
                     <Loading size='xs' />
                 ) : null
                 }
@@ -177,7 +194,7 @@ const RedeemForm = ({
               <Spacer x={0.5} />
               <Text>Allow <code>Proxy</code> to transfer your FIAT</Text>
             </Row>
-            {modifyPositionData.monetaFIATAllowance?.lt(deltaDebt) && (
+            {monetaFIATAllowance?.lt(deltaDebt) && (
               <>
                 <Spacer x={0.5} />
                 <Row justify='flex-start'>
@@ -186,9 +203,9 @@ const RedeemForm = ({
                     // Next UI Switch `checked` type is wrong, this is necessary
                     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                     // @ts-ignore
-                    checked={() => (modifyPositionData.monetaFIATAllowance?.gt(0) && modifyPositionData.monetaFIATAllowance?.gte(deltaDebt) ?? false)}
+                    checked={() => (monetaFIATAllowance?.gt(0) && monetaFIATAllowance?.gte(deltaDebt) ?? false)}
                     onChange={async () => {
-                      if (deltaDebt.gt(0) && modifyPositionData.monetaFIATAllowance.gte(deltaDebt)) {
+                      if (deltaDebt.gt(0) && monetaFIATAllowance.gte(deltaDebt)) {
                         try {
                           setSubmitError('');
                           // await unsetFIATAllowanceForMoneta(fiat);
@@ -206,7 +223,10 @@ const RedeemForm = ({
                     }}
                     color='primary'
                     icon={
-                      ['setFIATAllowanceForMoneta', 'unsetFIATAllowanceForMoneta'].includes(currentTxAction || '') && disableActions ? (
+                      (
+                        ['setFIATAllowanceForMoneta', 'unsetFIATAllowanceForMoneta'].includes(currentTxAction || '')
+                        && disableActions
+                      ) ? (
                         <Loading size='xs' />
                       ) : null
                     }
@@ -228,7 +248,7 @@ const RedeemForm = ({
             if (disableActions || !hasProxy) return true;
             if (borrowStore.formErrors.length !== 0 || borrowStore.formWarnings.length !== 0) return true;
             if (deltaCollateral.isZero() && deltaDebt.isZero()) return true;
-            if (!deltaDebt.isZero() && modifyPositionData.monetaFIATAllowance?.lt(deltaDebt)) return true;
+            if (!deltaDebt.isZero() && monetaFIATAllowance?.lt(deltaDebt)) return true;
             return false;
           })()}
           icon={

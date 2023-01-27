@@ -1,5 +1,5 @@
 import { decToWad, normalDebtToDebt, scaleToDec, wadToDec, ZERO } from '@fiatdao/sdk';
-import { Button, Card, Grid, Input, Loading, Modal, Row, Spacer, Switch, Text } from '@nextui-org/react';
+import { Button, Card, Grid, Input, Loading, Modal, Row, Spacer, Switch, Text, Tooltip } from '@nextui-org/react';
 import React, { useMemo } from 'react';
 import shallow from 'zustand/shallow';
 import { useBorrowStore } from '../../../state/stores/borrowStore';
@@ -45,16 +45,27 @@ const DecreaseForm = ({
   const setFIATAllowanceForProxy = useSetFIATAllowanceForProxy();
   const unsetFIATAllowanceForProxy = useUnsetFIATAllowanceForProxy();
 
-  const deltaCollateral = useMemo(() => {
-    return borrowStore.decreaseState.deltaCollateralStr === '' ? ZERO : decToWad(borrowStore.decreaseState.deltaCollateralStr)
-  }, [borrowStore.decreaseState.deltaCollateralStr])
-
-  const deltaDebt = useMemo(() => {
-    return borrowStore.decreaseState.deltaDebtStr === '' ? ZERO : decToWad(borrowStore.decreaseState.deltaDebtStr)
-  }, [borrowStore.decreaseState.deltaDebtStr])
-
+  const {
+    collateralType: {
+      metadata: { symbol: tokenSymbol },
+      properties: { underlierScale, underlierSymbol },
+      state: { collybus: { fairPrice }, codex: { virtualRate } }
+    },
+    proxyFIATAllowance,
+    monetaFIATAllowance,
+    position: { collateral, normalDebt }
+  } = modifyPositionData;
   const { action: currentTxAction } = transactionData;
-  
+
+  const deltaCollateral = useMemo(() => (
+    (borrowStore.decreaseState.deltaCollateralStr === '')
+      ? ZERO : decToWad(borrowStore.decreaseState.deltaCollateralStr)
+  ), [borrowStore.decreaseState.deltaCollateralStr])
+  const deltaDebt = useMemo(() => (
+    (borrowStore.decreaseState.deltaDebtStr === '')
+      ? ZERO : decToWad(borrowStore.decreaseState.deltaDebtStr)
+  ), [borrowStore.decreaseState.deltaDebtStr])
+
   const renderFormAlerts = () => {
     const formAlerts = [];
 
@@ -100,10 +111,12 @@ const DecreaseForm = ({
             label={
               <InputLabelWithMax
                 label='Collateral to withdraw and swap'
-                onMaxClick={() => borrowStore.decreaseActions.setDeltaCollateral(fiat, wadToDec(modifyPositionData.position.collateral).toString(), modifyPositionData)}
+                onMaxClick={() => borrowStore.decreaseActions.setDeltaCollateral(
+                  fiat, wadToDec(collateral).toString(), modifyPositionData
+                )}
               />
             }
-            rightAdornment={modifyPositionData.collateralType.metadata.symbol}
+            rightAdornment={tokenSymbol}
             style={{ width: '15rem' }}
           />
           <NumericInput
@@ -114,7 +127,18 @@ const DecreaseForm = ({
             }}
             placeholder='0.01'
             inputMode='decimal'
-            label='Slippage'
+            label={
+              <Tooltip
+                css={{ zIndex: 10000, width: 250 }}
+                color='primary'
+                content={`The maximum allowed slippage (in percentage) when swapping ${tokenSymbol} for
+                  ${underlierSymbol}. The transaction will revert if the amount of ${underlierSymbol} diverges by more
+                  (in percentages) than the provided slippage amount.
+                `}
+              >
+                Slippage
+              </Tooltip>
+            }
             rightAdornment={'%'}
             style={{ width: '7.5rem' }}
           />
@@ -129,7 +153,9 @@ const DecreaseForm = ({
           label={
             <InputLabelWithMax
               label='FIAT to pay back'
-              onMaxClick={() => borrowStore.decreaseActions.setDeltaDebt(fiat, wadToDec(normalDebtToDebt(modifyPositionData.position.normalDebt, modifyPositionData.collateralType.state.codex.virtualRate)).toString(), modifyPositionData)}
+              onMaxClick={() => borrowStore.decreaseActions.setDeltaDebt(
+                fiat, wadToDec(normalDebtToDebt(normalDebt, virtualRate)).toString(), modifyPositionData
+              )}
             />
           }
           rightAdornment={'FIAT'}
@@ -151,12 +177,12 @@ const DecreaseForm = ({
           value={
             (borrowStore.formDataLoading)
               ? ' '
-              : floor2(scaleToDec(borrowStore.decreaseState.underlier, modifyPositionData.collateralType.properties.underlierScale))
+              : floor2(scaleToDec(borrowStore.decreaseState.underlier, underlierScale))
           }
           placeholder='0'
           type='string'
           label={'Underliers to withdraw (incl. slippage)'}
-          labelRight={modifyPositionData.collateralType.properties.underlierSymbol}
+          labelRight={underlierSymbol}
           contentLeft={borrowStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
           status='primary'
@@ -169,14 +195,14 @@ const DecreaseForm = ({
       <Modal.Body css={{ marginTop: 'var(--nextui-space-8)' }}>
         <BorrowPreview
           formDataLoading={borrowStore.formDataLoading}
-          positionCollateral={modifyPositionData.position.collateral}
-          positionNormalDebt={modifyPositionData.position.normalDebt}
+          collateral={collateral}
+          normalDebt={normalDebt}
           estimatedCollateral={borrowStore.decreaseState.collateral}
           estimatedCollateralRatio={borrowStore.decreaseState.collRatio}
           estimatedDebt={borrowStore.decreaseState.debt}
-          virtualRate={modifyPositionData.collateralType.state.codex.virtualRate}
-          fairPrice={modifyPositionData.collateralType.state.collybus.fairPrice}
-          symbol={modifyPositionData.collateralType.metadata.symbol}
+          virtualRate={virtualRate}
+          fairPrice={fairPrice}
+          symbol={tokenSymbol}
         />
       </Modal.Body>
 
@@ -189,9 +215,9 @@ const DecreaseForm = ({
                 // Next UI Switch `checked` type is wrong, this is necessary
                 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                 // @ts-ignore
-                checked={() => (modifyPositionData.proxyFIATAllowance?.gt(0) && modifyPositionData.proxyFIATAllowance?.gte(deltaDebt) ?? false)}
+                checked={() => (proxyFIATAllowance?.gt(0) && proxyFIATAllowance?.gte(deltaDebt) ?? false)}
                 onChange={async () => {
-                  if (deltaDebt.gt(0) && modifyPositionData.proxyFIATAllowance.gte(deltaDebt)) {
+                  if (deltaDebt.gt(0) && proxyFIATAllowance.gte(deltaDebt)) {
                     try {
                       setSubmitError('');
                       await unsetFIATAllowanceForProxy();
@@ -209,7 +235,10 @@ const DecreaseForm = ({
                 }}
                 color='primary'
                 icon={
-                  ['setFIATAllowanceForProxy', 'unsetFIATAllowanceForProxy'].includes(currentTxAction || '') && disableActions ? (
+                  (
+                    ['setFIATAllowanceForProxy', 'unsetFIATAllowanceForProxy'].includes(currentTxAction || '')
+                    && disableActions
+                  ) ? (
                     <Loading size='xs' />
                   ) : null
                 }
@@ -217,7 +246,7 @@ const DecreaseForm = ({
               <Spacer x={0.5} />
               <Text>Allow <code>Proxy</code> to transfer your FIAT</Text>
             </Row>
-            {modifyPositionData.monetaFIATAllowance?.lt(deltaDebt) && (
+            {monetaFIATAllowance?.lt(deltaDebt) && (
               <>
                 <Spacer x={0.5} />
                 <Row justify='flex-start'>
@@ -226,9 +255,9 @@ const DecreaseForm = ({
                     // Next UI Switch `checked` type is wrong, this is necessary
                     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                     // @ts-ignore
-                    checked={() => (modifyPositionData.monetaFIATAllowance?.gt(0) && modifyPositionData.monetaFIATAllowance?.gte(deltaDebt) ?? false)}
+                    checked={() => (monetaFIATAllowance?.gt(0) && monetaFIATAllowance?.gte(deltaDebt) ?? false)}
                     onChange={async () => {
-                      if (deltaDebt.gt(0) && modifyPositionData.monetaFIATAllowance.gte(deltaDebt)) {
+                      if (deltaDebt.gt(0) && monetaFIATAllowance.gte(deltaDebt)) {
                         try {
                           setSubmitError('');
                           // await unsetFIATAllowanceForMoneta(fiat);
@@ -246,7 +275,10 @@ const DecreaseForm = ({
                     }}
                     color='primary'
                     icon={
-                      ['setFIATAllowanceForMoneta', 'unsetFIATAllowanceForMoneta'].includes(currentTxAction || '') && disableActions ? (
+                      (
+                        ['setFIATAllowanceForMoneta', 'unsetFIATAllowanceForMoneta'].includes(currentTxAction || '')
+                        && disableActions
+                      ) ? (
                         <Loading size='xs' />
                       ) : null
                     }
@@ -266,7 +298,7 @@ const DecreaseForm = ({
             if (disableActions || !hasProxy) return true;
             if (borrowStore.formErrors.length !== 0 || borrowStore.formWarnings.length !== 0) return true;
             if (deltaCollateral.isZero() && deltaDebt.isZero()) return true;
-            if (!deltaDebt.isZero() && modifyPositionData.monetaFIATAllowance?.lt(deltaDebt)) return true;
+            if (!deltaDebt.isZero() && monetaFIATAllowance?.lt(deltaDebt)) return true;
             return false;
           })()}
           icon={

@@ -1,5 +1,5 @@
 import { decToScale, decToWad, wadToDec, ZERO } from '@fiatdao/sdk';
-import { Button, Card, Grid, Input, Loading, Modal, Row, Spacer, Switch, Text } from '@nextui-org/react';
+import { Button, Card, Grid, Input, Loading, Modal, Row, Spacer, Switch, Text, Tooltip } from '@nextui-org/react';
 import React, { useMemo } from 'react';
 import shallow from 'zustand/shallow';
 import { useBorrowStore } from '../../../state/stores/borrowStore';
@@ -29,26 +29,38 @@ const IncreaseForm = ({
       []
     ), shallow
   );
+  const modifyPositionData = useStore((state) => state.modifyPositionData);
   const fiat = useStore(state => state.fiat);
   const hasProxy = useStore(state => state.hasProxy);
   const disableActions = useStore((state) => state.disableActions);
   const transactionData = useStore(state => state.transactionData);
-  const modifyPositionData = useStore((state) => state.modifyPositionData);
 
   const buyCollateralAndModifyDebt = useBuyCollateralAndModifyDebt();
   const setUnderlierAllowanceForProxy = useSetUnderlierAllowanceForProxy();
   const unsetUnderlierAllowanceForProxy = useUnsetUnderlierAllowanceForProxy();
 
-  const underlierBN = useMemo(() => {
-    return borrowStore.increaseState.underlierStr === '' ? ZERO : decToScale(borrowStore.increaseState.underlierStr, modifyPositionData.collateralType.properties.underlierScale)
-  }, [borrowStore.increaseState.underlierStr, modifyPositionData.collateralType.properties.underlierScale])
-
-  const deltaDebt = useMemo(() => {
-    return borrowStore.increaseState.deltaDebtStr === '' ? ZERO : decToWad(borrowStore.increaseState.deltaDebtStr)
-  }, [borrowStore.increaseState.deltaDebtStr])
-
+  const {
+    collateralType: {
+      metadata: { symbol: tokenSymbol },
+      properties: { underlierScale, underlierSymbol },
+      state: { collybus: { fairPrice }, codex: { virtualRate } }
+    },
+    underlierAllowance,
+    underlierBalance,
+    monetaDelegate,
+    position: { collateral, normalDebt },
+  } = modifyPositionData;
   const { action: currentTxAction } = transactionData;
-  
+
+  const underlierBN = useMemo(() => (
+    (borrowStore.increaseState.underlierStr === '')
+      ? ZERO
+      : decToScale(borrowStore.increaseState.underlierStr, underlierScale)
+  ), [borrowStore.increaseState.underlierStr, underlierScale]);
+  const deltaDebt = useMemo(() => (
+    (borrowStore.increaseState.deltaDebtStr === '') ? ZERO : decToWad(borrowStore.increaseState.deltaDebtStr)
+  ), [borrowStore.increaseState.deltaDebtStr]);
+
   const renderFormAlerts = () => {
     const formAlerts = [];
 
@@ -77,10 +89,10 @@ const IncreaseForm = ({
       <Text b size={'m'}>
         Inputs
       </Text>
-      {modifyPositionData.underlierBalance && (
+      {underlierBalance && (
         <Text size={'$sm'}>
-          Available to deposit:{' '}
-          {commifyToDecimalPlaces(modifyPositionData.underlierBalance, modifyPositionData.collateralType.properties.underlierScale, 2)} {modifyPositionData.collateralType.properties.underlierSymbol}
+          Available:{' '}
+          {commifyToDecimalPlaces(underlierBalance, underlierScale, 2)} {underlierSymbol}
         </Text>
       )}
       <Grid.Container
@@ -95,10 +107,18 @@ const IncreaseForm = ({
           onChange={(event) => {
             borrowStore.increaseActions.setUnderlier(fiat, event.target.value, modifyPositionData);
           }}
-          label={'Underlier to deposit'}
+          label={
+            <Tooltip
+              css={{ zIndex: 10000, width: 250 }}
+              color='primary'
+              content={`The amount of ${underlierSymbol} to swap for ${tokenSymbol}.`}
+            >
+              Underliers to swap
+            </Tooltip>
+          }
           placeholder='0'
           style={{ width: '15rem' }}
-          rightAdornment={modifyPositionData.collateralType.properties.underlierSymbol}
+          rightAdornment={underlierSymbol}
         />
 
         <NumericInput
@@ -108,7 +128,18 @@ const IncreaseForm = ({
             borrowStore.increaseActions.setSlippagePct(fiat, event.target.value, modifyPositionData);
           }}
           placeholder='0.01'
-          label='Slippage'
+          label={
+            <Tooltip
+              css={{ zIndex: 10000, width: 250 }}
+              color='primary'
+              content={`The maximum allowed slippage (in percentage) when swapping ${underlierSymbol} for
+                ${tokenSymbol}. The transaction will revert if the amount of ${tokenSymbol} diverges by more
+                (in percentages) than the provided slippage amount.
+              `}
+            >
+              Slippage
+            </Tooltip>
+          }
           rightAdornment={'%'}
           style={{ width: '7.5rem' }}
         />
@@ -120,7 +151,15 @@ const IncreaseForm = ({
           borrowStore.increaseActions.setDeltaDebt(fiat, event.target.value, modifyPositionData);
         }}
         placeholder='0'
-        label={'FIAT to borrow'}
+        label={
+          <Tooltip
+            css={{ zIndex: 10000, width: 250 }}
+            color='primary'
+            content={'The amount of FIAT to borrow against the collateral.'}
+          >
+            FIAT to borrow
+          </Tooltip>
+        }
         rightAdornment={'FIAT'}
       />
     </Modal.Body>
@@ -141,8 +180,20 @@ const IncreaseForm = ({
           }
           placeholder='0'
           type='string'
-          label={'Collateral to deposit (incl. slippage)'}
-          labelRight={modifyPositionData.collateralType.metadata.symbol}
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          label={
+            <Tooltip
+              css={{ zIndex: 10000, width: 250 }}
+              color='primary'
+              content={`The total amount of the collateral asset that is bought from the provided underliers.
+                This estimate accounts for slippage and price impact.`
+              }
+            >
+              Collateral to deposit (incl. slippage)
+            </Tooltip>
+          }
+          labelRight={tokenSymbol}
           contentLeft={borrowStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
           status='primary'
@@ -155,14 +206,14 @@ const IncreaseForm = ({
       <Modal.Body css={{ marginTop: 'var(--nextui-space-8)' }}>
         <BorrowPreview
           formDataLoading={borrowStore.formDataLoading}
-          positionCollateral={modifyPositionData.position.collateral}
-          positionNormalDebt={modifyPositionData.position.normalDebt}
+          collateral={collateral}
+          normalDebt={normalDebt}
           estimatedCollateral={borrowStore.increaseState.collateral}
           estimatedCollateralRatio={borrowStore.increaseState.collRatio}
           estimatedDebt={borrowStore.increaseState.debt}
-          virtualRate={modifyPositionData.collateralType.state.codex.virtualRate}
-          fairPrice={modifyPositionData.collateralType.state.collybus.fairPrice}
-          symbol={modifyPositionData.collateralType.metadata.symbol}
+          virtualRate={virtualRate}
+          fairPrice={fairPrice}
+          symbol={tokenSymbol}
         />
       </Modal.Body>
 
@@ -175,9 +226,9 @@ const IncreaseForm = ({
               // Next UI Switch `checked` type is wrong, this is necessary
               // eslint-disable-next-line @typescript-eslint/ban-ts-comment
               // @ts-ignore
-              checked={() => modifyPositionData.underlierAllowance?.gt(0) && modifyPositionData.underlierAllowance?.gte(underlierBN) ?? false}
+              checked={() => underlierAllowance?.gt(0) && underlierAllowance?.gte(underlierBN) ?? false}
               onChange={async () => {
-                if(!underlierBN.isZero() && modifyPositionData.underlierAllowance.gte(underlierBN)) {
+                if(!underlierBN.isZero() && underlierAllowance.gte(underlierBN)) {
                   try {
                     setSubmitError('');
                     await unsetUnderlierAllowanceForProxy();
@@ -195,13 +246,16 @@ const IncreaseForm = ({
               }}
               color='primary'
               icon={
-                ['setUnderlierAllowanceForProxy', 'unsetUnderlierAllowanceForProxy'].includes(currentTxAction || '') && disableActions ? (
+                (
+                  ['setUnderlierAllowanceForProxy', 'unsetUnderlierAllowanceForProxy'].includes(currentTxAction || '')
+                  && disableActions
+                ) ? (
                   <Loading size='xs' />
                 ) : null
               }
             />
             <Spacer x={0.5} />
-            <Text>Allow <code>FIAT I</code> to transfer your {modifyPositionData.collateralType.properties.underlierSymbol}</Text>
+            <Text>Allow <code>FIAT I</code> to transfer your {underlierSymbol}</Text>
           </Row>
           </Card.Body>
         </Card>
@@ -212,9 +266,9 @@ const IncreaseForm = ({
           disabled={(() => {
             if (disableActions || !hasProxy) return true;
             if (borrowStore.formErrors.length !== 0 || borrowStore.formWarnings.length !== 0) return true;
-            if (modifyPositionData.monetaDelegate === false) return true;
+            if (monetaDelegate === false) return true;
             if (underlierBN.isZero() && deltaDebt.isZero()) return true;
-            if (!underlierBN.isZero() && modifyPositionData.underlierAllowance.lt(underlierBN)) return true;
+            if (!underlierBN.isZero() && underlierAllowance.lt(underlierBN)) return true;
             return false;
           })()}
           icon={

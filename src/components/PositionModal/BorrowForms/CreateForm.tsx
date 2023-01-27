@@ -1,8 +1,10 @@
 import { decToScale, wadToDec, ZERO } from '@fiatdao/sdk';
-import { Button, Card, Grid, Input, Loading, Modal, Row, Spacer, Switch, Text } from '@nextui-org/react';
+import { Button, Card, Grid, Input, Loading, Modal, Row, Spacer, Switch, Text, Tooltip } from '@nextui-org/react';
 import { ethers } from 'ethers';
 import React, { useMemo } from 'react';
 import shallow from 'zustand/shallow';
+import 'katex/dist/katex.min.css';
+import { InlineMath } from 'react-katex';
 import { useBorrowStore } from '../../../state/stores/borrowStore';
 import useStore from '../../../state/stores/globalStore';
 import { commifyToDecimalPlaces, floor2, floor4, minCollRatioWithBuffer } from '../../../utils';
@@ -17,28 +19,7 @@ const CreateForm = ({
 }: {
   onClose: () => void,
 }) => {
-  const modifyPositionData = useStore((state) => state.modifyPositionData);
-  const {
-    collateralType: {
-      metadata: { symbol: tokenSymbol },
-      properties: { underlierScale, underlierSymbol },
-      settings: { collybus: { liquidationRatio } }
-    },
-    underlierAllowance,
-    underlierBalance,
-    monetaDelegate,
-  } = modifyPositionData;
-  const fiat = useStore(state => state.fiat);
-  const hasProxy = useStore(state => state.hasProxy);
-  const disableActions = useStore((state) => state.disableActions);
-  const transactionData = useStore((state => state.transactionData));
-
-  const { action: currentTxAction } = transactionData;
-
-  const createPosition = useCreatePosition();
-  const setUnderlierAllowanceForProxy = useSetUnderlierAllowanceForProxy();
-  const unsetUnderlierAllowanceForProxy = useUnsetUnderlierAllowanceForProxy();
-
+  const [submitError, setSubmitError] = React.useState('');
   const borrowStore = useBorrowStore(
     React.useCallback(
       (state) => ({
@@ -51,40 +32,38 @@ const CreateForm = ({
       []
     ), shallow
   );
+  const modifyPositionData = useStore((state) => state.modifyPositionData);
+  const fiat = useStore(state => state.fiat);
+  const hasProxy = useStore(state => state.hasProxy);
+  const disableActions = useStore((state) => state.disableActions);
+  const transactionData = useStore((state => state.transactionData));
+  const { action: currentTxAction } = transactionData;
 
-  const underlierBN = useMemo(() => {
-    return borrowStore.createState.underlierStr === '' ? ZERO : decToScale(borrowStore.createState.underlierStr, underlierScale)
-  }, [borrowStore.createState.underlierStr, underlierScale])
+  const createPosition = useCreatePosition();
+  const setUnderlierAllowanceForProxy = useSetUnderlierAllowanceForProxy();
+  const unsetUnderlierAllowanceForProxy = useUnsetUnderlierAllowanceForProxy();
 
-  const [submitError, setSubmitError] = React.useState('');
+  const {
+    collateralType: {
+      metadata: { symbol: tokenSymbol },
+      properties: { underlierScale, underlierSymbol },
+      settings: { collybus: { liquidationRatio } }
+    },
+    underlierAllowance,
+    underlierBalance,
+    monetaDelegate,
+  } = modifyPositionData;
 
+  const underlierBN = useMemo(() => (
+    (borrowStore.createState.underlierStr === '')
+      ? ZERO : decToScale(borrowStore.createState.underlierStr, underlierScale)
+  ), [borrowStore.createState.underlierStr, underlierScale]);
   const minCollRatio = useMemo(() => minCollRatioWithBuffer(liquidationRatio), [liquidationRatio]);
 
-  if (
-    !modifyPositionData.collateralType ||
-    !modifyPositionData.collateralType.metadata
-  ) {
+  if (!modifyPositionData.collateralType || !modifyPositionData.collateralType.metadata) {
     // TODO: add skeleton components instead of loading
     return null;
   }
-
-  // const renderSummary = () => {
-  //   if (borrowStore.createState.deltaCollateral.isZero()) {
-  //     return null;
-  //   }
-
-  //   return (
-  //     <>
-  //       <Spacer y={0} />
-  //       <Text b size={'m'}>Summary</Text>
-  //       <Text size='0.75rem'>
-  //         <>
-  //           Swap <b>{floor2(scaleToDec(borrowStore.createState.underlierStr, modifyPositionData.collateralType.properties.underlierScale))} {modifyPositionData.collateralType.properties.underlierSymbol}</b> for<b> ~{floor2(wadToDec(borrowStore.createState.deltaCollateral))} {modifyPositionData.collateralType.metadata.symbol}</b>. Deposit <b>~{floor2(wadToDec(borrowStore.createState.deltaCollateral))} {modifyPositionData.collateralType.metadata.symbol}</b> as deltaCollateral. Borrow <b>~{floor2(wadToDec(borrowStore.createState.deltaDebt))} FIAT</b> against the deltaCollateral.
-  //         </>
-  //       </Text>
-  //     </>
-  //   );
-  // }
 
   const renderFormAlerts = () => {
     const formAlerts = [];
@@ -93,7 +72,9 @@ const CreateForm = ({
       formAlerts.push(
         <Alert
           severity='warning'
-          message={'Creating positions requires a Proxy. Please close this modal and click "Create Proxy Account" in the top bar.'}
+          message={`Creating positions requires a Proxy. Please close this modal and click "Create Proxy Account" in
+            the top bar.
+          `}
           key={'warn-needsProxy'}
         />
       );
@@ -126,7 +107,7 @@ const CreateForm = ({
         </Text>
         {underlierBalance && (
           <Text size={'$sm'}>
-            Available to deposit:{' '}
+            Available:{' '}
             {commifyToDecimalPlaces(underlierBalance, underlierScale, 2)}{' '}
             {underlierSymbol}
           </Text>
@@ -144,7 +125,15 @@ const CreateForm = ({
                 borrowStore.createActions.setUnderlier(
                   fiat, event.target.value, modifyPositionData);
               }}
-              label={'Underlier to swap'}
+              label={
+                <Tooltip
+                  css={{ zIndex: 10000, width: 250 }}
+                  color='primary'
+                  content={`The amount of ${underlierSymbol} to swap for ${tokenSymbol}.`}
+                >
+                  Underliers to swap
+                </Tooltip>
+              }
               placeholder='0'
               style={{ width: '15rem' }}
               rightAdornment={underlierSymbol}
@@ -159,18 +148,33 @@ const CreateForm = ({
               }}
               placeholder='0.01'
               inputMode='decimal'
-              label='Slippage'
+              label={
+                <Tooltip
+                  css={{ zIndex: 10000, width: 250 }}
+                  color='primary'
+                  content={`The maximum allowed slippage (in percentage) when swapping ${underlierSymbol} for
+                    ${tokenSymbol}. The transaction will revert if the amount of ${tokenSymbol} diverges by more
+                    (in percentages) than the provided slippage amount.
+                  `}
+                >
+                  Slippage
+                </Tooltip>
+              }
               rightAdornment={'%'}
               style={{ width: '7.5rem' }}
             />
           </Grid>
         </Grid.Container>
-        <Text
-          size={'0.75rem'}
+        <Tooltip
+          css={{ zIndex: 10000, width: 250 }}
+          color='primary'
           style={{ paddingLeft: '0.25rem', marginBottom: '0.375rem' }}
+          content={'The targeted collateralization ratio of the position.'}
         >
-          Targeted collateralization ratio ({floor2(wadToDec(borrowStore.createState.targetedCollRatio.mul(100)))}%)
-        </Text>
+          <Text size={'0.75rem'}>
+            Targeted collateralization ratio ({floor2(wadToDec(borrowStore.createState.targetedCollRatio.mul(100)))}%)
+          </Text>
+        </Tooltip>
         <Card variant='bordered' borderWeight='light' style={{height:'100%'}}>
           <Card.Body
             style={{ paddingLeft: '2.25rem', paddingRight: '2.25rem', overflow: 'hidden' }}
@@ -206,7 +210,19 @@ const CreateForm = ({
           value={borrowStore.formDataLoading ? ' ' : floor2(wadToDec(borrowStore.createState.deltaCollateral))}
           placeholder='0'
           type='string'
-          label={'Collateral to deposit (incl. slippage)'}
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          label={
+            <Tooltip
+              css={{ zIndex: 10000, width: 250 }}
+              color='primary'
+              content={`The total amount of the collateral asset that is bought from the provided underliers.
+                This estimate accounts for slippage and price impact.`
+              }
+            >
+              Collateral to deposit (incl. slippage)
+            </Tooltip>
+          }
           labelRight={tokenSymbol}
           contentLeft={borrowStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
@@ -253,7 +269,28 @@ const CreateForm = ({
           }
           placeholder='0'
           type='string'
-          label='Collateralization Ratio'
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          label={
+            <Tooltip
+              css={{ zIndex: 10000, width: 250 }}
+              color='primary'
+              content={
+                <>
+                  The collateralization ratio is the ratio of the value of the collateral (fair price) divided by the
+                  outstanding debt (FIAT) drawn against it. The fair price is derived from the spot price of the
+                  underlier denominated in USD and a discounting model that the protocol applies for accounting for the
+                  time value of money of the fixed term asset.
+                  <br />
+                  The following formula is used:
+                  <InlineMath math="\text{collRatio} = \frac{\text{collateral}*\text{fairPrice}}{\text{debt}}"/>
+                  <br />
+                </>
+              }
+            >
+              Collateralization Ratio
+            </Tooltip>
+          }
           labelRight={'🚦'}
           contentLeft={borrowStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
@@ -292,7 +329,10 @@ const CreateForm = ({
             }}
             color='primary'
             icon={
-              ['setUnderlierAllowanceForProxy', 'unsetUnderlierAllowanceForProxy'].includes(currentTxAction || '') && disableActions ? (
+              (
+                ['setUnderlierAllowanceForProxy', 'unsetUnderlierAllowanceForProxy'].includes(currentTxAction || '')
+                && disableActions
+              ) ? (
                 <Loading size='xs' />
             ) : null
             }

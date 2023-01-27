@@ -1,7 +1,9 @@
 import { computeCollateralizationRatio, decToScale, scaleToDec, WAD, wadToDec, ZERO } from '@fiatdao/sdk';
-import { Button, Card, Grid, Input, Loading, Modal, Spacer, Text } from '@nextui-org/react';
-import { ethers } from 'ethers';
+import { Button, Card, Grid, Input, Loading, Modal, Spacer, Text, Tooltip } from '@nextui-org/react';
+import { BigNumber, ethers } from 'ethers';
 import React, { useMemo } from 'react';
+import 'katex/dist/katex.min.css';
+import { InlineMath } from 'react-katex';
 import shallow from 'zustand/shallow';
 import useStore from '../../../state/stores/globalStore';
 import { useLeverStore } from '../../../state/stores/leverStore';
@@ -50,12 +52,13 @@ const LeverRedeemForm = ({
   } = leverStore.redeemState;
   
   const { action: currentTxAction } = transactionData;
-  
-  const redeemCollateralAndDecreaseLever = useRedeemCollateralAndDecreaseLever();
 
-  const subTokenAmount = useMemo(() => {
-    return leverStore.redeemState.subTokenAmountStr === '' ? ZERO : decToScale(leverStore.redeemState.subTokenAmountStr, tokenScale)
-  }, [leverStore.redeemState.subTokenAmountStr, tokenScale])
+  const redeemCollateralAndDecreaseLever = useRedeemCollateralAndDecreaseLever();
+  
+  const subTokenAmount = useMemo(() => (
+    (leverStore.redeemState.subTokenAmountStr === '')
+      ? ZERO : decToScale(leverStore.redeemState.subTokenAmountStr, tokenScale)
+  ), [leverStore.redeemState.subTokenAmountStr, tokenScale])
 
   const renderFormAlerts = () => {
     const formAlerts = [];
@@ -95,7 +98,9 @@ const LeverRedeemForm = ({
           label={
             <InputLabelWithMax
               label='Collateral to withdraw and redeem'
-              onMaxClick={() => leverStore.redeemActions.setSubTokenAmount(fiat, wadToDec(modifyPositionData.position.collateral).toString(), modifyPositionData)}
+              onMaxClick={() => leverStore.redeemActions.setSubTokenAmount(
+                fiat, wadToDec(modifyPositionData.position.collateral).toString(), modifyPositionData
+              )}
             />
           }
           rightAdornment={modifyPositionData.collateralType.metadata.symbol}
@@ -113,20 +118,38 @@ const LeverRedeemForm = ({
             onChange={(event) => {
               leverStore.redeemActions.setUnderlierSlippagePct(fiat, event.target.value, modifyPositionData);
             }}
-            placeholder='0'
-            label='Slippage (Underlier to FIAT swap)'
+            placeholder='0.01'
+            label={
+              <Tooltip
+                css={{ zIndex: 10000, width: 250 }}
+                color='primary'
+                content={`The maximum allowed slippage (in percentage) when swapping the redeemed ${underlierSymbol}
+                  for the flash-lent FIAT. The transaction will revert if the amount of FIAT diverges by more
+                  (in percentages) than the provided slippage amount.
+                `}
+              >
+                Slippage<br/>(Underlier → FIAT)
+              </Tooltip>
+            }
             rightAdornment={'%'}
             style={{ width: '15.0rem' }}
           />
         </Grid.Container>
         {(!minCollRatio.isZero() && !maxCollRatio.isZero() && !minCollRatio.eq(maxCollRatio)) && (
           <>
-            <Text
-              size={'0.75rem'}
+            <Tooltip
+              css={{ zIndex: 10000, width: 250 }}
+              color='primary'
+              content={`The targeted collateralization ratio of the levered position.
+                Note: The actual collateralization ratio can diverge slightly from the targeted value
+                (see Position Preview).
+              `}
               style={{ paddingLeft: '0.25rem', marginBottom: '0.375rem' }}
             >
-              Targeted collateralization ratio ({floor2(wadToDec(targetedCollRatio.mul(100)))}%)
-            </Text>
+              <Text size={'0.75rem'}>
+                Targeted collateralization ratio ({floor2(wadToDec(targetedCollRatio.mul(100)))}%)
+              </Text>
+            </Tooltip>
             <Card variant='bordered' borderWeight='light' style={{height:'100%'}}>
               <Card.Body
                 style={{ paddingLeft: '2.25rem', paddingRight: '2.25rem', overflow: 'hidden' }}
@@ -166,7 +189,19 @@ const LeverRedeemForm = ({
           })()}
           placeholder='0'
           type='string'
-          label={'Underliers to cover flashloan (includes slippage)'}
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          label={
+            <Tooltip
+              css={{ zIndex: 10000, width: 250 }}
+              color='primary'
+              content={`The total amount of ${underlierSymbol} required to cover the outstanding debt / flash-lent
+                amount of FIAT. This estimate accounts for slippage and price impact.
+              `}
+            >
+              Underliers to cover flashloan (incl. slippage)
+            </Tooltip>
+          }
           labelRight={underlierSymbol}
           contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
@@ -181,7 +216,19 @@ const LeverRedeemForm = ({
           })()}
           placeholder='0'
           type='string'
-          label={'Underliers to redeem'}
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          label={
+            <Tooltip
+              css={{ zIndex: 10000, width: 250 }}
+              color='primary'
+              content={`The net amount of ${underlierSymbol} to receive after selling part of it to cover the
+                outstanding debt / flash-lent amount of FIAT. This estimate accounts for slippage and price impact.
+              `}
+            >
+              Underliers to receive (redeem)
+            </Tooltip>
+          }
           labelRight={underlierSymbol}
           contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
@@ -227,7 +274,7 @@ const LeverRedeemForm = ({
           readOnly
           value={(() => {
             if (leverStore.formDataLoading) return ' ';
-            let collRatioBefore = computeCollateralizationRatio(
+            let collRatioBefore: BigNumber | string = computeCollateralizationRatio(
               position.collateral, fairPrice, position.normalDebt, virtualRate
             );
             collRatioBefore = (collRatioBefore.eq(ethers.constants.MaxUint256))
@@ -238,7 +285,28 @@ const LeverRedeemForm = ({
           })()}
           placeholder='0'
           type='string'
-          label='Collateralization Ratio'
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          label={
+            <Tooltip
+              css={{ zIndex: 10000, width: 250 }}
+              color='primary'
+              content={
+                <>
+                  The collateralization ratio is the ratio of the value of the collateral (fair price) divided by the
+                  outstanding debt (FIAT) drawn against it. The fair price is derived from the spot price of the
+                  underlier denominated in USD and a discounting model that the protocol applies for accounting for the
+                  time value of money of the fixed term asset.
+                  <br />
+                  The following formula is used:
+                  <InlineMath math="\text{collRatio} = \frac{\text{collateral}*\text{fairPrice}}{\text{debt}}"/>
+                  <br />
+                </>
+              }
+            >
+              Collateralization Ratio (incl. slippage)
+            </Tooltip>
+          }
           labelRight={'🚦'}
           contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'

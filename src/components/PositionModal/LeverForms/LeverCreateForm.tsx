@@ -1,7 +1,9 @@
-import { decToScale, wadToDec, ZERO } from '@fiatdao/sdk';
-import { Button, Card, Grid, Loading, Modal, Row, Spacer, Switch, Text } from '@nextui-org/react';
+import { decToScale, interestPerSecondToAnnualYield, scaleToDec, wadToDec, ZERO } from '@fiatdao/sdk';
+import { Button, Card, Grid, Input, Loading, Modal, Row, Spacer, Switch, Text, Tooltip } from '@nextui-org/react';
 import { ethers } from 'ethers';
 import React, { useMemo } from 'react';
+import 'katex/dist/katex.min.css';
+import { InlineMath } from 'react-katex';
 import shallow from 'zustand/shallow';
 import useStore from '../../../state/stores/globalStore';
 import { useLeverStore } from '../../../state/stores/leverStore';
@@ -9,7 +11,6 @@ import { commifyToDecimalPlaces, floor2, floor4 } from '../../../utils';
 import { Alert } from '../../Alert';
 import { NumericInput } from '../../NumericInput/NumericInput';
 import { Slider } from '../../Slider/Slider';
-import { LeverPreview } from './LeverPreview';
 import { useCreateLeveredPosition } from '../../../hooks/useLeveredPositions';
 import { useSetUnderlierAllowanceForProxy, useUnsetUnderlierAllowanceForProxy } from '../../../hooks/useSetAllowance';
 
@@ -42,10 +43,12 @@ const LeverCreateForm = ({
   const unsetUnderlierAllowanceForProxy = useUnsetUnderlierAllowanceForProxy();
 
   const [submitError, setSubmitError] = React.useState('');
-  
+
   const {
     collateralType: {
-      properties: { underlierScale, underlierSymbol, },
+      metadata: { symbol: tokenSymbol },
+      properties: { underlierScale, underlierSymbol, tokenScale },
+      state: { publican: { interestPerSecond } }
     },
     underlierAllowance,
     underlierBalance,
@@ -53,16 +56,18 @@ const LeverCreateForm = ({
   } = modifyPositionData;
   const {
     upFrontUnderliersStr, collateralSlippagePctStr, underlierSlippagePctStr, targetedCollRatio,
-    addDebt, minUnderliersToBuy, minTokenToBuy, minCollRatio, maxCollRatio
+    addDebt, minUnderliersToBuy, minTokenToBuy, 
+    collateral, collRatio, debt, leveragedGain, leveragedAPY, minCollRatio, maxCollRatio
   } = leverStore.createState;
   const {
     setUpFrontUnderliers, setCollateralSlippagePct, setUnderlierSlippagePct, setTargetedCollRatio
   } = leverStore.createActions;
   const { action: currentTxAction } = transactionData;
 
-  const upFrontUnderliers = useMemo(() => {
-    return leverStore.createState.upFrontUnderliersStr === '' ? ZERO : decToScale(leverStore.createState.upFrontUnderliersStr, underlierScale)
-  }, [leverStore.createState.upFrontUnderliersStr, underlierScale])
+  const upFrontUnderliers = useMemo(() => (
+    (leverStore.createState.upFrontUnderliersStr === '')
+      ? ZERO : decToScale(leverStore.createState.upFrontUnderliersStr, underlierScale)
+  ), [leverStore.createState.upFrontUnderliersStr, underlierScale])
 
   const renderFormAlerts = () => {
     const formAlerts = [];
@@ -71,7 +76,9 @@ const LeverCreateForm = ({
       formAlerts.push(
         <Alert
           severity='warning'
-          message={'Creating positions requires a Proxy. Please close this modal and click "Create Proxy Account" in the top bar.'}
+          message={`Creating positions requires a Proxy. Please close this modal and click "Create Proxy Account" in
+            the top bar.
+          `}
           key={'warn-needsProxy'}
         />
       );
@@ -110,7 +117,7 @@ const LeverCreateForm = ({
         <Text b size={'m'}>Inputs</Text>
         {underlierBalance && (
           <Text size={'$sm'}>
-            Available to deposit:{' '}
+            Available:{' '}
             {commifyToDecimalPlaces(underlierBalance, underlierScale, 2)}{' '}
             {underlierSymbol}
           </Text>
@@ -120,7 +127,18 @@ const LeverCreateForm = ({
           value={upFrontUnderliersStr}
           onChange={(event) => { setUpFrontUnderliers(fiat, event.target.value, modifyPositionData) }}
           placeholder='0'
-          label={'Underlier to swap'}
+          label={
+            <Tooltip
+              css={{ zIndex: 10000, width: 250 }}
+              color='primary'
+              content={`The amount of ${underlierSymbol} to swap in addition to the flash-lent amount of FIAT
+                for ${tokenSymbol}. This determines the resulting collateralization ratio of the levered position.
+                The more underliers are provided upfront, the higher (safer) the collateralization ratio will be.
+              `}
+            >
+              Upfront underliers
+            </Tooltip>
+          }
           rightAdornment={underlierSymbol}
         />
         <Grid.Container
@@ -134,8 +152,19 @@ const LeverCreateForm = ({
               value={underlierSlippagePctStr}
               onChange={(event) => { setUnderlierSlippagePct(fiat, event.target.value, modifyPositionData) }}
               step='0.01'
-              placeholder='1.00'
-              label='Slippage w/ Price Impact (FIAT to Underlier swap)'
+              placeholder='0.01'
+              label={
+                <Tooltip
+                  css={{ zIndex: 10000, width: 250 }}
+                  color='primary'
+                  content={`The maximum allowed slippage (in percentage) when swapping the flash-lent FIAT
+                    for ${underlierSymbol}. The transaction will revert if the amount of ${underlierSymbol} diverges
+                    by more (in percentages) than the provided slippage amount.
+                  `}
+                >
+                  Slippage<br/>(FIAT → Underlier)
+                </Tooltip>
+              }
               rightAdornment={'%'}
               style={{ width: '11.0rem' }}
             />
@@ -146,8 +175,19 @@ const LeverCreateForm = ({
               value={collateralSlippagePctStr}
               onChange={(event) => { setCollateralSlippagePct(fiat, event.target.value, modifyPositionData) }}
               step='0.01'
-              placeholder='1.00'
-              label='Slippage w/ Price Impact (Underlier to Collateral swap)'
+              placeholder='0.01'
+              label={
+                <Tooltip
+                  css={{ zIndex: 10000, width: 250 }}
+                  color='primary'
+                  content={`The maximum allowed slippage (in percentage) when swapping the bought ${underlierSymbol}
+                    for ${tokenSymbol}. The transaction will revert if the amount of ${tokenSymbol} diverges by more
+                    (in percentages) than the provided slippage amount.
+                  `}
+                >
+                  Slippage<br/>(Underlier → Collateral Asset)
+                </Tooltip>
+              }
               rightAdornment={'%'}
               style={{ width: '11.0rem' }}
             />
@@ -155,12 +195,19 @@ const LeverCreateForm = ({
         </Grid.Container>
         {(!minCollRatio.isZero() && !maxCollRatio.isZero() && !minCollRatio.eq(maxCollRatio)) && (
           <>
-            <Text
-              size={'0.75rem'}
+            <Tooltip
+              css={{ zIndex: 10000, width: 250 }}
+              color='primary'
+              content={`The targeted collateralization ratio of the levered position.
+                Note: The actual collateralization ratio can diverge slightly from the targeted value
+                (see Position Preview).
+              `}
               style={{ paddingLeft: '0.25rem', marginBottom: '0.375rem' }}
             >
-              Targeted collateralization ratio ({floor2(wadToDec(targetedCollRatio.mul(100)))}%)
-            </Text>
+              <Text size={'0.75rem'}>
+                Targeted collateralization ratio ({floor2(wadToDec(targetedCollRatio.mul(100)))}%)
+              </Text>
+            </Tooltip>
             <Card variant='bordered' borderWeight='light' style={{height:'100%'}}>
               <Card.Body
                 style={{ paddingLeft: '2.25rem', paddingRight: '2.25rem', overflow: 'hidden' }}
@@ -183,12 +230,143 @@ const LeverCreateForm = ({
           </>
         )}
         <Text size={'$sm'}>
-          Note: Third-party swap fees are due on the total position amounts. Withdrawing collateral before maturity may result in a loss.
+          Note: Third-party swap fees are due on the total position amounts.
+          Withdrawing collateral before maturity may result in a loss.
         </Text>
       </Modal.Body>
       <Spacer y={0.75} />
       <Card.Divider />
-      <LeverPreview />
+      <Modal.Body>
+        <Spacer y={0} />
+        <Text b size={'m'}>Leveraged Swap Preview</Text>
+        <Input
+          readOnly
+          value={(leverStore.formDataLoading)
+            ? ' '
+            : `${floor2(scaleToDec(minTokenToBuy, tokenScale))}`
+          }
+          placeholder='0'
+          type='string'
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          label={
+            <Tooltip
+              css={{ zIndex: 10000, width: 250 }}
+              color='primary'
+              content={`The total amount of the collateral asset that is bought via the upfront underliers and the
+                flash-lent FIAT. This estimate accounts for slippage and price impact.`
+              }
+            >
+              Total Collateral to deposit (incl. slippage)
+            </Tooltip>
+          }
+          labelRight={tokenSymbol}
+          contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
+          size='sm'
+          status='primary'
+        />
+        <Input
+          readOnly
+          value={(leverStore.formDataLoading)
+            ? ' '
+            : `${floor2(wadToDec(leveragedGain))} (${floor2(wadToDec(leveragedAPY.mul(100)))}% APY)`
+          }
+          placeholder='0'
+          type='string'
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          label={
+            <Tooltip
+              css={{ zIndex: 10000, width: 250 }}
+              color='primary'
+              content={`The implied gain of the collateral asset at maturity.
+                This estimate accounts for the due borrow fees and assumes a fixed price of FIAT of 1 USD at maturity.
+                Note: Borrow fees, the price impact and the price of FIAT might be different
+                at maturity. For larger input amounts the resulting gain can be negative due to large price impacts or
+                low liquidity.
+              `}
+            >
+              Estimated net gain at maturity 
+              (incl. {floor2(Number(wadToDec(interestPerSecondToAnnualYield(interestPerSecond))) * 100)}% borrow fee)
+            </Tooltip>
+          }
+          labelRight={underlierSymbol}
+          contentLeft={leverStore.formDataLoading ? <Loading size='xs' /> : null}
+          size='sm'
+          status='primary'
+        />
+      </Modal.Body>
+      <Spacer y={0.75} />
+      <Card.Divider />
+      <Modal.Body>
+        <Spacer y={0} />
+        <Text b size={'m'}>Position Preview</Text>
+        <Input
+          readOnly
+          value={(leverStore.formDataLoading)
+            ? ' '
+            : `${floor2(wadToDec(collateral))}`
+          }
+          placeholder='0'
+          type='string'
+          label={'Collateral (incl. slippage)'}
+          labelRight={tokenSymbol}
+          contentLeft={(leverStore.formDataLoading) ? <Loading size='xs' /> : null}
+          size='sm'
+          status='primary'
+        />
+        <Input
+          readOnly
+          value={(leverStore.formDataLoading) ? ' ' : floor2(wadToDec(debt))}
+          placeholder='0'
+          type='string'
+          label='Debt (incl. slippage)'
+          labelRight={'FIAT'}
+          contentLeft={(leverStore.formDataLoading) ? <Loading size='xs' /> : null}
+          size='sm'
+          status='primary'
+        />
+        <Input
+          readOnly
+          value={
+            (leverStore.formDataLoading)
+              ? ' '
+              : `${floor2(wadToDec(collRatio.mul(100)))}%`
+          }
+          placeholder='0'
+          type='string'
+          // label='Collateralization Ratio (incl. slippage)'
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          label={
+            <Tooltip
+              css={{ zIndex: 10000, width: 250 }}
+              color='primary'
+              content={
+                <>
+                  The collateralization ratio is the ratio of the value of the collateral (fair price) divided by the
+                  outstanding debt (FIAT) drawn against it. The fair price is derived from the spot price of the
+                  underlier denominated in USD and a discounting model that the protocol applies for accounting for the
+                  time value of money of the fixed term asset.
+                  <br />
+                  The following formula is used:
+                  <InlineMath math="\text{collRatio} = \frac{\text{collateral}*\text{fairPrice}}{\text{debt}}"/>
+                  <br />
+                </>
+              }
+            >
+              Collateralization Ratio (incl. slippage)
+            </Tooltip>
+          }
+          labelRight={'🚦'}
+          contentLeft={(leverStore.formDataLoading) ? <Loading size='xs' /> : null}
+          size='sm'
+          status='primary'
+        />
+
+        {/* renderSummary() */}
+
+      </Modal.Body>
       <Modal.Footer justify='space-evenly'>
         <Card variant='bordered'>
           <Card.Body>
@@ -218,7 +396,10 @@ const LeverCreateForm = ({
               }}
               color='primary'
               icon={
-                ['setUnderlierAllowanceForProxy', 'unsetUnderlierAllowanceForProxy'].includes(currentTxAction || '') && disableActions ? (
+                (
+                  ['setUnderlierAllowanceForProxy', 'unsetUnderlierAllowanceForProxy'].includes(currentTxAction || '')
+                  && disableActions
+                ) ? (
                   <Loading size='xs' />
               ) : null
               }
@@ -259,5 +440,6 @@ const LeverCreateForm = ({
     </>
   );
 }
+
 
 export default LeverCreateForm;
