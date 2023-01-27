@@ -17,9 +17,9 @@ interface BlockSyncStatus {
   message: string;
 }
 
-export const USE_GANACHE = process.env.NEXT_PUBLIC_GANACHE_LOCAL === 'true';
+export const USE_GANACHE = process.env.NEXT_PUBLIC_GANACHE_FORK === 'true';
 export const USE_TENDERLY = process.env.NEXT_PUBLIC_TENDERLY_FORK === 'true';
-export const USE_FORK = ( USE_GANACHE || USE_TENDERLY ) && process.env.NODE_ENV === 'development';
+export const USE_FORK = (USE_GANACHE || USE_TENDERLY) && process.env.NODE_ENV === 'development';
 
 export const HeaderBar = (props: any) => {
   const [showResourcesModal, setShowResourcesModal] = React.useState<boolean>(false);
@@ -33,13 +33,12 @@ export const HeaderBar = (props: any) => {
   const { data: fiatBalance } = useFiatBalance(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
 
   const queryBlockNumber = React.useCallback(async () => {
-    if (!fiat) return;
-    if (!providerBlockNumber) return;
-    if (USE_FORK) {
+    if (!fiat || !providerBlockNumber) return;
+    if (USE_FORK === true) {
       const subgraphBlockNumber = providerBlockNumber;
       const blockDiff = 0;
       const status = 'success';
-      const message = USE_GANACHE ? 'Ganache Fork' : 'Tenderly Fork';
+      const message = (USE_GANACHE) ? 'Ganache Fork' : (USE_TENDERLY) ? 'Tenderly Fork' : 'Unknown Fork Mode';
       setSyncStatus({
         subgraphBlockNumber,
         providerBlockNumber,
