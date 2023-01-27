@@ -19,11 +19,17 @@ if [ -z "$NEXT_PUBLIC_FORK_FAUCET_ACCOUNT" ]; then
   exit 1;
 fi
 
+if [ -z "$NEXT_PUBLIC_IMPERSONATE_ACCOUNT" ]; then
+  echo "NEXT_PUBLIC_IMPERSONATE_ACCOUNT is undefined in .env";
+  exit 1;
+fi
+
 cmd="npx ganache \
   --fork.url=https://eth-mainnet.alchemyapi.io/v2/$NEXT_PUBLIC_ALCHEMY_API_KEY \
   --miner.defaultGasPrice 30000000000 \
   --chain.vmErrorsOnRPCResponse=true \
   --wallet.unlockedAccounts=$NEXT_PUBLIC_IMPERSONATE_ACCOUNT \
+  --wallet.unlockedAccounts=$NEXT_PUBLIC_FORK_FIAT_FAUCET_ACCOUNT \
   --wallet.unlockedAccounts=$NEXT_PUBLIC_FORK_FAUCET_ACCOUNT "
 
 eval $cmd
