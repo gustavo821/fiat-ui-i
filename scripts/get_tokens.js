@@ -8,6 +8,14 @@ const ethers = require('ethers');
 const fs = require('fs');
 require('dotenv').config({ path: '.env.local' });
 
+const USE_GANACHE = process.env.NEXT_PUBLIC_GANACHE_FORK === 'true';
+const USE_TENDERLY = process.env.NEXT_PUBLIC_TENDERLY_FORK === 'true';
+const USE_FORK = USE_GANACHE || USE_TENDERLY;
+
+if (!USE_FORK) {
+  throw new Error('Configure .env to use tenderly or ganache');
+}
+
 (async () => {
   /// Steal tokens from a whale
   /// Any address to steal tokens from must be unlocked. See docstring at top of file
@@ -36,8 +44,9 @@ require('dotenv').config({ path: '.env.local' });
   const whaleAddress = process.env.NEXT_PUBLIC_FORK_FAUCET_ACCOUNT;
   const fiatHolderAddress = process.env.NEXT_PUBLIC_FORK_FIAT_FAUCET_ACCOUNT;
 
+  const url = USE_GANACHE ? 'http://127.0.0.1:8545' : `https://rpc.tenderly.co/fork/${process.env.NEXT_PUBLIC_TENDERLY_APY_KEY}`;
   const erc20Abi = JSON.parse(fs.readFileSync('./scripts/erc20.json'))
-  const provider = new ethers.providers.JsonRpcProvider('http://127.0.0.1:8545')
+  const provider = new ethers.providers.JsonRpcProvider(url)
   try {
     const fiatBalancerSigner = provider.getSigner(fiatHolderAddress)
     const mainnetFIATAddress = '0x586Aa273F262909EEF8fA02d90Ab65F5015e0516'

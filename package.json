@@ -9,7 +9,7 @@
     "lint": "next lint",
     "testnet": "./scripts/testnet.sh",
     "impersonate": "node ./scripts/impersonate.js",
-    "get-tokens": "node ./scripts/steal_tokens.js"
+    "get-tokens": "node ./scripts/get_tokens.js"
   },
   "dependencies": {
     "@fiatdao/sdk": "0.0.37",
