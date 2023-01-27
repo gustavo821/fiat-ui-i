@@ -753,7 +753,7 @@ export const LeverIncreaseForm = ({
           readOnly
           value={(() => {
             if (leverStore.formDataLoading) return ' ';
-            let collRatioBefore = computeCollateralizationRatio(
+            let collRatioBefore: BigNumber | string = computeCollateralizationRatio(
               position.collateral, fairPrice, position.normalDebt, virtualRate
             );
             collRatioBefore = (collRatioBefore.eq(ethers.constants.MaxUint256))
@@ -1188,7 +1188,7 @@ export const LeverDecreaseForm = ({
           readOnly
           value={(() => {
             if (leverStore.formDataLoading) return ' ';
-            let collRatioBefore = computeCollateralizationRatio(
+            let collRatioBefore: BigNumber | string = computeCollateralizationRatio(
               position.collateral, fairPrice, position.normalDebt, virtualRate
             );
             collRatioBefore = (collRatioBefore.eq(ethers.constants.MaxUint256))
@@ -1534,7 +1534,7 @@ export const LeverRedeemForm = ({
           readOnly
           value={(() => {
             if (leverStore.formDataLoading) return ' ';
-            let collRatioBefore = computeCollateralizationRatio(
+            let collRatioBefore: BigNumber | string = computeCollateralizationRatio(
               position.collateral, fairPrice, position.normalDebt, virtualRate
             );
             collRatioBefore = (collRatioBefore.eq(ethers.constants.MaxUint256))

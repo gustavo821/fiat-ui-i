@@ -63,7 +63,7 @@ export const PositionPreview = ({
         readOnly
         value={(() => {
           if (formDataLoading) return ' ';
-          let collRatioBefore = computeCollateralizationRatio(
+          let collRatioBefore: BigNumber | string = computeCollateralizationRatio(
             collateral, fairPrice, normalDebt, virtualRate
           );
           collRatioBefore = (collRatioBefore.eq(ethers.constants.MaxUint256))
