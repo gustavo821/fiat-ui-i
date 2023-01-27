@@ -1,6 +1,6 @@
 import { decToWad, normalDebtToDebt, scaleToDec, wadToDec, ZERO } from '@fiatdao/sdk';
 import { Button, Card, Grid, Input, Loading, Modal, Row, Spacer, Switch, Text, Tooltip } from '@nextui-org/react';
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import shallow from 'zustand/shallow';
 import { useBorrowStore } from '../../../state/stores/borrowStore';
 import useStore from '../../../state/stores/globalStore';
@@ -9,12 +9,17 @@ import { Alert } from '../../Alert';
 import { InputLabelWithMax } from '../../InputLabelWithMax';
 import { NumericInput } from '../../NumericInput/NumericInput';
 import { BorrowPreview } from './BorrowPreview';
-import { useSellCollateralAndModifyDebt } from '../../../hooks/useBorrowPositions';
 import { 
   useSetFIATAllowanceForMoneta, 
   useSetFIATAllowanceForProxy, 
   useUnsetFIATAllowanceForProxy 
 } from '../../../hooks/useSetAllowance';
+import { buildModifyCollateralAndDebtArgs, buildSellCollateralAndModifyDebtArgs, sendTransaction } from '../../../actions';
+import { useAddRecentTransaction } from '@rainbow-me/rainbowkit';
+import { chain as chains, useAccount, useNetwork } from 'wagmi';
+import useSoftReset from '../../../hooks/useSoftReset';
+import { useUserData } from '../../../state/queries/useUserData';
+import { BigNumber } from 'ethers';
 
 const DecreaseForm = ({
   onClose,
@@ -35,15 +40,50 @@ const DecreaseForm = ({
     ), shallow
   );
   const fiat = useStore(state => state.fiat);
+  const user = useStore((state) => state.user);
   const hasProxy = useStore(state => state.hasProxy);
   const disableActions = useStore((state) => state.disableActions);
   const modifyPositionData = useStore((state) => state.modifyPositionData);
   const transactionData = useStore(state => state.transactionData);
 
-  const sellCollateralAndModifyDebt = useSellCollateralAndModifyDebt();
   const setFIATAllowanceForMoneta = useSetFIATAllowanceForMoneta();
   const setFIATAllowanceForProxy = useSetFIATAllowanceForProxy();
   const unsetFIATAllowanceForProxy = useUnsetFIATAllowanceForProxy();
+
+  const { chain } = useNetwork();
+  const { address } = useAccount();
+  const addRecentTransaction = useAddRecentTransaction();
+  const softReset = useSoftReset();
+
+  const { data: userData } = useUserData(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
+  const { proxies } = userData as any;
+
+  const sellCollateralAndModifyDebt = useCallback(async (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => {
+    const { collateralType, position } = modifyPositionData;
+    if (deltaCollateral.isZero()) {
+      // decrease (pay back)
+      const args = buildModifyCollateralAndDebtArgs(
+        fiat, user, proxies, collateralType, deltaDebt.mul(-1), position
+      );
+      const response = await sendTransaction(
+        fiat, true, proxies[0], 'modifyCollateralAndDebt', args.contract, args.methodName, ...args.methodArgs
+      );
+      addRecentTransaction({ hash: response.transactionHash, description: 'Repay borrowed FIAT' });
+      softReset();
+    }
+    else {
+      const args = buildSellCollateralAndModifyDebtArgs(
+        fiat, user, proxies, collateralType, deltaCollateral, deltaDebt, underlier, position,
+      );
+      const response = await sendTransaction(
+        fiat, true, proxies[0], 'sellCollateralAndModifyDebt', args.contract, args.methodName, ...args.methodArgs
+      );
+      addRecentTransaction({
+        hash: response.transactionHash, description: 'Withdraw and sell collateral and repay borrowed FIAT'
+      });
+      softReset();
+    }
+  } ,[addRecentTransaction, fiat, modifyPositionData, proxies, softReset, user]);
 
   const {
     collateralType: {

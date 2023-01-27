@@ -1,7 +1,7 @@
 import { computeCollateralizationRatio, decToScale, interestPerSecondToAnnualYield, scaleToDec, WAD, wadToDec, ZERO } from '@fiatdao/sdk';
 import { Button, Card, Grid, Input, Loading, Modal, Row, Spacer, Switch, Text, Tooltip } from '@nextui-org/react';
 import { BigNumber, ethers } from 'ethers';
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import 'katex/dist/katex.min.css';
 import { InlineMath } from 'react-katex';
 import shallow from 'zustand/shallow';
@@ -11,8 +11,12 @@ import { commifyToDecimalPlaces, floor2, floor4 } from '../../../utils';
 import { Alert } from '../../Alert';
 import { NumericInput } from '../../NumericInput/NumericInput';
 import { Slider } from '../../Slider/Slider';
-import { useBuyCollateralAndIncreaseLever } from '../../../hooks/useLeveredPositions';
 import { useSetUnderlierAllowanceForProxy, useUnsetUnderlierAllowanceForProxy } from '../../../hooks/useSetAllowance';
+import { buildBuyCollateralAndIncreaseLeverArgs, sendTransaction } from '../../../actions';
+import { useAddRecentTransaction } from '@rainbow-me/rainbowkit';
+import { chain as chains, useAccount, useNetwork } from 'wagmi';
+import useSoftReset from '../../../hooks/useSoftReset';
+import { useUserData } from '../../../state/queries/useUserData';
 
 const LeverIncreaseForm = ({
   onClose,
@@ -33,14 +37,38 @@ const LeverIncreaseForm = ({
     ), shallow
   );
   const fiat = useStore(state => state.fiat);
+  const user = useStore((state) => state.user);
   const hasProxy = useStore(state => state.hasProxy);
   const disableActions = useStore((state) => state.disableActions);
   const transactionData = useStore((state => state.transactionData));
   const modifyPositionData = useStore((state) => state.modifyPositionData);
 
-  const buyCollateralAndIncreaseLever = useBuyCollateralAndIncreaseLever();
   const setUnderlierAllowanceForProxy = useSetUnderlierAllowanceForProxy();
   const unsetUnderlierAllowanceForProxy = useUnsetUnderlierAllowanceForProxy();
+
+  const addRecentTransaction = useAddRecentTransaction();
+  const { chain } = useNetwork();
+  const { address } = useAccount();
+  const softReset = useSoftReset();
+
+  const { data: userData } = useUserData(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
+  const { proxies } = userData as any;
+  
+  const buyCollateralAndIncreaseLever = useCallback(async (
+    upFrontUnderlier: BigNumber, addDebt: BigNumber, minUnderlierToBuy: BigNumber, minTokenToBuy: BigNumber
+  ) => {
+    const args = await buildBuyCollateralAndIncreaseLeverArgs(
+      fiat, user, proxies, modifyPositionData.collateralType, upFrontUnderlier, addDebt, minUnderlierToBuy, minTokenToBuy
+    );
+    const response = await sendTransaction(
+      fiat, true, proxies[0], 'buyCollateralAndIncreaseLever', args.contract, args.methodName, ...args.methodArgs
+    );
+    addRecentTransaction({
+      hash: response.transactionHash, description: 'Buy and deposit collateral and increase leverage'
+    });
+    softReset();
+    return response;
+  }, [addRecentTransaction, fiat, modifyPositionData.collateralType, proxies, softReset, user]);
 
   const {
     collateralType: {

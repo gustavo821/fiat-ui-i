@@ -1,6 +1,6 @@
 import { decToWad, normalDebtToDebt, wadToDec, ZERO } from '@fiatdao/sdk';
 import { Button, Card, Grid, Loading, Modal, Row, Spacer, Switch, Text } from '@nextui-org/react';
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import shallow from 'zustand/shallow';
 import { useBorrowStore } from '../../../state/stores/borrowStore';
 import useStore from '../../../state/stores/globalStore';
@@ -8,12 +8,17 @@ import { Alert } from '../../Alert';
 import { InputLabelWithMax } from '../../InputLabelWithMax';
 import { NumericInput } from '../../NumericInput/NumericInput';
 import { BorrowPreview } from './BorrowPreview';
-import { useRedeemCollateralAndModifyDebt } from '../../../hooks/useBorrowPositions';
 import { 
   useSetFIATAllowanceForMoneta, 
   useSetFIATAllowanceForProxy, 
   useUnsetFIATAllowanceForProxy 
 } from '../../../hooks/useSetAllowance';
+import { buildModifyCollateralAndDebtArgs, buildRedeemCollateralAndModifyDebtArgs, sendTransaction } from '../../../actions';
+import { useAddRecentTransaction } from '@rainbow-me/rainbowkit';
+import { chain as chains, useAccount, useNetwork } from 'wagmi';
+import useSoftReset from '../../../hooks/useSoftReset';
+import { useUserData } from '../../../state/queries/useUserData';
+import { BigNumber } from 'ethers';
 
 const RedeemForm = ({
   onClose,
@@ -34,15 +39,50 @@ const RedeemForm = ({
     ), shallow
   );
   const fiat = useStore(state => state.fiat);
+  const user = useStore((state) => state.user);
   const hasProxy = useStore(state => state.hasProxy);
   const disableActions = useStore((state) => state.disableActions);
   const modifyPositionData = useStore((state) => state.modifyPositionData);
   const transactionData = useStore(state => state.transactionData);
 
-  const redeemCollateralAndModifyDebt = useRedeemCollateralAndModifyDebt();
   const setFIATAllowanceForMoneta = useSetFIATAllowanceForMoneta();
   const setFIATAllowanceForProxy = useSetFIATAllowanceForProxy();
   const unsetFIATAllowanceForProxy = useUnsetFIATAllowanceForProxy();
+
+  const { chain } = useNetwork();
+  const { address } = useAccount();
+  const addRecentTransaction = useAddRecentTransaction();
+  const softReset = useSoftReset();
+
+  const { data: userData } = useUserData(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
+  const { proxies } = userData as any;
+
+  const redeemCollateralAndModifyDebt = useCallback(async (deltaCollateral: BigNumber, deltaDebt: BigNumber) => {
+    const { collateralType, position } = modifyPositionData;
+    if (deltaCollateral.isZero()) {
+       // decrease (pay back)
+      const args = buildModifyCollateralAndDebtArgs(
+        fiat, user, proxies, collateralType, deltaDebt.mul(-1), position
+      );
+      const response = await sendTransaction(
+        fiat, true, proxies[0], 'modifyCollateralAndDebt', args.contract, args.methodName, ...args.methodArgs
+      );
+      addRecentTransaction({ hash: response.transactionHash, description: 'Repay borrowed FIAT' });
+      softReset();
+    }
+    else {
+      const args = buildRedeemCollateralAndModifyDebtArgs(
+        fiat, user, proxies, collateralType, deltaCollateral, deltaDebt, position
+      );
+      const response = await sendTransaction(
+        fiat, true, proxies[0], 'redeemCollateralAndModifyDebt', args.contract, args.methodName, ...args.methodArgs
+      );
+      addRecentTransaction({
+        hash: response.transactionHash, description: 'Withdraw and redeem collateral and repay borrowed FIAT'
+      });
+      softReset();
+    }
+  } ,[addRecentTransaction, fiat, modifyPositionData, proxies, softReset, user]);
 
   const {
     collateralType: {
@@ -175,7 +215,7 @@ const RedeemForm = ({
                   } else {
                     try {
                       setSubmitError('');
-                      await setFIATAllowanceForProxy(fiat);
+                      await setFIATAllowanceForProxy(deltaDebt);
                     } catch (e: any) {
                       setSubmitError(e.message);
                     }

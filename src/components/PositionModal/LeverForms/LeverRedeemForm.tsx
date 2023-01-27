@@ -1,7 +1,7 @@
 import { computeCollateralizationRatio, decToScale, scaleToDec, WAD, wadToDec, ZERO } from '@fiatdao/sdk';
 import { Button, Card, Grid, Input, Loading, Modal, Spacer, Text, Tooltip } from '@nextui-org/react';
 import { BigNumber, ethers } from 'ethers';
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import 'katex/dist/katex.min.css';
 import { InlineMath } from 'react-katex';
 import shallow from 'zustand/shallow';
@@ -12,7 +12,11 @@ import { Alert } from '../../Alert';
 import { InputLabelWithMax } from '../../InputLabelWithMax';
 import { NumericInput } from '../../NumericInput/NumericInput';
 import { Slider } from '../../Slider/Slider';
-import { useRedeemCollateralAndDecreaseLever } from '../../../hooks/useLeveredPositions';
+import { buildRedeemCollateralAndDecreaseLeverArgs, sendTransaction } from '../../../actions';
+import { useAddRecentTransaction } from '@rainbow-me/rainbowkit';
+import { chain as chains, useAccount, useNetwork } from 'wagmi';
+import useSoftReset from '../../../hooks/useSoftReset';
+import { useUserData } from '../../../state/queries/useUserData';
 
 const LeverRedeemForm = ({
   onClose,
@@ -33,6 +37,7 @@ const LeverRedeemForm = ({
     ), shallow
   );
   const fiat = useStore(state => state.fiat);
+  const user = useStore((state) => state.user);
   const hasProxy = useStore(state => state.hasProxy);
   const disableActions = useStore((state) => state.disableActions);
   const transactionData = useStore((state => state.transactionData));
@@ -53,12 +58,35 @@ const LeverRedeemForm = ({
   
   const { action: currentTxAction } = transactionData;
 
-  const redeemCollateralAndDecreaseLever = useRedeemCollateralAndDecreaseLever();
+  const addRecentTransaction = useAddRecentTransaction();
+  const { chain } = useNetwork();
+  const { address } = useAccount();
+  const softReset = useSoftReset();
+
+  const { data: userData } = useUserData(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
+  const { proxies } = userData as any;
+  
+  const redeemCollateralAndDecreaseLever = useCallback(async (
+    subTokenAmount: BigNumber, subDebt: BigNumber, maxUnderlierToSell: BigNumber
+  ) => {
+    const { collateralType, position } = modifyPositionData;
+    const args = await buildRedeemCollateralAndDecreaseLeverArgs(
+      fiat, user, proxies, collateralType, subTokenAmount, subDebt, maxUnderlierToSell, position
+    );
+    const response = await sendTransaction(
+      fiat, true, proxies[0], 'redeemCollateralAndDecreaseLever', args.contract, args.methodName, ...args.methodArgs
+    );
+    addRecentTransaction({
+      hash: response.transactionHash, description: 'Withdraw and redeem collateral and decrease leverage'
+    });
+    softReset();
+    return response;
+  }, [addRecentTransaction, fiat, modifyPositionData, proxies, softReset, user]);
   
   const subTokenAmount = useMemo(() => (
     (leverStore.redeemState.subTokenAmountStr === '')
       ? ZERO : decToScale(leverStore.redeemState.subTokenAmountStr, tokenScale)
-  ), [leverStore.redeemState.subTokenAmountStr, tokenScale])
+  ), [leverStore.redeemState.subTokenAmountStr, tokenScale]);
 
   const renderFormAlerts = () => {
     const formAlerts = [];
