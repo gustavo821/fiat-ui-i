@@ -1,6 +1,10 @@
 import { BigNumber, BigNumberish, ethers } from 'ethers';
 import { decToWad, scaleToDec, wadToDec, ZERO } from '@fiatdao/sdk';
 
+export function getTimestamp (): BigNumber {
+  return BigNumber.from(Math.floor(Date.now() / 1000));
+}
+
 export const formatUnixTimestamp = (unixTimestamp: BigNumberish): string => {
   const date = new Date(Number(unixTimestamp.toString()) * 1000);
   return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
@@ -12,7 +16,7 @@ export function minCollRatioWithBuffer(collRatio: BigNumber): BigNumber {
 
 export function maxCollRatioWithBuffer(collRatio: BigNumber): BigNumber {
   if (collRatio.isZero()) return ZERO;
-  return collRatio.sub(decToWad(0.025));
+  return collRatio.sub(decToWad(0.01));
 }
 
 export function floor2(dec: BigNumberish): number {
@@ -39,24 +43,6 @@ export const earnableRateToAPY = (earnableRate: BigNumber, maturity: BigNumberis
   const yearFraction = secondsUntilMaturity / 31622400;
   return BigNumber.from(
     decToWad((Math.pow((1 + Number(wadToDec(earnableRate))), (1 / yearFraction )) - 1).toFixed(10))
-  );
-};
-
-export const interestPerSecondToRateUntilMaturity = (
-  interestPerSecond: BigNumberish, maturity: BigNumberish
-): BigNumber => {
-  const now = Math.floor(Date.now() / 1000)
-  if (now >= Number(maturity.toString())) return ZERO;
-  const secondsUntilMaturity = Number(maturity.toString()) - Math.floor(Date.now() / 1000);
-  return decToWad(
-    (Math.pow(Number(wadToDec(BigNumber.from(interestPerSecond)).slice(0, 17)), secondsUntilMaturity) - 1)
-      .toFixed(10)
-  );
-}
-
-export const interestPerSecondToAPY = (interestPerSecond: BigNumberish): BigNumber => {
-  return decToWad(
-    (Math.pow(Number(wadToDec(BigNumber.from(interestPerSecond)).slice(0, 17)), 31622400) - 1).toFixed(10)
   );
 };
 

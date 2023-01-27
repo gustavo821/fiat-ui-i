@@ -1,4 +1,4 @@
-import { computeCollateralizationRatio, decToScale, scaleToDec, WAD, wadToDec, ZERO } from '@fiatdao/sdk';
+import { computeCollateralizationRatio, decToScale, interestPerSecondToAnnualYield, scaleToDec, WAD, wadToDec, ZERO } from '@fiatdao/sdk';
 import { Button, Card, Grid, Input, Loading, Modal, Row, Spacer, Switch, Text, Tooltip } from '@nextui-org/react';
 import { BigNumber, ethers } from 'ethers';
 import React, { useMemo } from 'react';
@@ -7,7 +7,7 @@ import { InlineMath } from 'react-katex';
 import shallow from 'zustand/shallow';
 import useStore from '../../state/stores/globalStore';
 import { useLeverStore } from '../../state/stores/leverStore';
-import { commifyToDecimalPlaces, floor2, floor4, interestPerSecondToAPY } from '../../utils';
+import { commifyToDecimalPlaces, floor2, floor4 } from '../../utils';
 import { Alert } from '../Alert';
 import { InputLabelWithMax } from '../InputLabelWithMax';
 import { NumericInput } from '../NumericInput/NumericInput';
@@ -291,7 +291,7 @@ export const LeverCreateForm = ({
               `}
             >
               Estimated net gain at maturity 
-              (incl. {floor2(Number(wadToDec(interestPerSecondToAPY(interestPerSecond))) * 100)}% borrow fee)
+              (incl. {floor2(Number(wadToDec(interestPerSecondToAnnualYield(interestPerSecond))) * 100)}% borrow fee)
             </Tooltip>
           }
           labelRight={underlierSymbol}
@@ -705,7 +705,7 @@ export const LeverIncreaseForm = ({
               `}
             >
               Redeemable at maturity 
-              (incl. {floor2(Number(wadToDec(interestPerSecondToAPY(interestPerSecond))) * 100)}% borrow fee)
+              (incl. {floor2(Number(wadToDec(interestPerSecondToAnnualYield(interestPerSecond))) * 100)}% borrow fee)
             </Tooltip>
           }
           labelRight={underlierSymbol}
@@ -1018,7 +1018,7 @@ export const LeverDecreaseForm = ({
           }
           rightAdornment={tokenSymbol}
         />
-        {(!minCollRatio.isZero() && !maxCollRatio.isZero() && !minCollRatio.eq(maxCollRatio)) && (
+        {(!minCollRatio.isZero() && !maxCollRatio.isZero() && !minCollRatio.eq(maxCollRatio) && !debt.isZero()) && (
           <>
             <Tooltip
               css={{ zIndex: 10000, width: 250 }}
@@ -1113,7 +1113,7 @@ export const LeverDecreaseForm = ({
               `}
             >
               Redeemable at maturity 
-              (incl. {floor2(Number(wadToDec(interestPerSecondToAPY(interestPerSecond))) * 100)}% borrow fee)
+              (incl. {floor2(Number(wadToDec(interestPerSecondToAnnualYield(interestPerSecond))) * 100)}% borrow fee)
             </Tooltip>
           }
           labelRight={underlierSymbol}

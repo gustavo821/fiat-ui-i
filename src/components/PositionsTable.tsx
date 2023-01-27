@@ -1,10 +1,9 @@
 import React from 'react';
 import { Badge, Col, Row, SortDescriptor, Table, Text, User } from '@nextui-org/react';
-import { computeCollateralizationRatio, WAD, wadToDec } from '@fiatdao/sdk';
+import { computeCollateralizationRatio, interestPerSecondToAnnualYield, interestPerSecondToInterestToMaturity, WAD, wadToDec } from '@fiatdao/sdk';
 import { chain as chains, useAccount, useNetwork, } from 'wagmi';
 import {
-  encodePositionId, floor2, formatUnixTimestamp, getCollateralTypeData,
-  interestPerSecondToAPY, interestPerSecondToRateUntilMaturity
+  encodePositionId, floor2, formatUnixTimestamp, getCollateralTypeData, getTimestamp
 } from '../utils';
 import { ethers } from 'ethers';
 import { useCollateralTypes } from '../state/queries/useCollateralTypes';
@@ -104,8 +103,8 @@ export const PositionsTable = () => {
                   publican: { interestPerSecond }, codex: { virtualRate }, collybus: { fairPrice }
                 }
               } = collateralTypeData;
-              const borrowRate = interestPerSecondToRateUntilMaturity(interestPerSecond, maturity);
-              const borrowRateAnnualized = interestPerSecondToAPY(interestPerSecond);
+              const borrowRate = interestPerSecondToInterestToMaturity(interestPerSecond, getTimestamp(), maturity).sub(WAD);
+              const borrowRateAnnualized = interestPerSecondToAnnualYield(interestPerSecond);
               const debt = normalDebt.mul(virtualRate).div(WAD);
               const dueAtMaturity = normalDebt.mul(borrowRate).div(WAD);
               const collRatio = computeCollateralizationRatio(collateral, fairPrice, normalDebt, virtualRate);

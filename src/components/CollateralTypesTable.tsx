@@ -1,9 +1,9 @@
 import React from 'react';
 import { Badge, SortDescriptor, Table, Text, User } from '@nextui-org/react';
-import { addressEq, wadToDec, ZERO } from '@fiatdao/sdk';
+import { addressEq, interestPerSecondToAnnualYield, interestPerSecondToInterestToMaturity, WAD, wadToDec, ZERO } from '@fiatdao/sdk';
 import {
   decodeCollateralTypeId, earnableRateToAPY, encodeCollateralTypeId, encodePositionId,
-  floor2, formatUnixTimestamp, getPositionData, interestPerSecondToAPY, interestPerSecondToRateUntilMaturity
+  floor2, formatUnixTimestamp, getPositionData, getTimestamp
 } from '../utils';
 import { chain as chains, useAccount, useNetwork, } from 'wagmi';
 import { useCollateralTypes } from '../state/queries/useCollateralTypes';
@@ -83,8 +83,8 @@ export const CollateralTypesTable = () => {
               const { publican: { interestPerSecond }, codex: { depositedCollateral } } = collateralType.state;
               const earnableRate = collateralType?.earnableRate || ZERO;
               const earnableRateAnnulized = earnableRateToAPY(earnableRate, maturity);
-              const borrowRate = interestPerSecondToRateUntilMaturity(interestPerSecond, maturity);
-              const borrowRateAnnualized = interestPerSecondToAPY(interestPerSecond);
+              const borrowRate = interestPerSecondToInterestToMaturity(interestPerSecond, getTimestamp(), maturity).sub(WAD);
+              const borrowRateAnnualized = interestPerSecondToAnnualYield(interestPerSecond);
               const maturityFormatted = new Date(Number(maturity.toString()) * 1000);
               const daysUntilMaturity = Math.max(Math.floor((Number(maturity.toString()) - Math.floor(Date.now() / 1000)) / 86400), 0);
               return (
