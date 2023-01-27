@@ -23,6 +23,7 @@ cmd="npx ganache \
   --fork.url=https://eth-mainnet.alchemyapi.io/v2/$NEXT_PUBLIC_ALCHEMY_API_KEY \
   --miner.defaultGasPrice 30000000000 \
   --chain.vmErrorsOnRPCResponse=true \
+  --wallet.unlockedAccounts=$NEXT_PUBLIC_IMPERSONATE_ACCOUNT \
   --wallet.unlockedAccounts=$NEXT_PUBLIC_FORK_FAUCET_ACCOUNT "
 
 eval $cmd
