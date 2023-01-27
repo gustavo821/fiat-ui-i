@@ -1,7 +1,7 @@
-import { Dropdown, Modal, Navbar, Text } from '@nextui-org/react';
+import { Card, Dropdown, Modal, Navbar, Text } from '@nextui-org/react';
 import { BigNumber } from 'ethers';
 import React, { useState } from 'react';
-import { formatUnixTimestamp, getTimestamp, scaleAndConvertMaturity } from '../../utils';
+import { formatUnixTimestamp, getTimestamp } from '../../utils';
 import { CreateForm, DecreaseForm, IncreaseForm, RedeemForm } from './BorrowForms';
 import { LeverCreateForm, LeverDecreaseForm, LeverIncreaseForm, LeverRedeemForm } from './LeverForms';
 import useStore from '../../state/stores/globalStore';
@@ -61,7 +61,7 @@ const PositionModalBody = (props: PositionModalProps) => {
   const matured = React.useMemo(() => {
     const now = getTimestamp();
     const maturity = modifyPositionData.collateralType?.properties.maturity;
-    return (maturity !== undefined && !(now < scaleAndConvertMaturity(maturity).getTime()));
+    return (maturity !== undefined && !(now.lt(maturity)));
   }, [modifyPositionData.collateralType?.properties.maturity]);
 
   React.useEffect(() => {
@@ -207,7 +207,9 @@ const PositionModalBody = (props: PositionModalProps) => {
     <>
       <Modal.Header justify='center'>
         <Dropdown isDisabled={disableActions} >
-          <Dropdown.Button css={{ width: '50%' }} >{`Mode: ${(!leverModeActive) ? 'Borrow' : 'Leverage'}`}</Dropdown.Button>
+          <Dropdown.Button css={{ width: '50%' }}>
+            {`Mode: ${(!leverModeActive) ? 'Borrow' : 'Leverage'}`}
+          </Dropdown.Button>
           <Dropdown.Menu
             aria-label='Static Actions'
             onAction={(key) => setLeverModeActive(key === 'Leverage')}
@@ -229,19 +231,39 @@ const PositionModalBody = (props: PositionModalProps) => {
           </Text>
         </Modal.Header>
       <Modal.Body>
-        { !(leverModeActive && vaultType === 'ERC1155:FC') && 
-          <Navbar
-            variant='static'
-            isCompact
-            disableShadow
-            disableBlur
-            containerCss={{ justifyContent: 'center', background: 'transparent' }}
-          >
-            <Navbar.Content enableCursorHighlight variant='highlight-rounded'>
-              { renderNavbarLinks() }
-            </Navbar.Content>
-          </Navbar> 
-        }
+        {!(leverModeActive && vaultType === 'ERC1155:FC') && (
+          <>
+            <Navbar
+              variant='static'
+              isCompact
+              disableShadow
+              disableBlur
+              containerCss={{ justifyContent: 'center', background: 'transparent' }}
+            >
+              <Navbar.Content enableCursorHighlight variant='highlight-rounded'>
+                { renderNavbarLinks() }
+              </Navbar.Content>
+            </Navbar> 
+            {!(leverModeActive) && (
+              <Card variant='bordered'>
+                <Card.Body>
+                  <Text size={14}>
+                    Borrow FIAT against your collateral up to a certain minimum collateralization ratio threshold.
+                  </Text>
+                </Card.Body>
+              </Card>
+            )}
+            {(leverModeActive) && (
+              <Card variant='bordered'>
+                <Card.Body>
+                  <Text size={14}>
+                    Use FIAT liquidity to multiply your exposure to collateral yield.
+                  </Text>
+                </Card.Body>
+              </Card>
+            )}
+          </>
+        )}
       </Modal.Body>
 
       { renderForm() }

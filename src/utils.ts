@@ -3,6 +3,12 @@ import { decToWad, scaleToDec, wadToDec, ZERO } from '@fiatdao/sdk';
 import { USE_FORK } from './components/HeaderBar';
 import useStore from './state/stores/globalStore';
 
+export function getTimestamp (): BigNumber {
+  return (USE_FORK)
+    ? BigNumber.from(Math.floor(useStore.getState().ganacheTime.getTime() / 1000))
+    : BigNumber.from(Math.floor(new Date().getTime() / 1000));
+}
+
 export const formatUnixTimestamp = (unixTimestamp: BigNumberish): string => {
   const date = new Date(Number(unixTimestamp.toString()) * 1000);
   return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
@@ -14,7 +20,7 @@ export function minCollRatioWithBuffer(collRatio: BigNumber): BigNumber {
 
 export function maxCollRatioWithBuffer(collRatio: BigNumber): BigNumber {
   if (collRatio.isZero()) return ZERO;
-  return collRatio.sub(decToWad(0.025));
+  return collRatio.sub(decToWad(0.01));
 }
 
 export function floor2(dec: BigNumberish): number {
@@ -34,31 +40,13 @@ export const commifyToDecimalPlaces = (value: BigNumber, scale: number, decimalP
   return parts[0] + '.' + parts[1].slice(0, decimalPlaces);
 };
 
-export const earnableRateToAPY = (earnableRate: BigNumber, maturity: BigNumberish): BigNumber => {
-  const now = Math.floor(getTimestamp() / 1000);
-  if (now >= Number(maturity.toString())) return ZERO;
-  const secondsUntilMaturity = Number(maturity.toString()) - now;
+export const earnableRateToAPY = (earnableRate: BigNumber, maturity: BigNumber): BigNumber => {
+  const now = getTimestamp();
+  if (now.gte(maturity)) return ZERO;
+  const secondsUntilMaturity = Number(maturity.sub(now).toString());
   const yearFraction = secondsUntilMaturity / 31622400;
   return BigNumber.from(
     decToWad((Math.pow((1 + Number(wadToDec(earnableRate))), (1 / yearFraction )) - 1).toFixed(10))
-  );
-};
-
-export const interestPerSecondToRateUntilMaturity = (
-  interestPerSecond: BigNumberish, maturity: BigNumberish
-): BigNumber => {
-  const now = Math.floor(getTimestamp() / 1000);
-  if (now >= Number(maturity.toString())) return ZERO;
-  const secondsUntilMaturity = Number(maturity.toString()) - now;
-  return decToWad(
-    (Math.pow(Number(wadToDec(BigNumber.from(interestPerSecond)).slice(0, 17)), secondsUntilMaturity) - 1)
-      .toFixed(10)
-  );
-}
-
-export const interestPerSecondToAPY = (interestPerSecond: BigNumberish): BigNumber => {
-  return decToWad(
-    (Math.pow(Number(wadToDec(BigNumber.from(interestPerSecond)).slice(0, 17)), 31622400) - 1).toFixed(10)
   );
 };
 
@@ -106,10 +94,6 @@ export function debounce<F extends (...args: Parameters<F>) => ReturnType<F>>(
     clearTimeout(timeout as number); // this number cast is for browser support NodeJS.Timeout is for Node envs and so tsc stops whining
     timeout = setTimeout(() => func(...args), delay);
   };
-}
-
-export const getTimestamp = () : number => {
-  return USE_FORK ? useStore.getState().ganacheTime.getTime() : new Date().getTime();
 }
 
 export const scaleAndConvertMaturity = (maturity : BigNumber) : Date => {

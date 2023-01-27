@@ -1,6 +1,6 @@
 import { addressEq, debtToNormalDebt, decToWad, scaleToWad, WAD, wadToScale, ZERO } from '@fiatdao/sdk';
 import { BigNumber, Contract } from 'ethers';
-import { getTimestamp, scaleAndConvertMaturity } from './utils';
+import { getTimestamp } from './utils';
 
 export const underlierToFIAT = async (
   fiat: any,
@@ -226,7 +226,7 @@ export const getEarnableRate = async (fiat: any, collateralTypesData: any) => {
     const { properties } = collateralTypeData;
     const { vault, tokenId, vaultType, tokenScale, underlierScale, maturity } = properties;
     const date = getTimestamp();
-    if (date >= scaleAndConvertMaturity(maturity).getTime()) return [];
+    if (date.gte(maturity)) return [];
     switch (vaultType) {
       case 'ERC20:EPT': {
         if (!properties.eptData) throw new Error('Missing EPT data');
@@ -355,8 +355,8 @@ export const buildBuyCollateralAndModifyDebtArgs = (
   switch (properties.vaultType) {
     case 'ERC20:EPT': {
       if (!properties.eptData) throw new Error('Missing EPT data');
-      const now = getTimestamp() / 1000;
-      const deadline = Math.round(now) + 3600;
+      const now = getTimestamp();
+      const deadline = Math.round(now.toNumber()) + 3600;
       const args = {
         contract: vaultEPTActions,
         methodName: 'buyCollateralAndModifyDebt',
@@ -484,8 +484,7 @@ export const buildSellCollateralAndModifyDebtArgs = (
   switch (properties.vaultType) {
     case 'ERC20:EPT': {
       if (!properties.eptData) throw new Error('Missing EPT data');
-      const now = getTimestamp() / 1000;
-      const deadline = Math.round(now) + 3600;
+      const deadline = Math.round(getTimestamp().toNumber()) + 3600;
       // await contextData.fiat.dryrunViaProxy(
       const args = {
         contract: vaultEPTActions,
@@ -707,8 +706,7 @@ export const buildBuyCollateralAndIncreaseLeverArgs = async (
   const { leverEPTActions, leverFYActions, leverSPTActions } = fiat.getContracts();
   const { properties } = collateralTypeData;
   const { fiatToUnderlierTradePath: { pools: poolsToUnderlier, assetsOut } } = collateralTypeData.metadata;
-  const now = getTimestamp() / 1000;
-  const deadline = Math.round(now) + 3600;
+  const deadline = Math.round(getTimestamp().toNumber()) + 3600;
 
   switch (properties.vaultType) {
     case 'ERC20:EPT': {
@@ -810,13 +808,15 @@ export const buildSellCollateralAndDecreaseLeverArgs = async (
   const { leverEPTActions, leverFYActions, leverSPTActions } = fiat.getContracts();
   const { properties } = collateralTypeData;
   const { fiatToUnderlierTradePath: { pools, assetsOut } } = collateralTypeData.metadata;
-  const now = getTimestamp() / 1000;
-  const deadline = Math.round(now) + 3600;
+  const deadline = Math.round(getTimestamp().toNumber()) + 3600;
   const poolsToFIAT = JSON.parse(JSON.stringify(pools)); // TODO: expected it to be reversed
   const assetsIn = JSON.parse(JSON.stringify(assetsOut)).reverse();
 
-  let subNormalDebt = addDeltaNormalBuffer(debtToNormalDebt(subDebt, collateralTypeData.state.codex.virtualRate));
-  if (position.normalDebt.sub(subNormalDebt).lt(WAD)) subNormalDebt = position.normalDebt;
+  let subNormalDebt = debtToNormalDebt(subDebt, collateralTypeData.state.codex.virtualRate)
+  if (position.normalDebt.sub(subNormalDebt).lt(WAD))
+    subNormalDebt = position.normalDebt;
+  else
+    subNormalDebt = addDeltaNormalBuffer(subNormalDebt);
   // if subTokenAmount is zero then debt can't be decreased
   if (subTokenAmount.isZero()) throw new Error('Invalid value for `subTokenAmount` - Value has to be non-zero');
 
@@ -919,13 +919,15 @@ export const buildRedeemCollateralAndDecreaseLeverArgs = async (
   const { leverEPTActions, leverFYActions, leverSPTActions } = fiat.getContracts();
   const { properties } = collateralTypeData;
   const { fiatToUnderlierTradePath: { pools, assetsOut } } = collateralTypeData.metadata;
-  const now = getTimestamp() / 1000;
-  const deadline = Math.round(now) + 3600;
+  const deadline = Math.round(getTimestamp().toNumber()) + 3600;
   const poolsToFIAT = JSON.parse(JSON.stringify(pools)); // TODO: expected it to be reversed
   const assetsIn = JSON.parse(JSON.stringify(assetsOut)).reverse();
 
-  let subNormalDebt = addDeltaNormalBuffer(debtToNormalDebt(subDebt, collateralTypeData.state.codex.virtualRate));
-  if (position.normalDebt.sub(subNormalDebt).lt(WAD)) subNormalDebt = position.normalDebt;
+  let subNormalDebt = debtToNormalDebt(subDebt, collateralTypeData.state.codex.virtualRate)
+  if (position.normalDebt.sub(subNormalDebt).lt(WAD))
+    subNormalDebt = position.normalDebt;
+  else
+    subNormalDebt = addDeltaNormalBuffer(subNormalDebt);
   // if subTokenAmount is zero then debt can't be decreased
   if (subTokenAmount.isZero()) throw new Error('Invalid value for `subTokenAmount` - Value has to be non-zero');
 

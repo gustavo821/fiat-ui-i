@@ -1,17 +1,14 @@
 import React from 'react';
 import { Badge, Col, Row, SortDescriptor, Table, Text, User } from '@nextui-org/react';
-import { computeCollateralizationRatio, WAD, wadToDec } from '@fiatdao/sdk';
-import { chain as chains, useAccount, useNetwork, } from 'wagmi';
 import {
-  encodePositionId, floor2, formatUnixTimestamp, getCollateralTypeData,
-  getTimestamp,
-  interestPerSecondToAPY, interestPerSecondToRateUntilMaturity, scaleAndConvertMaturity
-} from '../utils';
+  computeCollateralizationRatio, interestPerSecondToAnnualYield, interestPerSecondToInterestToMaturity, WAD, wadToDec
+} from '@fiatdao/sdk';
+import { chain as chains, useAccount, useNetwork, } from 'wagmi';
+import { encodePositionId, floor2, formatUnixTimestamp, getCollateralTypeData, getTimestamp } from '../utils';
 import { ethers } from 'ethers';
 import { useCollateralTypes } from '../state/queries/useCollateralTypes';
 import { useUserData } from '../state/queries/useUserData';
 import useStore from '../state/stores/globalStore';
-import { USE_FORK } from './HeaderBar';
 
 export const PositionsTable = () => {
   const [sortedData, setSortedData] = React.useState<any[]>([]);
@@ -22,7 +19,6 @@ export const PositionsTable = () => {
   const fiat = useStore((state) => state.fiat);
   const setSelectedPositionId = useStore((state) => state.setSelectedPositionId);
   const setSelectedCollateralTypeId = useStore((state) => state.setSelectedCollateralTypeId);
-  const ganacheTime = useStore((state) => state.ganacheTime);
 
   const { chain } = useNetwork();
   const { address } = useAccount();
@@ -109,15 +105,13 @@ export const PositionsTable = () => {
                   publican: { interestPerSecond }, codex: { virtualRate }, collybus: { fairPrice }
                 }
               } = collateralTypeData;
-              const borrowRate = interestPerSecondToRateUntilMaturity(interestPerSecond, maturity);
-              const borrowRateAnnualized = interestPerSecondToAPY(interestPerSecond);
+              const borrowRate = interestPerSecondToInterestToMaturity(interestPerSecond, getTimestamp(), maturity).sub(WAD);
+              const borrowRateAnnualized = interestPerSecondToAnnualYield(interestPerSecond);
               const debt = normalDebt.mul(virtualRate).div(WAD);
               const dueAtMaturity = normalDebt.mul(borrowRate).div(WAD);
               const collRatio = computeCollateralizationRatio(collateral, fairPrice, normalDebt, virtualRate);
-              const maturityFormatted = scaleAndConvertMaturity(maturity).getTime();
-              const now = (USE_FORK ? ganacheTime : new Date()).getTime();
-              const nowSeconds = Math.floor(now / 1000);
-              const daysUntilMaturity = Math.max(Math.floor((Number(maturity.toString()) - nowSeconds) / 86400), 0);
+              const now = getTimestamp();
+              const daysUntilMaturity = Math.max(Math.floor((Number(maturity.sub(now).toString())) / 86400), 0);
               return (
                 <Table.Row key={encodePositionId(vault, tokenId, owner)}>
                   <Table.Cell>
@@ -157,7 +151,7 @@ export const PositionsTable = () => {
                     }
                   </Table.Cell>
                   <Table.Cell css={{'& span': {width: '100%'}}}>
-                    <Badge isSquared color={now < maturityFormatted ? 'success' : 'error'} variant='flat' >
+                    <Badge isSquared color={(now.lt(maturity)) ? 'success' : 'error'} variant='flat' >
                       {formatUnixTimestamp(maturity)}, ({daysUntilMaturity} days)
                     </Badge>
                   </Table.Cell>
