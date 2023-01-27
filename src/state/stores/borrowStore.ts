@@ -298,6 +298,7 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
             formDataLoading: false,
           }));
         } catch (error: any) {
+          console.error(error);
           set((state) => ({
             createState: {
               ...state.createState,
@@ -416,7 +417,8 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
             increaseState: { ...state.increaseState, collateral, collRatio, debt, deltaCollateral },
             formDataLoading: false,
           }));
-        } catch (e: any) {
+        } catch (error: any) {
+          console.error(error);
           set((state) => ({
             increaseState: {
               ...state.increaseState,
@@ -426,7 +428,7 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
               deltaCollateral: ZERO,
             },
             formDataLoading: false,
-            formErrors: [...get().formErrors, e.message],
+            formErrors: [...get().formErrors, error.message],
           }));
         }
       }),
@@ -540,7 +542,8 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
             },
             formDataLoading: false,
           }));
-        } catch(e: any) {
+        } catch(error: any) {
+          console.error(error);
           set((state) => ({
             decreaseState: {
               ...state.decreaseState,
@@ -548,10 +551,9 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
               collateral: position.collateral,
               debt: normalDebtToDebt(position.normalDebt, rate),
               collRatio: computeCollateralizationRatio(position.collateral, fairPrice, position.normalDebt, rate),
-              formErrors: [...get().formErrors, e.message],
             },
             formDataLoading: false,
-            formErrors: [...get().formErrors, e.message],
+            formErrors: [...get().formErrors, error.message],
           }));
         }
       }),
@@ -645,7 +647,8 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
             },
             formDataLoading: false,
           }));
-        } catch (e: any) {
+        } catch (error: any) {
+          console.error(error);
           set((state) => ({
             redeemState: {
               ...state.redeemState,
@@ -655,7 +658,7 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
               collRatio: computeCollateralizationRatio(position.collateral, fairPrice, position.normalDebt, rate),
             },
             formDataLoading: false,
-            formErrors: [...get().formErrors, e.message],
+            formErrors: [...get().formErrors, error.message],
           }));
         }
       }),

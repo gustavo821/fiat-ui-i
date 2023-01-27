@@ -13,16 +13,16 @@ const SECONDS_PER_MONTH = SECONDS_PER_DAY * 31;
 const SECONDS_PER_YEAR = SECONDS_PER_DAY * 365;
 
 const fastForwardOptions = [{
-  label: 'Forward By 1D',
+  label: 'Forward By 1 Day',
   value: SECONDS_PER_DAY
 }, {
-  label: 'Forward By 1W',
+  label: 'Forward By 1 Week',
   value: SECONDS_PER_WEEK
 }, {
-  label: 'Forward By 1M',
+  label: 'Forward By 1 Month',
   value: SECONDS_PER_MONTH
 }, {
-  label: 'Forward By 1Y',
+  label: 'Forward By 1 Year',
   value: SECONDS_PER_YEAR
 }];
 

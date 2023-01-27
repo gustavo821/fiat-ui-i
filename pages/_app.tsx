@@ -1,10 +1,6 @@
 import { createTheme, NextUIProvider } from '@nextui-org/react';
 import {
-  connectorsForWallets,
-  darkTheme,
-  getDefaultWallets,
-  lightTheme,
-  RainbowKitProvider,
+  connectorsForWallets, darkTheme, getDefaultWallets, lightTheme, RainbowKitProvider
 } from '@rainbow-me/rainbowkit';
 import '@rainbow-me/rainbowkit/styles.css';
 import { argentWallet, ledgerWallet, trustWallet, walletConnectWallet } from '@rainbow-me/rainbowkit/wallets';
@@ -17,55 +13,35 @@ import { jsonRpcProvider } from 'wagmi/providers/jsonRpc'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import '../styles/global.css';
 
-const useGanache = process.env.NEXT_PUBLIC_GANACHE_LOCAL === 'true' && process.env.NODE_ENV === 'development';
-const useTenderly = process.env.NEXT_PUBLIC_TENDERLY_FORK === 'true' && process.env.NODE_ENV === 'development';
-const useTestnets = process.env.NEXT_PUBLIC_ENABLE_TESTNETS === 'true';
-const useFork = useGanache || useTenderly;
-const chainConfig = useFork ? [chain.localhost] : (useTestnets ? [chain.mainnet, chain.goerli] : [chain.mainnet]);
+const APP_NAME = 'FIAT I UI';
+const USE_TESTNETS = process.env.NEXT_PUBLIC_ENABLE_TESTNETS === 'true';
+const USE_GANACHE = process.env.NEXT_PUBLIC_GANACHE_FORK === 'true' && process.env.NODE_ENV === 'development';
+const USE_TENDERLY = process.env.NEXT_PUBLIC_TENDERLY_FORK === 'true' && process.env.NODE_ENV === 'development';
+const USE_FORK = USE_GANACHE || USE_TENDERLY;
 
+let chainConfig, providerConfig, connectors, provider, webSocketProvider, chains: any[];
 
-const providerConfig = useGanache ? 
-  [jsonRpcProvider({
-    rpc: () => ({
-      http: 'http://127.0.0.1:8545',
-    }),
-  })] : useTenderly ? 
-  [jsonRpcProvider({
-    rpc: () => ({
-      http: `https://rpc.tenderly.co/fork/${process.env.NEXT_PUBLIC_TENDERLY_APY_KEY}`,
-    }),
-  })] : 
-  [alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY })];
-
-const { chains, provider, webSocketProvider } = configureChains(chainConfig, providerConfig);
-
-const { wallets } = getDefaultWallets({
-  appName: 'FIAT I UI',
-  chains,
-});
-
-const demoAppInfo = {
-  appName: 'FIAT I UI',
-};
-
-const connectors = useFork ? connectorsForWallets([
-  {
-    groupName: 'Fork And Impersonate',
-    wallets: [
-      walletConnectWallet({ chains }),
-    ],
-  },
-]) : connectorsForWallets([
-  ...wallets,
-  {
-    groupName: 'Other',
-    wallets: [
-      argentWallet({ chains }),
-      trustWallet({ chains }),
-      ledgerWallet({ chains }),
-    ],
-  },
-]);
+if (USE_FORK === false) {
+  chainConfig = ((USE_TESTNETS) ? [chain.mainnet, chain.goerli] : [chain.mainnet]);
+  providerConfig = [alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY })];
+  ({ chains, provider, webSocketProvider } = configureChains(chainConfig, providerConfig));
+  const { wallets } = getDefaultWallets({ appName: APP_NAME, chains });
+  connectors = connectorsForWallets([
+    ...wallets,
+    { groupName: 'Other', wallets: [argentWallet({ chains }), trustWallet({ chains }), ledgerWallet({ chains })] }
+  ]);
+} else {
+  chainConfig = [chain.localhost];
+  providerConfig = (USE_GANACHE)
+    ? [jsonRpcProvider({ rpc: () => ({ http: 'http://127.0.0.1:8545' })})]
+    : [jsonRpcProvider({
+      rpc: () => ({ http: `https://rpc.tenderly.co/fork/${process.env.NEXT_PUBLIC_TENDERLY_APY_KEY}` })
+    })];
+  ({ chains, provider, webSocketProvider } = configureChains(chainConfig, providerConfig));
+  connectors = connectorsForWallets([
+    { groupName: 'Fork And Impersonate', wallets: [walletConnectWallet({ chains })] }
+  ]);
+}
 
 const wagmiClient = createClient({
   autoConnect: true,
@@ -109,7 +85,7 @@ function MyApp({ Component, pageProps }: AppProps) {
       <WagmiConfig client={wagmiClient}>
         <QueryClientProvider client={queryClient}>
           <RainbowKitProvider
-            appInfo={demoAppInfo}
+            appInfo={{ appName: APP_NAME }}
             chains={chains}
             theme={{ lightMode: lightTheme(), darkMode: darkTheme(), }}
             showRecentTransactions={true}
