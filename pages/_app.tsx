@@ -35,7 +35,7 @@ if (USE_FORK === false) {
   providerConfig = (USE_GANACHE)
     ? [jsonRpcProvider({ rpc: () => ({ http: 'http://127.0.0.1:8545' })})]
     : [jsonRpcProvider({
-      rpc: () => ({ http: `https://rpc.tenderly.co/fork/${process.env.NEXT_PUBLIC_TENDERLY_APY_KEY}` })
+      rpc: () => ({ http: `https://rpc.tenderly.co/fork/${process.env.NEXT_PUBLIC_TENDERLY_RPC_API_KEY}` })
     })];
   ({ chains, provider, webSocketProvider } = configureChains(chainConfig, providerConfig));
   connectors = connectorsForWallets([

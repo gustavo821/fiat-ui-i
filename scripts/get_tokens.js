@@ -44,7 +44,7 @@ if (!USE_FORK) {
   const whaleAddress = process.env.NEXT_PUBLIC_FORK_FAUCET_ACCOUNT;
   const fiatHolderAddress = process.env.NEXT_PUBLIC_FORK_FIAT_FAUCET_ACCOUNT;
 
-  const url = USE_GANACHE ? 'http://127.0.0.1:8545' : `https://rpc.tenderly.co/fork/${process.env.NEXT_PUBLIC_TENDERLY_APY_KEY}`;
+  const url = USE_GANACHE ? 'http://127.0.0.1:8545' : `https://rpc.tenderly.co/fork/${process.env.NEXT_PUBLIC_TENDERLY_RPC_API_KEY}`;
   const erc20Abi = JSON.parse(fs.readFileSync('./scripts/erc20.json'))
   const provider = new ethers.providers.JsonRpcProvider(url)
   try {

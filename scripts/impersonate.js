@@ -8,7 +8,7 @@ const WALLET_CONNECT_URI = process.argv[2];
 
 (async () => {
   const provider = new ethers.providers.JsonRpcProvider((process.env.NEXT_PUBLIC_TENDERLY_FORK === 'true')
-    ? `https://rpc.tenderly.co/fork/${process.env.NEXT_PUBLIC_TENDERLY_APY_KEY}`
+    ? `https://rpc.tenderly.co/fork/${process.env.NEXT_PUBLIC_TENDERLY_RPC_API_KEY}`
     : 'http://127.0.0.1:8545'
   );
 

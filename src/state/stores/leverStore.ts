@@ -495,12 +495,12 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           // check that the resulting collateralization ratio is within the lower and upper bounds
           if (debt.gt(0) && collRatio.lt(minCollRatio)) set(() => ({
             formErrors: [
-              ...get().formErrors, `Collateralization Ratio has to be greater than ${floor2(wadToDec(minCollRatio))} %`
+              ...get().formErrors, `Collateralization Ratio has to be greater than ${floor2(wadToDec(minCollRatio.mul(100)))}%`
             ]
           }));
           if (debt.gt(0) && collRatio.gt(maxCollRatio)) set(() => ({
             formErrors: [
-              ...get().formErrors, `Collateralization Ratio has to be less than ${floor2(wadToDec(maxCollRatio))} %`
+              ...get().formErrors, `Collateralization Ratio has to be less than ${floor2(wadToDec(maxCollRatio.mul(100)))}%`
             ]
           }));
 
@@ -705,12 +705,12 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           // check that the resulting collateralization ratio is within the lower and upper bounds
           if (debt.gt(0) && collRatio.lt(minCollRatio)) set(() => ({
             formErrors: [
-              ...get().formErrors, `Collateralization Ratio has to be greater than ${floor2(wadToDec(minCollRatio))} %`
+              ...get().formErrors, `Collateralization Ratio has to be greater than ${floor2(wadToDec(minCollRatio.mul(100)))}%`
             ]
           }));
           if (debt.gt(0) && collRatio.gt(maxCollRatio)) set(() => ({
             formErrors: [
-              ...get().formErrors, `Collateralization Ratio has to be less than ${floor2(wadToDec(maxCollRatio))} %`
+              ...get().formErrors, `Collateralization Ratio has to be less than ${floor2(wadToDec(maxCollRatio.mul(100)))}%`
             ]
           }));
 
@@ -908,12 +908,12 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           // check that the resulting collateralization ratio is within the lower and upper bounds
           if (debt.gt(0) && collRatio.lt(minCollRatio)) set(() => ({
             formErrors: [
-              ...get().formErrors, `Collateralization Ratio has to be greater than ${floor2(wadToDec(minCollRatio))} %`
+              ...get().formErrors, `Collateralization Ratio has to be greater than ${floor2(wadToDec(minCollRatio.mul(100)))}%`
             ]
           }));
           if (debt.gt(0) && collRatio.gt(maxCollRatio)) set(() => ({
             formErrors: [
-              ...get().formErrors, `Collateralization Ratio has to be less than ${floor2(wadToDec(maxCollRatio))} %`
+              ...get().formErrors, `Collateralization Ratio has to be less than ${floor2(wadToDec(maxCollRatio.mul(100)))}%`
             ]
           }));
 
@@ -959,7 +959,7 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
     redeemActions: {
       setSubTokenAmount: (fiat, value, modifyPositionData) => {
         set((state) => ({
-          redeemState: { ...state.redeemState, subTokenAmount: value },
+          redeemState: { ...state.redeemState, subTokenAmountStr: value },
           formDataLoading: true,
         }));
         get().redeemActions.calculatePositionValuesAfterRedeem(fiat, modifyPositionData);
@@ -1014,6 +1014,15 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           if (collateral.isZero(0) && subTokenAmount.isZero())
             throw new Error('Collateral is zero. Can\'t withdraw more collateral.');
 
+            console.log(subTokenAmountStr, subTokenAmount.toString());
+          console.log(
+            position.collateral.toString(),
+            position.normalDebt.toString(),
+            rate.toString(),
+            fairPrice.toString(),
+            scaleToWad(subTokenAmount, tokenScale).toString(),
+            targetedCollRatio.toString()
+          );
           // calculate the required flashloan given the amount of collateral to remove and the targeted coll. ratio
           const flashloan = computeFlashloanForLeveredWithdrawal(
             position.collateral,
@@ -1075,12 +1084,12 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           // check that the resulting collateralization ratio is within the lower and upper bounds
           if (debt.gt(0) && collRatio.lt(minCollRatio)) set(() => ({
             formErrors: [
-              ...get().formErrors, `Collateralization Ratio has to be greater than ${floor2(wadToDec(minCollRatio))} %`
+              ...get().formErrors, `Collateralization Ratio has to be greater than ${floor2(wadToDec(minCollRatio.mul(100)))}%`
             ]
           }));
           if (debt.gt(0) && collRatio.gt(maxCollRatio)) set(() => ({
             formErrors: [
-              ...get().formErrors, `Collateralization Ratio has to be less than ${floor2(wadToDec(maxCollRatio))} %`
+              ...get().formErrors, `Collateralization Ratio has to be less than ${floor2(wadToDec(maxCollRatio.mul(100)))}%`
             ]
           }));
 

@@ -9,6 +9,10 @@ export function getTimestamp (): BigNumber {
     : BigNumber.from(Math.floor(new Date().getTime() / 1000));
 }
 
+export function getRealWorldTimestamp (): BigNumber {
+  return BigNumber.from(Math.floor(new Date().getTime() / 1000));
+}
+
 export const formatUnixTimestamp = (unixTimestamp: BigNumberish): string => {
   const date = new Date(Number(unixTimestamp.toString()) * 1000);
   return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
