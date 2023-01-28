@@ -7,6 +7,7 @@ import { queryMeta } from '@fiatdao/sdk';
 import { chain as chains, useAccount, useBlockNumber, useNetwork } from 'wagmi';
 import { useFiatBalance } from '../state/queries/useFiatBalance';
 import useStore from '../state/stores/globalStore';
+import { ForkControls } from './ForkControls';
 
 interface BlockSyncStatus {
   subgraphBlockNumber: number;
@@ -16,7 +17,11 @@ interface BlockSyncStatus {
   message: string;
 }
 
-export const HeaderBar = (props: any) => {
+export const USE_GANACHE = process.env.NEXT_PUBLIC_GANACHE_FORK === 'true';
+export const USE_TENDERLY = process.env.NEXT_PUBLIC_TENDERLY_FORK === 'true';
+export const USE_FORK = (USE_GANACHE || USE_TENDERLY) && process.env.NODE_ENV === 'development';
+
+export const HeaderBar = () => {
   const [showResourcesModal, setShowResourcesModal] = React.useState<boolean>(false);
   const [syncStatus, setSyncStatus] = React.useState<BlockSyncStatus>();
   const {data: providerBlockNumber, refetch} = useBlockNumber();
@@ -28,20 +33,33 @@ export const HeaderBar = (props: any) => {
   const { data: fiatBalance } = useFiatBalance(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
 
   const queryBlockNumber = React.useCallback(async () => {
-    if (!fiat) return;
-    if (!providerBlockNumber) return;
-    const { _meta } = await fiat.query(queryMeta);
-    const subgraphBlockNumber = _meta?.block.number;
-    const blockDiff = providerBlockNumber - subgraphBlockNumber;
-    const status = blockDiff > 5 ? 'error' : blockDiff > 0 ? 'warning' : 'success';
-    const message = blockDiff === 0 ? 'Synced' : `Syncing (${blockDiff} block${(blockDiff === 1) ? '' : 's'} behind)`
-    setSyncStatus({
-      subgraphBlockNumber,
-      providerBlockNumber,
-      blockDiff,
-      status,
-      message,
-    });
+    if (!fiat || !providerBlockNumber) return;
+    if (USE_FORK === true) {
+      const subgraphBlockNumber = providerBlockNumber;
+      const blockDiff = 0;
+      const status = 'success';
+      const message = (USE_GANACHE) ? 'Ganache Fork' : (USE_TENDERLY) ? 'Tenderly Fork' : 'Unknown Fork Mode';
+      setSyncStatus({
+        subgraphBlockNumber,
+        providerBlockNumber,
+        blockDiff,
+        status,
+        message,
+      });
+    } else {
+      const { _meta } = await fiat.query(queryMeta);
+      const subgraphBlockNumber = _meta?.block.number;
+      const blockDiff = providerBlockNumber - subgraphBlockNumber;
+      const status = blockDiff > 5 ? 'error' : blockDiff > 0 ? 'warning' : 'success';
+      const message = blockDiff === 0 ? 'Synced' : `Syncing (${blockDiff} block${(blockDiff === 1) ? '' : 's'} behind)`
+      setSyncStatus({
+        subgraphBlockNumber,
+        providerBlockNumber,
+        blockDiff,
+        status,
+        message,
+      });
+    }
   }, [fiat, providerBlockNumber])
 
   React.useEffect(() => {
@@ -67,9 +85,10 @@ export const HeaderBar = (props: any) => {
         </Link>
         <Tooltip content={syncStatus?.message} placement='left' css={{ whiteSpace: 'nowrap' }}>
           <Badge color={syncStatus?.status ?? 'default'} variant='dot' css={{ alignSelf: 'center', marginRight: '3px' }}/>
-          <Text size='$xs'>
+          <Text size='$xs'css={{ alignSelf: 'center'}}>
             {syncStatus?.subgraphBlockNumber}
           </Text>
+          <ForkControls/>
         </Tooltip>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', padding: 0 }}>
@@ -79,12 +98,10 @@ export const HeaderBar = (props: any) => {
             <Button 
               auto
               icon={'...'}
-              css={connectButtonCSS}
+              css={{...connectButtonCSS, maxWidth: '40px'}}
               onPress={()=>setShowResourcesModal(true)}
             />
-            <ProxyButton
-              createProxy={props.createProxy}
-            />
+            <ProxyButton />
             {(fiatBalance) && 
               <Badge css={connectButtonCSS} >
                 <Link

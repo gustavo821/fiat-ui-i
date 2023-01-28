@@ -4,10 +4,10 @@ import Skeleton from 'react-loading-skeleton';
 import { chain as chains, useNetwork } from 'wagmi';
 import { useUserData } from '../state/queries/useUserData';
 import useStore from '../state/stores/globalStore';
-
-interface ProxyCardProps {
-  createProxy: (fiat: any, user: string) => any;
-}
+import { sendTransaction } from '../actions';
+import { useQueryClient } from '@tanstack/react-query';
+import { userDataKey } from '../state/queries/useUserData';
+import { useAddRecentTransaction } from '@rainbow-me/rainbowkit';
 
 export const connectButtonCSS = {
   fontFamily: 'var(--rk-fonts-body)',
@@ -24,9 +24,11 @@ export const connectButtonCSS = {
   marginRight: '10px',
 }
 
-export const ProxyButton = (props: ProxyCardProps) => {
+export const ProxyButton = () => {
   const [error, setError] = useState('');
   const { chain } = useNetwork();
+  const addRecentTransaction = useAddRecentTransaction();
+  const queryClient = useQueryClient();
 
   const fiat = useStore((state) => state.fiat);
   const user = useStore((state) => state.user);
@@ -36,6 +38,15 @@ export const ProxyButton = (props: ProxyCardProps) => {
 
   const { data: userData } = useUserData(fiat, chain?.id ?? chains.mainnet.id, user ?? '');
   const { proxies } = userData as any;
+
+  const createProxy = async (fiat: any, user: string) => {
+    const response = await sendTransaction(
+      fiat, false, '', 'createProxy', fiat.getContracts().proxyRegistry, 'deployFor', user
+    );
+    addRecentTransaction({ hash: response.transactionHash, description: 'Create Proxy account' });
+    // Refetch User data query to get proxy
+    queryClient.invalidateQueries(userDataKey.all);
+  }
 
   if (user === null || !fiat || !proxies) {
     return <Skeleton count={2} />
@@ -69,7 +80,7 @@ export const ProxyButton = (props: ProxyCardProps) => {
         } else {
           try {
             setError('');
-            await props.createProxy(fiat, user);
+            await createProxy(fiat, user);
           } catch (e: any) {
             setError(e.message);
           }

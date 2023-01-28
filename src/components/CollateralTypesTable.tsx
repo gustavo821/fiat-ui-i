@@ -83,10 +83,10 @@ export const CollateralTypesTable = () => {
               const { publican: { interestPerSecond }, codex: { depositedCollateral } } = collateralType.state;
               const earnableRate = collateralType?.earnableRate || ZERO;
               const earnableRateAnnulized = earnableRateToAPY(earnableRate, maturity);
-              const borrowRate = interestPerSecondToInterestToMaturity(interestPerSecond, getTimestamp(), maturity).sub(WAD);
+              const now = getTimestamp();
+              const borrowRate = interestPerSecondToInterestToMaturity(interestPerSecond, now, maturity).sub(WAD);
               const borrowRateAnnualized = interestPerSecondToAnnualYield(interestPerSecond);
-              const maturityFormatted = new Date(Number(maturity.toString()) * 1000);
-              const daysUntilMaturity = Math.max(Math.floor((Number(maturity.toString()) - Math.floor(Date.now() / 1000)) / 86400), 0);
+              const daysUntilMaturity = Math.max(Math.floor((Number(maturity.sub(now).toString())) / 86400), 0);
               return (
                 <Table.Row key={encodeCollateralTypeId(vault, tokenId)}>
                   <Table.Cell>
@@ -110,7 +110,7 @@ export const CollateralTypesTable = () => {
                   <Table.Cell>{`${floor2(wadToDec(borrowRateAnnualized.mul(100)))}% (${floor2(wadToDec(borrowRate.mul(100)))}%)`}</Table.Cell>
                   <Table.Cell>{`${floor2(Number(wadToDec(depositedCollateral))).toLocaleString()} ${symbol}`}</Table.Cell>
                   <Table.Cell css={{'& span': {width: '100%'}}}>
-                    <Badge isSquared color={new Date() < maturityFormatted ? 'success' : 'error'} variant='flat' >
+                    <Badge isSquared color={(now.lt(maturity)) ? 'success' : 'error'} variant='flat' >
                       {formatUnixTimestamp(maturity)}, ({daysUntilMaturity} days)
                     </Badge>
                   </Table.Cell>

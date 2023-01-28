@@ -1,5 +1,7 @@
 import { addressEq, debtToNormalDebt, decToWad, scaleToWad, WAD, wadToScale, ZERO } from '@fiatdao/sdk';
-import { BigNumber, Contract } from 'ethers';
+import { BigNumber, Contract, ContractReceipt, ethers } from 'ethers';
+import useStore, { initialState } from './state/stores/globalStore';
+import { getTimestamp } from './utils';
 
 export const underlierToFIAT = async (
   fiat: any,
@@ -224,7 +226,8 @@ export const getEarnableRate = async (fiat: any, collateralTypesData: any) => {
   const queries = collateralTypesData.flatMap((collateralTypeData: any) => {
     const { properties } = collateralTypeData;
     const { vault, tokenId, vaultType, tokenScale, underlierScale, maturity } = properties;
-    if (new Date() >= new Date(Number(maturity.toString()) * 1000)) return [];
+    const date = getTimestamp();
+    if (date.gte(maturity)) return [];
     switch (vaultType) {
       case 'ERC20:EPT': {
         if (!properties.eptData) throw new Error('Missing EPT data');
@@ -353,7 +356,8 @@ export const buildBuyCollateralAndModifyDebtArgs = (
   switch (properties.vaultType) {
     case 'ERC20:EPT': {
       if (!properties.eptData) throw new Error('Missing EPT data');
-      const deadline = Math.round(+new Date() / 1000) + 3600;
+      const now = getTimestamp();
+      const deadline = Math.round(now.toNumber()) + 3600;
       const args = {
         contract: vaultEPTActions,
         methodName: 'buyCollateralAndModifyDebt',
@@ -481,7 +485,7 @@ export const buildSellCollateralAndModifyDebtArgs = (
   switch (properties.vaultType) {
     case 'ERC20:EPT': {
       if (!properties.eptData) throw new Error('Missing EPT data');
-      const deadline = Math.round(+new Date() / 1000) + 3600;
+      const deadline = Math.round(getTimestamp().toNumber()) + 3600;
       // await contextData.fiat.dryrunViaProxy(
       const args = {
         contract: vaultEPTActions,
@@ -703,7 +707,7 @@ export const buildBuyCollateralAndIncreaseLeverArgs = async (
   const { leverEPTActions, leverFYActions, leverSPTActions } = fiat.getContracts();
   const { properties } = collateralTypeData;
   const { fiatToUnderlierTradePath: { pools: poolsToUnderlier, assetsOut } } = collateralTypeData.metadata;
-  const deadline = Math.round(+new Date() / 1000) + 3600;
+  const deadline = Math.round(getTimestamp().toNumber()) + 3600;
 
   switch (properties.vaultType) {
     case 'ERC20:EPT': {
@@ -805,7 +809,7 @@ export const buildSellCollateralAndDecreaseLeverArgs = async (
   const { leverEPTActions, leverFYActions, leverSPTActions } = fiat.getContracts();
   const { properties } = collateralTypeData;
   const { fiatToUnderlierTradePath: { pools, assetsOut } } = collateralTypeData.metadata;
-  const deadline = Math.round(+new Date() / 1000) + 3600;
+  const deadline = Math.round(getTimestamp().toNumber()) + 3600;
   const poolsToFIAT = JSON.parse(JSON.stringify(pools)); // TODO: expected it to be reversed
   const assetsIn = JSON.parse(JSON.stringify(assetsOut)).reverse();
 
@@ -916,7 +920,7 @@ export const buildRedeemCollateralAndDecreaseLeverArgs = async (
   const { leverEPTActions, leverFYActions, leverSPTActions } = fiat.getContracts();
   const { properties } = collateralTypeData;
   const { fiatToUnderlierTradePath: { pools, assetsOut } } = collateralTypeData.metadata;
-  const deadline = Math.round(+new Date() / 1000) + 3600;
+  const deadline = Math.round(getTimestamp().toNumber()) + 3600;
   const poolsToFIAT = JSON.parse(JSON.stringify(pools)); // TODO: expected it to be reversed
   const assetsIn = JSON.parse(JSON.stringify(assetsOut)).reverse();
 
@@ -994,3 +998,39 @@ export const buildRedeemCollateralAndDecreaseLeverArgs = async (
     }
   }
 };
+
+export const sendTransaction = async (
+  fiat: any, useProxy: boolean, proxyAddress: string, action: string, contract: ethers.Contract, method: string, ...args: any[]
+): Promise<ContractReceipt> => {
+  try {
+    useStore.getState().setTransactionData({ action, status: 'sent' });
+    // Dryrun every transaction first to catch and decode errors
+    const dryrunResp = useProxy
+      ? await fiat.dryrunViaProxy(proxyAddress, contract, method, ...args)
+      : await fiat.dryrun(contract, method, ...args);
+    if (!dryrunResp.success) {
+      const reason = dryrunResp.reason !== undefined ? 'Reason: ' + dryrunResp.reason + '.' : '';
+      const customError = dryrunResp.customError !== undefined ? 'Custom error: ' + dryrunResp.customError + '.' : '';
+      const error = dryrunResp.error !== undefined ? dryrunResp.error + '.' : '';
+      // Throw conglomerate error message to prevent sendAndWait from running and throwing a less user-friendly error
+      throw new Error(reason + customError + error);
+    }
+
+    const resp = useProxy
+      ? await fiat.sendAndWaitViaProxy(proxyAddress, contract, method, ...args)
+      : await fiat.sendAndWait(contract, method, ...args);
+    useStore.getState().setTransactionData(initialState.transactionData);
+    return resp;
+  } catch (e: any) {
+    console.error(e);
+    const { transactionData, setTransactionData } = useStore.getState();
+    setTransactionData({ ...transactionData, status: 'error' });
+    if (e && e.code && e.code === 'ACTION_REJECTED') {
+      // handle rejected transactions by user
+      throw new Error('ACTION_REJECTED');
+    } else {
+      // Should be caught by caller to set appropriate errors
+      throw e;
+    }
+  }
+}

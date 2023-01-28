@@ -1,8 +1,12 @@
 import { BigNumber, BigNumberish, ethers } from 'ethers';
 import { decToWad, scaleToDec, wadToDec, ZERO } from '@fiatdao/sdk';
+import { USE_FORK } from './components/HeaderBar';
+import useStore from './state/stores/globalStore';
 
 export function getTimestamp (): BigNumber {
-  return BigNumber.from(Math.floor(Date.now() / 1000));
+  return (USE_FORK)
+    ? BigNumber.from(Math.floor(useStore.getState().ganacheTime.getTime() / 1000))
+    : BigNumber.from(Math.floor(new Date().getTime() / 1000));
 }
 
 export const formatUnixTimestamp = (unixTimestamp: BigNumberish): string => {
@@ -36,10 +40,10 @@ export const commifyToDecimalPlaces = (value: BigNumber, scale: number, decimalP
   return parts[0] + '.' + parts[1].slice(0, decimalPlaces);
 };
 
-export const earnableRateToAPY = (earnableRate: BigNumber, maturity: BigNumberish): BigNumber => {
-  const now = Math.floor(Date.now() / 1000)
-  if (now >= Number(maturity.toString())) return ZERO;
-  const secondsUntilMaturity = Number(maturity.toString()) - Math.floor(Date.now() / 1000);
+export const earnableRateToAPY = (earnableRate: BigNumber, maturity: BigNumber): BigNumber => {
+  const now = getTimestamp();
+  if (now.gte(maturity)) return ZERO;
+  const secondsUntilMaturity = Number(maturity.sub(now).toString());
   const yearFraction = secondsUntilMaturity / 31622400;
   return BigNumber.from(
     decToWad((Math.pow((1 + Number(wadToDec(earnableRate))), (1 / yearFraction )) - 1).toFixed(10))
@@ -90,4 +94,8 @@ export function debounce<F extends (...args: Parameters<F>) => ReturnType<F>>(
     clearTimeout(timeout as number); // this number cast is for browser support NodeJS.Timeout is for Node envs and so tsc stops whining
     timeout = setTimeout(() => func(...args), delay);
   };
+}
+
+export const scaleAndConvertMaturity = (maturity : BigNumber) : Date => {
+  return new Date(Number(maturity.toString()) * 1000);
 }
