@@ -1,10 +1,12 @@
 import React from 'react';
 import { Badge, Col, Row, SortDescriptor, Table, Text, User } from '@nextui-org/react';
 import {
+  encodePositionId, floor2, formatUnixTimestamp, getCollateralTypeData, getTimestamp,
+} from '../utils';
+import {
   computeCollateralizationRatio, interestPerSecondToAnnualYield, interestPerSecondToInterestToMaturity, WAD, wadToDec
 } from '@fiatdao/sdk';
 import { chain as chains, useAccount, useNetwork, } from 'wagmi';
-import { encodePositionId, floor2, formatUnixTimestamp, getCollateralTypeData, getTimestamp } from '../utils';
 import { ethers } from 'ethers';
 import { useCollateralTypes } from '../state/queries/useCollateralTypes';
 import { useUserData } from '../state/queries/useUserData';

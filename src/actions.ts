@@ -1,5 +1,6 @@
 import { addressEq, debtToNormalDebt, decToWad, scaleToWad, WAD, wadToScale, ZERO } from '@fiatdao/sdk';
-import { BigNumber, Contract } from 'ethers';
+import { BigNumber, Contract, ContractReceipt, ethers } from 'ethers';
+import useStore, { initialState } from './state/stores/globalStore';
 import { getTimestamp } from './utils';
 
 export const underlierToFIAT = async (
@@ -997,3 +998,39 @@ export const buildRedeemCollateralAndDecreaseLeverArgs = async (
     }
   }
 };
+
+export const sendTransaction = async (
+  fiat: any, useProxy: boolean, proxyAddress: string, action: string, contract: ethers.Contract, method: string, ...args: any[]
+): Promise<ContractReceipt> => {
+  try {
+    useStore.getState().setTransactionData({ action, status: 'sent' });
+    // Dryrun every transaction first to catch and decode errors
+    const dryrunResp = useProxy
+      ? await fiat.dryrunViaProxy(proxyAddress, contract, method, ...args)
+      : await fiat.dryrun(contract, method, ...args);
+    if (!dryrunResp.success) {
+      const reason = dryrunResp.reason !== undefined ? 'Reason: ' + dryrunResp.reason + '.' : '';
+      const customError = dryrunResp.customError !== undefined ? 'Custom error: ' + dryrunResp.customError + '.' : '';
+      const error = dryrunResp.error !== undefined ? dryrunResp.error + '.' : '';
+      // Throw conglomerate error message to prevent sendAndWait from running and throwing a less user-friendly error
+      throw new Error(reason + customError + error);
+    }
+
+    const resp = useProxy
+      ? await fiat.sendAndWaitViaProxy(proxyAddress, contract, method, ...args)
+      : await fiat.sendAndWait(contract, method, ...args);
+    useStore.getState().setTransactionData(initialState.transactionData);
+    return resp;
+  } catch (e: any) {
+    console.error(e);
+    const { transactionData, setTransactionData } = useStore.getState();
+    setTransactionData({ ...transactionData, status: 'error' });
+    if (e && e.code && e.code === 'ACTION_REJECTED') {
+      // handle rejected transactions by user
+      throw new Error('ACTION_REJECTED');
+    } else {
+      // Should be caught by caller to set appropriate errors
+      throw e;
+    }
+  }
+}
