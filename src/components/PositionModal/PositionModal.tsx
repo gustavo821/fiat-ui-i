@@ -1,9 +1,14 @@
 import { Card, Dropdown, Modal, Navbar, Text } from '@nextui-org/react';
-import { BigNumber } from 'ethers';
 import React, { useState } from 'react';
-import { formatUnixTimestamp } from '../../utils';
-import { CreateForm, DecreaseForm, IncreaseForm, RedeemForm } from './BorrowForms';
-import { LeverCreateForm, LeverDecreaseForm, LeverIncreaseForm, LeverRedeemForm } from './LeverForms';
+import { formatUnixTimestamp, getTimestamp } from '../../utils';
+import CreateForm from './BorrowForms/CreateForm';
+import DecreaseForm from './BorrowForms/DecreaseForm';
+import IncreaseForm from './BorrowForms/IncreaseForm';
+import RedeemForm from './BorrowForms/RedeemForm';
+import LeverCreateForm from './LeverForms/LeverCreateForm';
+import LeverDecreaseForm from './LeverForms/LeverDecreaseForm';
+import LeverIncreaseForm from './LeverForms/LeverIncreaseForm';
+import LeverRedeemForm from './LeverForms/LeverRedeemForm';
 import useStore from '../../state/stores/globalStore';
 
 const enum Mode {
@@ -14,19 +19,6 @@ const enum Mode {
 }
 
 interface PositionModalProps {
-  createPosition: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
-  buyCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
-  sellCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
-  redeemCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber) => any;
-  createLeveredPosition: (upFrontUnderlier: BigNumber, addDebt: BigNumber, minUnderlierToBuy: BigNumber, minTokenToBuy: BigNumber) => any;
-  buyCollateralAndIncreaseLever: (upFrontUnderlier: BigNumber, addDebt: BigNumber, minUnderlierToBuy: BigNumber, minTokenToBuy: BigNumber) => any;
-  sellCollateralAndDecreaseLever: (subTokenAmount: BigNumber, subDebt: BigNumber, maxUnderlierToSell: BigNumber, minUnderlierToBuy: BigNumber) => any;
-  redeemCollateralAndDecreaseLever: (subTokenAmount: BigNumber, subDebt: BigNumber, maxUnderlierToSell: BigNumber) => any;
-  setFIATAllowanceForMoneta: (fiat: any) => any;
-  setFIATAllowanceForProxy: (fiat: any, amount: BigNumber) => any;
-  unsetFIATAllowanceForProxy: (fiat: any) => any;
-  setUnderlierAllowanceForProxy: (fiat: any, amount: BigNumber) => any;
-  unsetUnderlierAllowanceForProxy: (fiat: any) => any;
   open: boolean;
   onClose: () => void;
 }
@@ -51,7 +43,6 @@ const PositionModalBody = (props: PositionModalProps) => {
   const [ leverModeActive, setLeverModeActive ] = useState(false);
   const [ actionMode, setActionMode ] = useState(Mode.INCREASE);
 
-  const user = useStore((state) => state.user);
   const disableActions = useStore((state) => state.disableActions);
   const modifyPositionData = useStore((state) => state.modifyPositionData);
   const selectedCollateralTypeId = useStore((state) => state.selectedCollateralTypeId);
@@ -60,9 +51,10 @@ const PositionModalBody = (props: PositionModalProps) => {
   const vaultType = modifyPositionData?.collateralType?.properties?.vaultType;
 
   const matured = React.useMemo(() => {
-    const maturity = modifyPositionData.collateralType?.properties.maturity.toString();
-    return (maturity !== undefined && !(new Date() < new Date(Number(maturity) * 1000)));
-  }, [modifyPositionData.collateralType?.properties.maturity])
+    const now = getTimestamp();
+    const maturity = modifyPositionData.collateralType?.properties.maturity;
+    return (maturity !== undefined && !(now.lt(maturity)));
+  }, [modifyPositionData.collateralType?.properties.maturity]);
 
   React.useEffect(() => {
     // Set initial mode of modal depending on props
@@ -130,26 +122,18 @@ const PositionModalBody = (props: PositionModalProps) => {
       }
       return !!selectedCollateralTypeId && actionMode === Mode.CREATE
           ? <LeverCreateForm
-              createLeveredPosition={props.createLeveredPosition}
-              setUnderlierAllowanceForProxy={props.setUnderlierAllowanceForProxy}
-              unsetUnderlierAllowanceForProxy={props.unsetUnderlierAllowanceForProxy}
               onClose={props.onClose}
           />
           : !!selectedPositionId && actionMode === Mode.INCREASE
           ? <LeverIncreaseForm
-              buyCollateralAndIncreaseLever={props.buyCollateralAndIncreaseLever}
-              setUnderlierAllowanceForProxy={props.setUnderlierAllowanceForProxy}
-              unsetUnderlierAllowanceForProxy={props.unsetUnderlierAllowanceForProxy}
               onClose={props.onClose}
             />
           : !!selectedPositionId && actionMode === Mode.DECREASE
           ? <LeverDecreaseForm
-              sellCollateralAndDecreaseLever={props.sellCollateralAndDecreaseLever}
               onClose={props.onClose}
             />
           : !!selectedPositionId && actionMode === Mode.REDEEM
           ? <LeverRedeemForm
-              redeemCollateralAndDecreaseLever={props.redeemCollateralAndDecreaseLever}
               onClose={props.onClose}
             />
           : null
@@ -157,33 +141,18 @@ const PositionModalBody = (props: PositionModalProps) => {
       return !!selectedCollateralTypeId && actionMode === Mode.CREATE
           ? <CreateForm
               onClose={props.onClose}
-              createPosition={props.createPosition}
-              setUnderlierAllowanceForProxy={props.setUnderlierAllowanceForProxy}
-              unsetUnderlierAllowanceForProxy={props.unsetUnderlierAllowanceForProxy}
           />
           : !!selectedPositionId && actionMode === Mode.INCREASE
           ? <IncreaseForm
               onClose={props.onClose}
-              buyCollateralAndModifyDebt={props.buyCollateralAndModifyDebt}
-              setUnderlierAllowanceForProxy={props.setUnderlierAllowanceForProxy}
-              unsetUnderlierAllowanceForProxy={props.unsetUnderlierAllowanceForProxy}
-              
             />
           : !!selectedPositionId && actionMode === Mode.DECREASE
           ? <DecreaseForm
               onClose={props.onClose}
-              setFIATAllowanceForProxy={props.setFIATAllowanceForProxy}
-              unsetFIATAllowanceForProxy={props.unsetFIATAllowanceForProxy}
-              setFIATAllowanceForMoneta={props.setFIATAllowanceForMoneta}
-              sellCollateralAndModifyDebt={props.sellCollateralAndModifyDebt}
             />
           : !!selectedPositionId && actionMode === Mode.REDEEM
           ? <RedeemForm
               onClose={props.onClose}
-              setFIATAllowanceForProxy={props.setFIATAllowanceForProxy}
-              unsetFIATAllowanceForProxy={props.unsetFIATAllowanceForProxy}
-              setFIATAllowanceForMoneta={props.setFIATAllowanceForMoneta}
-              redeemCollateralAndModifyDebt={props.redeemCollateralAndModifyDebt}
             />
           : null
     }

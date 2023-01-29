@@ -1,6 +1,8 @@
 import create from 'zustand';
 import { FIAT } from '@fiatdao/sdk';
 import { BigNumber } from 'ethers';
+import { getProvider } from '@wagmi/core'
+import { USE_FORK } from '../../components/HeaderBar';
 
 export type TransactionStatus = null | 'error' | 'sent' | 'confirming' | 'confirmed'; 
 
@@ -25,6 +27,7 @@ export const initialState = {
     action: null as null | string,
     status: null as TransactionStatus,
   },
+  ganacheTime: new Date() as Date,
 }
 
 const useStore = create<any>()((set: any) => ({
@@ -37,6 +40,7 @@ const useStore = create<any>()((set: any) => ({
   selectedPositionId: initialState.selectedPositionId,
   transactionData: initialState.transactionData,
   modifyPositionData: initialState.modifyPositionData,
+  ganacheTime: initialState.ganacheTime,
   fiatFromProvider: async (provider: any) => {
     const fiatProvider = await FIAT.fromProvider(provider, null);
     set(() => ({
@@ -80,6 +84,15 @@ const useStore = create<any>()((set: any) => ({
       modifyPositionData: data
     }))
   },
+  getGanacheTime: async () => {
+    if (!USE_FORK) return;
+    const provider = getProvider() as any;
+    const result = await provider.send('eth_getBlockByNumber', ['latest', false]);
+    const timestamp = BigNumber.from(result.timestamp).toNumber() * 1000;
+    set(() => ({
+      ganacheTime: new Date(timestamp)
+    }))
+  },
   softResetStore: () => {
     set(() => ({
       disableActions: initialState.disableActions,
@@ -90,8 +103,9 @@ const useStore = create<any>()((set: any) => ({
     }))
   },
   resetStore: () => {
-    set(() => ({
-      ...initialState
+    set((state: any) => ({
+      ...initialState,
+      ganacheTime: state.ganacheTime,
     }))
   },
 }));

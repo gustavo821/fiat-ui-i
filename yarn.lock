@@ -484,10 +484,10 @@
     "@ethersproject/properties" "^5.7.0"
     "@ethersproject/strings" "^5.7.0"
 
-"@fiatdao/sdk@0.0.34":
-  version "0.0.34"
-  resolved "https://registry.yarnpkg.com/@fiatdao/sdk/-/sdk-0.0.34.tgz#5156b227f5034265c3cf8db147994daafbc0c905"
-  integrity sha512-ZVTfb/DZvmDRzc1HsbjHfAXdyIwSSYArVJUSgG9eVFdaKImdIpdjfiDoTFrcQjsV1/tPNN01X/Uu/7OOGZfQHQ==
+"@fiatdao/sdk@0.0.38":
+  version "0.0.38"
+  resolved "https://registry.yarnpkg.com/@fiatdao/sdk/-/sdk-0.0.38.tgz#a6be91cea878235d50b2a54d01d1416de6c92ffd"
+  integrity sha512-+1yW4o3nUD5234KUgru6UNrY07Jh7wY2gDMJOj1kV+84B7X3lQE7r01XYdiibWi2KG1g0If64MkFCj2MgV/JwA==
   dependencies:
     changelog "https://github.com/fiatdao/changelog"
     ethers "^5.7.1"
@@ -1873,6 +1873,16 @@
     "@walletconnect/window-metadata" "1.0.0"
     detect-browser "5.2.0"
 
+"@walletconnect/client@1.6.2":
+  version "1.6.2"
+  resolved "https://registry.yarnpkg.com/@walletconnect/client/-/client-1.6.2.tgz#bbb2511ee44311c8a82d63382c2d30204a05ae7d"
+  integrity sha512-ETeYAczgES2jlo5FuZyAfJmrRX38S7uy48zy89C7Rr4P0ZUy4fHXpnHGy0k7vI1tgikQXXQ0dv7DoLOST3V3Fg==
+  dependencies:
+    "@walletconnect/core" "^1.6.2"
+    "@walletconnect/iso-crypto" "^1.6.2"
+    "@walletconnect/types" "^1.6.2"
+    "@walletconnect/utils" "^1.6.2"
+
 "@walletconnect/client@^1.8.0":
   version "1.8.0"
   resolved "https://registry.yarnpkg.com/@walletconnect/client/-/client-1.8.0.tgz#6f46b5499c7c861c651ff1ebe5da5b66225ca696"
@@ -1883,7 +1893,7 @@
     "@walletconnect/types" "^1.8.0"
     "@walletconnect/utils" "^1.8.0"
 
-"@walletconnect/core@^1.8.0":
+"@walletconnect/core@^1.6.2", "@walletconnect/core@^1.8.0":
   version "1.8.0"
   resolved "https://registry.yarnpkg.com/@walletconnect/core/-/core-1.8.0.tgz#6b2748b90c999d9d6a70e52e26a8d5e8bfeaa81e"
   integrity sha512-aFTHvEEbXcZ8XdWBw6rpQDte41Rxwnuk3SgTD8/iKGSRTni50gI9S3YEzMj05jozSiOBxQci4pJDMVhIUMtarw==
@@ -1930,7 +1940,7 @@
     eip1193-provider "1.0.1"
     eventemitter3 "4.0.7"
 
-"@walletconnect/iso-crypto@^1.8.0":
+"@walletconnect/iso-crypto@^1.6.2", "@walletconnect/iso-crypto@^1.8.0":
   version "1.8.0"
   resolved "https://registry.yarnpkg.com/@walletconnect/iso-crypto/-/iso-crypto-1.8.0.tgz#44ddf337c4f02837c062dbe33fa7ab36789df451"
   integrity sha512-pWy19KCyitpfXb70hA73r9FcvklS+FvO9QUIttp3c2mfW8frxgYeRXfxLRCIQTkaYueRKvdqPjbyhPLam508XQ==
@@ -2023,12 +2033,12 @@
     "@walletconnect/utils" "^1.8.0"
     ws "7.5.3"
 
-"@walletconnect/types@^1.8.0":
+"@walletconnect/types@^1.6.2", "@walletconnect/types@^1.8.0":
   version "1.8.0"
   resolved "https://registry.yarnpkg.com/@walletconnect/types/-/types-1.8.0.tgz#3f5e85b2d6b149337f727ab8a71b8471d8d9a195"
   integrity sha512-Cn+3I0V0vT9ghMuzh1KzZvCkiAxTq+1TR2eSqw5E5AVWfmCtECFkVZBP6uUJZ8YjwLqXheI+rnjqPy7sVM4Fyg==
 
-"@walletconnect/utils@^1.8.0":
+"@walletconnect/utils@^1.6.2", "@walletconnect/utils@^1.8.0":
   version "1.8.0"
   resolved "https://registry.yarnpkg.com/@walletconnect/utils/-/utils-1.8.0.tgz#2591a197c1fa7429941fe428876088fda6632060"
   integrity sha512-zExzp8Mj1YiAIBfKNm5u622oNw44WOESzo6hj+Q3apSMIb0Jph9X3GDIdbZmvVZsNPxWDL7uodKgZcCInZv2vA==
@@ -2455,9 +2465,9 @@ chalk@^4.0.0, chalk@^4.1.1:
     ansi-styles "^4.1.0"
     supports-color "^7.1.0"
 
-"changelog@https://github.com/fiatdao/changelog":
+"changelog@git+https://github.com/fiatdao/changelog.git":
   version "0.0.0"
-  resolved "https://github.com/fiatdao/changelog#63a730ce11be89c8449a1792be2e2b704be614e9"
+  resolved "git+https://github.com/fiatdao/changelog.git#63a730ce11be89c8449a1792be2e2b704be614e9"
 
 cipher-base@^1.0.0, cipher-base@^1.0.1, cipher-base@^1.0.3:
   version "1.0.4"
@@ -2728,6 +2738,11 @@ doctrine@^3.0.0:
   integrity sha512-yS+Q5i3hBf7GBkd4KG8a7eBNNWNGLTaEwwYWUijIYM7zrlYDM0BFXHjjPWlWZ1Rg7UaddZeIDmi9jF3HmqiQ2w==
   dependencies:
     esutils "^2.0.2"
+
+dotenv@^16.0.3:
+  version "16.0.3"
+  resolved "https://registry.yarnpkg.com/dotenv/-/dotenv-16.0.3.tgz#115aec42bac5053db3c456db30cc243a5a836a07"
+  integrity sha512-7GO6HghkA5fYG9TYnNxi14/7K9f5occMlp3zXAuSxn7CKCxt9xbNWG7yF8hTCSUchlfWSe3uLmlPfigevRItzQ==
 
 eip1193-provider@1.0.1:
   version "1.0.1"

@@ -3,9 +3,9 @@ import { Input, Loading, Text, Tooltip } from '@nextui-org/react';
 import 'katex/dist/katex.min.css';
 import { InlineMath } from 'react-katex';
 import { BigNumber, ethers } from 'ethers';
-import { floor2, floor5 } from '../../utils';
+import { floor2, floor5 } from '../../../utils';
 
-export const PositionPreview = ({
+export const BorrowPreview = ({
   formDataLoading,
   collateral,
   normalDebt,
@@ -63,7 +63,7 @@ export const PositionPreview = ({
         readOnly
         value={(() => {
           if (formDataLoading) return ' ';
-          let collRatioBefore = computeCollateralizationRatio(
+          let collRatioBefore: BigNumber | string = computeCollateralizationRatio(
             collateral, fairPrice, normalDebt, virtualRate
           );
           collRatioBefore = (collRatioBefore.eq(ethers.constants.MaxUint256))
