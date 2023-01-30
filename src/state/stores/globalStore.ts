@@ -8,6 +8,7 @@ export type TransactionStatus = null | 'error' | 'sent' | 'confirming' | 'confir
 
 export const initialState = {
   fiat: null,
+  impersonateAddress: '',
   user: '',
   explorerUrl: '',
   hasProxy: false,
@@ -33,6 +34,7 @@ export const initialState = {
 const useStore = create<any>()((set: any) => ({
   fiat: initialState.fiat,
   user: initialState.user,
+  impersonateAddress: initialState.impersonateAddress,
   explorerUrl: initialState.explorerUrl,
   hasProxy: initialState.hasProxy,
   disableActions: initialState.disableActions,
@@ -56,6 +58,11 @@ const useStore = create<any>()((set: any) => ({
   setUser: (address: string) => {
     set(() => ({
       user: address
+    }))
+  },
+  setImpersonateAddress: (address: string) => {
+    set(() => ({
+      impersonateAddress: address,
     }))
   },
   setExplorerUrl: (url: string) => {

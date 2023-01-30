@@ -4,8 +4,6 @@ import useStore from '../state/stores/globalStore';
 import {USE_FORK, USE_GANACHE} from './HeaderBar';
 import { useProvider } from 'wagmi';
 import { hexValue } from 'ethers/lib/utils';
-import WalletConnect from '@walletconnect/client';
-import { BigNumber } from 'ethers';
 
 const SESSION_STORAGE_KEY = 'fiat-ui-snapshotIds';
 
@@ -39,12 +37,11 @@ export const ForkControls = () => {
   const [showImpersonate, setShowImpersonate] = React.useState<boolean>(false);
   const [isImpersonating, setIsImpersonating] = React.useState<boolean>(false);
   const [impersonateWalletAddress, setImpersonateWalletAddress] = React.useState<string>('');
-  const [walletConnectURI, setWalletConnectURI] = React.useState<string>('');
-  const [wcConnector, setWcConnector] = React.useState<WalletConnect>();
 
   const provider = useProvider() as any;
   const ganacheTime = useStore((state) => state.ganacheTime);
   const getGanacheTime = useStore((state) => state.getGanacheTime);
+  const setImpersonateAddress = useStore((state) => state.setImpersonateAddress);
 
   const handleFastForward = async (time: number) => {
     if (!USE_FORK) return;
@@ -78,72 +75,11 @@ export const ForkControls = () => {
     window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(newSnapshotIds));
   }
 
-  const doImpersonate = async (useCachedSession: boolean) => {
-    const cachedSession = window.sessionStorage.getItem('WalletConnectSession') ?? '';
-    if (useCachedSession && !cachedSession) {
-      console.error('No cached session in session storage')
-      return;
-    }
-    // Create connection from cached session or new uri
-    const wc = new WalletConnect({
-      bridge: 'https://bridge.walletconnect.org', 
-      uri: useCachedSession ? undefined: walletConnectURI,
-      session: useCachedSession ? JSON.parse(cachedSession) : undefined
-    });
-    // Subscribe to 'connect' events
-    wc.on('connect', (error) => {
-      console.log('Connect');
-      if (error) throw error;
-      console.log('Impersonating address: ', impersonateWalletAddress);
-      setIsImpersonating(true);
-      window.sessionStorage.setItem('WalletConnectSession', JSON.stringify(wc.session))
-    });
-    // Create new session if it wasn't cached
-    if (!wc.connected) {
-      console.log('Create session')
-      await wc.createSession();
-    } else {
-      console.log('Session resumed');
-      setIsImpersonating(true);
-    }
-    // Subscribe to session requests
-    wc.on('session_request', (error) => {
-      console.log('Session request');
-      if (error) throw error;
-      wc.approveSession({ chainId: 1337, accounts: [impersonateWalletAddress] });
-    });
-    // Subscribe to call requests
-    wc.on('call_request', async (error, payload) => {
-      console.log('Call request');
-      if (error) throw error;
-      try {
-        const signer = provider.getSigner(impersonateWalletAddress);
-        const { to, from, data, gas} = payload.params[0];
-        const gasLimit = BigNumber.from(gas).mul(2);
-        const result = await signer.sendTransaction({ to, from, data, gasLimit })
-        console.log({ result })
-        wc.approveRequest({ id: payload.id, result: result.hash });
-      } catch (error) {
-        console.log({error})
-      }
-    });
-
-    // Subscribe to 'disconnect' events
-    wc.on('disconnect', (error) => {
-      setIsImpersonating(false);
-    });
-
-    if (!useCachedSession) {
-      window.sessionStorage.setItem('ImpersonatingAddress', impersonateWalletAddress);
-    }
-    setWcConnector(wc);
-  }
-
-  const disconnectImpersonate = () => {
-    setIsImpersonating(false);
-    if (!wcConnector || !wcConnector.connected) return;
-    wcConnector.killSession();
-    window.sessionStorage.removeItem('WalletConnectSession');
+  const doImpersonate = async () => {
+    window.sessionStorage.setItem('ImpersonatingAddress', impersonateWalletAddress);
+    setImpersonateAddress(impersonateWalletAddress);
+    setShowImpersonate(false);
+    return;
   }
 
   React.useEffect(() => {
@@ -187,7 +123,7 @@ export const ForkControls = () => {
             {isImpersonating ? 'Disconnect Wallet Connect' : 'Impersonate an address'}
           </Text>
         </Modal.Header>
-        {!isImpersonating && <Modal.Body>
+        <Modal.Body>
           <Input
             aria-label='Impersonate Wallet Address'
             clearable
@@ -199,30 +135,12 @@ export const ForkControls = () => {
             value={impersonateWalletAddress}
             onChange={(e)=>setImpersonateWalletAddress(e.target.value)}
           />
-          <Input
-          aria-label='Impersonate Wallet Connect URI'
-            clearable
-            bordered
-            fullWidth
-            color="primary"
-            size="lg"
-            placeholder="Walletconnect URI"
-            onChange={(e)=>setWalletConnectURI(e.target.value)}
-          />
-        </Modal.Body>}
-        {!isImpersonating && <Modal.Footer>
-          <Button auto onPress={()=>doImpersonate(false)}>
-            Connect
+        </Modal.Body>
+        <Modal.Footer>
+          <Button auto onPress={()=>doImpersonate()}>
+            Set Address
           </Button>
-          <Button auto onPress={()=>doImpersonate(true)}>
-            Connect Cached Session
-          </Button>
-        </Modal.Footer>}
-        {isImpersonating && <Modal.Footer>
-          <Button auto onPress={()=>disconnectImpersonate()}>
-            Disconnect
-          </Button>
-        </Modal.Footer>}
+        </Modal.Footer>
       </Modal>
     </>
   );

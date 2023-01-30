@@ -1,17 +1,21 @@
 import { createTheme, NextUIProvider } from '@nextui-org/react';
 import {
-  connectorsForWallets, darkTheme, getDefaultWallets, lightTheme, RainbowKitProvider
+  connectorsForWallets, darkTheme, getDefaultWallets, lightTheme, RainbowKitProvider, Wallet
 } from '@rainbow-me/rainbowkit';
 import '@rainbow-me/rainbowkit/styles.css';
-import { argentWallet, ledgerWallet, trustWallet, walletConnectWallet } from '@rainbow-me/rainbowkit/wallets';
+import { argentWallet, ledgerWallet, trustWallet } from '@rainbow-me/rainbowkit/wallets';
 import { ThemeProvider as NextThemesProvider } from 'next-themes';
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
-import { chain, configureChains, createClient, WagmiConfig } from 'wagmi';
+import { Chain, chain, configureChains, createClient, WagmiConfig } from 'wagmi';
+import { MockConnector } from 'wagmi/connectors/mock';
 import { alchemyProvider } from 'wagmi/providers/alchemy';
 import { jsonRpcProvider } from 'wagmi/providers/jsonRpc'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import '../styles/global.css';
+import {providers as ethersProviders} from 'ethers';
+import useStore from '../src/state/stores/globalStore';
+import { useEffect, useState } from 'react';
 
 const APP_NAME = 'FIAT I UI';
 const USE_TESTNETS = process.env.NEXT_PUBLIC_ENABLE_TESTNETS === 'true';
@@ -19,36 +23,9 @@ const USE_GANACHE = process.env.NEXT_PUBLIC_GANACHE_FORK === 'true' && process.e
 const USE_TENDERLY = process.env.NEXT_PUBLIC_TENDERLY_FORK === 'true' && process.env.NODE_ENV === 'development';
 const USE_FORK = USE_GANACHE || USE_TENDERLY;
 
-let chainConfig, providerConfig, connectors, provider, webSocketProvider, chains: any[];
+let chainConfig: Chain[], providerConfig, connectors, provider, webSocketProvider, chains: any[];
 
-if (USE_FORK === false) {
-  chainConfig = ((USE_TESTNETS) ? [chain.mainnet, chain.goerli] : [chain.mainnet]);
-  providerConfig = [alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY })];
-  ({ chains, provider, webSocketProvider } = configureChains(chainConfig, providerConfig));
-  const { wallets } = getDefaultWallets({ appName: APP_NAME, chains });
-  connectors = connectorsForWallets([
-    ...wallets,
-    { groupName: 'Other', wallets: [argentWallet({ chains }), trustWallet({ chains }), ledgerWallet({ chains })] }
-  ]);
-} else {
-  chainConfig = [chain.localhost];
-  providerConfig = (USE_GANACHE)
-    ? [jsonRpcProvider({ rpc: () => ({ http: 'http://127.0.0.1:8545' })})]
-    : [jsonRpcProvider({
-      rpc: () => ({ http: `https://rpc.tenderly.co/fork/${process.env.NEXT_PUBLIC_TENDERLY_RPC_API_KEY}` })
-    })];
-  ({ chains, provider, webSocketProvider } = configureChains(chainConfig, providerConfig));
-  connectors = connectorsForWallets([
-    { groupName: 'Fork And Impersonate', wallets: [walletConnectWallet({ chains })] }
-  ]);
-}
 
-const wagmiClient = createClient({
-  autoConnect: true,
-  connectors,
-  provider,
-  webSocketProvider,
-});
 
 const nextLightTheme = createTheme({
   type: 'light',
@@ -77,13 +54,84 @@ const nextDarkTheme = createTheme({
 const queryClient = new QueryClient()
 
 function MyApp({ Component, pageProps }: AppProps) {
+  const [wagmiClient, setWagmiClient] = useState<any>();
+  const impersonateAddress = useStore((state) => state.impersonateAddress);
+
+  useEffect(() => {
+    if (USE_FORK === false) {
+      chainConfig = ((USE_TESTNETS) ? [chain.mainnet, chain.goerli] : [chain.mainnet]);
+      providerConfig = [alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY })];
+      ({ chains, provider, webSocketProvider } = configureChains(chainConfig, providerConfig));
+      const { wallets } = getDefaultWallets({ appName: APP_NAME, chains });
+      connectors = connectorsForWallets([
+        ...wallets,
+        { groupName: 'Other', wallets: [argentWallet({ chains }), trustWallet({ chains }), ledgerWallet({ chains })] }
+      ]);
+      setWagmiClient(createClient({
+        autoConnect: true,
+        connectors,
+        provider,
+        webSocketProvider,
+      }));
+    } else {
+      if (!impersonateAddress) return;
+      chainConfig = [chain.localhost];
+      providerConfig = (USE_GANACHE)
+        ? [jsonRpcProvider({ rpc: () => ({ http: 'http://127.0.0.1:8545' })})]
+        : [jsonRpcProvider({
+          rpc: () => ({ http: `https://rpc.tenderly.co/fork/${process.env.NEXT_PUBLIC_TENDERLY_RPC_API_KEY}` })
+        })];
+      ({ chains, provider, webSocketProvider } = configureChains(chainConfig, providerConfig));
+      const signer = provider(({chainId: 1337}))?.getSigner(impersonateAddress);
+      const mockWallet = (): Wallet => ({
+        createConnector: () => ({
+          connector: new MockConnector({
+            chains,
+            options: {
+              // It is possible to create different kinds of wallets
+              // which have different behaviours. These allow you to
+              // test different user flows!
+              flags: {
+                failConnect: false,
+                failSwitchChain: false,
+                isAuthorized: true,
+                noSwitchChain: false,
+              },
+              signer, // ✅
+            },
+          }),
+        }),
+        id: 'mock',
+        iconBackground: 'tomato',
+        iconUrl: async () => '<http://placekitten.com/100/100>',
+        name: 'Mock Wallet',
+      });
+      connectors = connectorsForWallets([
+        { groupName: 'Fork And Impersonate', wallets: [mockWallet()] }
+        ]);
+      setWagmiClient(createClient({
+        autoConnect: true,
+        connectors,
+        provider,
+        webSocketProvider,
+      }));
+    }
+  }, [impersonateAddress]);
+
+  useEffect(() => {
+    const address = window.sessionStorage.getItem('ImpersonatingAddress');
+    if (address) useStore.getState().setImpersonateAddress(address);
+  }, []);
+
+  if (!wagmiClient) return <></>;
+
   return (
     <>
       <Head>
         <title>FIAT I</title>
       </Head>
-      <WagmiConfig client={wagmiClient}>
-        <QueryClientProvider client={queryClient}>
+      <QueryClientProvider client={queryClient}>
+        <WagmiConfig client={wagmiClient}>
           <RainbowKitProvider
             appInfo={{ appName: APP_NAME }}
             chains={chains}
@@ -100,8 +148,8 @@ function MyApp({ Component, pageProps }: AppProps) {
               </NextUIProvider>
             </NextThemesProvider>
           </RainbowKitProvider>
-        </QueryClientProvider>
-      </WagmiConfig>
+        </WagmiConfig>
+      </QueryClientProvider>
     </>
   );
 }
