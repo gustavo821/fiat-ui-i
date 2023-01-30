@@ -25,7 +25,19 @@ const USE_FORK = USE_GANACHE || USE_TENDERLY;
 
 let chainConfig: Chain[], providerConfig, connectors, provider, webSocketProvider, chains: any[];
 
-
+if (USE_FORK === false) {
+  chainConfig = ((USE_TESTNETS) ? [chain.mainnet, chain.goerli] : [chain.mainnet]);
+  providerConfig = [alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY })];
+  ({ chains, provider, webSocketProvider } = configureChains(chainConfig, providerConfig));
+} else {
+  chainConfig = [chain.localhost];
+  providerConfig = (USE_GANACHE)
+    ? [jsonRpcProvider({ rpc: () => ({ http: 'http://127.0.0.1:8545' })})]
+    : [jsonRpcProvider({
+      rpc: () => ({ http: `https://rpc.tenderly.co/fork/${process.env.NEXT_PUBLIC_TENDERLY_RPC_API_KEY}` })
+    })];
+  ({ chains, provider, webSocketProvider } = configureChains(chainConfig, providerConfig));
+}
 
 const nextLightTheme = createTheme({
   type: 'light',
@@ -59,9 +71,6 @@ function MyApp({ Component, pageProps }: AppProps) {
 
   useEffect(() => {
     if (USE_FORK === false) {
-      chainConfig = ((USE_TESTNETS) ? [chain.mainnet, chain.goerli] : [chain.mainnet]);
-      providerConfig = [alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY })];
-      ({ chains, provider, webSocketProvider } = configureChains(chainConfig, providerConfig));
       const { wallets } = getDefaultWallets({ appName: APP_NAME, chains });
       connectors = connectorsForWallets([
         ...wallets,
@@ -74,19 +83,11 @@ function MyApp({ Component, pageProps }: AppProps) {
         webSocketProvider,
       }));
     } else {
-      if (!impersonateAddress) return;
-      chainConfig = [chain.localhost];
-      providerConfig = (USE_GANACHE)
-        ? [jsonRpcProvider({ rpc: () => ({ http: 'http://127.0.0.1:8545' })})]
-        : [jsonRpcProvider({
-          rpc: () => ({ http: `https://rpc.tenderly.co/fork/${process.env.NEXT_PUBLIC_TENDERLY_RPC_API_KEY}` })
-        })];
-      ({ chains, provider, webSocketProvider } = configureChains(chainConfig, providerConfig));
-      const signer = provider(({chainId: 1337}))?.getSigner(impersonateAddress);
+      const signer = impersonateAddress ? provider(({chainId: 1337}))?.getSigner(impersonateAddress) : undefined;
       const mockWallet = (): Wallet => ({
         createConnector: () => ({
           connector: new MockConnector({
-            chains,
+            chains: [chain.localhost],
             options: {
               // It is possible to create different kinds of wallets
               // which have different behaviours. These allow you to
@@ -110,7 +111,7 @@ function MyApp({ Component, pageProps }: AppProps) {
         { groupName: 'Fork And Impersonate', wallets: [mockWallet()] }
         ]);
       setWagmiClient(createClient({
-        autoConnect: true,
+        autoConnect: signer ? true : false,
         connectors,
         provider,
         webSocketProvider,

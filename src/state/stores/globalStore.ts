@@ -113,6 +113,7 @@ const useStore = create<any>()((set: any) => ({
     set((state: any) => ({
       ...initialState,
       ganacheTime: state.ganacheTime,
+      impersonateAddress: state.impersonateAddress,
     }))
   },
 }));
