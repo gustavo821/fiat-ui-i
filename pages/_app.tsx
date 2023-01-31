@@ -7,14 +7,13 @@ import { argentWallet, ledgerWallet, trustWallet } from '@rainbow-me/rainbowkit/
 import { ThemeProvider as NextThemesProvider } from 'next-themes';
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
-import { Chain, chain, configureChains, createClient, WagmiConfig } from 'wagmi';
+import { Chain, chain, configureChains, createClient, useNetwork, WagmiConfig } from 'wagmi';
 import { MockConnector } from 'wagmi/connectors/mock';
 import { alchemyProvider } from 'wagmi/providers/alchemy';
 import { jsonRpcProvider } from 'wagmi/providers/jsonRpc'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import '../styles/global.css';
-import {providers as ethersProviders} from 'ethers';
-import useStore from '../src/state/stores/globalStore';
+import devStore from '../src/state/stores/devStore';
 import { useEffect, useState } from 'react';
 
 const APP_NAME = 'FIAT I UI';
@@ -67,7 +66,7 @@ const queryClient = new QueryClient()
 
 function MyApp({ Component, pageProps }: AppProps) {
   const [wagmiClient, setWagmiClient] = useState<any>();
-  const impersonateAddress = useStore((state) => state.impersonateAddress);
+  const impersonateAddress = devStore((state) => state.impersonateAddress);
 
   useEffect(() => {
     if (USE_FORK === false) {
@@ -89,6 +88,7 @@ function MyApp({ Component, pageProps }: AppProps) {
           connector: new MockConnector({
             chains: [chain.localhost],
             options: {
+              chainId: chain.localhost.id,
               flags: {
                 failConnect: false,
                 failSwitchChain: false,
@@ -118,7 +118,7 @@ function MyApp({ Component, pageProps }: AppProps) {
 
   useEffect(() => {
     const address = window.sessionStorage.getItem('ImpersonatingAddress');
-    if (address) useStore.getState().setImpersonateAddress(address);
+    if (address) devStore.getState().setImpersonateAddress(address);
   }, []);
 
   if (!wagmiClient) return <></>;

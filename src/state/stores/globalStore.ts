@@ -1,14 +1,11 @@
 import create from 'zustand';
 import { FIAT } from '@fiatdao/sdk';
 import { BigNumber } from 'ethers';
-import { getProvider } from '@wagmi/core'
-import { USE_FORK } from '../../components/HeaderBar';
 
 export type TransactionStatus = null | 'error' | 'sent' | 'confirming' | 'confirmed'; 
 
 export const initialState = {
   fiat: null,
-  impersonateAddress: '',
   user: '',
   explorerUrl: '',
   hasProxy: false,
@@ -28,13 +25,11 @@ export const initialState = {
     action: null as null | string,
     status: null as TransactionStatus,
   },
-  ganacheTime: new Date() as Date,
 }
 
 const useStore = create<any>()((set: any) => ({
   fiat: initialState.fiat,
   user: initialState.user,
-  impersonateAddress: initialState.impersonateAddress,
   explorerUrl: initialState.explorerUrl,
   hasProxy: initialState.hasProxy,
   disableActions: initialState.disableActions,
@@ -42,7 +37,6 @@ const useStore = create<any>()((set: any) => ({
   selectedPositionId: initialState.selectedPositionId,
   transactionData: initialState.transactionData,
   modifyPositionData: initialState.modifyPositionData,
-  ganacheTime: initialState.ganacheTime,
   fiatFromProvider: async (provider: any) => {
     const fiatProvider = await FIAT.fromProvider(provider, null);
     set(() => ({
@@ -58,11 +52,6 @@ const useStore = create<any>()((set: any) => ({
   setUser: (address: string) => {
     set(() => ({
       user: address
-    }))
-  },
-  setImpersonateAddress: (address: string) => {
-    set(() => ({
-      impersonateAddress: address,
     }))
   },
   setExplorerUrl: (url: string) => {
@@ -91,15 +80,6 @@ const useStore = create<any>()((set: any) => ({
       modifyPositionData: data
     }))
   },
-  getGanacheTime: async () => {
-    if (!USE_FORK) return;
-    const provider = getProvider() as any;
-    const result = await provider.send('eth_getBlockByNumber', ['latest', false]);
-    const timestamp = BigNumber.from(result.timestamp).toNumber() * 1000;
-    set(() => ({
-      ganacheTime: new Date(timestamp)
-    }))
-  },
   softResetStore: () => {
     set(() => ({
       disableActions: initialState.disableActions,
@@ -110,10 +90,8 @@ const useStore = create<any>()((set: any) => ({
     }))
   },
   resetStore: () => {
-    set((state: any) => ({
+    set(() => ({
       ...initialState,
-      ganacheTime: state.ganacheTime,
-      impersonateAddress: state.impersonateAddress,
     }))
   },
 }));

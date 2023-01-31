@@ -1,10 +1,10 @@
 import React from 'react';
 import { Button, Dropdown, Input, Modal, Text } from '@nextui-org/react';
-import useStore from '../state/stores/globalStore';
+import devStore from '../state/stores/devStore';
 import {USE_FORK, USE_GANACHE} from './HeaderBar';
 import { useProvider } from 'wagmi';
 import { hexValue } from 'ethers/lib/utils';
-
+import { useNetwork, useSwitchNetwork } from 'wagmi';
 const SESSION_STORAGE_KEY = 'fiat-ui-snapshotIds';
 
 const SECONDS_PER_DAY = 60 * 60 * 24;
@@ -35,13 +35,14 @@ export const ForkControls = () => {
 
   const [snapshotIds, setSnapshotIds] = React.useState<SnapshotId[]>([]);
   const [showImpersonate, setShowImpersonate] = React.useState<boolean>(false);
-  const [isImpersonating, setIsImpersonating] = React.useState<boolean>(false);
   const [impersonateWalletAddress, setImpersonateWalletAddress] = React.useState<string>('');
+  const { chain } = useNetwork();
+  const { switchNetwork } = useSwitchNetwork()
 
   const provider = useProvider() as any;
-  const ganacheTime = useStore((state) => state.ganacheTime);
-  const getGanacheTime = useStore((state) => state.getGanacheTime);
-  const setImpersonateAddress = useStore((state) => state.setImpersonateAddress);
+  const ganacheTime = devStore((state) => state.ganacheTime);
+  const getGanacheTime = devStore((state) => state.getGanacheTime);
+  const setImpersonateAddress = devStore((state) => state.setImpersonateAddress);
 
   const handleFastForward = async (time: number) => {
     if (!USE_FORK) return;
@@ -60,7 +61,7 @@ export const ForkControls = () => {
 
   const handleSnapshot = async () => {
     const result = await provider.send('evm_snapshot')
-    const newSnapshotIds = [...snapshotIds, {time: useStore.getState().ganacheTime.getTime(), id: result}];
+    const newSnapshotIds = [...snapshotIds, {time: devStore.getState().ganacheTime.getTime(), id: result}];
     setSnapshotIds(newSnapshotIds);
     window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(newSnapshotIds));
   }
@@ -83,6 +84,14 @@ export const ForkControls = () => {
   }
 
   React.useEffect(() => {
+    if (!USE_FORK) return;
+    if (!chain || chain.id === 1337) return;
+    if (!switchNetwork) return;
+    switchNetwork(1337);
+  }, [chain, switchNetwork]);
+
+  React.useEffect(() => {
+    if (!USE_FORK) return;
     const address = window.sessionStorage.getItem('ImpersonatingAddress');
     if (address) setImpersonateWalletAddress(address);
   }, []);
@@ -111,7 +120,7 @@ export const ForkControls = () => {
           { snapshotIds.map((item) => (<Dropdown.Item key={item.id}>{`Revert to ${new Date(item.time).toLocaleDateString()}`}</Dropdown.Item>)) }
         </Dropdown.Menu>
       </Dropdown>
-      <Button auto size='xs' css={{ marginLeft: '3px' }} onPress={()=>setShowImpersonate(true)}>{isImpersonating ? 'Impersonating' : 'Impersonate'}</Button>
+      <Button auto size='xs' css={{ marginLeft: '3px' }} onPress={()=>setShowImpersonate(true)}>{'Impersonate'}</Button>
       <Modal
         closeButton
         aria-labelledby="modal-title"
@@ -120,7 +129,7 @@ export const ForkControls = () => {
       >
         <Modal.Header>
           <Text id="modal-title" size={18}>
-            {isImpersonating ? 'Disconnect Wallet Connect' : 'Impersonate an address'}
+            {'Impersonate an address'}
           </Text>
         </Modal.Header>
         <Modal.Body>
