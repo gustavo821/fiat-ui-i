@@ -88,7 +88,6 @@ export const HeaderBar = () => {
           <Text size='$xs'css={{ alignSelf: 'center'}}>
             {syncStatus?.subgraphBlockNumber}
           </Text>
-          <ForkControls/>
         </Tooltip>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', padding: 0 }}>

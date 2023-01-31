@@ -106,51 +106,57 @@ export const ForkControls = () => {
 
   if (!USE_FORK) return null;
 
-  return (    
-    <>
-      <Dropdown closeOnSelect={false}>
-        <Dropdown.Button size='xs' css={{ marginLeft: '3px' }}>{ganacheTime?.toLocaleString().split(',')[0]}</Dropdown.Button>
-        <Dropdown.Menu disabledKeys={['input']} aria-label="Fast Forward" onAction={(e) => handleFastForward(parseInt(e as string))}>
-          {fastForwardOptions.map((item) => (<Dropdown.Item key={item.value}>{item.label}</Dropdown.Item>))}
-        </Dropdown.Menu>
-      </Dropdown> 
-      <Dropdown closeOnSelect={false}>
-        <Dropdown.Button size='xs' css={{ marginLeft: '3px' }}>Snapshots</Dropdown.Button>
-        <Dropdown.Menu disabledKeys={['input']} aria-label="Snapshots" onAction={(e) => handleRevert(e as string)}>
-          { snapshotIds.map((item) => (<Dropdown.Item key={item.id}>{`Revert to ${new Date(item.time).toLocaleDateString()}`}</Dropdown.Item>)) }
-        </Dropdown.Menu>
-      </Dropdown>
-      <Button auto size='xs' css={{ marginLeft: '3px' }} onPress={()=>setShowImpersonate(true)}>{'Impersonate'}</Button>
-      <Modal
-        closeButton
-        aria-labelledby="modal-title"
-        open={showImpersonate}
-        onClose={()=>setShowImpersonate(false)}
-      >
-        <Modal.Header>
-          <Text id="modal-title" size={18}>
-            {'Impersonate an address'}
-          </Text>
-        </Modal.Header>
-        <Modal.Body>
-          <Input
-            aria-label='Impersonate Wallet Address'
-            clearable
-            bordered
-            fullWidth
-            color="primary"
-            size="lg"
-            placeholder="Wallet Address"
-            value={impersonateWalletAddress}
-            onChange={(e)=>setImpersonateWalletAddress(e.target.value)}
-          />
-        </Modal.Body>
-        <Modal.Footer>
-          <Button auto onPress={()=>doImpersonate()}>
-            Set Address
-          </Button>
-        </Modal.Footer>
-      </Modal>
-    </>
+  return (
+    <div style={{
+      display: 'flex',
+      width: '100%',
+      justifyContent: 'flex-end'
+    }}>
+      <Button.Group size="xs" css={{marginBottom: '0px'}}>
+        <Dropdown closeOnSelect={false}>
+          <Dropdown.Button size='xs' css={{ marginLeft: '3px' }}>{ganacheTime?.toLocaleString().split(',')[0]}</Dropdown.Button>
+          <Dropdown.Menu disabledKeys={['input']} aria-label="Fast Forward" onAction={(e) => handleFastForward(parseInt(e as string))}>
+            {fastForwardOptions.map((item) => (<Dropdown.Item key={item.value}>{item.label}</Dropdown.Item>))}
+          </Dropdown.Menu>
+        </Dropdown> 
+        <Dropdown closeOnSelect={false}>
+          <Dropdown.Button size='xs' css={{ marginLeft: '3px' }}>Snapshots</Dropdown.Button>
+          <Dropdown.Menu disabledKeys={['input']} aria-label="Snapshots" onAction={(e) => handleRevert(e as string)}>
+            { snapshotIds.map((item) => (<Dropdown.Item key={item.id}>{`Revert to ${new Date(item.time).toLocaleDateString()}`}</Dropdown.Item>)) }
+          </Dropdown.Menu>
+        </Dropdown>
+        <Button auto size='xs' css={{ marginLeft: '3px' }} onPress={()=>setShowImpersonate(true)}>{'Impersonate'}</Button>
+        <Modal
+          closeButton
+          aria-labelledby="modal-title"
+          open={showImpersonate}
+          onClose={()=>setShowImpersonate(false)}
+        >
+          <Modal.Header>
+            <Text id="modal-title" size={18}>
+              {'Impersonate an address'}
+            </Text>
+          </Modal.Header>
+          <Modal.Body>
+            <Input
+              aria-label='Impersonate Wallet Address'
+              clearable
+              bordered
+              fullWidth
+              color="primary"
+              size="lg"
+              placeholder="Wallet Address"
+              value={impersonateWalletAddress}
+              onChange={(e)=>setImpersonateWalletAddress(e.target.value)}
+            />
+          </Modal.Body>
+          <Modal.Footer>
+            <Button auto onPress={()=>doImpersonate()}>
+              Set Address
+            </Button>
+          </Modal.Footer>
+        </Modal>
+      </Button.Group>
+    </div>
   );
 }
