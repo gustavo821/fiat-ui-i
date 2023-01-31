@@ -23,7 +23,7 @@ const USE_GANACHE = process.env.NEXT_PUBLIC_GANACHE_FORK === 'true' && process.e
 const USE_TENDERLY = process.env.NEXT_PUBLIC_TENDERLY_FORK === 'true' && process.env.NODE_ENV === 'development';
 const USE_FORK = USE_GANACHE || USE_TENDERLY;
 
-let chainConfig: Chain[], providerConfig, connectors, provider, webSocketProvider, chains: any[];
+let chainConfig: Chain[], providerConfig, connectors, provider: any, webSocketProvider: any, chains: any[];
 
 if (USE_FORK === false) {
   chainConfig = ((USE_TESTNETS) ? [chain.mainnet, chain.goerli] : [chain.mainnet]);
@@ -89,22 +89,19 @@ function MyApp({ Component, pageProps }: AppProps) {
           connector: new MockConnector({
             chains: [chain.localhost],
             options: {
-              // It is possible to create different kinds of wallets
-              // which have different behaviours. These allow you to
-              // test different user flows!
               flags: {
                 failConnect: false,
                 failSwitchChain: false,
                 isAuthorized: true,
                 noSwitchChain: false,
               },
-              signer, // ✅
+              signer,
             },
           }),
         }),
         id: 'mock',
         iconBackground: 'tomato',
-        iconUrl: async () => '<http://placekitten.com/100/100>',
+        iconUrl: 'http://placekitten.com/100/100',
         name: 'Mock Wallet',
       });
       connectors = connectorsForWallets([
