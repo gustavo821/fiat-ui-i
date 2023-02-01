@@ -13,8 +13,8 @@ jobs:
 
       - name: Prune forks
         run: |
-        touch .env
-        echo NEXT_PUBLIC_TENDERLY_SIM_API_KEY=${{ secrets.NEXT_PUBLIC_TENDERLY_SIM_API_KEY }} >> .env
-        echo  =${{ secrets.NEXT_PUBLIC_TENDERLY_USER }} >> .env
-        echo NEXT_PUBLIC_TENDERLY_PROJECT=${{ secrets.NEXT_PUBLIC_TENDERLY_PROJECT }} >> .env
-        ./scripts/tenderly-prune.sh
+          touch .env
+          echo NEXT_PUBLIC_TENDERLY_SIM_API_KEY=${{ secrets.NEXT_PUBLIC_TENDERLY_SIM_API_KEY }} >> .env
+          echo  =${{ secrets.NEXT_PUBLIC_TENDERLY_USER }} >> .env
+          echo NEXT_PUBLIC_TENDERLY_PROJECT=${{ secrets.NEXT_PUBLIC_TENDERLY_PROJECT }} >> .env
+          ./scripts/tenderly-prune.sh
