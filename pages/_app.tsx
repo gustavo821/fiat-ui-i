@@ -15,6 +15,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import '../styles/global.css';
 import devStore from '../src/state/stores/devStore';
 import { useEffect, useState } from 'react';
+import axios from 'axios';
 
 const APP_NAME = 'FIAT I UI';
 const USE_TESTNETS = process.env.NEXT_PUBLIC_ENABLE_TESTNETS === 'true';
@@ -24,18 +25,40 @@ const USE_FORK = USE_GANACHE || USE_TENDERLY;
 
 let chainConfig: Chain[], providerConfig, connectors, provider: any, webSocketProvider: any, chains: any[];
 
-if (USE_FORK === false) {
-  chainConfig = ((USE_TESTNETS) ? [chain.mainnet, chain.goerli] : [chain.mainnet]);
-  providerConfig = [alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY })];
-  ({ chains, provider, webSocketProvider } = configureChains(chainConfig, providerConfig));
-} else {
-  chainConfig = [chain.localhost];
-  providerConfig = (USE_GANACHE)
-    ? [jsonRpcProvider({ rpc: () => ({ http: 'http://127.0.0.1:8545' })})]
-    : [jsonRpcProvider({
-      rpc: () => ({ http: `https://rpc.tenderly.co/fork/${process.env.NEXT_PUBLIC_TENDERLY_RPC_API_KEY}` })
-    })];
-  ({ chains, provider, webSocketProvider } = configureChains(chainConfig, providerConfig));
+const TENDERLY_USER = process.env.NEXT_PUBLIC_TENDERLY_USER;
+const TENDERLY_PROJECT = process.env.NEXT_PUBLIC_TENDERLY_PROJECT;
+const TENDERLY_FORK_API = `https://api.tenderly.co/api/v1/account/${TENDERLY_USER}/project/${TENDERLY_PROJECT}/fork`;
+const TENDERLY_ACCESS_KEY = process.env.NEXT_PUBLIC_TENDERLY_ACCESS_KEY;
+
+let forkRequestInFlight = false;
+const createTenderlyFork = async () => {
+  if (!USE_TENDERLY || forkRequestInFlight) return;
+  const cachedForkId = window.localStorage.getItem('tenderly-fork-id');
+  if (cachedForkId) {
+    return cachedForkId;
+  }
+  const opts = {
+    headers: {
+        'X-Access-Key': TENDERLY_ACCESS_KEY as string,
+    }
+  }
+
+  const body = {
+  'network_id': '1',
+  //'block_number': 14386016,
+  }
+  try {
+    forkRequestInFlight = true;
+    const response = await axios.post(TENDERLY_FORK_API, body, opts);
+    const forkId = response.data.simulation_fork.id;
+    window.localStorage.setItem('tenderly-fork-id', forkId);
+    forkRequestInFlight = false;
+    return forkId;
+  } catch (error) {
+    console.error({error})
+    forkRequestInFlight = false;
+    return '';
+  }
 }
 
 const nextLightTheme = createTheme({
@@ -62,7 +85,7 @@ const nextDarkTheme = createTheme({
   }
 })
 
-const queryClient = new QueryClient()
+const queryClient = new QueryClient();
 
 function MyApp({ Component, pageProps }: AppProps) {
   const [wagmiClient, setWagmiClient] = useState<any>();
@@ -70,6 +93,9 @@ function MyApp({ Component, pageProps }: AppProps) {
 
   useEffect(() => {
     if (USE_FORK === false) {
+      chainConfig = ((USE_TESTNETS) ? [chain.mainnet, chain.goerli] : [chain.mainnet]);
+      providerConfig = [alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY })];
+      ({ chains, provider, webSocketProvider } = configureChains(chainConfig, providerConfig));
       const { wallets } = getDefaultWallets({ appName: APP_NAME, chains });
       connectors = connectorsForWallets([
         ...wallets,
@@ -82,38 +108,56 @@ function MyApp({ Component, pageProps }: AppProps) {
         webSocketProvider,
       }));
     } else {
-      const signer = impersonateAddress ? provider(({chainId: 1337}))?.getSigner(impersonateAddress) : undefined;
-      const mockWallet = (): Wallet => ({
-        createConnector: () => ({
-          connector: new MockConnector({
-            chains: [chain.localhost],
-            options: {
-              chainId: chain.localhost.id,
-              flags: {
-                failConnect: false,
-                failSwitchChain: false,
-                isAuthorized: true,
-                noSwitchChain: false,
+      const configureForkedEnv = async () => {
+        let tenderlyForkId: string;
+        if (USE_TENDERLY) {
+          tenderlyForkId = await createTenderlyFork();
+          if (!tenderlyForkId) return;
+          console.log({tenderlyForkId})
+        }
+        chainConfig = [chain.localhost];
+        providerConfig = (USE_GANACHE)
+          ? [jsonRpcProvider({ rpc: () => ({ http: 'http://127.0.0.1:8545' })})]
+          : [jsonRpcProvider({
+            rpc: () => ({ http: `https://rpc.tenderly.co/fork/${tenderlyForkId}` })
+          })];
+        ({ chains, provider, webSocketProvider } = configureChains(chainConfig, providerConfig));
+        const signer = impersonateAddress ? provider(({chainId: 1337}))?.getSigner(impersonateAddress) : undefined;
+        const mockWallet = (): Wallet => ({
+          createConnector: () => ({
+            connector: new MockConnector({
+              chains: [chain.localhost],
+              options: {
+                chainId: chain.localhost.id,
+                flags: {
+                  failConnect: false,
+                  failSwitchChain: false,
+                  isAuthorized: true,
+                  noSwitchChain: false,
+                },
+                signer,
               },
-              signer,
-            },
+            }),
           }),
-        }),
-        id: 'mock',
-        iconBackground: 'tomato',
-        iconUrl: 'http://placekitten.com/100/100',
-        name: 'Mock Wallet',
-      });
-      connectors = connectorsForWallets([
-        { groupName: 'Fork And Impersonate', wallets: [mockWallet()] }
-        ]);
-      setWagmiClient(createClient({
-        autoConnect: signer ? true : false,
-        connectors,
-        provider,
-        webSocketProvider,
-      }));
+          id: 'mock',
+          iconBackground: 'tomato',
+          iconUrl: 'http://placekitten.com/100/100',
+          name: 'Mock Wallet',
+        });
+        connectors = connectorsForWallets([
+          { groupName: 'Fork And Impersonate', wallets: [mockWallet()] }
+          ]);
+        setWagmiClient(createClient({
+          autoConnect: signer ? true : false,
+          connectors,
+          provider,
+          webSocketProvider,
+        }));
+      }
+
+      configureForkedEnv().catch(console.error);
     }
+
   }, [impersonateAddress]);
 
   useEffect(() => {
