@@ -33,25 +33,17 @@ const TENDERLY_ACCESS_KEY = process.env.NEXT_PUBLIC_TENDERLY_ACCESS_KEY;
 let forkRequestInFlight = false;
 const createTenderlyFork = async () => {
   if (!USE_TENDERLY || forkRequestInFlight) return;
-  const cachedForkId = window.localStorage.getItem('tenderly-fork-id');
-  if (cachedForkId) {
-    return cachedForkId;
-  }
-  const opts = {
-    headers: {
-        'X-Access-Key': TENDERLY_ACCESS_KEY as string,
-    }
-  }
+  const cachedForkId = window.sessionStorage.getItem('tenderly-fork-id');
+  if (cachedForkId) return cachedForkId;
 
-  const body = {
-  'network_id': '1',
-  //'block_number': 14386016,
-  }
+  const opts = { headers: { 'X-Access-Key': TENDERLY_ACCESS_KEY as string } };
+  const body = { 'network_id': '1' }
+
   try {
     forkRequestInFlight = true;
     const response = await axios.post(TENDERLY_FORK_API, body, opts);
     const forkId = response.data.simulation_fork.id;
-    window.localStorage.setItem('tenderly-fork-id', forkId);
+    window.sessionStorage.setItem('tenderly-fork-id', forkId);
     forkRequestInFlight = false;
     return forkId;
   } catch (error) {
