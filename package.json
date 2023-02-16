@@ -12,7 +12,7 @@
     "get-tokens": "node ./scripts/get_tokens.js"
   },
   "dependencies": {
-    "@fiatdao/sdk": "0.0.38",
+    "@fiatdao/sdk": "0.0.40",
     "@nextui-org/react": "^1.0.0-beta.10",
     "@radix-ui/react-label": "^2.0.0",
     "@radix-ui/react-slider": "^1.1.0",
