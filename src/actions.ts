@@ -930,7 +930,7 @@ export const buildRedeemCollateralAndDecreaseLeverArgs = async (
   const assetsIn = JSON.parse(JSON.stringify(assetsOut)).reverse();
 
   let subNormalDebt = debtToNormalDebt(subDebt, collateralTypeData.state.codex.virtualRate)
-  if (position.normalDebt.mul(WAD).div(subNormalDebt).lt(WAD))
+  if (position.normalDebt.mul(WAD).div(subNormalDebt).lt(WAD.mul(2)))
     subNormalDebt = position.normalDebt;
   else
     subNormalDebt = addDeltaNormalBuffer(subNormalDebt);

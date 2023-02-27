@@ -163,7 +163,12 @@ const LeverRedeemForm = ({
             style={{ width: '15.0rem' }}
           />
         </Grid.Container>
-        {(!minCollRatio.isZero() && !maxCollRatio.isZero() && !minCollRatio.eq(maxCollRatio)) && (
+        {(
+          !minCollRatio.isZero() &&
+          !maxCollRatio.isZero() &&
+          !minCollRatio.eq(maxCollRatio)
+          && !collRatio.eq(ethers.constants.MaxUint256)
+        )&& (
           <>
             <Tooltip
               css={{ zIndex: 10000, width: 250 }}
