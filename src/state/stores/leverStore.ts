@@ -1014,15 +1014,6 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           if (collateral.isZero(0) && subTokenAmount.isZero())
             throw new Error('Collateral is zero. Can\'t withdraw more collateral.');
 
-            console.log(subTokenAmountStr, subTokenAmount.toString());
-          console.log(
-            position.collateral.toString(),
-            position.normalDebt.toString(),
-            rate.toString(),
-            fairPrice.toString(),
-            scaleToWad(subTokenAmount, tokenScale).toString(),
-            targetedCollRatio.toString()
-          );
           // calculate the required flashloan given the amount of collateral to remove and the targeted coll. ratio
           const flashloan = computeFlashloanForLeveredWithdrawal(
             position.collateral,
