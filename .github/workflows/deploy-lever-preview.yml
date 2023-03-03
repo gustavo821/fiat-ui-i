@@ -12,7 +12,7 @@ on:
 
 jobs:
   prod-deploy:
-    name: Production Deploy
+    name: Preview Deploy
     runs-on: ubuntu-latest
     env:
       NEXT_PUBLIC_ALCHEMY_API_KEY: ${{ secrets.NEXT_PUBLIC_ALCHEMY_API_KEY }}
