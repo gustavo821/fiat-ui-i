@@ -1,0 +1,14 @@
+{
+  "site": {
+    "id": "7e5d4260-05f4-4198-babb-26af3e5aaf6e",
+    "team": "611ed442-c683-4c32-895c-63396de1bc2d",
+    "platform": "ipfs",
+    "source": "ipfs",
+    "name": "lever-ui-preview"
+  },
+  "build": {
+    "baseDir": "",
+    "publicDir": "out",
+    "rootDir": ""
+  }
+}

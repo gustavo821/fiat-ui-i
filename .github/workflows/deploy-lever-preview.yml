@@ -1,0 +1,45 @@
+# .github/workflows/deploy.yml
+
+# Workflow name
+name: "Deploy Lever Preview"
+
+
+# Event for the workflow
+on:
+  push:
+    branches:
+      - preview
+
+jobs:
+  prod-deploy:
+    name: Production Deploy
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_ALCHEMY_API_KEY: ${{ secrets.NEXT_PUBLIC_ALCHEMY_API_KEY }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 14.19.1
+          cache: "npm"
+
+      - name: Build
+        run: |
+          npm i -g yarn
+          yarn install
+          yarn build
+      
+      - name: Configure .fleek.json
+        run: mv .preview.fleek.json .fleek.json
+
+      - name: Deploy site
+        id: deploy
+        uses: fleekhq/action-deploy@v1
+        with:
+          apiKey: ${{ secrets.FLEEK_API_KEY }}
+          workDir: ./
+
+      - name: Get the output url
+        run: echo "Deploy url is ${{ steps.deploy.outputs.deployUrl }}"
