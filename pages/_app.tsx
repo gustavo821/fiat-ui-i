@@ -16,6 +16,7 @@ import '../styles/global.css';
 import devStore from '../src/state/stores/devStore';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+import { useImpersonatingAddress } from 'react-tenderly-fork-controls';
 
 const APP_NAME = 'FIAT I UI';
 const USE_TESTNETS = process.env.NEXT_PUBLIC_ENABLE_TESTNETS === 'true';
@@ -81,7 +82,8 @@ const queryClient = new QueryClient();
 
 function MyApp({ Component, pageProps }: AppProps) {
   const [wagmiClient, setWagmiClient] = useState<any>();
-  const impersonateAddress = devStore((state) => state.impersonateAddress);
+  const impersonatingAddress = useImpersonatingAddress();
+  console.log({impersonatingAddress})
 
   useEffect(() => {
     if (USE_FORK === false) {
@@ -101,6 +103,7 @@ function MyApp({ Component, pageProps }: AppProps) {
       }));
     } else {
       const configureForkedEnv = async () => {
+        console.log("configured forked env")
         let tenderlyForkId: string;
         if (USE_TENDERLY) {
           tenderlyForkId = await createTenderlyFork();
@@ -114,7 +117,7 @@ function MyApp({ Component, pageProps }: AppProps) {
             rpc: () => ({ http: `https://rpc.tenderly.co/fork/${tenderlyForkId}` })
           })];
         ({ chains, provider, webSocketProvider } = configureChains(chainConfig, providerConfig));
-        const signer = impersonateAddress ? provider(({chainId: 1337}))?.getSigner(impersonateAddress) : undefined;
+        const signer = impersonatingAddress ? provider(({chainId: 1337}))?.getSigner(impersonatingAddress) : undefined;
         const mockWallet = (): Wallet => ({
           createConnector: () => ({
             connector: new MockConnector({
@@ -139,6 +142,7 @@ function MyApp({ Component, pageProps }: AppProps) {
         connectors = connectorsForWallets([
           { groupName: 'Fork And Impersonate', wallets: [mockWallet()] }
           ]);
+        console.log("set wagmi client")
         setWagmiClient(createClient({
           autoConnect: signer ? true : false,
           connectors,
@@ -150,12 +154,7 @@ function MyApp({ Component, pageProps }: AppProps) {
       configureForkedEnv().catch(console.error);
     }
 
-  }, [impersonateAddress]);
-
-  useEffect(() => {
-    const address = window.sessionStorage.getItem('ImpersonatingAddress');
-    if (address) devStore.getState().setImpersonateAddress(address);
-  }, []);
+  }, [impersonatingAddress]);
 
   if (!wagmiClient) return <></>;
 

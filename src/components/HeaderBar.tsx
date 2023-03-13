@@ -7,7 +7,6 @@ import { queryMeta } from '@fiatdao/sdk';
 import { chain as chains, useAccount, useBlockNumber, useNetwork } from 'wagmi';
 import { useFiatBalance } from '../state/queries/useFiatBalance';
 import useStore from '../state/stores/globalStore';
-import { ForkControls } from './ForkControls';
 
 interface BlockSyncStatus {
   subgraphBlockNumber: number;
