@@ -17,15 +17,12 @@ import { fiatBalanceKey } from '../src/state/queries/useFiatBalance';
 import useStore, { initialState } from '../src/state/stores/globalStore';
 import { ForkControls } from 'react-tenderly-fork-controls';
 import { JsonRpcProvider } from '@ethersproject/providers';
-import { useImpersonatingAddress } from 'react-tenderly-fork-controls';
 
 const Home: NextPage = () => {
   const provider = useProvider() as JsonRpcProvider;
   const { address, connector } = useAccount({ onConnect: () => resetState(), onDisconnect: () => resetState() });
   const { chain } = useNetwork();
   const { switchNetwork } = useSwitchNetwork()
-  const impersonatingAddress = useImpersonatingAddress();
-  console.log({impersonatingAddress})
 
   // Only select necessary actions off of the store to minimize re-renders
   const borrowStore = useBorrowStore(

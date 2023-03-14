@@ -1,11 +1,11 @@
 import { BigNumber, BigNumberish, ethers } from 'ethers';
 import { decToWad, scaleToDec, wadToDec, ZERO } from '@fiatdao/sdk';
 import { USE_FORK } from './components/HeaderBar';
-import devStore from './state/stores/devStore';
+import { controlsStore } from 'react-tenderly-fork-controls';
 
 export function getTimestamp (): BigNumber {
   return (USE_FORK)
-    ? BigNumber.from(Math.floor(devStore.getState().ganacheTime.getTime() / 1000))
+    ? BigNumber.from(Math.floor(controlsStore.getState().forkTimestamp.getTime() / 1000))
     : BigNumber.from(Math.floor(new Date().getTime() / 1000));
 }
 
