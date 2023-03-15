@@ -15,7 +15,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import '../styles/global.css';
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { createTenderlyFork, useImpersonatingAddress } from 'react-tenderly-fork-controls';
+import { createTenderlyFork, useEnabledControls, useImpersonatingAddress } from 'react-tenderly-fork-controls';
 
 interface wagmiClientConfig {
   useTenderly?: boolean;
@@ -34,7 +34,6 @@ const APP_NAME = 'FIAT I UI';
 const USE_TESTNETS = process.env.NEXT_PUBLIC_ENABLE_TESTNETS === 'true';
 const USE_GANACHE = process.env.NEXT_PUBLIC_GANACHE_FORK === 'true' && process.env.NODE_ENV === 'development';
 const USE_TENDERLY = process.env.NEXT_PUBLIC_TENDERLY_FORK === 'true' && process.env.NODE_ENV === 'development';
-const USE_FORK = USE_GANACHE || USE_TENDERLY;
 
 let chainConfig: Chain[], providerConfig, connectors, provider: any, webSocketProvider: any, chains: any[];
 
@@ -175,10 +174,11 @@ export const useWagmiClient = (config: wagmiClientConfig) => {
 function MyApp({ Component, pageProps }: AppProps) {
 
   const impersonatingAddress = useImpersonatingAddress();
+  const enabledControls = useEnabledControls();
 
   const config = React.useMemo(() => ({
     useTenderly: false,
-    useGanache: true,
+    useGanache: enabledControls,
     useTestnets: false,
     impersonateAddress: impersonatingAddress,
     appName: APP_NAME,
@@ -186,7 +186,7 @@ function MyApp({ Component, pageProps }: AppProps) {
     tenderlyAccessKey: TENDERLY_ACCESS_KEY,
     tenderlyUser: TENDERLY_USER,
     tenderlyProject: TENDERLY_PROJECT
-  }), [impersonatingAddress])
+  }), [impersonatingAddress, enabledControls]);
 
   const {client: wagmiClient, chains} = useWagmiClient(config);
 

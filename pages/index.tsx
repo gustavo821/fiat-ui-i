@@ -3,7 +3,7 @@ import type { NextPage } from 'next';
 import { chain as chains, useAccount, useNetwork, useProvider, useSwitchNetwork } from 'wagmi';
 import shallow from 'zustand/shallow'
 import { Container, Spacer } from '@nextui-org/react';
-import { HeaderBar } from '../src/components/HeaderBar';
+import { HeaderBar, USE_GANACHE } from '../src/components/HeaderBar';
 import { CollateralTypesTable } from '../src/components/CollateralTypesTable';
 import { PositionsTable } from '../src/components/PositionsTable';
 import { PositionModal } from '../src/components/PositionModal/PositionModal';
@@ -168,7 +168,7 @@ const Home: NextPage = () => {
 
   return (
     <div>
-      <ForkControls provider={provider} forkType="ganache" chain={chain} switchNetwork={switchNetwork} />
+      <ForkControls provider={provider} forkType={USE_GANACHE ? 'ganache' : 'tenderly'} chain={chain} switchNetwork={switchNetwork} />
       <HeaderBar />
       <Container lg>
         {

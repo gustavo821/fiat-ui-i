@@ -25,7 +25,7 @@ import {
   ZERO
 } from '@fiatdao/sdk';
 import { BigNumber } from 'ethers';
-import create from 'zustand';
+import { create } from 'zustand';
 import * as userActions from '../../actions';
 import {
   debounce,
