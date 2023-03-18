@@ -7,7 +7,8 @@ import { queryMeta } from '@fiatdao/sdk';
 import { chain as chains, useAccount, useBlockNumber, useNetwork } from 'wagmi';
 import { useFiatBalance } from '../state/queries/useFiatBalance';
 import useStore from '../state/stores/globalStore';
-import { useEnabledControls } from 'react-tenderly-fork-controls';
+import { useEnabledControls } from '@barnbridge/react-tenderly-fork-controls';
+
 
 interface BlockSyncStatus {
   subgraphBlockNumber: number;

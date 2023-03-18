@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import useStore from '../stores/globalStore';
-import { controlsStore } from 'react-tenderly-fork-controls';
+import { controlsStore } from '@barnbridge/react-tenderly-fork-controls';
 
 export const userDataKey = {
   all: ['userDataKey'] as const,

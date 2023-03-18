@@ -15,7 +15,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import '../styles/global.css';
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { createTenderlyFork, useEnabledControls, useImpersonatingAddress } from 'react-tenderly-fork-controls';
+import { createTenderlyFork, useEnabledControls, useImpersonatingAddress } from '@barnbridge/react-tenderly-fork-controls';
 
 interface wagmiClientConfig {
   useTenderly?: boolean;

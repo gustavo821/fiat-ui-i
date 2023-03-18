@@ -15,7 +15,7 @@ import { userDataKey, useUserData } from '../src/state/queries/useUserData';
 import { useQueryClient } from '@tanstack/react-query';
 import { fiatBalanceKey } from '../src/state/queries/useFiatBalance';
 import useStore, { initialState } from '../src/state/stores/globalStore';
-import { ForkControls } from 'react-tenderly-fork-controls';
+import { ForkControls } from '@barnbridge/react-tenderly-fork-controls';
 import { JsonRpcProvider } from '@ethersproject/providers';
 
 const Home: NextPage = () => {

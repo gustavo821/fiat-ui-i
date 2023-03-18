@@ -1,6 +1,6 @@
 import { BigNumber, BigNumberish, ethers } from 'ethers';
 import { decToWad, scaleToDec, wadToDec, ZERO } from '@fiatdao/sdk';
-import { controlsStore } from 'react-tenderly-fork-controls';
+import { controlsStore } from '@barnbridge/react-tenderly-fork-controls';
 
 export function getTimestamp (): BigNumber {
   return (controlsStore.getState().enableControls)
