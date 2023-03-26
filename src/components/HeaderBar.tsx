@@ -7,7 +7,7 @@ import { queryMeta } from '@fiatdao/sdk';
 import { chain as chains, useAccount, useBlockNumber, useNetwork } from 'wagmi';
 import { useFiatBalance } from '../state/queries/useFiatBalance';
 import useStore from '../state/stores/globalStore';
-import { useEnabledControls } from '@barnbridge/react-tenderly-fork-controls';
+import { useEnableForkMode } from '@barnbridge/react-tenderly-fork-controls';
 
 
 interface BlockSyncStatus {
@@ -31,10 +31,10 @@ export const HeaderBar = () => {
   const { chain } = useNetwork();
   const { address } = useAccount();
   const { data: fiatBalance } = useFiatBalance(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
-  const enabledControls = useEnabledControls();
+  const enableForMode = useEnableForkMode();
   const queryBlockNumber = React.useCallback(async () => {
     if (!fiat || !providerBlockNumber) return;
-    if (enabledControls) {
+    if (enableForMode) {
       const subgraphBlockNumber = providerBlockNumber;
       const blockDiff = 0;
       const status = 'success';
@@ -60,7 +60,7 @@ export const HeaderBar = () => {
         message,
       });
     }
-  }, [enabledControls, fiat, providerBlockNumber])
+  }, [enableForMode, fiat, providerBlockNumber])
 
   React.useEffect(() => {
     queryBlockNumber();

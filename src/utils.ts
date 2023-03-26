@@ -3,7 +3,7 @@ import { decToWad, scaleToDec, wadToDec, ZERO } from '@fiatdao/sdk';
 import { controlsStore } from '@barnbridge/react-tenderly-fork-controls';
 
 export function getTimestamp (): BigNumber {
-  return (controlsStore.getState().enableControls)
+  return (controlsStore.getState().enableForkMode)
     ? BigNumber.from(Math.floor(controlsStore.getState().forkTimestamp.getTime() / 1000))
     : BigNumber.from(Math.floor(new Date().getTime() / 1000));
 }

@@ -18,7 +18,7 @@ export function useUserData(fiat: any, chainId: number, userAddress: string) {
           proxies: []
         }
       }
-      const enabledControls = controlsStore.getState().enableControls;
+      const enabledControls = controlsStore.getState().enableForkMode;
       const userData = !enabledControls ? await fiat.fetchUserData(userAddress) : await fiat.fetchUserDataViaProvider(userAddress);
       const proxies = userData.filter((user: any) => (user.isProxy === true)).map((user: any) => user.user);
       useStore.setState({hasProxy: proxies.length > 0});

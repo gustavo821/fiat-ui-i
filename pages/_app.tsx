@@ -15,7 +15,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import '../styles/global.css';
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { createTenderlyFork, useEnabledControls, useImpersonatingAddress } from '@barnbridge/react-tenderly-fork-controls';
+import { createTenderlyFork, useEnableForkMode, useImpersonatingAddress } from '@barnbridge/react-tenderly-fork-controls';
 
 interface wagmiClientConfig {
   useTenderly?: boolean;
@@ -174,11 +174,11 @@ export const useWagmiClient = (config: wagmiClientConfig) => {
 function MyApp({ Component, pageProps }: AppProps) {
 
   const impersonatingAddress = useImpersonatingAddress();
-  const enabledControls = useEnabledControls();
+  const enableForkMode = useEnableForkMode();
 
   const config = React.useMemo(() => ({
-    useTenderly: false,
-    useGanache: enabledControls,
+    useTenderly: enableForkMode,
+    useGanache: false,
     useTestnets: false,
     impersonateAddress: impersonatingAddress,
     appName: APP_NAME,
@@ -186,7 +186,7 @@ function MyApp({ Component, pageProps }: AppProps) {
     tenderlyAccessKey: TENDERLY_ACCESS_KEY,
     tenderlyUser: TENDERLY_USER,
     tenderlyProject: TENDERLY_PROJECT
-  }), [impersonatingAddress, enabledControls]);
+  }), [impersonatingAddress, enableForkMode]);
 
   const {client: wagmiClient, chains} = useWagmiClient(config);
 
