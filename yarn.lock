@@ -106,10 +106,10 @@
     "@babel/helper-validator-identifier" "^7.19.1"
     to-fast-properties "^2.0.0"
 
-"@barnbridge/react-tenderly-fork-controls@^0.0.4":
-  version "0.0.4"
-  resolved "https://registry.yarnpkg.com/@barnbridge/react-tenderly-fork-controls/-/react-tenderly-fork-controls-0.0.4.tgz#4c176fdc609687050a6bd9d6a101fd1c0be8cbd4"
-  integrity sha512-tsqJUqynK6FTiwbD+kJK8NxkQl7uP5lsRqyR/Z5Pf0xsDvo2ZAn7LhAMzdmfgoUqfLZUTT9l4gPxI22lqMijNg==
+"@barnbridge/react-tenderly-fork-controls@^0.0.5":
+  version "0.0.5"
+  resolved "https://registry.yarnpkg.com/@barnbridge/react-tenderly-fork-controls/-/react-tenderly-fork-controls-0.0.5.tgz#cb4fefac64f7e8cbc2936fd277caece3cdfa1657"
+  integrity sha512-zc3tCytt/jnSxI8HHM2/dVx3B1jTOmGA2zqEqUIXBtYZv/XLByKM5S9HR2fP4wCLwkONf8XXqjkq7wenygBjJQ==
   dependencies:
     "@nextui-org/react" "^1.0.0-beta.12"
     axios "^1.3.4"

@@ -7,14 +7,13 @@ import { argentWallet, ledgerWallet, trustWallet } from '@rainbow-me/rainbowkit/
 import { ThemeProvider as NextThemesProvider } from 'next-themes';
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
-import { Chain, chain, configureChains, createClient, useNetwork, WagmiConfig } from 'wagmi';
+import { Chain, chain, configureChains, createClient, WagmiConfig } from 'wagmi';
 import { MockConnector } from 'wagmi/connectors/mock';
 import { alchemyProvider } from 'wagmi/providers/alchemy';
 import { jsonRpcProvider } from 'wagmi/providers/jsonRpc'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import '../styles/global.css';
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import React from 'react';
 import { createTenderlyFork, useEnableForkMode, useImpersonatingAddress } from '@barnbridge/react-tenderly-fork-controls';
 
 interface wagmiClientConfig {
@@ -35,11 +34,8 @@ const USE_TESTNETS = process.env.NEXT_PUBLIC_ENABLE_TESTNETS === 'true';
 const USE_GANACHE = process.env.NEXT_PUBLIC_GANACHE_FORK === 'true' && process.env.NODE_ENV === 'development';
 const USE_TENDERLY = process.env.NEXT_PUBLIC_TENDERLY_FORK === 'true' && process.env.NODE_ENV === 'development';
 
-let chainConfig: Chain[], providerConfig, connectors, provider: any, webSocketProvider: any, chains: any[];
-
 const TENDERLY_USER = process.env.NEXT_PUBLIC_TENDERLY_USER;
 const TENDERLY_PROJECT = process.env.NEXT_PUBLIC_TENDERLY_PROJECT;
-const TENDERLY_FORK_API = `https://api.tenderly.co/api/v1/account/${TENDERLY_USER}/project/${TENDERLY_PROJECT}/fork`;
 const TENDERLY_ACCESS_KEY = process.env.NEXT_PUBLIC_TENDERLY_ACCESS_KEY;
 
 const nextLightTheme = createTheme({
@@ -72,9 +68,9 @@ const configureLiveNetwork = (config: wagmiClientConfig) => {
   const chainConfig = ((config.useTestnets) ? [chain.mainnet, chain.goerli] : [chain.mainnet]);
   const { chains, provider, webSocketProvider } = configureChains(
     chainConfig, 
-    [alchemyProvider({ apiKey: config.alchemyAPIKey ?? "" })]
+    [alchemyProvider({ apiKey: config.alchemyAPIKey ?? '' })]
   );
-  const { wallets } = getDefaultWallets({ appName: config.appName ?? "My Dapp", chains });
+  const { wallets } = getDefaultWallets({ appName: config.appName ?? 'My Dapp', chains });
   const connectors = connectorsForWallets([
     ...wallets,
     { 
@@ -177,9 +173,9 @@ function MyApp({ Component, pageProps }: AppProps) {
   const enableForkMode = useEnableForkMode();
 
   const config = React.useMemo(() => ({
-    useTenderly: enableForkMode,
-    useGanache: false,
-    useTestnets: false,
+    useTenderly: enableForkMode && USE_TENDERLY,
+    useGanache: enableForkMode && USE_GANACHE && !USE_TENDERLY,
+    useTestnets: USE_TESTNETS,
     impersonateAddress: impersonatingAddress,
     appName: APP_NAME,
     alchemyAPIKey: ALCHEMY_API_KEY,
