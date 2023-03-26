@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import useStore from '../stores/globalStore';
-import { USE_FORK } from '../../components/HeaderBar';
+import { controlsStore } from '@barnbridge/react-tenderly-fork-controls';
 
 export const userDataKey = {
   all: ['userDataKey'] as const,
@@ -18,7 +18,8 @@ export function useUserData(fiat: any, chainId: number, userAddress: string) {
           proxies: []
         }
       }
-      const userData = !USE_FORK ? await fiat.fetchUserData(userAddress) : await fiat.fetchUserDataViaProvider(userAddress);
+      const enabledControls = controlsStore.getState().enableForkMode;
+      const userData = !enabledControls ? await fiat.fetchUserData(userAddress) : await fiat.fetchUserDataViaProvider(userAddress);
       const proxies = userData.filter((user: any) => (user.isProxy === true)).map((user: any) => user.user);
       useStore.setState({hasProxy: proxies.length > 0});
 

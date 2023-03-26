@@ -7,7 +7,8 @@ import { queryMeta } from '@fiatdao/sdk';
 import { chain as chains, useAccount, useBlockNumber, useNetwork } from 'wagmi';
 import { useFiatBalance } from '../state/queries/useFiatBalance';
 import useStore from '../state/stores/globalStore';
-import { ForkControls } from './ForkControls';
+import { useEnableForkMode } from '@barnbridge/react-tenderly-fork-controls';
+
 
 interface BlockSyncStatus {
   subgraphBlockNumber: number;
@@ -19,7 +20,6 @@ interface BlockSyncStatus {
 
 export const USE_GANACHE = process.env.NEXT_PUBLIC_GANACHE_FORK === 'true';
 export const USE_TENDERLY = process.env.NEXT_PUBLIC_TENDERLY_FORK === 'true';
-export const USE_FORK = (USE_GANACHE || USE_TENDERLY) && process.env.NODE_ENV === 'development';
 
 export const HeaderBar = () => {
   const [showResourcesModal, setShowResourcesModal] = React.useState<boolean>(false);
@@ -31,10 +31,10 @@ export const HeaderBar = () => {
   const { chain } = useNetwork();
   const { address } = useAccount();
   const { data: fiatBalance } = useFiatBalance(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
-
+  const enableForMode = useEnableForkMode();
   const queryBlockNumber = React.useCallback(async () => {
     if (!fiat || !providerBlockNumber) return;
-    if (USE_FORK === true) {
+    if (enableForMode) {
       const subgraphBlockNumber = providerBlockNumber;
       const blockDiff = 0;
       const status = 'success';
@@ -60,7 +60,7 @@ export const HeaderBar = () => {
         message,
       });
     }
-  }, [fiat, providerBlockNumber])
+  }, [enableForMode, fiat, providerBlockNumber])
 
   React.useEffect(() => {
     queryBlockNumber();
@@ -88,7 +88,6 @@ export const HeaderBar = () => {
           <Text size='$xs'css={{ alignSelf: 'center'}}>
             {syncStatus?.subgraphBlockNumber}
           </Text>
-          <ForkControls/>
         </Tooltip>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', padding: 0 }}>

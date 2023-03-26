@@ -1,9 +1,9 @@
 import React from 'react';
 import type { NextPage } from 'next';
-import { chain as chains, useAccount, useNetwork, useProvider } from 'wagmi';
+import { chain as chains, useAccount, useNetwork, useProvider, useSwitchNetwork } from 'wagmi';
 import shallow from 'zustand/shallow'
 import { Container, Spacer } from '@nextui-org/react';
-import { HeaderBar } from '../src/components/HeaderBar';
+import { HeaderBar, USE_GANACHE } from '../src/components/HeaderBar';
 import { CollateralTypesTable } from '../src/components/CollateralTypesTable';
 import { PositionsTable } from '../src/components/PositionsTable';
 import { PositionModal } from '../src/components/PositionModal/PositionModal';
@@ -15,11 +15,14 @@ import { userDataKey, useUserData } from '../src/state/queries/useUserData';
 import { useQueryClient } from '@tanstack/react-query';
 import { fiatBalanceKey } from '../src/state/queries/useFiatBalance';
 import useStore, { initialState } from '../src/state/stores/globalStore';
+import { ForkControls } from '@barnbridge/react-tenderly-fork-controls';
+import { JsonRpcProvider } from '@ethersproject/providers';
 
 const Home: NextPage = () => {
-  const provider = useProvider();
+  const provider = useProvider() as JsonRpcProvider;
   const { address, connector } = useAccount({ onConnect: () => resetState(), onDisconnect: () => resetState() });
   const { chain } = useNetwork();
+  const { switchNetwork } = useSwitchNetwork()
 
   // Only select necessary actions off of the store to minimize re-renders
   const borrowStore = useBorrowStore(
@@ -165,6 +168,7 @@ const Home: NextPage = () => {
 
   return (
     <div>
+      <ForkControls provider={provider} forkType={USE_GANACHE ? 'ganache' : 'tenderly'} chain={chain} switchNetwork={switchNetwork} />
       <HeaderBar />
       <Container lg>
         {
